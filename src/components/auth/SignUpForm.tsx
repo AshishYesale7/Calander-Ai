@@ -121,7 +121,7 @@ export default function SignUpForm() {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast({ title: 'Success', description: 'Account created successfully. Welcome!' });
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -214,7 +214,7 @@ export default function SignUpForm() {
       }
       await window.confirmationResult.confirm(otp);
       toast({ title: 'Success', description: 'Account created successfully. Welcome!' });
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
        console.error(error);
        toast({ title: 'Error', description: error.message || 'Invalid OTP. Please try again.', variant: 'destructive' });

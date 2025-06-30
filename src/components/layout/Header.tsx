@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ import SettingsModal from './SettingsModal';
 import LegalModal from './LegalModal';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: Menu }, 
+  { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
   { href: '/career-goals', label: 'Career Goals', icon: Menu },
   { href: '/skills', label: 'Skills', icon: Menu },
   { href: '/career-vision', label: 'Career Vision', icon: Menu },
@@ -94,7 +95,7 @@ export default function Header() {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 frosted-glass text-sidebar-foreground bg-sidebar flex flex-col">
             <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
-              <Link href="/" className="text-center">
+              <Link href="/dashboard" className="text-center">
                 <div className="flex items-center justify-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                   <SheetTitle asChild>

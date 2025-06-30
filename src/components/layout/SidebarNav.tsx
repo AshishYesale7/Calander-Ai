@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -44,7 +45,7 @@ import SettingsModal from './SettingsModal';
 import LegalModal from './LegalModal';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/career-goals', label: 'Career Goals', icon: Target },
   { href: '/skills', label: 'Skills', icon: Brain },
   { href: '/career-vision', label: 'Career Vision', icon: Eye },
@@ -106,7 +107,7 @@ export default function SidebarNav() {
     <>
       <div className="hidden md:flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground fixed left-0 top-0 frosted-glass">
         <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
-          <Link href="/" className="text-center">
+          <Link href="/dashboard" className="text-center">
             <div className="flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
               <h1 className="font-headline text-2xl font-semibold text-white">FutureSight</h1>

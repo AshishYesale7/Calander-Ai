@@ -120,7 +120,7 @@ export default function SignInForm() {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({ title: 'Success', description: 'Signed in successfully.' });
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -141,7 +141,7 @@ export default function SignInForm() {
       if (auth.currentUser) {
           await linkWithPopup(auth.currentUser, provider);
           toast({ title: 'Success', description: 'Your Google account has been linked.' });
-          router.push('/');
+          router.push('/dashboard');
           return;
       }
 
@@ -157,7 +157,7 @@ export default function SignInForm() {
       } else {
         toast({ title: 'Success', description: 'Signed in with Google successfully.' });
       }
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
         if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData.email;
@@ -251,7 +251,7 @@ export default function SignInForm() {
          toast({ title: 'Success', description: 'Signed in successfully.' });
       }
 
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
        console.error(error);
        toast({ title: 'Error', description: error.message || 'Invalid OTP. Please try again.', variant: 'destructive' });

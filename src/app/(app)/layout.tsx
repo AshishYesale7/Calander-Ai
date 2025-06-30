@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // Logic to show modal once per session, ONLY on the dashboard
   useEffect(() => {
-    if (!loading && user && isSubscribed && pathname === '/') {
+    if (!loading && user && isSubscribed && pathname === '/dashboard') {
       const hasSeenModal = sessionStorage.getItem('seenTodaysPlanModal');
       if (!hasSeenModal) {
         setIsPlanModalOpen(true);

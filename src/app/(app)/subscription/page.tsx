@@ -91,7 +91,7 @@ export default function SubscriptionPage() {
                     if (verificationRes.ok) {
                         toast({ title: 'Success!', description: 'Your subscription is now active.' });
                         await refreshSubscription();
-                        router.push('/');
+                        router.push('/dashboard');
                     } else {
                         throw new Error(verificationData.error || 'Payment verification failed.');
                     }
