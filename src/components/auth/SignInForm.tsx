@@ -38,7 +38,7 @@ const formSchema = z.object({
 
 declare global {
   interface Window {
-    recaptchaVerifierSignin?: RecaptchaVerifier;
+    // This is now only used to hold the confirmation result, not the verifier.
     confirmationResult?: ConfirmationResult;
   }
 }
@@ -70,58 +70,6 @@ export default function SignInForm() {
       password: '',
     },
   });
-
-  useEffect(() => {
-    const recaptchaContainer = document.getElementById('recaptcha-container');
-
-    const cleanup = () => {
-        if (window.recaptchaVerifierSignin) {
-            try {
-                window.recaptchaVerifierSignin.clear();
-            } catch (e) {
-                console.warn("Failed to clear previous reCAPTCHA verifier for sign-in:", e);
-            }
-            window.recaptchaVerifierSignin = undefined;
-        }
-        if (recaptchaContainer) {
-            recaptchaContainer.innerHTML = '';
-        }
-    };
-
-    if (view !== 'phone' || !auth) {
-      cleanup();
-      return;
-    }
-    
-    if (!recaptchaContainer) {
-      console.warn("reCAPTCHA container for sign-in not found.");
-      return;
-    }
-
-    cleanup();
-
-    try {
-        const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
-            'size': 'invisible',
-            'callback': () => console.log("reCAPTCHA verified for sign-in"),
-            'expired-callback': () => {
-                toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-                cleanup();
-            }
-        });
-        window.recaptchaVerifierSignin = verifier;
-        verifier.render().catch((e) => {
-            console.error("reCAPTCHA render error for sign-in:", e);
-            toast({ title: 'reCAPTCHA Error', description: "Failed to render reCAPTCHA. Please refresh.", variant: "destructive"});
-        });
-    } catch (e: any) {
-        console.error("reCAPTCHA creation error for sign-in:", e);
-        toast({ title: 'reCAPTCHA Error', description: "Failed to initialize reCAPTCHA. Please refresh.", variant: "destructive"});
-    }
-  
-    return cleanup;
-  }, [view, auth, toast]);
-
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -200,10 +148,15 @@ export default function SignInForm() {
     }
     setLoading(true);
     try {
-      const verifier = window.recaptchaVerifierSignin;
-      if (!verifier) {
-        throw new Error("reCAPTCHA not initialized. Please wait a moment and try again.");
-      }
+      // Create a new RecaptchaVerifier instance on demand.
+      // The container 'recaptcha-container' must be visible in the DOM.
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => { console.log("reCAPTCHA callback") },
+        'expired-callback': () => {
+            toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+        }
+      });
       
       let confirmationResult: ConfirmationResult;
       if (auth.currentUser) {
@@ -390,7 +343,7 @@ export default function SignInForm() {
             </div>
         )}
 
-        {view === 'phone' && <div id="recaptcha-container" className="my-4"></div>}
+        <div id="recaptcha-container" className="my-4"></div>
 
         <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">

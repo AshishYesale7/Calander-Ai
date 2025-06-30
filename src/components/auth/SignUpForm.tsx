@@ -40,7 +40,6 @@ const formSchema = z.object({
 
 declare global {
   interface Window {
-    recaptchaVerifierSignup?: RecaptchaVerifier;
     confirmationResult?: ConfirmationResult;
   }
 }
@@ -73,57 +72,6 @@ export default function SignUpForm() {
       confirmPassword: '',
     },
   });
-
-  useEffect(() => {
-    const recaptchaContainer = document.getElementById('recaptcha-container-signup');
-
-    const cleanup = () => {
-        if (window.recaptchaVerifierSignup) {
-            try {
-                window.recaptchaVerifierSignup.clear();
-            } catch(e) {
-                console.warn("Failed to clear previous reCAPTCHA verifier for sign-up:", e);
-            }
-            window.recaptchaVerifierSignup = undefined;
-        }
-        if (recaptchaContainer) {
-            recaptchaContainer.innerHTML = '';
-        }
-    };
-
-    if (view !== 'phone' || !auth) {
-      cleanup();
-      return;
-    }
-    
-    if (!recaptchaContainer) {
-      console.warn("reCAPTCHA container for sign-up not found.");
-      return;
-    }
-
-    cleanup();
-
-    try {
-        const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
-            'size': 'invisible',
-            'callback': () => console.log("reCAPTCHA verified for sign-up"),
-            'expired-callback': () => {
-                toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-                cleanup();
-            }
-        });
-        window.recaptchaVerifierSignup = verifier;
-        verifier.render().catch((e) => {
-            console.error("reCAPTCHA render error for sign-up:", e);
-            toast({ title: 'reCAPTCHA Error', description: "Failed to render reCAPTCHA. Please refresh.", variant: "destructive"});
-        });
-    } catch (e: any) {
-        console.error("reCAPTCHA creation error for sign-up:", e);
-        toast({ title: 'reCAPTCHA Error', description: "Failed to initialize reCAPTCHA. Please refresh.", variant: "destructive"});
-    }
-  
-    return cleanup;
-  }, [view, auth, toast]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -187,10 +135,15 @@ export default function SignUpForm() {
     }
     setLoading(true);
     try {
-      const verifier = window.recaptchaVerifierSignup;
-      if (!verifier) {
-        throw new Error("reCAPTCHA not initialized. Please wait a moment and try again.");
-      }
+      // Create a new RecaptchaVerifier instance on demand.
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
+        'size': 'invisible',
+        'callback': () => console.log("reCAPTCHA verified for sign-up"),
+        'expired-callback': () => {
+          toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+        }
+      });
+
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
       window.confirmationResult = confirmationResult;
       setShowOtpInput(true);
@@ -383,7 +336,7 @@ export default function SignUpForm() {
             </div>
         )}
 
-        {view === 'phone' && <div id="recaptcha-container-signup" className="my-4"></div>}
+        <div id="recaptcha-container-signup" className="my-4"></div>
 
         <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
