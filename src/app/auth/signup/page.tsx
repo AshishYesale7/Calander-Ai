@@ -1,10 +1,12 @@
 
 import SignUpForm from '@/components/auth/SignUpForm';
 import Image from 'next/image';
+import { LandingHeader } from '@/components/layout/LandingHeader';
 
 export default function SignUpPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+      <LandingHeader />
       <Image
         src="https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg" 
         alt="Background"
