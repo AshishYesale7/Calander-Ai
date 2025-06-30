@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin } from 'lucide-react';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { LandingHeader } from '@/components/layout/LandingHeader';
 import StarryBackground from '@/components/landing/StarryBackground';
 import { Badge } from '@/components/ui/badge';
+import CursorArrow from '@/components/landing/CursorArrow';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <Card className="frosted-glass text-center p-8 transition-all duration-300 hover:border-accent hover:-translate-y-2 bg-card/60">
@@ -57,9 +59,12 @@ const PricingCard = ({ title, price, period, features, popular = false }: { titl
 
 
 export default function LandingPage() {
+    const ctaButtonRef = useRef<HTMLAnchorElement>(null);
+
     return (
         <div className="bg-background text-foreground">
             <LandingHeader />
+            <CursorArrow targetRef={ctaButtonRef} />
 
             <main>
                 {/* Hero Section */}
@@ -70,15 +75,10 @@ export default function LandingPage() {
                     <div className="absolute inset-0 bg-black/30"></div>
 
                     <div className="gravity-horizon">
-                        <div className="gravity-horizon-glow-animation">
-                            <div className="gravity-horizon-glow-1"></div>
-                            <div className="gravity-horizon-glow-2"></div>
-                            <div className="gravity-horizon-glow-3"></div>
-                            <div className="gravity-horizon-glow-4"></div>
-                        </div>
+                         <div className="glow"></div>
                     </div>
-                    <div className="gravity-earth">
-                         <div className="gravity-earth-shine"></div>
+                    <div className="earth">
+                         <div className="earth-shine"></div>
                     </div>
 
                     <div className="relative z-10 max-w-4xl">
@@ -87,7 +87,7 @@ export default function LandingPage() {
                             FutureSight is your AI-powered copilot for career and academic excellence. Turn aspirations into actionable plans, optimize your daily schedule, and unlock your full potential.
                         </p>
                         <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-7 px-10 rounded-full">
-                            <Link href="/auth/signup">Start Your Journey Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
+                            <Link href="/auth/signup" ref={ctaButtonRef}>Start Your Journey Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
                         </Button>
                     </div>
                 </section>
