@@ -273,13 +273,33 @@ body {
   animation: animStar-large 50s linear infinite;
 }
 
+/* Keyframes for Hero animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.45;
+  }
+}
+
+@keyframes slow-wobble {
+  0%, 100% {
+    transform: rotate(-0.2deg);
+  }
+  50% {
+    transform: rotate(0.2deg);
+  }
+}
+
 /* Styles for Gravity Hero effect */
 .hero-gravity::before,
 .hero-gravity::after {
   content: '';
   position: absolute;
   left: 50%;
-  transform: translateX(-50%);
   border-radius: 50%;
 }
 
@@ -288,8 +308,11 @@ body {
   width: 150vw;
   height: 150vw;
   bottom: -120vw;
-  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.3) 0%, hsla(204, 70%, 53%, 0) 70%);
+  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.4) 0%, hsla(204, 70%, 53%, 0) 65%);
   z-index: 1;
+  transform-origin: center;
+  animation: pulse-glow 12s infinite ease-in-out;
+  transform: translateX(-50%); /* Base position, animation will override scale/opacity */
 }
 
 /* The black planet silhouette */
@@ -299,4 +322,9 @@ body {
   bottom: -125vw;
   background: #000;
   z-index: 2;
+  transform-origin: center;
+  animation: slow-wobble 30s infinite ease-in-out;
+  transform: translateX(-50%); /* Base position, animation will override rotate */
 }
+
+    
