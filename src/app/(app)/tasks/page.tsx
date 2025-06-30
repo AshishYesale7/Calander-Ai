@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MoreVertical, Plus, Trash2, Mail, ListTodo } from 'lucide-react';
+import { MoreVertical, Plus, Trash2, Mail } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,7 +37,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -48,8 +47,6 @@ interface TasksByList {
 }
 
 const TaskItem = ({ task, onStatusChange, onDelete }: { task: RawGoogleTask; onStatusChange: () => void; onDelete: () => void; }) => {
-  const noteText = task.notes || task.title;
-
   return (
     <div className="flex items-start gap-3 py-2 group">
       <Checkbox
@@ -333,7 +330,7 @@ export default function TasksPage() {
                                   <Trash2 className="mr-2 h-4 w-4"/>Delete list
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="frosted-glass">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete "{list.title}"?</AlertDialogTitle>
                                   <AlertDialogDescription>
@@ -405,7 +402,7 @@ export default function TasksPage() {
       </div>
 
       <AlertDialog open={isNewListDialogOpen} onOpenChange={setIsNewListDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="frosted-glass">
           <AlertDialogHeader>
             <AlertDialogTitle>Create New Task List</AlertDialogTitle>
             <AlertDialogDescription>
@@ -431,4 +428,3 @@ export default function TasksPage() {
     </>
   );
 }
-

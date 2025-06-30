@@ -6,60 +6,6 @@ import { getAuthenticatedClient } from './googleAuthService';
 import type { RawGoogleTask, GoogleTaskList } from '@/types';
 import { formatISO } from 'date-fns';
 
-export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
-  const client = await getAuthenticatedClient(userId);
-  if (!client) {
-    console.log(`Not authenticated with Google for user ${userId}. Cannot fetch tasks.`);
-    return [];
-  }
-
-  const tasksService = google.tasks({ version: 'v1', auth: client });
-
-  try {
-    const response = await tasksService.tasks.list({
-      tasklist: '@default',
-      showCompleted: false, 
-      maxResults: 100, 
-    });
-
-    const tasks = response.data.items;
-    if (!tasks || tasks.length === 0) {
-      return [];
-    }
-
-    return tasks.map((task): RawGoogleTask | null => {
-        if (!task.id || !task.title || !task.status || !task.updated) {
-            return null;
-        }
-        
-        if (!task.due) {
-            return null;
-        }
-
-        return {
-          id: task.id,
-          title: task.title,
-          notes: task.notes || undefined,
-          due: task.due ? formatISO(new Date(task.due)) : undefined,
-          status: task.status as 'needsAction' | 'completed',
-          link: task.selfLink || undefined,
-          updated: task.updated,
-        };
-      }).filter((task): task is RawGoogleTask => task !== null);
-
-  } catch (error: any) {
-    if (error.code === 403 && error.errors?.[0]?.reason === 'accessNotConfigured') {
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '[your-project-id]';
-        const errorMessage = `Google Tasks API has not been used in project ${projectId} or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/tasks.googleapis.com/overview?project=${projectId} and then retry.`;
-        console.error(errorMessage, error);
-        throw new Error(errorMessage);
-    }
-    
-    console.error(`Error fetching Google Tasks for user ${userId}:`, error);
-    throw new Error('Failed to fetch Google Tasks. Please try re-connecting your Google account in Settings.');
-  }
-}
-
 export async function getGoogleTaskLists(userId: string): Promise<GoogleTaskList[]> {
   const client = await getAuthenticatedClient(userId);
   if (!client) {
@@ -198,4 +144,58 @@ export async function deleteGoogleTaskList(userId: string, tasklistId: string) {
     await tasksService.tasklists.delete({
         tasklist: tasklistId,
     });
+}
+
+export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
+  const client = await getAuthenticatedClient(userId);
+  if (!client) {
+    console.log(`Not authenticated with Google for user ${userId}. Cannot fetch tasks.`);
+    return [];
+  }
+
+  const tasksService = google.tasks({ version: 'v1', auth: client });
+
+  try {
+    const response = await tasksService.tasks.list({
+      tasklist: '@default',
+      showCompleted: false, 
+      maxResults: 100, 
+    });
+
+    const tasks = response.data.items;
+    if (!tasks || tasks.length === 0) {
+      return [];
+    }
+
+    return tasks.map((task): RawGoogleTask | null => {
+        if (!task.id || !task.title || !task.status || !task.updated) {
+            return null;
+        }
+        
+        if (!task.due) {
+            return null;
+        }
+
+        return {
+          id: task.id,
+          title: task.title,
+          notes: task.notes || undefined,
+          due: task.due ? formatISO(new Date(task.due)) : undefined,
+          status: task.status as 'needsAction' | 'completed',
+          link: task.selfLink || undefined,
+          updated: task.updated,
+        };
+      }).filter((task): task is RawGoogleTask => task !== null);
+
+  } catch (error: any) {
+    if (error.code === 403 && error.errors?.[0]?.reason === 'accessNotConfigured') {
+        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '[your-project-id]';
+        const errorMessage = `Google Tasks API has not been used in project ${projectId} or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/tasks.googleapis.com/overview?project=${projectId} and then retry.`;
+        console.error(errorMessage, error);
+        throw new Error(errorMessage);
+    }
+    
+    console.error(`Error fetching Google Tasks for user ${userId}:`, error);
+    throw new Error('Failed to fetch Google Tasks. Please try re-connecting your Google account in Settings.');
+  }
 }
