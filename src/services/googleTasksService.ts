@@ -101,29 +101,16 @@ export async function updateGoogleTask(
 
   const tasksService = google.tasks({ version: 'v1', auth: client });
   
-  // We need to fetch the existing task first to not overwrite other fields
-  const existingTask = await tasksService.tasks.get({tasklist, task: taskId});
+  // The `completed` field is read-only. The API sets/clears it automatically based on the `status`.
+  // We only need to send the `status` field for status changes.
+  // The googleapis library uses PATCH by default for update, so only changed fields are needed.
+  const requestBody: { status?: 'needsAction' | 'completed'; title?: string } = {};
 
-  const requestBody = existingTask.data;
-  
   if (taskData.status) {
     requestBody.status = taskData.status;
-    if (taskData.status === 'completed') {
-      // Set completion timestamp when marking as complete
-      requestBody.completed = new Date().toISOString();
-    } else {
-      // Clear completion timestamp when marking as incomplete
-      requestBody.completed = null;
-    }
   }
-
   if (taskData.title) {
     requestBody.title = taskData.title;
-  }
-  
-  // The 'updated' field is read-only and should not be sent in an update request.
-  if ('updated' in requestBody) {
-    delete (requestBody as Partial<typeof requestBody>).updated;
   }
 
   const response = await tasksService.tasks.update({
