@@ -6,11 +6,7 @@ import StarryBackground from '@/components/landing/StarryBackground';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Bot, Calendar, Target, Brain } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const LandingHeader = () => (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
@@ -62,23 +58,6 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 );
 
 export default function LandingPage() {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!loading && user) {
-            router.replace('/dashboard');
-        }
-    }, [user, loading, router]);
-
-    if (loading || user) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-gray-900">
-                <LoadingSpinner size="lg" />
-            </div>
-        );
-    }
-    
     return (
         <div className="bg-background text-foreground">
             <LandingHeader />
@@ -166,3 +145,4 @@ export default function LandingPage() {
             </footer>
         </div>
     );
+}
