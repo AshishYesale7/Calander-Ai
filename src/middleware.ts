@@ -2,7 +2,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_LANDING_PAGE = '/';
 const PROTECTED_ROOT = '/dashboard';
 const AUTH_PAGES = ['/auth/signin', '/auth/signup'];
 
@@ -13,12 +12,6 @@ export function middleware(request: NextRequest) {
   // The true security check happens client-side in the main app layout.
   // We check for a generic Firebase cookie that indicates some persistence state.
   const hasSessionHint = request.cookies.getAll().some(cookie => cookie.name.startsWith('firebase:authUser'));
-
-  // If a user who seems logged in visits the public landing page,
-  // redirect them to their dashboard to avoid confusion.
-  if (hasSessionHint && pathname === PUBLIC_LANDING_PAGE) {
-    return NextResponse.redirect(new URL(PROTECTED_ROOT, request.url));
-  }
   
   // If a user seems logged in and is on an auth page, send them to the dashboard.
   if (hasSessionHint && AUTH_PAGES.includes(pathname)) {
@@ -31,10 +24,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // This matcher runs the middleware only on the pages where a redirect might be needed for a better UX.
-  // It avoids running on all routes, including static assets and API calls.
+  // This matcher now only runs the middleware on the auth pages where it's needed.
   matcher: [
-    '/',
     '/auth/signin',
     '/auth/signup',
   ],
