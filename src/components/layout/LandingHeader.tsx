@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 export const LandingHeader = () => {
     const pathname = usePathname();
@@ -33,6 +35,32 @@ export const LandingHeader = () => {
                             <Link href="/auth/signup">Sign Up</Link>
                         </Button>
                     )}
+                    
+                    {/* Mobile Menu Trigger */}
+                    <div className="md:hidden">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+                                    <Menu className="h-5 w-5" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="right" className="bg-background/80 backdrop-blur-xl border-l-border/30 text-foreground w-[250px] p-6 flex flex-col">
+                                <nav className="flex flex-col gap-6 text-lg mt-8">
+                                    <Link href="/" className="hover:text-primary font-semibold">Home</Link>
+                                    <Link href="/#features" className="hover:text-primary">Features</Link>
+                                    <Link href="/#pricing" className="hover:text-primary">Pricing</Link>
+                                    <Link href="/#contact" className="hover:text-primary">Contact</Link>
+                                </nav>
+                                <div className="mt-auto">
+                                    {!isSigningIn && (
+                                        <Button asChild variant="outline" className="w-full">
+                                            <Link href="/auth/signin">Login</Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                 </div>
             </div>
         </header>
