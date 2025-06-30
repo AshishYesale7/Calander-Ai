@@ -1,4 +1,3 @@
-
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
@@ -26,6 +25,8 @@ import { Label } from '@/components/ui/label';
 
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import { useAuth } from '@/context/AuthContext';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -54,6 +55,14 @@ export default function SignUpForm() {
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
+
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+        router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -222,6 +231,14 @@ export default function SignUpForm() {
         setLoading(false);
     }
   };
+
+  if (authLoading || user) {
+      return (
+          <Card className="frosted-glass p-6 md:p-8 flex items-center justify-center h-[560px]">
+               <LoadingSpinner size="lg" />
+          </Card>
+      );
+  }
 
 
   return (

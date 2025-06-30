@@ -1,4 +1,3 @@
-
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, linkWithPopup, fetchSignInMethodsForEmail, linkWithPhoneNumber } from 'firebase/auth';
@@ -27,6 +26,8 @@ import { Label } from '@/components/ui/label';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { getGoogleTokensFromFirestore } from '@/services/googleAuthService';
+import { useAuth } from '@/context/AuthContext';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 
 const formSchema = z.object({
@@ -53,6 +54,13 @@ export default function SignInForm() {
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
 
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+        router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -259,6 +267,14 @@ export default function SignInForm() {
         setLoading(false);
     }
   };
+
+  if (authLoading || user) {
+    return (
+        <Card className="frosted-glass p-6 md:p-8 flex items-center justify-center h-[560px]">
+             <LoadingSpinner size="lg" />
+        </Card>
+    );
+  }
 
   return (
     <Card className="frosted-glass p-6 md:p-8">
