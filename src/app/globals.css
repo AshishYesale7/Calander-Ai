@@ -273,59 +273,92 @@ body {
   animation: animStar-large 50s linear infinite;
 }
 
-/* Keyframes for Hero animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    filter: brightness(1.0);
-  }
-  50% {
-    opacity: 0.6;
-    filter: brightness(1.2);
-  }
+/* New "Gravity" hero styles based on Codepen reference */
+.gravity-background {
+  background: radial-gradient(ellipse at bottom, #0C1116 0%, #090a0f 100%);
 }
 
-@keyframes slow-wobble {
-  0%, 100% {
-    transform: translateX(-50%) rotate(-0.05deg);
-  }
-  50% {
-    transform: translateX(-50%) rotate(0.05deg);
-  }
-}
-
-/* Styles for Gravity Hero effect */
-.hero-gravity::before,
-.hero-gravity::after {
-  content: '';
+.gravity-horizon {
   position: absolute;
   left: 50%;
-  border-radius: 50%;
-}
-
-/* The blue atmospheric glow */
-.hero-gravity::before {
-  width: 250vw;
-  height: 250vw;
-  bottom: -230vw;
-  background: radial-gradient(ellipse at center, hsla(210, 80%, 65%, 0.4) 0%, hsla(210, 80%, 65%, 0) 70%);
-  z-index: 1;
+  bottom: -20%;
   transform: translateX(-50%);
-  animation: pulse-glow 18s infinite ease-in-out;
+  width: 160%;
+  height: 70%;
+  z-index: 1;
+  pointer-events: none;
 }
 
-/* The black planet silhouette */
-.hero-gravity::after {
-  width: 250vw;
-  height: 250vw;
-  bottom: -232vw;
-  background: #000;
+.gravity-horizon > div {
+  position: absolute;
+  border-radius: 100%;
+}
+
+.gravity-horizon-glow-1 {
+  width: 100%;
+  height: 100%;
+  background: #038bff;
+  -webkit-filter: blur(30px);
+  filter: blur(30px);
+  opacity: 0.8;
+}
+
+.gravity-horizon-glow-2 {
+  width: 81.25%;
+  height: 70%;
+  background: #51AFFF;
+  -webkit-filter: blur(30px);
+  filter: blur(30px);
+  opacity: 0.6;
+  left: 9.375%;
+}
+
+.gravity-horizon-glow-3 {
+  width: 32%;
+  height: 20%;
+  background: #B0DAFF;
+  -webkit-filter: blur(30px);
+  filter: blur(30px);
+  opacity: 0.5;
+  left: 34%;
+}
+
+/* Deep space outer glow */
+.gravity-horizon-glow-4 {
+  width: 100%;
+  height: 100%;
+  background: #215496;
+  -webkit-filter: blur(200px);
+  filter: blur(200px);
+  opacity: 0.7;
+  top: -10%;
+}
+
+.gravity-earth {
+  position: absolute;
+  left: 50%;
+  bottom: -50%;
+  transform: translateX(-50%);
+  width: 200%;
+  height: 100%;
+  background: black;
+  border-radius: 100%;
   z-index: 2;
-  transform-origin: center center;
-  animation: slow-wobble 50s infinite ease-in-out;
+  pointer-events: none;
+}
+
+/* Reflective shine effect */
+.gravity-earth-shine {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 100%;
+  box-shadow: inset 0px 20px 80px 30px rgba(60, 105, 138, 0.85);
 }
     
 
     
 
   
+

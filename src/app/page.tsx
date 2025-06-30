@@ -77,10 +77,22 @@ export default function LandingPage() {
 
             <main>
                 {/* Hero Section */}
-                <section className="hero-gravity relative h-screen flex items-center justify-center text-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black">
+                <section className="gravity-background relative h-screen flex items-center justify-center text-center p-4 overflow-hidden">
                     <StarryBackground layer="small" />
                     <StarryBackground layer="medium" />
                     <StarryBackground layer="large" />
+
+                    {/* Planet and Horizon Effects */}
+                    <div className="gravity-horizon">
+                        <div className="gravity-horizon-glow-4"></div>
+                        <div className="gravity-horizon-glow-1"></div>
+                        <div className="gravity-horizon-glow-2"></div>
+                        <div className="gravity-horizon-glow-3"></div>
+                    </div>
+                    <div className="gravity-earth">
+                        <div className="gravity-earth-shine"></div>
+                    </div>
+
                     <div className="relative z-10 max-w-4xl">
                         <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Chart Your Future. Master Your Present.</h1>
                         <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
