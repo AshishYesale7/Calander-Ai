@@ -64,7 +64,9 @@ export default function LandingPage() {
         }
     }, [user, loading, router]);
 
-    // Avoid flashing the landing page for authenticated users.
+    // If the user is logged in, we render a spinner while the redirect happens.
+    // This prevents flashing the landing page.
+    // For anonymous users, user is null, so this won't render.
     if (loading || user) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-gray-900">
