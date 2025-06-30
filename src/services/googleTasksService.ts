@@ -100,15 +100,26 @@ export async function updateGoogleTask(
   if (!client) throw new Error("User is not authenticated with Google.");
 
   const tasksService = google.tasks({ version: 'v1', auth: client });
-  
-  // The `completed` field is read-only. The API sets/clears it automatically based on the `status`.
-  // We only need to send the `status` field for status changes.
-  // The googleapis library uses PATCH by default for update, so only changed fields are needed.
-  const requestBody: { status?: 'needsAction' | 'completed'; title?: string } = {};
+
+  // The API requires a `completed` timestamp when status is 'completed'.
+  const requestBody: { 
+    status?: 'needsAction' | 'completed'; 
+    title?: string;
+    completed?: string | null;
+  } = {};
 
   if (taskData.status) {
     requestBody.status = taskData.status;
+    if (taskData.status === 'completed') {
+      // Set the completion timestamp to now.
+      requestBody.completed = new Date().toISOString();
+    } else {
+      // The API requires the 'completed' field to be explicitly set to null
+      // when un-completing a task.
+      requestBody.completed = null;
+    }
   }
+  
   if (taskData.title) {
     requestBody.title = taskData.title;
   }

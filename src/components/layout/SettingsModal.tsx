@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -214,9 +215,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
 
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
     provider.addScope('https://www.googleapis.com/auth/calendar.events');
+    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+    provider.addScope('https://www.googleapis.com/auth/tasks');
 
     try {
         await linkWithPopup(user, provider);
