@@ -77,11 +77,11 @@ export default function LandingPage() {
 
             <main>
                 {/* Hero Section */}
-                <section className="relative h-screen flex items-center justify-center text-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black">
+                <section className="hero-gravity relative h-screen flex items-center justify-center text-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black">
                     <StarryBackground layer="small" />
                     <StarryBackground layer="medium" />
                     <StarryBackground layer="large" />
-                    <div className="z-20 relative max-w-4xl">
+                    <div className="relative z-10 max-w-4xl">
                         <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Chart Your Future. Master Your Present.</h1>
                         <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
                             FutureSight is your AI-powered copilot for career and academic excellence. Turn aspirations into actionable plans, optimize your daily schedule, and unlock your full potential.

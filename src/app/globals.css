@@ -272,3 +272,31 @@ body {
 .animate-stars-large {
   animation: animStar-large 50s linear infinite;
 }
+
+/* Styles for Gravity Hero effect */
+.hero-gravity::before,
+.hero-gravity::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+}
+
+/* The blue atmospheric glow */
+.hero-gravity::before {
+  width: 150vw;
+  height: 150vw;
+  bottom: -140vw;
+  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.3) 0%, hsla(204, 70%, 53%, 0) 50%);
+  z-index: 1;
+}
+
+/* The black planet silhouette */
+.hero-gravity::after {
+  width: 150vw;
+  height: 150vw;
+  bottom: -142vw;
+  background: #000;
+  z-index: 2;
+}
