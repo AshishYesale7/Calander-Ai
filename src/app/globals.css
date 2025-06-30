@@ -245,3 +245,30 @@ body {
   backdrop-filter: blur(12px);
   background-color: hsla(var(--popover), 0.8);
 }
+
+
+/* Keyframes and classes for Starry Background */
+@keyframes animStar-small {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2000px); }
+}
+
+@keyframes animStar-medium {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1000px); }
+}
+
+@keyframes animStar-large {
+  from { transform: translateY(0); }
+  to { transform: translateY(-500px); }
+}
+
+.animate-stars-small {
+  animation: animStar-small 150s linear infinite;
+}
+.animate-stars-medium {
+  animation: animStar-medium 100s linear infinite;
+}
+.animate-stars-large {
+  animation: animStar-large 50s linear infinite;
+}

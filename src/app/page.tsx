@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import StarryBackground from '@/components/landing/StarryBackground';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Bot, Calendar, Target, Brain } from 'lucide-react';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const LandingHeader = () => (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-background/30 backdrop-blur-md">
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-transparent backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
             <h1 className="font-headline text-2xl font-semibold text-white">FutureSight</h1>
@@ -58,15 +58,11 @@ export default function LandingPage() {
     const router = useRouter();
 
     useEffect(() => {
-        // This client-side redirect is a fallback for the middleware.
         if (!loading && user) {
             router.replace('/dashboard');
         }
     }, [user, loading, router]);
 
-    // If the user is logged in, we render a spinner while the redirect happens.
-    // This prevents flashing the landing page.
-    // For anonymous users, user is null, so this won't render.
     if (loading || user) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-gray-900">
@@ -81,10 +77,10 @@ export default function LandingPage() {
 
             <main>
                 {/* Hero Section */}
-                <section className="relative h-screen flex items-center justify-center text-center p-4">
-                    <div className="absolute inset-0 bg-black/60 z-10"></div>
-                    <Image src="https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop"
-                           alt="Cosmic background" layout="fill" objectFit="cover" className="z-0" data-ai-hint="cosmic nebula"/>
+                <section className="relative h-screen flex items-center justify-center text-center p-4 overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black">
+                    <StarryBackground layer="small" />
+                    <StarryBackground layer="medium" />
+                    <StarryBackground layer="large" />
                     <div className="z-20 relative max-w-4xl">
                         <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Chart Your Future. Master Your Present.</h1>
                         <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
@@ -131,8 +127,7 @@ export default function LandingPage() {
                 
                  {/* Final CTA */}
                 <section className="relative py-20 md:py-32 text-center p-4 bg-gray-900">
-                     <Image src="https://images.unsplash.com/photo-1554147090-e1221a04a062?q=80&w=2070&auto=format&fit=crop"
-                           alt="Abstract colorful background" layout="fill" objectFit="cover" className="z-0 opacity-30" data-ai-hint="abstract colorful"/>
+                     <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{backgroundImage: "url('https://images.unsplash.com/photo-1554147090-e1221a04a062?q=80&w=2070&auto=format&fit=crop')"}} data-ai-hint="abstract colorful"></div>
                     <div className="relative z-10">
                         <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Ready to Engineer Your Future?</h2>
                         <p className="mt-4 text-lg text-gray-300 max-w-xl mx-auto">Join thousands of students and professionals who are taking control of their careers with AI.</p>
