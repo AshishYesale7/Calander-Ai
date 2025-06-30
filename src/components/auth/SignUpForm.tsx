@@ -1,3 +1,4 @@
+
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
@@ -382,7 +383,7 @@ export default function SignUpForm() {
             </div>
         )}
 
-        <div id="recaptcha-container-signup" className="my-4"></div>
+        {view === 'phone' && <div id="recaptcha-container-signup" className="my-4"></div>}
 
         <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
