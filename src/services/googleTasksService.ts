@@ -105,8 +105,26 @@ export async function updateGoogleTask(
   const existingTask = await tasksService.tasks.get({tasklist, task: taskId});
 
   const requestBody = existingTask.data;
-  if (taskData.status) requestBody.status = taskData.status;
-  if (taskData.title) requestBody.title = taskData.title;
+  
+  if (taskData.status) {
+    requestBody.status = taskData.status;
+    if (taskData.status === 'completed') {
+      // Set completion timestamp when marking as complete
+      requestBody.completed = new Date().toISOString();
+    } else {
+      // Clear completion timestamp when marking as incomplete
+      requestBody.completed = null;
+    }
+  }
+
+  if (taskData.title) {
+    requestBody.title = taskData.title;
+  }
+  
+  // The 'updated' field is read-only and should not be sent in an update request.
+  if ('updated' in requestBody) {
+    delete (requestBody as Partial<typeof requestBody>).updated;
+  }
 
   const response = await tasksService.tasks.update({
     tasklist,
