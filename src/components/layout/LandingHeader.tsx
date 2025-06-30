@@ -1,9 +1,10 @@
+
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 
 export const LandingHeader = () => {
@@ -45,6 +46,9 @@ export const LandingHeader = () => {
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="bg-background/80 backdrop-blur-xl border-l-border/30 text-foreground w-[250px] p-6 flex flex-col">
+                                <SheetHeader className="sr-only">
+                                  <SheetTitle>Mobile Navigation Menu</SheetTitle>
+                                </SheetHeader>
                                 <nav className="flex flex-col gap-6 text-lg mt-8">
                                     <Link href="/" className="hover:text-primary font-semibold">Home</Link>
                                     <Link href="/#features" className="hover:text-primary">Features</Link>
