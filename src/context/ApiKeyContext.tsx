@@ -5,6 +5,7 @@ import { createContext, useState, useEffect, useCallback, useContext } from 'rea
 import { useAuth } from './AuthContext'; // Import useAuth
 import { saveUserGeminiApiKey, getUserGeminiApiKey } from '@/services/userService'; // Import new service
 import { useToast } from '@/hooks/use-toast';
+import { usePathname } from 'next/navigation';
 
 const API_KEY_STORAGE_KEY = 'futuresight-gemini-api-key';
 
@@ -33,6 +34,7 @@ export const ApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [isMounted, setIsMounted] = useState(false);
   const { user, loading: authLoading } = useAuth(); // Get user from AuthContext
   const { toast } = useToast();
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsMounted(true);
@@ -40,7 +42,10 @@ export const ApiKeyProvider = ({ children }: { children: ReactNode }) => {
   
   // This new effect syncs Firestore with local state on user login
   useEffect(() => {
-    if (isMounted && user && !authLoading) {
+    const isPublicPage = pathname === '/' || pathname.startsWith('/auth');
+
+    // Only run the sync logic on authenticated app pages, not public ones
+    if (isMounted && user && !authLoading && !isPublicPage) {
         const syncKeyFromFirestore = async () => {
             try {
                 const firestoreKey = await getUserGeminiApiKey(user.uid);
@@ -67,7 +72,7 @@ export const ApiKeyProvider = ({ children }: { children: ReactNode }) => {
         };
         syncKeyFromFirestore();
     }
-  }, [isMounted, user, authLoading, toast]);
+  }, [isMounted, user, authLoading, toast, pathname]);
 
 
   const setApiKey = useCallback((key: string | null) => {
