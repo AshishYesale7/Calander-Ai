@@ -276,23 +276,21 @@ body {
 /* Keyframes for Hero animations */
 @keyframes pulse-glow {
   0%, 100% {
-    transform: translateX(-50%) scale(1);
-    opacity: 0.35;
+    opacity: 0.4;
     filter: brightness(1.0);
   }
   50% {
-    transform: translateX(-50%) scale(1.05);
-    opacity: 0.45;
+    opacity: 0.6;
     filter: brightness(1.2);
   }
 }
 
 @keyframes slow-wobble {
   0%, 100% {
-    transform: translateX(-50%) rotate(-0.2deg);
+    transform: translateX(-50%) rotate(-0.05deg);
   }
   50% {
-    transform: translateX(-50%) rotate(0.2deg);
+    transform: translateX(-50%) rotate(0.05deg);
   }
 }
 
@@ -307,29 +305,24 @@ body {
 
 /* The blue atmospheric glow */
 .hero-gravity::before {
-  width: 150vw;
-  height: 150vw;
-  bottom: -120vw;
-  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.4) 0%, hsla(204, 70%, 53%, 0) 65%);
+  width: 250vw;
+  height: 250vw;
+  bottom: -230vw;
+  background: radial-gradient(ellipse at center, hsla(210, 80%, 65%, 0.4) 0%, hsla(210, 80%, 65%, 0) 70%);
   z-index: 1;
-  transform-origin: center;
-  animation: pulse-glow 12s infinite ease-in-out;
+  transform: translateX(-50%);
+  animation: pulse-glow 18s infinite ease-in-out;
 }
 
 /* The black planet silhouette */
 .hero-gravity::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  border-radius: 50%;
-  width: 150vw;
-  height: 150vw;
-  bottom: -125vw;
+  width: 250vw;
+  height: 250vw;
+  bottom: -232vw;
   background: #000;
   z-index: 2;
-  transform-origin: center;
-  animation: slow-wobble 30s infinite ease-in-out;
-  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  transform-origin: center center;
+  animation: slow-wobble 50s infinite ease-in-out;
 }
     
 
