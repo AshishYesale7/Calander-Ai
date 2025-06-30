@@ -1,3 +1,4 @@
+
 'use server';
 
 import { google } from 'googleapis';
@@ -15,11 +16,10 @@ export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
   const tasksService = google.tasks({ version: 'v1', auth: client });
 
   try {
-    // We fetch from the default task list. In a future update, we could allow users to select lists.
     const response = await tasksService.tasks.list({
       tasklist: '@default',
-      showCompleted: false, // We only care about pending tasks
-      maxResults: 100, // Max results per page
+      showCompleted: false, 
+      maxResults: 100, 
     });
 
     const tasks = response.data.items;
@@ -29,10 +29,9 @@ export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
 
     return tasks.map((task): RawGoogleTask | null => {
         if (!task.id || !task.title || !task.status || !task.updated) {
-            return null; // Skip tasks without essential data
+            return null;
         }
         
-        // Tasks with a 'due' date are what we are interested in.
         if (!task.due) {
             return null;
         }
@@ -41,7 +40,6 @@ export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
           id: task.id,
           title: task.title,
           notes: task.notes || undefined,
-          // The 'due' time from Tasks API is a RFC3339 timestamp. We can use it directly.
           due: task.due ? formatISO(new Date(task.due)) : undefined,
           status: task.status as 'needsAction' | 'completed',
           link: task.selfLink || undefined,
@@ -50,7 +48,6 @@ export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
       }).filter((task): task is RawGoogleTask => task !== null);
 
   } catch (error: any) {
-    // Specific error handling for disabled API
     if (error.code === 403 && error.errors?.[0]?.reason === 'accessNotConfigured') {
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '[your-project-id]';
         const errorMessage = `Google Tasks API has not been used in project ${projectId} or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/tasks.googleapis.com/overview?project=${projectId} and then retry.`;
@@ -59,7 +56,6 @@ export async function getGoogleTasks(userId: string): Promise<RawGoogleTask[]> {
     }
     
     console.error(`Error fetching Google Tasks for user ${userId}:`, error);
-    // Generic error for other issues
     throw new Error('Failed to fetch Google Tasks. Please try re-connecting your Google account in Settings.');
   }
 }
@@ -134,4 +130,72 @@ export async function getAllTasksFromList(userId: string, taskListId: string): P
     console.error(`Error fetching tasks for list ${taskListId}:`, error);
     throw new Error(`Failed to fetch tasks for list ${taskListId}.`);
   }
+}
+
+export async function createGoogleTask(userId: string, tasklist: string, task: { title: string }) {
+  const client = await getAuthenticatedClient(userId);
+  if (!client) throw new Error("User is not authenticated with Google.");
+
+  const tasksService = google.tasks({ version: 'v1', auth: client });
+  const response = await tasksService.tasks.insert({
+    tasklist,
+    requestBody: { title: task.title },
+  });
+  return response.data;
+}
+
+export async function updateGoogleTask(
+  userId: string,
+  tasklist: string,
+  taskId: string,
+  taskData: { status?: 'needsAction' | 'completed'; title?: string }
+) {
+  const client = await getAuthenticatedClient(userId);
+  if (!client) throw new Error("User is not authenticated with Google.");
+
+  const tasksService = google.tasks({ version: 'v1', auth: client });
+  
+  // We need to fetch the existing task first to not overwrite other fields
+  const existingTask = await tasksService.tasks.get({tasklist, task: taskId});
+
+  const requestBody = existingTask.data;
+  if (taskData.status) requestBody.status = taskData.status;
+  if (taskData.title) requestBody.title = taskData.title;
+
+  const response = await tasksService.tasks.update({
+    tasklist,
+    task: taskId,
+    requestBody,
+  });
+  return response.data;
+}
+
+export async function deleteGoogleTask(userId: string, tasklist: string, taskId: string) {
+  const client = await getAuthenticatedClient(userId);
+  if (!client) throw new Error("User is not authenticated with Google.");
+
+  const tasksService = google.tasks({ version: 'v1', auth: client });
+  await tasksService.tasks.delete({
+    tasklist,
+    task: taskId,
+  });
+}
+
+export async function createGoogleTaskList(userId: string, title: string) {
+    const client = await getAuthenticatedClient(userId);
+    if (!client) throw new Error("User is not authenticated with Google.");
+    const tasksService = google.tasks({ version: 'v1', auth: client });
+    const response = await tasksService.tasklists.insert({
+        requestBody: { title },
+    });
+    return response.data as GoogleTaskList;
+}
+
+export async function deleteGoogleTaskList(userId: string, tasklistId: string) {
+    const client = await getAuthenticatedClient(userId);
+    if (!client) throw new Error("User is not authenticated with Google.");
+    const tasksService = google.tasks({ version: 'v1', auth: client });
+    await tasksService.tasklists.delete({
+        tasklist: tasklistId,
+    });
 }

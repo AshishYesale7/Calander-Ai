@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface RoutineItem {
@@ -99,8 +100,6 @@ export interface RawCalendarEvent {
   startDateTime: string; // ISO 8601 format, should include time
   endDateTime: string; // ISO 8601 format, should include time
   htmlLink?: string;
-  // Google Calendar API uses a structure for dates that can indicate all-day
-  // For simplicity, we'll let the AI determine if it's an all-day event
 }
 
 export interface RawGoogleTask {
