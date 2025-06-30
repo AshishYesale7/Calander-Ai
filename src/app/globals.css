@@ -287,8 +287,8 @@ body {
 .hero-gravity::before {
   width: 150vw;
   height: 150vw;
-  bottom: -140vw;
-  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.3) 0%, hsla(204, 70%, 53%, 0) 50%);
+  bottom: -120vw;
+  background: radial-gradient(ellipse at center, hsla(204, 70%, 53%, 0.3) 0%, hsla(204, 70%, 53%, 0) 70%);
   z-index: 1;
 }
 
@@ -296,7 +296,7 @@ body {
 .hero-gravity::after {
   width: 150vw;
   height: 150vw;
-  bottom: -142vw;
+  bottom: -125vw;
   background: #000;
   z-index: 2;
 }
