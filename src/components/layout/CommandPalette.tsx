@@ -50,6 +50,7 @@ export function CommandPalette({ isOpen, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogTitle className="sr-only">Command Palette</DialogTitle>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
