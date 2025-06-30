@@ -8,12 +8,14 @@ import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
+import { CommandPalette } from '@/components/layout/CommandPalette';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -36,6 +38,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [user, loading, isSubscribed, pathname]);
 
+  // Keyboard shortcut for command palette
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((open) => !open);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
   if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
     return (
       <div className="flex h-screen w-full items-center justify-center" style={{ backgroundColor: '#15161f' }}>
@@ -56,6 +70,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
+      <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} />
     </>
   );
 }
