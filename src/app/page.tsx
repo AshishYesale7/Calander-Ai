@@ -13,18 +13,26 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const LandingHeader = () => (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-transparent backdrop-blur-sm">
-        <Link href="/" className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <h1 className="font-headline text-2xl font-semibold text-white">FutureSight</h1>
-        </Link>
-        <div className="space-x-2">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
-                <Link href="/auth/signin">Login</Link>
-            </Button>
-            <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link href="/auth/signup">Sign Up Free</Link>
-            </Button>
+    <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+        <div className="landing-header-glassy">
+            <Link href="/" className="flex items-center gap-2 px-3 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                <h1 className="font-headline text-lg font-semibold text-white/90 hidden sm:block">FutureSight</h1>
+            </Link>
+            <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+            <nav className="hidden md:flex items-center gap-1">
+                <a href="#" className="landing-header-link">Features</a>
+                <a href="#" className="landing-header-link">Pricing</a>
+                <a href="#" className="landing-header-link">Contact</a>
+            </nav>
+            <div className="flex items-center gap-1">
+                 <Button asChild variant="ghost" className="landing-header-link hidden md:inline-flex">
+                    <Link href="/auth/signin">Login</Link>
+                </Button>
+                <Button asChild className="bg-white/10 text-white hover:bg-white/20 rounded-full px-4 py-1.5 h-auto text-sm shrink-0">
+                    <Link href="/auth/signup">Sign Up</Link>
+                </Button>
+            </div>
         </div>
     </header>
 );
@@ -82,14 +90,13 @@ export default function LandingPage() {
                     <StarryBackground layer="medium" />
                     <StarryBackground layer="large" />
 
-                    {/* Planet and Horizon Effects */}
-                    <div className="gravity-horizon">
+                    <div id="horizon" className="gravity-horizon">
                         <div className="gravity-horizon-glow-4"></div>
                         <div className="gravity-horizon-glow-1"></div>
                         <div className="gravity-horizon-glow-2"></div>
                         <div className="gravity-horizon-glow-3"></div>
                     </div>
-                    <div className="gravity-earth">
+                    <div id="earth" className="gravity-earth">
                         <div className="gravity-earth-shine"></div>
                     </div>
 
@@ -159,4 +166,3 @@ export default function LandingPage() {
             </footer>
         </div>
     );
-}
