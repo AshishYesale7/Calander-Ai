@@ -9,6 +9,7 @@ import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
+import { Command } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -64,13 +65,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <SidebarNav />
         <div className="flex flex-1 flex-col md:pl-64"> {/* Adjusted pl for md screens and up */}
           <Header />
-          <main className="flex-1 p-6 overflow-auto"> {/* Removed bg-background */}
+          <main className="flex-1 p-6 pb-24 overflow-auto"> {/* Added bottom padding to avoid overlap */}
             {children}
           </main>
         </div>
       </div>
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} />
+      {/* Mobile Spotlight Trigger (Dynamic Island) */}
+      <button
+        onClick={() => setIsCommandPaletteOpen(true)}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-full border border-border/30 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md transition-all hover:scale-105 active:scale-95 md:hidden"
+        aria-label="Open command palette"
+      >
+        <Command className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Search...</span>
+        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </button>
     </>
   );
 }
