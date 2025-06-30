@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, type RefObject } from 'react';
@@ -17,9 +16,9 @@ export default function CursorArrow({ targetRef }: CursorArrowProps) {
       if (!isVisible) setIsVisible(true);
 
       const targetRect = targetRef.current.getBoundingClientRect();
-      // Target the space just to the left of the button
-      const targetX = targetRect.left - 10;
-      const targetY = targetRect.top + targetRect.height / 2;
+      // Target the bottom center of the button
+      const targetX = targetRect.left + targetRect.width / 2;
+      const targetY = targetRect.bottom + 10;
 
       const mouseX = e.clientX;
       const mouseY = e.clientY;
