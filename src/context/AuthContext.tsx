@@ -5,7 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Preloader } from '@/components/ui/Preloader';
 import { AlertCircle } from 'lucide-react';
 import { getUserSubscription } from '@/services/subscriptionService';
 import type { UserSubscription } from '@/types';
@@ -105,8 +105,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   if (!mounted) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <LoadingSpinner size="lg" />
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#15161f' }}>
+        <Preloader />
       </div>
     );
   }
@@ -117,8 +117,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <LoadingSpinner size="lg" />
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#15161f' }}>
+        <Preloader />
       </div>
     );
   }

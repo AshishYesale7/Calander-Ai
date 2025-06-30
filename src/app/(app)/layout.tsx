@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Preloader } from '@/components/ui/Preloader';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -38,8 +38,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
+      <div className="flex h-screen w-full items-center justify-center" style={{ backgroundColor: '#15161f' }}>
+        <Preloader />
       </div>
     );
   }

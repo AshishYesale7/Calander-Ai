@@ -377,3 +377,34 @@ body {
   background-color: hsla(0, 0%, 100%, 0.1);
 }
 
+/* Custom Preloader styles */
+.preloader-path-bg {
+    fill: none;
+    stroke-miterlimit: 10;
+    stroke-width: 1.75px;
+    opacity: 0.4;
+}
+
+.preloader-path-animated {
+    fill: none;
+    stroke-miterlimit: 10;
+    stroke-width: 2.5px;
+    opacity: 1;
+    animation: preloader-dash 1.75s ease-out infinite;
+    stroke-linecap: round;
+}
+
+@keyframes preloader-dash {
+  0% {
+    stroke-dasharray: 0, 158;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 79, 158;
+    stroke-dashoffset: -30px;
+  }
+  100% {
+    stroke-dasharray: 0, 158;
+    stroke-dashoffset: -158px;
+  }
+}
