@@ -2,28 +2,24 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useState, useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Bot, Trash2, Clock, ExternalLink as LinkIcon, RefreshCw } from 'lucide-react';
+import { CalendarDays, Bot, Trash2, RefreshCw } from 'lucide-react';
 import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-
-// Note: Dialog related imports (Dialog, DialogTrigger etc.) are removed as the modal is now handled by parent.
 
 interface EventCalendarViewProps {
   events: TimelineEvent[];
-  onDeleteEvent?: (eventId: string) => void; // Kept if details are shown in parent modal, but not used here
   month: Date;
   onMonthChange: (newMonth: Date) => void;
-  onDayClick: (day: Date, hasEvents: boolean) => void; // New prop
+  onDayClick: (day: Date, hasEvents: boolean) => void;
   onSync: () => void;
   isSyncing: boolean;
+  isTrashOpen: boolean;
+  onToggleTrash: () => void;
 }
 
 export default function EventCalendarView({
@@ -33,14 +29,13 @@ export default function EventCalendarView({
   onDayClick,
   onSync,
   isSyncing,
+  isTrashOpen,
+  onToggleTrash,
 }: EventCalendarViewProps) {
-  // Removed selectedDate and isModalOpen state, as day click is handled by parent
-  const { toast } = useToast();
-
   const processedEvents = useMemo(() => {
     return allEventsFromProps
       .map(e => ({ ...e, date: e.date instanceof Date && !isNaN(e.date.valueOf()) ? e.date : parseISO(e.date as unknown as string) }))
-      .filter(e => e.date instanceof Date && !isNaN(e.date.valueOf())) // Ensure valid dates
+      .filter(e => e.date instanceof Date && !isNaN(e.date.valueOf()))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [allEventsFromProps]);
 
@@ -51,7 +46,7 @@ export default function EventCalendarView({
   const handleDayClickInternal = (day: Date | undefined) => {
     if (day) {
       const eventsOnDay = processedEvents.filter(event => isSameDay(startOfDay(event.date), startOfDay(day)));
-      onDayClick(day, eventsOnDay.length > 0); // Call parent's handler
+      onDayClick(day, eventsOnDay.length > 0);
     }
   };
 
@@ -68,16 +63,25 @@ export default function EventCalendarView({
   };
 
   return (
-    <Card className="frosted-glass w-full shadow-xl">
+    <Card className={cn(
+        "frosted-glass w-full shadow-xl transition-all duration-300",
+        isTrashOpen ? "rounded-r-none border-r-0" : "rounded-r-lg border-r"
+    )}>
       <CardHeader className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
           <CardTitle className="font-headline text-2xl text-primary">
             Event Calendar
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
-              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              <span className="sr-only">Sync with Google Calendar</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
+                <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+                <span className="sr-only">Sync with Google Calendar</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Open Trash</span>
+            </Button>
+          </div>
         </div>
          <CardDescription>
           Click on a day to see its hourly timetable. Dots indicate days with events.
@@ -86,20 +90,17 @@ export default function EventCalendarView({
       <CardContent className="p-2 sm:p-4">
         <Calendar
           mode="single"
-          // selected prop is removed as selection highlighting is not primary for this component anymore
-          onSelect={(day) => handleDayClickInternal(day)} // onSelect now triggers the internal handler
+          onSelect={(day) => handleDayClickInternal(day)}
           month={month}
           onMonthChange={onMonthChange}
           className="rounded-md w-full p-0 [&_button]:text-base"
           classNames={{
-            // day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90", // Selection styling can be removed or kept if needed
             day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
           }}
           components={{ DayContent: DayWithDotRenderer }}
           showOutsideDays={true}
         />
       </CardContent>
-      {/* Modal/Dialog related to selectedDate and eventsForSelectedDay is removed. It's now handled by the parent. */}
     </Card>
   );
 }

@@ -15,18 +15,19 @@ import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import type { ProcessGoogleDataInput, ActionableInsight } from '@/ai/flows/process-google-data-flow';
 import { mockTimelineEvents } from '@/data/mock';
 import type { TimelineEvent } from '@/types';
-import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay } from 'date-fns';
+import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useAuth } from '@/context/AuthContext';
-import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent } from '@/services/timelineService';
+import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
 import { getGoogleTasks } from '@/services/googleTasksService';
 import ImportantEmailsCard from '@/components/timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCard';
 import { saveAs } from 'file-saver';
+import TrashPanel from '@/components/timeline/TrashPanel';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -60,6 +61,7 @@ const syncToLocalStorage = (events: TimelineEvent[]) => {
             ...rest,
             date: (event.date instanceof Date && !isNaN(event.date.valueOf())) ? event.date.toISOString() : new Date().toISOString(),
             endDate: (event.endDate instanceof Date && !isNaN(event.endDate.valueOf())) ? event.endDate.toISOString() : undefined,
+            deletedAt: event.deletedAt ? event.deletedAt.toISOString() : undefined, // Include deletedAt
             color: event.color, // Include color
             googleEventId: event.googleEventId, // Include googleEventId
             googleTaskId: event.googleTaskId,
@@ -82,7 +84,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
     try {
       const storedEventsString = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (storedEventsString) {
-        const parsedEvents: (Omit<TimelineEvent, 'icon' | 'date' | 'endDate'> & { date: string, endDate?: string, color?: string })[] = JSON.parse(storedEventsString);
+        const parsedEvents: (Omit<TimelineEvent, 'icon' | 'date' | 'endDate' | 'deletedAt'> & { date: string, endDate?: string, deletedAt?: string, color?: string })[] = JSON.parse(storedEventsString);
         return parsedEvents.map(event => {
           const parsedDate = parseDatePreservingTime(event.date);
           const parsedEndDate = parseDatePreservingTime(event.endDate);
@@ -94,6 +96,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
             ...event,
             date: parsedDate,
             endDate: parsedEndDate,
+            deletedAt: event.deletedAt ? parseDatePreservingTime(event.deletedAt) : undefined,
             isDeletable: event.isDeletable === undefined ? (event.id.startsWith('ai-') ? true : false) : event.isDeletable,
             color: event.color,
           } as TimelineEvent;
@@ -132,26 +135,46 @@ export default function DashboardPage() {
   const [isAddingNewEvent, setIsAddingNewEvent] = useState(false);
   
   const { apiKey } = useApiKey();
-  const [displayedTimelineEvents, setDisplayedTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
+  const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
+  const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // Background sync with Firestore
-    const syncWithFirestore = async () => {
+  
+  const fetchAllEvents = useCallback(async () => {
       if (user) {
         try {
           const firestoreEvents = await getTimelineEvents(user.uid);
-          setDisplayedTimelineEvents(firestoreEvents);
+          setAllTimelineEvents(firestoreEvents);
           syncToLocalStorage(firestoreEvents);
         } catch (error) {
           console.error("Failed to sync timeline from Firestore, using local data.", error);
           toast({ title: "Offline Mode", description: "Could not sync timeline. Displaying local data.", variant: "destructive"});
         }
       }
-    };
-    syncWithFirestore();
   }, [user, toast]);
+  
+  useEffect(() => {
+    fetchAllEvents();
+  }, [fetchAllEvents]);
+
+  const { activeEvents, recentlyDeletedEvents } = useMemo(() => {
+    const active: TimelineEvent[] = [];
+    const deleted: TimelineEvent[] = [];
+    const threeDaysAgo = subDays(new Date(), 3);
+
+    for (const event of allTimelineEvents) {
+      if (event.deletedAt) {
+        // Check if deletedAt is a valid date and within the last 3 days
+        if (event.deletedAt instanceof Date && !isNaN(event.deletedAt.valueOf()) && event.deletedAt > threeDaysAgo) {
+          deleted.push(event);
+        }
+      } else {
+        active.push(event);
+      }
+    }
+    // Sort deleted events by most recent first
+    return { activeEvents: active, recentlyDeletedEvents: deleted.sort((a,b) => b.deletedAt!.getTime() - a.deletedAt!.getTime()) };
+  }, [allTimelineEvents]);
 
   useEffect(() => {
     if(user) {
@@ -257,12 +280,12 @@ export default function DashboardPage() {
       }
         
       const transformedEvents = result.insights.map(transformInsightToEvent).filter(event => event !== null) as TimelineEvent[];
-      const currentEventIds = new Set(displayedTimelineEvents.map(e => e.id));
+      const currentEventIds = new Set(allTimelineEvents.map(e => e.id));
       const uniqueNewEventsToAdd = transformedEvents.filter(newEvent => !currentEventIds.has(newEvent.id));
       
       if (uniqueNewEventsToAdd.length > 0) {
-          const updatedEvents = [...displayedTimelineEvents, ...uniqueNewEventsToAdd];
-          setDisplayedTimelineEvents(updatedEvents);
+          const updatedEvents = [...allTimelineEvents, ...uniqueNewEventsToAdd];
+          setAllTimelineEvents(updatedEvents);
           syncToLocalStorage(updatedEvents);
 
           for (const event of uniqueNewEventsToAdd) {
@@ -288,23 +311,26 @@ export default function DashboardPage() {
       }
     }
     setIsLoading(false);
-  }, [user, apiKey, isGoogleConnected, toast, displayedTimelineEvents, transformInsightToEvent]);
+  }, [user, apiKey, isGoogleConnected, toast, allTimelineEvents, transformInsightToEvent]);
 
+  // This is now a soft delete handler
   const handleDeleteTimelineEvent = async (eventId: string) => {
-    const originalEvents = displayedTimelineEvents;
+    const originalEvents = allTimelineEvents;
     const eventToDelete = originalEvents.find(event => event.id === eventId);
-    if (!eventToDelete) return;
+    if (!eventToDelete || !user) return;
     
     // Optimistic UI Update
-    const newEvents = originalEvents.filter(event => event.id !== eventId);
-    setDisplayedTimelineEvents(newEvents);
+    const newEvents = originalEvents.map(event => 
+      event.id === eventId ? { ...event, deletedAt: new Date() } : event
+    );
+    setAllTimelineEvents(newEvents);
     syncToLocalStorage(newEvents);
     
-    toast({ title: "Event Deleted", description: `"${eventToDelete.title}" has been removed.` });
+    toast({ title: "Event Moved to Trash", description: `"${eventToDelete.title}" has been deleted.` });
 
     if (selectedDateForDayView) {
         const remainingEventsOnDay = newEvents.filter(event =>
-            event.date instanceof Date && !isNaN(event.date.valueOf()) &&
+            !event.deletedAt && event.date instanceof Date && !isNaN(event.date.valueOf()) &&
             isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
         );
         if (remainingEventsOnDay.length === 0) {
@@ -312,16 +338,31 @@ export default function DashboardPage() {
         }
     }
     
-    if (user) {
-      try {
-        await deleteTimelineEvent(user.uid, eventId);
-      } catch (error) {
-        console.error("Failed to delete event from Firestore", error);
-        // DO NOT REVERT UI. The change is saved locally.
-        toast({ title: "Sync Error", description: "Could not delete from server. The item is removed locally and will sync later.", variant: "destructive" });
-      }
+    try {
+      // This service function now performs a soft delete
+      await deleteTimelineEvent(user.uid, eventId);
+      // No need to refetch, optimistic update is sufficient for moving to trash
+    } catch (error) {
+      console.error("Failed to soft-delete event in Firestore", error);
+      setAllTimelineEvents(originalEvents);
+      syncToLocalStorage(originalEvents);
+      toast({ title: "Sync Error", description: "Could not delete event. Please try again.", variant: "destructive" });
     }
   };
+  
+  const handleRestoreEvent = async (eventId: string) => {
+    if (!user) return;
+    await restoreTimelineEvent(user.uid, eventId);
+    await fetchAllEvents(); // Refetch to update UI correctly
+  };
+
+  const handlePermanentDelete = async (eventId: string) => {
+    if (!user) return;
+    await permanentlyDeleteTimelineEvent(user.uid, eventId);
+    await fetchAllEvents(); // Refetch
+    toast({ title: 'Event Permanently Deleted' });
+  };
+
 
   const handleMonthNavigationForSharedViews = (direction: 'prev' | 'next') => {
     setActiveDisplayMonth(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
@@ -340,11 +381,11 @@ export default function DashboardPage() {
 
   const eventsForDayView = useMemo(() => {
     if (!selectedDateForDayView) return [];
-    return displayedTimelineEvents.filter(event =>
+    return activeEvents.filter(event =>
         event.date instanceof Date && !isNaN(event.date.valueOf()) &&
         isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
     ).sort((a,b) => a.date.getTime() - b.date.getTime());
-  }, [displayedTimelineEvents, selectedDateForDayView]);
+  }, [activeEvents, selectedDateForDayView]);
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent) => {
     if (event) {
@@ -387,21 +428,6 @@ export default function DashboardPage() {
       toast({ title: 'Not signed in', description: 'You must be signed in to save events.', variant: 'destructive' });
       return;
     }
-    const originalEvents = displayedTimelineEvents;
-    const eventExists = originalEvents.some(event => event.id === updatedEvent.id);
-    
-    let newEvents = eventExists
-      ? originalEvents.map(event => (event.id === updatedEvent.id ? updatedEvent : event))
-      : [...originalEvents, updatedEvent].sort((a,b) => a.date.getTime() - b.date.getTime());
-
-    // Optimistic UI update
-    setDisplayedTimelineEvents(newEvents);
-    syncToLocalStorage(newEvents);
-
-    toast({
-      title: isAddingNewEvent ? "Event Added" : "Event Updated",
-      description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
-    });
     handleCloseEditModal();
     
     try {
@@ -412,31 +438,25 @@ export default function DashboardPage() {
             endDate: data.endDate ? data.endDate.toISOString() : null,
         };
         await saveTimelineEvent(user.uid, payload, { syncToGoogle });
-        // After successful save, we might want to refetch to get the latest state (e.g., googleEventId)
-        const firestoreEvents = await getTimelineEvents(user.uid);
-        setDisplayedTimelineEvents(firestoreEvents);
-        syncToLocalStorage(firestoreEvents);
+        await fetchAllEvents(); // Refetch to get latest state
+        toast({
+            title: isAddingNewEvent ? "Event Added" : "Event Updated",
+            description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
+        });
     } catch (error) {
         console.error("Failed to save event:", error);
-        // Revert UI on failure
-        setDisplayedTimelineEvents(originalEvents);
-        syncToLocalStorage(originalEvents);
+        await fetchAllEvents(); // Refetch to revert optimistic state on error
         toast({ title: "Sync Error", description: "Could not save to server. Your changes have been reverted.", variant: "destructive" });
     }
-  }, [displayedTimelineEvents, handleCloseEditModal, toast, isAddingNewEvent, user]);
+  }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents]);
 
   const handleEventStatusUpdate = useCallback(async (eventId: string, newStatus: 'completed' | 'missed') => {
-    const eventToUpdate = displayedTimelineEvents.find(event => event.id === eventId);
+    const eventToUpdate = allTimelineEvents.find(event => event.id === eventId);
     if (!eventToUpdate || !user) return;
 
     const updatedEvent = { ...eventToUpdate, status: newStatus };
-
-    const newEvents = displayedTimelineEvents.map(event =>
-      event.id === eventId ? updatedEvent : event
-    );
-
-    setDisplayedTimelineEvents(newEvents);
-    syncToLocalStorage(newEvents);
+    
+    setAllTimelineEvents(prev => prev.map(e => e.id === eventId ? updatedEvent : e));
 
     toast({
       title: "Status Updated",
@@ -454,12 +474,13 @@ export default function DashboardPage() {
       await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId });
     } catch (error) {
       console.error("Failed to save event status to Firestore", error);
+      await fetchAllEvents(); // Revert on failure
       toast({ title: "Sync Error", description: "Could not save status to server. Change is saved locally.", variant: "destructive" });
     }
-  }, [displayedTimelineEvents, user, toast]);
+  }, [allTimelineEvents, user, toast, fetchAllEvents]);
 
   const handleExportEvents = useCallback(() => {
-    if (displayedTimelineEvents.length === 0) {
+    if (activeEvents.length === 0) {
       toast({ title: 'No Events', description: 'There are no events to export.', variant: 'destructive' });
       return;
     }
@@ -471,7 +492,7 @@ export default function DashboardPage() {
       return format(date, "yyyyMMdd'T'HHmmss'Z'");
     };
 
-    const icsEvents = displayedTimelineEvents.map(event => {
+    const icsEvents = activeEvents.map(event => {
       let icsEvent = 'BEGIN:VEVENT\n';
       icsEvent += `UID:${event.id}@calendar.ai\n`;
       icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}\n`;
@@ -493,7 +514,7 @@ export default function DashboardPage() {
     saveAs(blob, 'calendar.ai.ics');
     toast({ title: 'Export Successful', description: 'Your calendar has been downloaded as an .ics file.' });
 
-  }, [displayedTimelineEvents, toast]);
+  }, [activeEvents, toast]);
 
   const handleImportChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) {
@@ -525,7 +546,7 @@ export default function DashboardPage() {
             const importedEvents: TimelineEvent[] = [];
             
             const existingEventSignatures = new Set(
-                displayedTimelineEvents.map(evt => `${evt.title}_${evt.date.toISOString()}`)
+                allTimelineEvents.map(evt => `${evt.title}_${evt.date.toISOString()}`)
             );
 
             for (const key in parsedData) {
@@ -558,8 +579,8 @@ export default function DashboardPage() {
             }
             
             if (importedEvents.length > 0) {
-                const updatedEvents = [...displayedTimelineEvents, ...importedEvents];
-                setDisplayedTimelineEvents(updatedEvents);
+                const updatedEvents = [...allTimelineEvents, ...importedEvents];
+                setAllTimelineEvents(updatedEvents);
                 syncToLocalStorage(updatedEvents);
 
                 // Save new events to Firestore
@@ -583,7 +604,7 @@ export default function DashboardPage() {
     };
     reader.readAsText(file, 'UTF-8');
     e.target.value = ''; // Reset file input
-  }, [user, toast, displayedTimelineEvents]);
+  }, [user, toast, allTimelineEvents]);
 
 
   return (
@@ -615,14 +636,28 @@ export default function DashboardPage() {
             </div>
             
             <TabsContent value="calendar" className="mt-0 space-y-8">
-               <EventCalendarView
-                  events={displayedTimelineEvents}
-                  month={activeDisplayMonth}
-                  onMonthChange={setActiveDisplayMonth}
-                  onDayClick={handleDayClickFromCalendar}
-                  onSync={handleSyncCalendarData}
-                  isSyncing={isLoading}
-              />
+               <div className="flex items-start">
+                  <div className="flex-1 min-w-0">
+                    <EventCalendarView
+                        events={activeEvents}
+                        month={activeDisplayMonth}
+                        onMonthChange={setActiveDisplayMonth}
+                        onDayClick={handleDayClickFromCalendar}
+                        onSync={handleSyncCalendarData}
+                        isSyncing={isLoading}
+                        onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
+                        isTrashOpen={isTrashPanelOpen}
+                    />
+                  </div>
+                  {isTrashPanelOpen && (
+                    <TrashPanel
+                      deletedEvents={recentlyDeletedEvents}
+                      onRestore={handleRestoreEvent}
+                      onPermanentDelete={handlePermanentDelete}
+                      onClose={() => setIsTrashPanelOpen(false)}
+                    />
+                  )}
+               </div>
               {selectedDateForDayView ? (
                   <DayTimetableView
                       date={selectedDateForDayView}
@@ -634,7 +669,7 @@ export default function DashboardPage() {
                   />
               ) : (
                   <SlidingTimelineView
-                      events={displayedTimelineEvents}
+                      events={activeEvents}
                       onDeleteEvent={handleDeleteTimelineEvent}
                       onEditEvent={handleOpenEditModal}
                       currentDisplayMonth={activeDisplayMonth}
@@ -645,7 +680,7 @@ export default function DashboardPage() {
 
             <TabsContent value="list" className="mt-0">
               <TimelineListView
-                events={displayedTimelineEvents}
+                events={activeEvents}
                 onDeleteEvent={handleDeleteTimelineEvent}
                 onEditEvent={handleOpenEditModal}
               />
@@ -656,7 +691,7 @@ export default function DashboardPage() {
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-8">
           <ImportantEmailsCard />
-          <NextMonthHighlightsCard events={displayedTimelineEvents} />
+          <NextMonthHighlightsCard events={activeEvents} />
         </div>
       </div>
 

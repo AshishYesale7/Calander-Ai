@@ -35,6 +35,7 @@ export interface TimelineEvent {
   color?: string; // Optional custom color for the event
   googleEventId?: string; // ID of the event in Google Calendar
   googleTaskId?: string; // ID of the event in Google Tasks
+  deletedAt?: Date; // For soft deletes
 }
 
 export interface CareerGoal {
