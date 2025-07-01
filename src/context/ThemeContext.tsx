@@ -36,7 +36,7 @@ const GLASS_SETTINGS_STORAGE_KEY = 'futuresight-glass-settings';
 const DEFAULT_BACKGROUND_IMAGE = 'https://r4.wallpaperflare.com/wallpaper/113/431/804/science-fiction-digital-art-concept-art-artwork-fantasy-art-hd-wallpaper-68368da8e0100c58d06ca1fec8e2e4fa.jpg';
 
 const DEFAULT_GLASS_EFFECT_SETTINGS: GlassEffectSettings = {
-  frosted: { blur: 12 },
+  frosted: { blur: 16 },
   waterDroplets: { blur: 6, saturate: 180, brightness: 90 },
   subtleShadow: { opacity: 0.15 },
   grainyFrosted: { blur: 10, noiseOpacity: 0.05 },
@@ -88,7 +88,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [backgroundImage, setBackgroundImageState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_IMAGE_STORAGE_KEY, DEFAULT_BACKGROUND_IMAGE));
   const [backgroundColor, setBackgroundColorState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_COLOR_STORAGE_KEY, null));
   const [customTheme, setCustomThemeState] = useState<CustomTheme | null>(() => getInitialState<CustomTheme | null>(CUSTOM_THEME_STORAGE_KEY, null));
-  const [glassEffect, setGlassEffectState] = useState<GlassEffect>(() => getInitialState<GlassEffect>(GLASS_EFFECT_STORAGE_KEY, 'water-droplets'));
+  const [glassEffect, setGlassEffectState] = useState<GlassEffect>(() => getInitialState<GlassEffect>(GLASS_EFFECT_STORAGE_KEY, 'frosted'));
   const [glassEffectSettings, setGlassEffectSettingsState] = useState<GlassEffectSettings>(() => getInitialState<GlassEffectSettings>(GLASS_SETTINGS_STORAGE_KEY, DEFAULT_GLASS_EFFECT_SETTINGS));
   const [isMounted, setIsMounted] = useState(false);
 
@@ -155,7 +155,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setBackgroundImageState(DEFAULT_BACKGROUND_IMAGE);
     setBackgroundColorState(null);
     setCustomThemeState(null);
-    setGlassEffectState('water-droplets');
+    setGlassEffectState('frosted');
     setGlassEffectSettingsState(DEFAULT_GLASS_EFFECT_SETTINGS);
   }, []);
 
@@ -174,4 +174,3 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     </ThemeContext.Provider>
   );
 };
-

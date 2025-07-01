@@ -58,51 +58,39 @@ body {
     --sidebar-ring: var(--accent);
   }
 
-  /* "Dark Theme" - The original deep slate blue theme */
+  /* "Dark Theme" - A more neutral, sophisticated dark theme */
   .dark {
-    --background: hsl(210 20% 12%); /* Very dark slate blue */
-    --foreground: hsl(210 25% 88%); /* Light gray-blue text */
-
-    --card: hsla(210, 20%, 18%, 0.55); /* Dark slate, with transparency for glass */
-    --card-foreground: hsl(210 25% 88%); /* Match foreground */
-
-    --popover: hsl(210 20% 18%);
-    --popover-foreground: hsl(210 25% 88%);
-
-    --primary: hsl(210 25% 55%); /* Lighter deep slate blue for dark mode */
-    --primary-foreground: hsl(210 15% 8%); /* Very dark text for contrast on lighter primary */
-
-    --secondary: hsl(210 20% 30%); /* Darker muted slate blue */
-    --secondary-foreground: hsl(210 25% 80%); /* Lighter text for secondary */
-
-    --muted: hsl(210 20% 25%);   /* Dark Muted slate */
-    --muted-foreground: hsl(210 25% 65%); /* Muted text, clearer */
-
-    --accent: hsl(47 20% 60%);  /* Lighter muted gold for dark mode */
-    --accent-foreground: hsl(47 30% 10%); /* Dark text for contrast on lighter gold */
-    
-    --destructive: hsl(0 65% 55%); /* Slightly desaturated red for dark mode */
+    --background: hsl(220 15% 10%);
+    --foreground: hsl(210 25% 90%);
+    --card: hsla(220, 15%, 15%, 0.65);
+    --card-foreground: hsl(210 25% 90%);
+    --popover: hsl(220 15% 12%);
+    --popover-foreground: hsl(210 25% 90%);
+    --primary: hsl(210 25% 70%);
+    --primary-foreground: hsl(210 15% 8%);
+    --secondary: hsl(220 15% 25%);
+    --secondary-foreground: hsl(210 25% 85%);
+    --muted: hsl(220 15% 20%);
+    --muted-foreground: hsl(210 25% 65%);
+    --accent: hsl(47, 25%, 55%);
+    --accent-foreground: hsl(47 30% 10%);
+    --destructive: hsl(0 65% 55%);
     --destructive-foreground: hsl(0 0% 100%);
-
-    --border: hsl(210 20% 25%); /* Subtle border for dark theme */
-    --input: hsl(210 20% 15%);  /* Input background, distinct from dark card */
-    --ring: hsl(210 25% 55%);   /* Ring color based on dark primary */
-    
-    /* Chart colors for dark mode */
+    --border: hsl(220 15% 22%);
+    --input: hsl(220 15% 18%);
+    --ring: hsl(47, 25%, 55%);
     --chart-1: hsl(210 25% 60%);
     --chart-2: hsl(47 25% 70%);
     --chart-3: hsl(210 30% 75%);
     --chart-4: hsl(47 30% 50%);
     --chart-5: hsl(180 35% 60%);
-    
-    /* Sidebar colors (dark theme) */
-    --sidebar-background: var(--card); 
-    --sidebar-foreground: hsl(210 25% 85%); 
-    --sidebar-primary: var(--accent); 
-    --sidebar-primary-foreground: hsl(47 30% 10%); 
-    --sidebar-accent: hsl(210 20% 22%); 
-    --sidebar-accent-foreground: hsl(210 25% 90%); 
-    --sidebar-border: hsl(210 20% 20%); 
+    --sidebar-background: var(--card);
+    --sidebar-foreground: hsl(210 25% 85%);
+    --sidebar-primary: var(--accent);
+    --sidebar-primary-foreground: hsl(47 30% 10%);
+    --sidebar-accent: hsl(210 20% 22%);
+    --sidebar-accent-foreground: hsl(210 25% 90%);
+    --sidebar-border: hsl(210 20% 20%);
     --sidebar-ring: var(--accent);
   }
 }
@@ -127,14 +115,9 @@ body {
 
 /* --- Frosted Glass Effect --- */
 [data-glass-effect="frosted"] .frosted-glass {
-  -webkit-backdrop-filter: blur(var(--glass-blur, 12px));
-  backdrop-filter: blur(var(--glass-blur, 12px));
-  border-color: hsl(280 40% 45% / 0.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  backdrop-filter: blur(var(--glass-blur, 16px));
 }
-.dark[data-glass-effect="frosted"] .frosted-glass {
-  border-color: hsl(210 20% 30% / 0.8);
-}
-
 
 /* --- Enhanced Water Droplets Effect --- */
 [data-glass-effect="water-droplets"] .frosted-glass {
@@ -168,10 +151,6 @@ body {
 [data-glass-effect="grainyFrosted"] .frosted-glass {
   -webkit-backdrop-filter: blur(var(--grainy-blur, 10px));
   backdrop-filter: blur(var(--grainy-blur, 10px));
-  border-color: hsl(280 40% 45% / 0.2);
-}
-.dark[data-glass-effect="grainyFrosted"] .frosted-glass {
-  border-color: hsl(210 20% 30% / 0.3);
 }
 
 /* IMPORTANT: The grain overlay is only applied to cards within the <main> content area.
