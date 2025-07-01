@@ -1,5 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
+import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
 
 export interface RoutineItem {
   id: string;
@@ -150,4 +151,11 @@ export interface UserSubscription {
   status: SubscriptionStatus;
   endDate: Date;
   razorpaySubscriptionId?: string;
+}
+
+export interface CareerVisionHistoryItem {
+  id: string;
+  prompt: string;
+  plan: GenerateCareerVisionOutput;
+  createdAt: Date;
 }
