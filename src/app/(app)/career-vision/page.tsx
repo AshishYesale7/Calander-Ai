@@ -1,14 +1,26 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, LinkIcon, Share2, Palette, ExternalLink, ArrowRight } from 'lucide-react';
+import { Eye, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 const getResourceIcon = (type: GenerateCareerVisionOutput['suggestedResources'][0]['type']) => {
   switch (type) {
@@ -16,8 +28,8 @@ const getResourceIcon = (type: GenerateCareerVisionOutput['suggestedResources'][
     case 'Book': return <BookOpen className="h-4 w-4" />;
     case 'Community': return <Share2 className="h-4 w-4" />;
     case 'Tool': return <Palette className="h-4 w-4" />;
-    case 'Website': return <LinkIcon className="h-4 w-4" />;
-    default: return <LinkIcon className="h-4 w-4" />;
+    case 'Website': return <LinkIconLucide className="h-4 w-4" />;
+    default: return <LinkIconLucide className="h-4 w-4" />;
   }
 };
 
@@ -25,6 +37,7 @@ export default function CareerVisionPage() {
   const [userInput, setUserInput] = useState('');
   const [careerPlan, setCareerPlan] = useState<GenerateCareerVisionOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const { toast } = useToast();
   const { apiKey } = useApiKey();
 
@@ -46,11 +59,18 @@ export default function CareerVisionPage() {
       setCareerPlan(result);
     } catch (error) {
       console.error('Error generating career vision:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate career vision. Please try again.',
-        variant: 'destructive',
-      });
+      if (!apiKey) {
+        // If the user didn't provide a key and it failed, the server key is likely missing.
+        setShowApiKeyDialog(true);
+      } else {
+        // If the user DID provide a key and it failed, their key is likely invalid.
+        toast({
+            title: 'API Key Error',
+            description: 'Your provided Gemini API key appears to be invalid or has insufficient permissions. Please check it in Settings.',
+            variant: 'destructive',
+            duration: 8000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +241,31 @@ export default function CareerVisionPage() {
             </div>
         </div>
       )}
+
+      <AlertDialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+        <AlertDialogContent className="frosted-glass">
+            <AlertDialogHeader>
+                <AlertDialogTitle>AI Feature Configuration Needed</AlertDialogTitle>
+                <AlertDialogDescription>
+                    The app's default AI key is not configured. You can provide your own free Google Gemini API key to use this feature.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="text-sm space-y-2">
+                <p className="font-semibold">How to get your API key:</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-accent underline">Google AI Studio</a>.</li>
+                    <li>Click "Create API key in new project".</li>
+                    <li>Copy the generated API key.</li>
+                    <li>Paste it in this app's settings.</li>
+                </ol>
+                <p className="pt-2">You can access Settings from the user menu in the sidebar (bottom-left on desktop, top-right on mobile).</p>
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => setShowApiKeyDialog(false)}>Got it</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
