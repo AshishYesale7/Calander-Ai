@@ -25,6 +25,7 @@ import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent } from '@/ser
 import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
 import { getGoogleTasks } from '@/services/googleTasksService';
 import ImportantEmailsCard from '@/components/timeline/ImportantEmailsCard';
+import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCard';
 import { saveAs } from 'file-saver';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
@@ -647,6 +648,7 @@ export default function DashboardPage() {
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-8">
           <ImportantEmailsCard />
+          <NextMonthHighlightsCard events={displayedTimelineEvents} />
         </div>
       </div>
 
