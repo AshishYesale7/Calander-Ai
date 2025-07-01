@@ -20,9 +20,12 @@ function timelineEventToGoogleEvent(event: TimelineEvent) {
     const endDate = event.endDate ? addDays(event.endDate, 1) : addDays(event.date, 1);
     googleEvent.end = { date: format(endDate, 'yyyy-MM-dd') };
   } else {
-    googleEvent.start = { dateTime: event.date.toISOString(), timeZone: 'UTC' };
+    // By using toISOString(), the 'Z' at the end already specifies UTC.
+    // Providing an additional timeZone property can be redundant and sometimes problematic.
+    // The API is smart enough to handle the RFC3339 format from toISOString().
+    googleEvent.start = { dateTime: event.date.toISOString() };
     const endDate = event.endDate || addHours(event.date, 1);
-    googleEvent.end = { dateTime: endDate.toISOString(), timeZone: 'UTC' };
+    googleEvent.end = { dateTime: endDate.toISOString() };
   }
   return googleEvent;
 }
