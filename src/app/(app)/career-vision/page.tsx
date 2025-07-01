@@ -105,8 +105,19 @@ export default function CareerVisionPage() {
   const handleAddSkill = async (skillName: string) => {
     if (!user) return;
     
+    // Create a URL-friendly and Firestore-safe slug from the skill name
+    const safeIdPart = skillName
+      .toString()
+      .normalize('NFD') // split an accented letter in the base letter and the acent
+      .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-') // replace spaces with -
+      .replace(/[^\w-]+/g, '') // remove all non-word chars
+      .replace(/--+/g, '-'); // replace multiple - with single -
+
     const newSkill: Omit<Skill, 'lastUpdated'> & { lastUpdated: string } = {
-        id: `vision-${Date.now()}-${skillName.replace(/\s+/g, '-')}`,
+        id: `vision-${Date.now()}-${safeIdPart}`,
         name: skillName,
         category: 'Other',
         proficiency: 'Beginner',
