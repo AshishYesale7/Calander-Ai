@@ -88,7 +88,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [backgroundImage, setBackgroundImageState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_IMAGE_STORAGE_KEY, DEFAULT_BACKGROUND_IMAGE));
   const [backgroundColor, setBackgroundColorState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_COLOR_STORAGE_KEY, null));
   const [customTheme, setCustomThemeState] = useState<CustomTheme | null>(() => getInitialState<CustomTheme | null>(CUSTOM_THEME_STORAGE_KEY, null));
-  const [glassEffect, setGlassEffectState] = useState<GlassEffect>(() => getInitialState<GlassEffect>(GLASS_EFFECT_STORAGE_KEY, 'grainyFrosted'));
+  const [glassEffect, setGlassEffectState] = useState<GlassEffect>(() => getInitialState<GlassEffect>(GLASS_EFFECT_STORAGE_KEY, 'water-droplets'));
   const [glassEffectSettings, setGlassEffectSettingsState] = useState<GlassEffectSettings>(() => getInitialState<GlassEffectSettings>(GLASS_SETTINGS_STORAGE_KEY, DEFAULT_GLASS_EFFECT_SETTINGS));
   const [isMounted, setIsMounted] = useState(false);
 
@@ -155,7 +155,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setBackgroundImageState(DEFAULT_BACKGROUND_IMAGE);
     setBackgroundColorState(null);
     setCustomThemeState(null);
-    setGlassEffectState('grainyFrosted');
+    setGlassEffectState('water-droplets');
     setGlassEffectSettingsState(DEFAULT_GLASS_EFFECT_SETTINGS);
   }, []);
 
