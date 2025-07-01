@@ -4,7 +4,7 @@
 import { google } from 'googleapis';
 import { getAuthenticatedClient } from './googleAuthService';
 import type { RawCalendarEvent, TimelineEvent } from '@/types';
-import { startOfMonth, endOfMonth, formatISO, format, addDays, addHours, addMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, formatISO, format, addDays, addHours, addMonths, subMonths } from 'date-fns';
 
 function timelineEventToGoogleEvent(event: TimelineEvent) {
   const googleEvent: any = {
@@ -20,9 +20,6 @@ function timelineEventToGoogleEvent(event: TimelineEvent) {
     const endDate = event.endDate ? addDays(event.endDate, 1) : addDays(event.date, 1);
     googleEvent.end = { date: format(endDate, 'yyyy-MM-dd') };
   } else {
-    // By using toISOString(), the 'Z' at the end already specifies UTC.
-    // Providing an additional timeZone property can be redundant and sometimes problematic.
-    // The API is smart enough to handle the RFC3339 format from toISOString().
     googleEvent.start = { dateTime: event.date.toISOString() };
     const endDate = event.endDate || addHours(event.date, 1);
     googleEvent.end = { dateTime: endDate.toISOString() };
@@ -97,8 +94,8 @@ export async function getGoogleCalendarEvents(userId: string): Promise<RawCalend
 
   const calendar = google.calendar({ version: 'v3', auth: client });
   const now = new Date();
-  // Fetch events from the start of the current month to 3 months in the future
-  const timeMin = startOfMonth(now).toISOString();
+  // Fetch events from 3 months in the past to 3 months in the future
+  const timeMin = startOfMonth(subMonths(now, 3)).toISOString();
   const timeMax = endOfMonth(addMonths(now, 3)).toISOString();
 
   try {
@@ -106,7 +103,7 @@ export async function getGoogleCalendarEvents(userId: string): Promise<RawCalend
       calendarId: 'primary',
       timeMin: timeMin,
       timeMax: timeMax,
-      maxResults: 100, // Increased to fetch more events in the wider range
+      maxResults: 250,
       singleEvents: true,
       orderBy: 'startTime',
     });
