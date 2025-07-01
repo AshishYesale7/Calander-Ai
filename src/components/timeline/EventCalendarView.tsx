@@ -4,7 +4,7 @@
 import type { TimelineEvent } from '@/types';
 import { useState, useMemo, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Bot, Trash2, Clock, ExternalLink as LinkIcon } from 'lucide-react';
+import { CalendarDays, Bot, Trash2, Clock, ExternalLink as LinkIcon, RefreshCw } from 'lucide-react';
 import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,13 +22,17 @@ interface EventCalendarViewProps {
   month: Date;
   onMonthChange: (newMonth: Date) => void;
   onDayClick: (day: Date, hasEvents: boolean) => void; // New prop
+  onSync: () => void;
+  isSyncing: boolean;
 }
 
 export default function EventCalendarView({
   events: allEventsFromProps,
   month,
   onMonthChange,
-  onDayClick
+  onDayClick,
+  onSync,
+  isSyncing,
 }: EventCalendarViewProps) {
   // Removed selectedDate and isModalOpen state, as day click is handled by parent
   const { toast } = useToast();
@@ -66,9 +70,15 @@ export default function EventCalendarView({
   return (
     <Card className="frosted-glass w-full shadow-xl">
       <CardHeader className="p-4 border-b border-border/30">
-        <CardTitle className="font-headline text-2xl text-primary">
-          Event Calendar
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="font-headline text-2xl text-primary">
+            Event Calendar
+          </CardTitle>
+          <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
+              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              <span className="sr-only">Sync with Google Calendar</span>
+          </Button>
+        </div>
          <CardDescription>
           Click on a day to see its hourly timetable. Dots indicate days with events.
         </CardDescription>

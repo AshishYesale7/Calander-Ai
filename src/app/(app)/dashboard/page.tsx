@@ -620,6 +620,8 @@ export default function DashboardPage() {
                   month={activeDisplayMonth}
                   onMonthChange={setActiveDisplayMonth}
                   onDayClick={handleDayClickFromCalendar}
+                  onSync={handleSyncCalendarData}
+                  isSyncing={isLoading}
               />
               {selectedDateForDayView ? (
                   <DayTimetableView
