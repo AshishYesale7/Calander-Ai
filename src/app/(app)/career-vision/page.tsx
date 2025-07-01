@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import type { CareerGoal, Skill, CareerVisionHistoryItem } from '@/types';
@@ -225,7 +226,7 @@ export default function CareerVisionPage() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 rows={6}
-                className="bg-background/50 focus:bg-background"
+                className="bg-background/50 focus:bg-background text-foreground"
               />
               <Button onClick={handleGenerateVision} disabled={isLoading || !userInput.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base py-6 px-8">
                 {isLoading ? (
