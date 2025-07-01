@@ -15,7 +15,7 @@ import { getCareerGoals } from '@/services/careerGoalsService';
 import { getSkills } from '@/services/skillsService';
 import { getUserPreferences } from '@/services/userService';
 import { addHours, format, isSameDay } from 'date-fns';
-import type { CareerGoal, Skill, TimelineEvent } from '@/types';
+import type { CareerGoal, Skill, TimelineEvent, RoutineItem } from '@/types';
 
 // Main input schema for the payload - now much simpler
 const GenerateDailyPlanPayloadSchema = z.object({
@@ -55,26 +55,27 @@ export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<
       getUserPreferences(input.userId),
   ]);
 
-  if (!userPreferences) {
-    throw new Error("User preferences (routine) could not be loaded.");
-  }
-
   // Pre-process the data for the prompt
   const today = new Date(input.currentDate);
 
-  // Find the user's sleep schedule for today
-  const userSleepSchedule = userPreferences.routine.find(item =>
-    item.activity.toLowerCase() === 'sleep' && item.days.includes(today.getDay())
-  );
-  
-  // Filter routine items for today, EXCLUDING sleep
-  const todaysRoutineBlocks = userPreferences.routine.filter(item =>
-    item.activity.toLowerCase() !== 'sleep' && item.days.includes(today.getDay())
-  ).map(item => ({
-    title: item.activity,
-    startTime: item.startTime,
-    endTime: item.endTime,
-  }));
+  let userSleepSchedule: RoutineItem | undefined;
+  let todaysRoutineBlocks: { title: string; startTime: string; endTime: string }[] = [];
+
+  if (userPreferences) {
+      // Find the user's sleep schedule for today
+      userSleepSchedule = userPreferences.routine.find(item =>
+        item.activity.toLowerCase() === 'sleep' && item.days.includes(today.getDay())
+      );
+    
+      // Filter routine items for today, EXCLUDING sleep
+      todaysRoutineBlocks = userPreferences.routine.filter(item =>
+        item.activity.toLowerCase() !== 'sleep' && item.days.includes(today.getDay())
+      ).map(item => ({
+        title: item.activity,
+        startTime: item.startTime,
+        endTime: item.endTime,
+      }));
+  }
   
   // Filter timeline events that occur today
   const todaysTimelineBlocks = timelineEvents.filter(event => {
@@ -99,7 +100,7 @@ export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<
 
   const sleepScheduleText = userSleepSchedule
     ? `The user's preferred sleep time is from ${userSleepSchedule.startTime} to ${userSleepSchedule.endTime}.`
-    : 'The user has not set a preferred sleep time.';
+    : 'The user has not set a preferred sleep time; assume a standard 8-hour sleep schedule (e.g., 11 PM to 7 AM).';
 
   const fixedScheduleText = fixedScheduleForToday.length > 0
     ? fixedScheduleForToday.map(item => `  - Activity: "${item.title}" from ${item.startTime} to ${item.endTime}`).join('\n')
@@ -126,12 +127,12 @@ ${fixedScheduleText}
 
 **3. User's Long-Term Goals & Vision:**
 - Career Goals:
-${careerGoalsText}
+${careerGoalsText.length > 0 ? careerGoalsText : 'No career goals set.'}
 - Skills to Develop:
-${skillsText}
+${skillsText.length > 0 ? skillsText : 'No skills being tracked.'}
 
 **4. All Upcoming Events (for context):**
-${timelineEventsText}
+${timelineEventsText.length > 0 ? timelineEventsText : 'No upcoming events on the timeline.'}
 
 ---
 **YOUR TASK**
@@ -146,7 +147,7 @@ Analyze all the provided information and generate a complete daily plan. Follow 
     d.  **IMPORTANT OUTPUT FORMATTING:** When creating the final 'schedule' array, follow this rule:
         - For any activity block (either from the fixed schedule or one you plan) that is **4 hours or longer** (like 'Sleep'), you MUST create a **single entry** with a time range. Example: \`{"time": "11:00 PM - 07:00 AM", "activity": "Sleep"}\`.
         - For any activity block that is **shorter than 4 hours** (like a 2-hour 'College' block or a 1-hour 'Study' block), you MUST create **individual hourly entries**. For example, a 'Study' block from 9 AM to 11 AM must be represented as two separate entries: one for \`{"time": "09:00 AM", "activity": "Study"}\` and another for \`{"time": "10:00 AM", "activity": "Study"}\`.
-    e.  The sleep block for the upcoming night should be placed at the very end of the schedule. You MUST use the times from the "User's Preferred Sleep Schedule" section above for this. This should be the ONLY 'Sleep' activity in the entire schedule.
+    e.  The sleep block for the upcoming night should be placed at the very end of the schedule. You MUST use the times from the "User's Preferred Sleep Schedule" section above for this. This should be the ONLY 'Sleep' activity in the entire schedule. If no sleep schedule is provided, assume a reasonable one like 11 PM to 7 AM.
     f.  All times in the final 'schedule' output must use a 12-hour clock with AM/PM (e.g., '09:00 AM').
     g.  Each schedule item you create MUST have a unique 'id' field (e.g. "plan-item-1", "plan-item-2") and a 'status' field initialized to "pending".
 
