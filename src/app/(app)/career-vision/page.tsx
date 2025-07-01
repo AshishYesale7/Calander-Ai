@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import type { CareerGoal, Skill, CareerVisionHistoryItem } from '@/types';
@@ -20,6 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/AuthContext';
 import { saveCareerGoal } from '@/services/careerGoalsService';
