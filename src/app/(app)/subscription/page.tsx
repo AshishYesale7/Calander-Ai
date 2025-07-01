@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,18 +11,33 @@ import { CheckCircle, Crown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 
+// Define a structure for currency data
+interface Currency {
+    code: string;
+    symbol: string;
+    rate: number; // Rate to convert from INR
+}
+
+// Hardcoded exchange rates for major currencies. In a real-world scenario, this would be fetched from a live API.
+const SUPPORTED_CURRENCIES: Currency[] = [
+    { code: 'INR', symbol: '₹', rate: 1 },
+    { code: 'USD', symbol: '$', rate: 1 / 83 }, // 1 USD = 83 INR
+    { code: 'EUR', symbol: '€', rate: 1 / 90 }, // 1 EUR = 90 INR
+    { code: 'GBP', symbol: '£', rate: 1 / 105 }, // 1 GBP = 105 INR
+];
+
 const plans = {
     monthly: {
         id: 'monthly',
         title: 'Monthly Plan',
-        price: '₹ 59',
+        priceINR: 59,
         priceSuffix: '/ month',
         features: ['Access to all AI features', 'Unlimited timeline events', 'Personalized news feed', 'Email support'],
     },
     yearly: {
         id: 'yearly',
         title: 'Yearly Plan',
-        price: '₹ 599',
+        priceINR: 599,
         priceSuffix: '/ year',
         features: ['All features from Monthly', 'Save 20% with annual billing', 'Priority support', 'Early access to new features'],
     },
@@ -42,6 +57,44 @@ export default function SubscriptionPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState<PlanID | null>(null);
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+
+    const [currency, setCurrency] = useState<Currency>(SUPPORTED_CURRENCIES[0]); // Default to INR
+    const [isCurrencyLoading, setIsCurrencyLoading] = useState(true);
+
+    // Fetch user's currency based on IP address
+    useEffect(() => {
+        const fetchCurrency = async () => {
+            try {
+                const response = await fetch('https://ip-api.com/json/?fields=currency');
+                if (!response.ok) throw new Error('Failed to fetch geo-location');
+                const data = await response.json();
+                const userCurrencyCode = data.currency;
+
+                const foundCurrency = SUPPORTED_CURRENCIES.find(c => c.code === userCurrencyCode);
+                if (foundCurrency) {
+                    setCurrency(foundCurrency);
+                }
+            } catch (error) {
+                console.warn("Could not detect user's currency, defaulting to INR.", error);
+                // Default to INR if API fails
+                setCurrency(SUPPORTED_CURRENCIES[0]);
+            } finally {
+                setIsCurrencyLoading(false);
+            }
+        };
+
+        fetchCurrency();
+    }, []);
+
+    const convertAndFormatPrice = (priceInr: number) => {
+        if (currency.code === 'INR') {
+            return priceInr.toString();
+        }
+        const converted = priceInr * currency.rate;
+        // Round up to the nearest whole number, then subtract 0.01 to get a ".99" figure
+        const rounded = Math.ceil(converted) - 0.01;
+        return rounded.toFixed(2);
+    };
 
     const handleSubscribe = async (planId: PlanID) => {
         if (!user) {
@@ -120,6 +173,13 @@ export default function SubscriptionPage() {
             setIsLoading(null);
         }
     };
+
+    const PriceDisplay = ({ plan }: { plan: { priceINR: number } }) => {
+        if (isCurrencyLoading) {
+            return <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />;
+        }
+        return <span className="text-3xl font-bold text-foreground">{currency.symbol}{convertAndFormatPrice(plan.priceINR)}</span>;
+    };
     
     return (
         <>
@@ -134,7 +194,7 @@ export default function SubscriptionPage() {
                        <Crown className="mr-3 h-8 w-8 text-accent"/> Manage Subscription
                     </h1>
                     <p className="text-foreground/80 mt-1">
-                        Choose a plan that fits your needs to unlock the full potential of Calendar.ai.
+                        Choose a plan that fits your needs. Prices shown in your local currency ({currency.code}).
                     </p>
                 </div>
                 
@@ -150,7 +210,7 @@ export default function SubscriptionPage() {
                                       {isPopular && <Badge variant="default" className="bg-accent text-accent-foreground">Most Popular</Badge>}
                                     </div>
                                     <CardDescription>
-                                        <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                                        <PriceDisplay plan={plan} />
                                         <span className="text-muted-foreground">{plan.priceSuffix}</span>
                                     </CardDescription>
                                 </CardHeader>
@@ -167,7 +227,7 @@ export default function SubscriptionPage() {
                                 <CardFooter>
                                     <Button
                                         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                                        disabled={isLoading !== null || !isScriptLoaded}
+                                        disabled={isLoading !== null || !isScriptLoaded || isCurrencyLoading}
                                         onClick={() => handleSubscribe(planId)}
                                     >
                                         {isLoading === planId ? (
@@ -175,7 +235,7 @@ export default function SubscriptionPage() {
                                                 <LoadingSpinner size="sm" className="mr-2"/>
                                                 Processing...
                                             </>
-                                        ) : !isScriptLoaded ? (
+                                        ) : !isScriptLoaded || isCurrencyLoading ? (
                                             <>
                                                 <LoadingSpinner size="sm" className="mr-2"/>
                                                 Loading...
@@ -200,6 +260,10 @@ export default function SubscriptionPage() {
                         <div>
                             <h4 className="font-semibold">Is my payment information secure?</h4>
                             <p className="text-muted-foreground">We use Razorpay for payment processing, which is a certified PCI-DSS compliant payment gateway. We do not store any of your card information on our servers.</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">What currency will I be charged in?</h4>
+                            <p className="text-muted-foreground">Prices are displayed in your local currency for convenience. The actual transaction will be processed in Indian Rupees (INR) at the current exchange rate provided by your bank or card network.</p>
                         </div>
                     </CardContent>
                 </Card>

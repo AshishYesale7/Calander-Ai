@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin } from 'lucide-react';
@@ -12,6 +12,21 @@ import StarryBackground from '@/components/landing/StarryBackground';
 import { Badge } from '@/components/ui/badge';
 import CursorArrow from '@/components/landing/CursorArrow';
 import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
+
+// Define a structure for currency data
+interface Currency {
+    code: string;
+    symbol: string;
+    rate: number; // Rate to convert from INR
+}
+
+// Hardcoded exchange rates for major currencies.
+const SUPPORTED_CURRENCIES: Currency[] = [
+    { code: 'INR', symbol: '₹', rate: 1 },
+    { code: 'USD', symbol: '$', rate: 1 / 83 },
+    { code: 'EUR', symbol: '€', rate: 1 / 90 },
+    { code: 'GBP', symbol: '£', rate: 1 / 105 },
+];
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <Card className="frosted-glass text-center p-8 transition-all duration-300 hover:border-accent hover:-translate-y-2 bg-card/60">
@@ -27,7 +42,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
     </Card>
 );
 
-const PricingCard = ({ title, price, period, features, popular = false }: { title: string, price: string, period: string, features: string[], popular?: boolean }) => (
+const PricingCard = ({ title, price, currencySymbol, period, features, popular = false, isLoading = false }: { title: string, price: string, currencySymbol: string, period: string, features: string[], popular?: boolean, isLoading?: boolean }) => (
     <Card className={cn(
         "frosted-glass w-full max-w-sm p-8 flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-2",
         popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30"
@@ -35,10 +50,16 @@ const PricingCard = ({ title, price, period, features, popular = false }: { titl
         {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-sm">Best Value</Badge></div>}
         <CardHeader className="text-center p-0">
             <CardTitle className="text-2xl font-bold text-primary">{title}</CardTitle>
-            <p className="mt-2">
-                <span className="text-4xl font-extrabold text-white">{price}</span>
-                <span className="text-muted-foreground">{period}</span>
-            </p>
+            <div className="mt-2 h-10 flex items-center justify-center">
+                {isLoading ? (
+                    <div className="h-9 w-28 bg-gray-700/50 animate-pulse rounded-md" />
+                ) : (
+                    <p>
+                        <span className="text-4xl font-extrabold text-white">{currencySymbol}{price}</span>
+                        <span className="text-muted-foreground">{period}</span>
+                    </p>
+                )}
+            </div>
         </CardHeader>
         <CardContent className="flex-1 p-0 mt-8">
             <ul className="space-y-4">
@@ -58,9 +79,42 @@ const PricingCard = ({ title, price, period, features, popular = false }: { titl
     </Card>
 );
 
-
 export default function LandingPage() {
     const ctaButtonRef = useRef<HTMLAnchorElement>(null);
+    const [currency, setCurrency] = useState<Currency>(SUPPORTED_CURRENCIES[0]);
+    const [isCurrencyLoading, setIsCurrencyLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCurrency = async () => {
+            setIsCurrencyLoading(true);
+            try {
+                const response = await fetch('https://ip-api.com/json/?fields=currency');
+                if (!response.ok) throw new Error('Failed to fetch geo-location');
+                const data = await response.json();
+                const userCurrencyCode = data.currency;
+
+                const foundCurrency = SUPPORTED_CURRENCIES.find(c => c.code === userCurrencyCode);
+                if (foundCurrency) {
+                    setCurrency(foundCurrency);
+                }
+            } catch (error) {
+                console.warn("Could not detect currency, defaulting to INR.", error);
+                setCurrency(SUPPORTED_CURRENCIES[0]);
+            } finally {
+                setIsCurrencyLoading(false);
+            }
+        };
+        fetchCurrency();
+    }, []);
+
+    const convertAndFormatPrice = (priceInr: number) => {
+        if (currency.code === 'INR') {
+            return priceInr.toString();
+        }
+        const converted = priceInr * currency.rate;
+        const rounded = Math.ceil(converted) - 0.01;
+        return rounded.toFixed(2);
+    };
 
     return (
         <div className="bg-background text-foreground">
@@ -141,8 +195,10 @@ export default function LandingPage() {
                             </div>
                             <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
                                 <PricingCard
+                                    isLoading={isCurrencyLoading}
                                     title="Monthly"
-                                    price="₹59"
+                                    price={convertAndFormatPrice(59)}
+                                    currencySymbol={currency.symbol}
                                     period="/month"
                                     features={[
                                         'Access to all AI features',
@@ -152,9 +208,11 @@ export default function LandingPage() {
                                     ]}
                                 />
                                 <PricingCard
+                                    isLoading={isCurrencyLoading}
                                     popular
                                     title="Yearly"
-                                    price="₹599"
+                                    price={convertAndFormatPrice(599)}
+                                    currencySymbol={currency.symbol}
                                     period="/year"
                                     features={[
                                         'All features from Monthly',
