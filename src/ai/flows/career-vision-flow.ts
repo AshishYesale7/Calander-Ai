@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for generating comprehensive career vision plans.
@@ -35,8 +36,9 @@ const GenerateCareerVisionOutputSchema = z.object({
   suggestedResources: z.array(z.object({
     title: z.string().describe("The name of the resource."),
     url: z.string().describe("A direct URL to the resource."),
-    type: z.enum(['Course', 'Book', 'Community', 'Tool', 'Website']).describe("The type of resource.")
-  })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools."),
+    description: z.string().describe("A brief, one-sentence explanation of why this resource is useful for the user's specific goals."),
+    category: z.enum(['book', 'course', 'tool', 'article', 'community', 'website', 'other']).describe("The category of the resource.")
+  })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools. Ensure the links are specific and deep where possible."),
   diagramSuggestion: z.object({
       type: z.enum(['Flowchart', 'Mind Map', 'Timeline']).describe("The type of diagram suggested."),
       description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path.")
@@ -69,7 +71,7 @@ Instructions:
 2.  **keyStrengths**: Analyze the user's aspirations to identify and list 3-5 of their implied or stated strengths.
 3.  **developmentAreas**: Based on their goals, suggest 3-5 key areas where they could focus on learning and development.
 4.  **roadmap**: Create a clear, actionable roadmap with 3-5 steps. Each step should have a title, a brief description, and an estimated duration. This should be a logical progression from their current state towards their vision.
-5.  **suggestedResources**: Recommend 2-4 specific, high-quality online resources (courses, books, websites, communities, tools) that align with their goals. Provide a title, URL, and type for each.
+5.  **suggestedResources**: Recommend 2-4 specific, high-quality online resources (courses, books, websites, communities, tools, articles) that align with their goals. For each, provide a title, a valid URL, a brief description explaining its relevance, and a category.
 6.  **diagramSuggestion**: Suggest a type of diagram (like a Flowchart, Mind Map, or Timeline) that the user could create to visually map out their plan. Briefly describe what this diagram should illustrate.
 `;
     

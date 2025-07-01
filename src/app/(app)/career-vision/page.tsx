@@ -1,11 +1,11 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import type { CareerGoal, Skill, CareerVisionHistoryItem } from '@/types';
+import type { CareerGoal, Skill, CareerVisionHistoryItem, ResourceLink } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2, FileText } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
@@ -26,17 +26,19 @@ import { useAuth } from '@/context/AuthContext';
 import { saveCareerGoal } from '@/services/careerGoalsService';
 import { saveSkill } from '@/services/skillsService';
 import { getCareerVisionHistory, saveCareerVision, deleteCareerVision } from '@/services/careerVisionService';
+import { saveBookmarkedResource } from '@/services/resourcesService';
 import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-const getResourceIcon = (type: GenerateCareerVisionOutput['suggestedResources'][0]['type']) => {
-  switch (type) {
-    case 'Course': return <BookOpen className="h-4 w-4" />;
-    case 'Book': return <BookOpen className="h-4 w-4" />;
-    case 'Community': return <Share2 className="h-4 w-4" />;
-    case 'Tool': return <Palette className="h-4 w-4" />;
-    case 'Website': return <LinkIconLucide className="h-4 w-4" />;
+const getResourceIcon = (category: ResourceLink['category']) => {
+  switch (category) {
+    case 'course': return <BookOpen className="h-4 w-4" />;
+    case 'book': return <BookOpen className="h-4 w-4" />;
+    case 'community': return <Share2 className="h-4 w-4" />;
+    case 'tool': return <Palette className="h-4 w-4" />;
+    case 'article': return <FileText className="h-4 w-4" />;
+    case 'website': return <LinkIconLucide className="h-4 w-4" />;
     default: return <LinkIconLucide className="h-4 w-4" />;
   }
 };
@@ -150,9 +152,10 @@ export default function CareerVisionPage() {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim()
+      .replace(/[^\w-]/g, ' ') // Allow spaces
       .replace(/\s+/g, '-')
-      .replace(/[^\w-]+/g, '')
       .replace(/--+/g, '-');
+
 
     const newSkill: Omit<Skill, 'lastUpdated'> & { lastUpdated: string } = {
         id: `vision-${Date.now()}-${safeIdPart}`,
@@ -169,6 +172,29 @@ export default function CareerVisionPage() {
     } catch (error) {
       console.error('Failed to save skill:', error);
       toast({ title: 'Error', description: 'Could not save the skill.', variant: 'destructive' });
+    }
+  };
+  
+  const handleAddResource = async (resource: GenerateCareerVisionOutput['suggestedResources'][0]) => {
+    if (!user) return;
+    const resourceId = `resource-${resource.url}`;
+
+    const newResource: ResourceLink = {
+        id: `vision-${Date.now()}-${resource.title.substring(0, 10).replace(/\s+/g, '-')}`,
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        category: resource.category,
+        isAiRecommended: false, // Save it as a user-bookmarked resource
+    };
+
+    try {
+      await saveBookmarkedResource(user.uid, newResource);
+      toast({ title: 'Resource Added', description: `"${resource.title}" has been added to your Resources.` });
+      setAddedItems(prev => new Set(prev).add(resourceId));
+    } catch (error) {
+      console.error('Failed to save resource:', error);
+      toast({ title: 'Error', description: 'Could not save the resource.', variant: 'destructive' });
     }
   };
 
@@ -234,7 +260,7 @@ export default function CareerVisionPage() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 rows={6}
-                className="bg-white/95 text-slate-900 placeholder:text-slate-500 focus-visible:ring-accent"
+                className="bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:ring-accent"
               />
               <Button onClick={handleGenerateVision} disabled={isLoading || !userInput.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base py-6 px-8">
                 {isLoading ? (
@@ -360,20 +386,39 @@ export default function CareerVisionPage() {
                       </CardHeader>
                       <CardContent>
                           <ul className="space-y-3">
-                              {careerPlan.suggestedResources.map((res, i) => (
-                                  <li key={i}>
-                                      <a href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
-                                          <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-accent">
-                                              {getResourceIcon(res.type)}
+                              {careerPlan.suggestedResources.map((res, i) => {
+                                const resourceId = `resource-${res.url}`;
+                                return (
+                                   <li key={i} className="p-3 rounded-md border border-border/50 bg-background/30">
+                                      <div className="flex items-start gap-3">
+                                          <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-accent flex-shrink-0">
+                                              {getResourceIcon(res.category)}
                                           </div>
                                           <div className="flex-1">
-                                              <p className="font-medium group-hover:text-accent transition-colors">{res.title}</p>
-                                              <p className="text-xs text-muted-foreground">{res.type}</p>
+                                              <a href={res.url} target="_blank" rel="noopener noreferrer" className="font-medium hover:text-accent transition-colors block">{res.title}</a>
+                                              <p className="text-xs text-muted-foreground capitalize">{res.category}</p>
+                                              <p className="text-sm text-foreground/80 mt-1">{res.description}</p>
                                           </div>
-                                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                                      </a>
+                                          <div className="flex flex-col gap-2 items-end">
+                                               <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => handleAddResource(res)}
+                                                  disabled={addedItems.has(resourceId)}
+                                                >
+                                                  {addedItems.has(resourceId) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                                  {addedItems.has(resourceId) ? 'Added' : 'Add'}
+                                                </Button>
+                                                <a href={res.url} target="_blank" rel="noopener noreferrer">
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                </a>
+                                          </div>
+                                      </div>
                                   </li>
-                              ))}
+                                )
+                              })}
                           </ul>
                       </CardContent>
                   </Card>

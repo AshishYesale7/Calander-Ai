@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +33,7 @@ import {
 import type { ResourceLink } from "@/types";
 import { useEffect } from "react";
 
-const resourceCategories: ResourceLink['category'][] = ['website', 'article', 'book', 'course', 'tool', 'other'];
+const resourceCategories: ResourceLink['category'][] = ['website', 'article', 'book', 'course', 'tool', 'community', 'other'];
 
 const resourceFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),

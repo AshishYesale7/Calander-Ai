@@ -1,4 +1,6 @@
 
+'use server';
+
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
 
@@ -68,7 +70,7 @@ export interface ResourceLink {
   title: string;
   url: string;
   description?: string;
-  category: 'book' | 'course' | 'tool' | 'article' | 'website' | 'other';
+  category: 'book' | 'course' | 'tool' | 'article' | 'community' | 'website' | 'other';
   isAiRecommended?: boolean;
 }
 
