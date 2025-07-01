@@ -324,7 +324,7 @@ export default function CareerVisionPage() {
                             <div className="p-4 rounded-lg bg-background/50 border border-border/50">
                                 <h4 className="font-semibold text-base text-primary mb-2">Technical Skills</h4>
                                 <ul className="space-y-2">
-                                    {careerPlan.developmentAreas.technical.map((skill, i) => (
+                                    {(careerPlan.developmentAreas?.technical || []).map((skill, i) => (
                                         <li key={`tech-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
                                             <span className="flex-1">{skill}</span>
                                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
@@ -337,7 +337,7 @@ export default function CareerVisionPage() {
                             <div className="p-4 rounded-lg bg-background/50 border border-border/50">
                                 <h4 className="font-semibold text-base text-primary mb-2">Hard Skills</h4>
                                 <ul className="space-y-2">
-                                    {careerPlan.developmentAreas.hard.map((skill, i) => (
+                                    {(careerPlan.developmentAreas?.hard || []).map((skill, i) => (
                                        <li key={`hard-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
                                            <span className="flex-1">{skill}</span>
                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
@@ -350,7 +350,7 @@ export default function CareerVisionPage() {
                             <div className="p-4 rounded-lg bg-background/50 border border-border/50">
                                 <h4 className="font-semibold text-base text-primary mb-2">Soft Skills</h4>
                                 <ul className="space-y-2">
-                                    {careerPlan.developmentAreas.soft.map((skill, i) => (
+                                    {(careerPlan.developmentAreas?.soft || []).map((skill, i) => (
                                         <li key={`soft-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
                                             <span className="flex-1">{skill}</span>
                                             <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
