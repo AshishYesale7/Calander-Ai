@@ -5,7 +5,7 @@ import type { CareerGoal, Skill, CareerVisionHistoryItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
@@ -173,10 +173,18 @@ export default function CareerVisionPage() {
   };
 
   const handleViewHistory = (item: CareerVisionHistoryItem) => {
-    setUserInput(item.prompt);
-    setCareerPlan(item.plan);
-    setAddedItems(new Set());
-    setSelectedHistoryId(item.id);
+    if (selectedHistoryId === item.id) {
+      // This history item is currently displayed. Hide it.
+      setUserInput('');
+      setCareerPlan(null);
+      setSelectedHistoryId(null);
+    } else {
+      // A different (or no) history item is displayed. Show this one.
+      setUserInput(item.prompt);
+      setCareerPlan(item.plan);
+      setAddedItems(new Set()); // Reset added items for the new plan context
+      setSelectedHistoryId(item.id);
+    }
   };
   
   const handleDeleteHistory = async (visionId: string) => {
@@ -226,7 +234,7 @@ export default function CareerVisionPage() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 rows={6}
-                className="bg-white text-gray-900 placeholder:text-gray-400 focus-visible:ring-accent"
+                className="bg-white/95 text-slate-900 placeholder:text-slate-500 focus-visible:ring-accent"
               />
               <Button onClick={handleGenerateVision} disabled={isLoading || !userInput.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base py-6 px-8">
                 {isLoading ? (
@@ -434,8 +442,12 @@ export default function CareerVisionPage() {
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
-                                            <Button variant="outline" size="sm" className="h-7" onClick={() => handleViewHistory(item)}>
-                                                View Plan
+                                            <Button variant="outline" size="sm" className="h-7 w-[120px]" onClick={() => handleViewHistory(item)}>
+                                                {selectedHistoryId === item.id ? (
+                                                    <><EyeOff className="mr-2 h-4 w-4" /> Hide Plan</>
+                                                ) : (
+                                                    <><Eye className="mr-2 h-4 w-4" /> View Plan</>
+                                                )}
                                             </Button>
                                         </div>
                                     </div>
