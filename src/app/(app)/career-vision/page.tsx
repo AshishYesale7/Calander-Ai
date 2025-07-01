@@ -1,10 +1,11 @@
 
 'use client';
 import { useState } from 'react';
+import type { CareerGoal, Skill } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight } from 'lucide-react';
+import { Eye, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
@@ -20,7 +21,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
+import { useAuth } from '@/context/AuthContext';
+import { saveCareerGoal } from '@/services/careerGoalsService';
+import { saveSkill } from '@/services/skillsService';
 
 const getResourceIcon = (type: GenerateCareerVisionOutput['suggestedResources'][0]['type']) => {
   switch (type) {
@@ -40,6 +43,9 @@ export default function CareerVisionPage() {
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const { toast } = useToast();
   const { apiKey } = useApiKey();
+  const { user } = useAuth();
+  
+  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
 
   const handleGenerateVision = async () => {
     if (!userInput.trim()) {
@@ -53,6 +59,7 @@ export default function CareerVisionPage() {
     
     setIsLoading(true);
     setCareerPlan(null); // Clear previous plan
+    setAddedItems(new Set()); // Clear added items for the new plan
     
     try {
       const result = await generateCareerVision({ aspirations: userInput, apiKey });
@@ -60,10 +67,8 @@ export default function CareerVisionPage() {
     } catch (error) {
       console.error('Error generating career vision:', error);
       if (!apiKey) {
-        // If the user didn't provide a key and it failed, the server key is likely missing.
         setShowApiKeyDialog(true);
       } else {
-        // If the user DID provide a key and it failed, their key is likely invalid.
         toast({
             title: 'API Key Error',
             description: 'Your provided Gemini API key appears to be invalid or has insufficient permissions. Please check it in Settings.',
@@ -73,6 +78,48 @@ export default function CareerVisionPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddGoal = async (roadmapStep: GenerateCareerVisionOutput['roadmap'][0]) => {
+    if (!user) return;
+    const goalId = `goal-${roadmapStep.step}`;
+    
+    const newGoal: Omit<CareerGoal, 'deadline'> & { deadline?: string | null } = {
+        id: `vision-${Date.now()}-${roadmapStep.step}`,
+        title: roadmapStep.title,
+        description: `${roadmapStep.description} (Suggested Duration: ${roadmapStep.duration})`,
+        progress: 0,
+    };
+
+    try {
+      await saveCareerGoal(user.uid, newGoal);
+      toast({ title: 'Goal Added', description: `"${roadmapStep.title}" has been added to your Career Goals.` });
+      setAddedItems(prev => new Set(prev).add(goalId));
+    } catch (error) {
+      console.error('Failed to save career goal:', error);
+      toast({ title: 'Error', description: 'Could not save the goal.', variant: 'destructive' });
+    }
+  };
+
+  const handleAddSkill = async (skillName: string) => {
+    if (!user) return;
+    
+    const newSkill: Omit<Skill, 'lastUpdated'> & { lastUpdated: string } = {
+        id: `vision-${Date.now()}-${skillName.replace(/\s+/g, '-')}`,
+        name: skillName,
+        category: 'Other',
+        proficiency: 'Beginner',
+        lastUpdated: new Date().toISOString(),
+    };
+
+    try {
+      await saveSkill(user.uid, newSkill);
+      toast({ title: 'Skill Added', description: `"${skillName}" has been added to your Skills.` });
+      setAddedItems(prev => new Set(prev).add(skillName));
+    } catch (error) {
+      console.error('Failed to save skill:', error);
+      toast({ title: 'Error', description: 'Could not save the skill.', variant: 'destructive' });
     }
   };
 
@@ -162,9 +209,21 @@ export default function CareerVisionPage() {
                     </h3>
                     <ul className="space-y-2 list-inside">
                         {careerPlan.developmentAreas.map((area, i) => (
-                             <li key={i} className="flex items-start">
-                                <ArrowRight className="h-4 w-4 mr-3 mt-1 text-accent flex-shrink-0" />
-                                <span>{area}</span>
+                             <li key={i} className="flex items-center justify-between gap-2">
+                                <div className="flex items-start">
+                                  <ArrowRight className="h-4 w-4 mr-3 mt-1 text-accent flex-shrink-0" />
+                                  <span>{area}</span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleAddSkill(area)}
+                                  disabled={addedItems.has(area)}
+                                >
+                                  {addedItems.has(area) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                  {addedItems.has(area) ? 'Added' : 'Add Skill'}
+                                </Button>
                             </li>
                         ))}
                     </ul>
@@ -177,23 +236,32 @@ export default function CareerVisionPage() {
                   <CardTitle className="font-headline text-xl text-primary flex items-center">
                       <Map className="mr-2 h-5 w-5 text-accent"/> Your Actionable Roadmap
                   </CardTitle>
-                  <CardDescription>A step-by-step guide to get you started.</CardDescription>
+                  <CardDescription>A step-by-step guide to get you started. Add these goals to your dashboard!</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                   {careerPlan.roadmap.map((step) => (
-                      <div key={step.step} className="flex items-start gap-4">
-                          <div className="flex flex-col items-center">
-                              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-bold text-lg">
-                                  {step.step}
-                              </div>
-                              {step.step < careerPlan.roadmap.length && <div className="w-0.5 h-12 bg-border mt-2"></div>}
+                      <div key={step.step} className="p-3 rounded-md border border-border/50 bg-background/30 flex items-start gap-4">
+                          <div className="h-10 w-10 rounded-full bg-accent flex-shrink-0 flex items-center justify-center text-accent-foreground font-bold text-lg">
+                              {step.step}
                           </div>
                           <div className="flex-1">
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-semibold text-lg text-primary">{step.title}</h4>
-                                <Badge variant="outline">{step.duration}</Badge>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-semibold text-lg text-primary">{step.title}</h4>
+                                    <Badge variant="outline" className="mt-1">{step.duration}</Badge>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={() => handleAddGoal(step)}
+                                  disabled={addedItems.has(`goal-${step.step}`)}
+                                >
+                                  {addedItems.has(`goal-${step.step}`) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                  {addedItems.has(`goal-${step.step}`) ? 'Added' : 'Add Goal'}
+                                </Button>
                               </div>
-                              <p className="text-muted-foreground mt-1">{step.description}</p>
+                              <p className="text-muted-foreground mt-2 text-sm">{step.description}</p>
                           </div>
                       </div>
                   ))}
@@ -235,7 +303,7 @@ export default function CareerVisionPage() {
                   </CardHeader>
                   <CardContent>
                       <h4 className="font-semibold text-primary">{careerPlan.diagramSuggestion.type}</h4>
-                      <p className="text-muted-foreground mt-1">{careerPlan.diagramSuggestion.description}</p>
+                      <p className="text-muted-foreground mt-1 text-sm">{careerPlan.diagramSuggestion.description}</p>
                   </CardContent>
               </Card>
             </div>
