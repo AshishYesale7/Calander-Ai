@@ -226,7 +226,7 @@ export default function CareerVisionPage() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 rows={6}
-                className="bg-background/50 focus:bg-background text-foreground"
+                className="bg-white text-gray-900 placeholder:text-gray-400 focus-visible:ring-accent"
               />
               <Button onClick={handleGenerateVision} disabled={isLoading || !userInput.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base py-6 px-8">
                 {isLoading ? (
