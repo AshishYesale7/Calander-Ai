@@ -127,7 +127,11 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
         }
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ title: 'Summarization Error', description: errorMessage, variant: 'destructive' });
+        if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+            toast({ title: 'AI Service Unavailable', description: 'The summarization model is temporarily overloaded. Please try again later.', variant: 'destructive' });
+        } else {
+            toast({ title: 'Summarization Error', description: errorMessage, variant: 'destructive' });
+        }
     } finally {
         setSummarizingId(null);
     }

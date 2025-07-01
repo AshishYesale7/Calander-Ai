@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import type { NewsArticle } from '@/types';
@@ -79,11 +80,20 @@ export default function NewsPage() {
       setSummarizedContent(prev => ({ ...prev, [article.id]: result.summary }));
     } catch (error) {
       console.error('Error summarizing article:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to summarize article. Please try again.',
-        variant: 'destructive',
-      });
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+        toast({
+            title: 'AI Service Unavailable',
+            description: 'The summarization model is temporarily overloaded. Please try again later.',
+            variant: 'destructive',
+        });
+      } else {
+        toast({
+            title: 'Error',
+            description: 'Failed to summarize article. Your API key may be invalid or the service is down.',
+            variant: 'destructive',
+        });
+      }
     } finally {
       setSummarizingArticleId(null);
     }

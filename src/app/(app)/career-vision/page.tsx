@@ -95,14 +95,23 @@ export default function CareerVisionPage() {
 
     } catch (error) {
       console.error('Error generating career vision:', error);
-      if (!apiKey) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+          toast({
+              title: 'AI Service Temporarily Unavailable',
+              description: "The AI model is currently overloaded. This is a temporary issue. Please try again in a few moments.",
+              variant: 'destructive',
+              duration: 8000,
+          });
+      } else if (!apiKey) {
         setShowApiKeyDialog(true);
       } else {
         toast({
-            title: 'API Key Error',
-            description: 'Your provided Gemini API key appears to be invalid or has insufficient permissions. Please check it in Settings.',
+            title: 'API Generation Error',
+            description: 'Failed to generate the plan. Your API key might be invalid or the service may be down. Please check your key in Settings and try again.',
             variant: 'destructive',
-            duration: 8000,
+            duration: 9000,
         });
       }
     } finally {

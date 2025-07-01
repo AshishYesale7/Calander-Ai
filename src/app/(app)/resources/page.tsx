@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import type { ResourceLink } from '@/types';
@@ -97,7 +98,12 @@ export default function ResourcesPage() {
       }
     } catch (error) {
       console.error('Error fetching AI suggestions:', error);
-      toast({ title: "Error", description: "Failed to fetch AI suggestions.", variant: "destructive" });
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+          toast({ title: "AI Service Unavailable", description: "The suggestion model is temporarily overloaded. Please try again later.", variant: "destructive" });
+      } else {
+          toast({ title: "Error", description: "Failed to fetch AI suggestions. Your API key may be invalid.", variant: "destructive" });
+      }
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -151,7 +157,7 @@ export default function ResourcesPage() {
         } catch (error) {
             console.error("Failed to save resource to Firestore", error);
             // DO NOT REVERT.
-            toast({ title: "Sync Error", description: "Failed to save resource to the server. Your changes have been saved locally.", variant: "destructive" });
+            toast({ title: "Sync Error", description: "Failed to save resource to the server. Your changes are saved locally.", variant: "destructive" });
         }
     }
   };

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -76,9 +77,14 @@ export default function TodaysPlanCard() {
 
     } catch (err: any) {
       console.error('Error in fetchAndGeneratePlan:', err);
-      const errorMessage = err.message || "Failed to generate daily plan.";
+      let errorMessage = err.message || "Failed to generate daily plan.";
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+          errorMessage = "The AI model for planning is temporarily overloaded. Please try again in a few moments.";
+          toast({ title: "AI Service Unavailable", description: errorMessage, variant: "destructive" });
+      } else {
+          toast({ title: "Planning Error", description: errorMessage, variant: "destructive" });
+      }
       setError(errorMessage);
-      toast({ title: "Planning Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

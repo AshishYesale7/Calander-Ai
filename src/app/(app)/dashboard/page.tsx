@@ -278,8 +278,14 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Error processing Google data:', error);
       const errorMessage = error.message || 'Failed to fetch or process Google data.';
-      setSyncError(errorMessage);
-      toast({ title: "Sync Error", description: errorMessage, variant: "destructive" });
+      
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+          setSyncError("The AI service is temporarily overloaded. Please try syncing again in a few moments.");
+          toast({ title: "AI Service Unavailable", description: "The AI service is temporarily overloaded. Please try again later.", variant: "destructive" });
+      } else {
+          setSyncError(errorMessage);
+          toast({ title: "Sync Error", description: errorMessage, variant: "destructive" });
+      }
     }
     setIsLoading(false);
   }, [user, apiKey, isGoogleConnected, toast, displayedTimelineEvents, transformInsightToEvent]);
