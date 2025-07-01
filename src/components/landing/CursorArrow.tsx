@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type RefObject } from 'react';
+import { useState, useEffect, type RefObject, useRef, useCallback } from 'react';
 
 interface CursorArrowProps {
   targetRef: RefObject<HTMLElement>;
@@ -9,40 +9,54 @@ interface CursorArrowProps {
 export default function CursorArrow({ targetRef }: CursorArrowProps) {
   const [path, setPath] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+  const mousePositionRef = useRef({ x: 0, y: 0 });
+
+  // Use useCallback to memoize the update function, preventing re-creation on every render
+  const updateArrow = useCallback(() => {
+    if (!targetRef.current) return;
+
+    const { x: mouseX, y: mouseY } = mousePositionRef.current;
+    
+    // Don't draw if the mouse hasn't moved yet
+    if (mouseX === 0 && mouseY === 0) return;
+
+    const targetRect = targetRef.current.getBoundingClientRect();
+    const targetX = targetRect.left + targetRect.width / 2;
+    const targetY = targetRect.bottom + 10;
+
+    const controlX = mouseX + (targetX - mouseX) * 0.5;
+    const controlY = Math.max(mouseY, targetY) + 100;
+
+    setPath(`M ${mouseX} ${mouseY} Q ${controlX} ${controlY} ${targetX} ${targetY}`);
+  }, [targetRef]); // Dependency on targetRef ensures it's up to date
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!targetRef.current) return;
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
       if (!isVisible) setIsVisible(true);
+      updateArrow();
+    };
 
-      const targetRect = targetRef.current.getBoundingClientRect();
-      // Target the bottom center of the button
-      const targetX = targetRect.left + targetRect.width / 2;
-      const targetY = targetRect.bottom + 10;
-
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-
-      // A single control point to define the arc
-      // Place it halfway between mouse and target on X, but dip it down on Y
-      const controlX = mouseX + (targetX - mouseX) * 0.5;
-      const controlY = Math.max(mouseY, targetY) + 100;
-
-      const newPath = `M ${mouseX} ${mouseY} Q ${controlX} ${controlY} ${targetX} ${targetY}`;
-      setPath(newPath);
+    const handleScroll = () => {
+      // Recalculate path on scroll using the last known mouse position
+      if (isVisible) {
+        updateArrow();
+      }
     };
 
     // Delay attachment to avoid immediate rendering at 0,0
     const timer = setTimeout(() => {
-        window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove);
+      // Add the crucial scroll listener
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }, 100);
-
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [targetRef, isVisible]);
+  }, [isVisible, updateArrow]); // Rerun effect if isVisible or updateArrow changes
 
   return (
     <svg
