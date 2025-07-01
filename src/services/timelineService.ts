@@ -121,12 +121,39 @@ export const deleteTimelineEvent = async (userId: string, eventId: string): Prom
 export const restoreTimelineEvent = async (userId: string, eventId: string): Promise<void> => {
     const eventsCollection = getTimelineEventsCollection(userId);
     const eventDocRef = doc(eventsCollection, eventId);
-    // Remove the deletedAt field to restore the event
+
+    const eventSnap = await getDoc(eventDocRef);
+    if (!eventSnap.exists()) {
+        console.warn(`Event ${eventId} not found for restoration.`);
+        return;
+    }
+
+    const eventData = fromFirestore(eventSnap);
+    let newGoogleEventId = eventData.googleEventId || null;
+
+    // Check if the event was previously synced with Google.
+    if (eventData.googleEventId) {
+        try {
+            // Re-create the event on Google Calendar, as it was deleted.
+            const newGoogleEvent = await createGoogleCalendarEvent(userId, eventData);
+            if (newGoogleEvent && newGoogleEvent.id) {
+                newGoogleEventId = newGoogleEvent.id;
+            } else {
+                // If creation failed for some reason, we nullify the ID to prevent sync issues.
+                newGoogleEventId = null;
+            }
+        } catch (error) {
+            console.error(`Failed to re-create Google Calendar event for ${eventId}. Event will be restored locally only.`, error);
+            // We set the ID to null so the app knows it's no longer synced.
+            newGoogleEventId = null; 
+        }
+    }
+
+    // Restore the event in Firestore by removing 'deletedAt' and updating the Google Event ID.
     await updateDoc(eventDocRef, {
-        deletedAt: deleteField()
+        deletedAt: deleteField(),
+        googleEventId: newGoogleEventId, // Update with the new ID, or null if it failed/wasn't synced
     });
-    // Note: This does not re-create the event in Google Calendar automatically.
-    // The user can re-sync by editing the event. This is a safer approach.
 };
 
 // New function to permanently delete an event from Firestore
