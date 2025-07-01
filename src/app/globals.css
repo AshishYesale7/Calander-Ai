@@ -357,15 +357,17 @@ body {
   box-shadow: inset 0px 20px 80px 30px rgba(60, 105, 138, 0.85);
 }
 
-/* New Landing Page Glassmorphic Header */
+/* New Landing Page Glassmorphic Header with Spotlight Effect */
 .landing-header-glassy {
   @apply inline-flex items-center p-1.5 gap-2;
   border-radius: 9999px;
-  background: linear-gradient(135deg, hsla(265, 80%, 70%, 0.05), hsla(320, 80%, 70%, 0.05));
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background-color: hsla(0, 0%, 10%, 0.35);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
-  box-shadow: inset 0 1px 1px hsla(0, 0%, 100%, 0.1), 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: 
+    inset 0 1.5px 1px hsla(234, 14%, 72%, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .landing-header-link {
@@ -408,3 +410,5 @@ body {
     stroke-dashoffset: -158px;
   }
 }
+
+    
