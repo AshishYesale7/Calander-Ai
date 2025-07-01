@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { FC} from 'react';
@@ -128,6 +127,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
   onSubmit,
   onCancel,
   className,
+  isAddingNewEvent,
   isGoogleConnected,
 }) => {
   const form = useForm<EditEventFormValues>({
@@ -164,9 +164,9 @@ const EditEventForm: FC<EditEventFormProps> = ({
       priority: eventToEdit.priority || 'None',
       url: eventToEdit.url || '',
       imageUrl: eventToEdit.imageUrl || '',
-      syncToGoogle: !!eventToEdit.googleEventId,
+      syncToGoogle: isAddingNewEvent ? isGoogleConnected : !!eventToEdit.googleEventId,
     });
-  }, [eventToEdit, form]);
+  }, [eventToEdit, form, isAddingNewEvent, isGoogleConnected]);
 
   return (
     <Form {...form}>
