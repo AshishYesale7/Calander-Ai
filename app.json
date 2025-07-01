@@ -1,7 +1,7 @@
 
 {
-  "name": "FutureSight Career Planner",
-  "description": "An AI-powered career and academic planning application built with Next.js and Genkit. This file serves as a reference for the environment variables required for deployment.",
+  "name": "Calendar.ai",
+  "description": "An AI-powered calendar assistant built with Next.js and Genkit. This file serves as a reference for the environment variables required for deployment.",
   "env": {
     "GEMINI_API_KEY": {
       "description": "Your Google AI Gemini API key.",

@@ -43,6 +43,7 @@ import CustomizeThemeModal from './CustomizeThemeModal';
 import ProfileModal from './ProfileModal';
 import SettingsModal from './SettingsModal';
 import LegalModal from './LegalModal';
+import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -109,10 +110,9 @@ export default function SidebarNav() {
         <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
           <Link href="/dashboard" className="text-center">
             <div className="flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-              <h1 className="font-headline text-2xl font-semibold text-white">FutureSight</h1>
+              <CalendarAiLogo />
+              <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
             </div>
-            <p className="text-xs text-sidebar-foreground/70 -mt-1">by H Stream</p>
           </Link>
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-4">

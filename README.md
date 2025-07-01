@@ -1,6 +1,6 @@
-# FutureSight AI Career Planner
+# Calendar.ai
 
-This is a Next.js starter project for an AI-powered career and academic planning application.
+This is a Next.js starter project for an AI-powered calendar and planning application.
 
 ## Getting Started
 

@@ -466,7 +466,7 @@ export default function DashboardPage() {
 
     const icsEvents = displayedTimelineEvents.map(event => {
       let icsEvent = 'BEGIN:VEVENT\n';
-      icsEvent += `UID:${event.id}@futuresight.app\n`;
+      icsEvent += `UID:${event.id}@calendar.ai\n`;
       icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}\n`;
       icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}\n`;
       if (event.endDate) {
@@ -480,10 +480,10 @@ export default function DashboardPage() {
       return icsEvent;
     }).join('');
 
-    const icsFileContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//FutureSight//AI Career Planner//EN\n${icsEvents}END:VCALENDAR`;
+    const icsFileContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Calendar.ai//AI Calendar Assistant//EN\n${icsEvents}END:VCALENDAR`;
     
     const blob = new Blob([icsFileContent], { type: 'text/calendar;charset=utf-8' });
-    saveAs(blob, 'futuresight-calendar.ics');
+    saveAs(blob, 'calendar.ai.ics');
     toast({ title: 'Export Successful', description: 'Your calendar has been downloaded as an .ics file.' });
 
   }, [displayedTimelineEvents, toast]);

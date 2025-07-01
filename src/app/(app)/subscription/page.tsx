@@ -71,8 +71,8 @@ export default function SubscriptionPage() {
             const options = {
                 key: data.key_id,
                 subscription_id: data.subscription_id,
-                name: 'FutureSight Subscription',
-                description: `FutureSight - ${plans[planId].title}`,
+                name: 'Calendar.ai Subscription',
+                description: `Calendar.ai - ${plans[planId].title}`,
                 image: 'https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg',
                 handler: async function (response: any) {
                     const verificationRes = await fetch('/api/payment/verify', {
@@ -134,7 +134,7 @@ export default function SubscriptionPage() {
                        <Crown className="mr-3 h-8 w-8 text-accent"/> Manage Subscription
                     </h1>
                     <p className="text-foreground/80 mt-1">
-                        Choose a plan that fits your needs to unlock the full potential of FutureSight.
+                        Choose a plan that fits your needs to unlock the full potential of Calendar.ai.
                     </p>
                 </div>
                 

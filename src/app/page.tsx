@@ -11,6 +11,7 @@ import { LandingHeader } from '@/components/layout/LandingHeader';
 import StarryBackground from '@/components/landing/StarryBackground';
 import { Badge } from '@/components/ui/badge';
 import CursorArrow from '@/components/landing/CursorArrow';
+import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <Card className="frosted-glass text-center p-8 transition-all duration-300 hover:border-accent hover:-translate-y-2 bg-card/60">
@@ -82,12 +83,12 @@ export default function LandingPage() {
                     </div>
 
                     <div className="relative z-10 max-w-4xl">
-                        <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Chart Your Future. Master Your Present.</h1>
+                        <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Your Calendar, Reimagined.</h1>
                         <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
-                            FutureSight is your AI-powered copilot for career and academic excellence. Turn aspirations into actionable plans, optimize your daily schedule, and unlock your full potential.
+                            Calendar.ai is your intelligent assistant for perfect organization. Sync your life, generate smart daily plans, and achieve your goals with the power of AI.
                         </p>
                         <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-7 px-10 rounded-full">
-                            <Link href="/auth/signup" ref={ctaButtonRef}>Start Your Journey Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
+                            <Link href="/auth/signup" ref={ctaButtonRef}>Get Started For Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
                         </Button>
                     </div>
                 </section>
@@ -106,24 +107,24 @@ export default function LandingPage() {
                             <div className="text-center max-w-3xl mx-auto mb-16">
                                 <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">A Glimpse Into Your Future</h2>
                                 <p className="mt-4 text-lg text-foreground/80">
-                                    FutureSight combines powerful AI with intuitive planning tools to give you unparalleled clarity on your career path.
+                                    Calendar.ai combines powerful AI with intuitive planning tools to give you unparalleled clarity on your life.
                                 </p>
                             </div>
                             <div className="grid md:grid-cols-3 gap-8">
                                 <FeatureCard
-                                    icon={Bot}
-                                    title="AI-Powered Career Vision"
-                                    description="Describe your passions and our AI will generate a comprehensive career vision, complete with an actionable roadmap."
+                                    icon={Calendar}
+                                    title="Intelligent Sync"
+                                    description="Connect Google Calendar, Tasks, and Gmail. Calendar.ai processes everything into one unified, smart timeline."
                                 />
                                 <FeatureCard
-                                    icon={Calendar}
-                                    title="Intelligent Timeline & Sync"
-                                    description="Connect your Google Calendar and watch as our AI processes your events, tasks, and emails into a unified, intelligent timeline."
+                                    icon={Bot}
+                                    title="Smart Daily Planning"
+                                    description="Let our AI analyze your schedule, goals, and even emails to generate the perfect plan for your day."
                                 />
                                 <FeatureCard
                                     icon={Brain}
-                                    title="Skills Hub & Resource Discovery"
-                                    description="Track your skill progression and get hyper-relevant learning resources—books, courses, and tools—to accelerate your growth."
+                                    title="AI-Powered Insights"
+                                    description="From summarizing important emails to suggesting resources, get AI assistance that helps you stay ahead."
                                 />
                             </div>
                         </div>
@@ -135,7 +136,7 @@ export default function LandingPage() {
                             <div className="text-center max-w-3xl mx-auto mb-16">
                                 <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Choose Your Plan</h2>
                                 <p className="mt-4 text-lg text-gray-200">
-                                    Start for free, then unlock the full power of FutureSight with a plan that fits your journey.
+                                    Start for free, then unlock the full power of Calendar.ai with a plan that fits your journey.
                                 </p>
                             </div>
                             <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
@@ -172,10 +173,10 @@ export default function LandingPage() {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                                 <div className="col-span-1 md:col-span-2">
                                     <Link href="/" className="flex items-center gap-2 mb-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-                                        <h1 className="font-headline text-2xl font-semibold text-white">FutureSight</h1>
+                                        <CalendarAiLogo />
+                                        <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
                                     </Link>
-                                    <p className="max-w-md text-sm text-foreground/60">Your AI-powered copilot for career and academic excellence. Turn aspirations into actionable plans and unlock your full potential.</p>
+                                    <p className="max-w-md text-sm text-foreground/60">Your AI-powered assistant for calendar and life organization. Turn aspirations into actionable plans and unlock your full potential.</p>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-foreground mb-4">Links</h4>
@@ -194,7 +195,7 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-16 pt-8 border-t border-border/20 flex flex-col sm:flex-row justify-between items-center">
-                                <p className="text-sm">&copy; {new Date().getFullYear()} FutureSight by H Stream. All rights reserved.</p>
+                                <p className="text-sm">&copy; {new Date().getFullYear()} Calendar.ai. All rights reserved.</p>
                                 <div className="flex gap-4 mt-4 sm:mt-0">
                                     <Link href="#" className="hover:text-primary transition-colors"><Github className="h-5 w-5" /></Link>
                                     <Link href="#" className="hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></Link>

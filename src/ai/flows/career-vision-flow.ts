@@ -57,7 +57,7 @@ const careerVisionFlow = ai.defineFlow(
   },
   async (input) => {
     // Construct the prompt string manually
-    const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'FutureSight'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
+    const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
 
 User's Aspirations:
 ${input.aspirations}
