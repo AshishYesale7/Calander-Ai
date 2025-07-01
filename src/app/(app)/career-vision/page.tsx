@@ -295,52 +295,76 @@ export default function CareerVisionPage() {
                   <p className="text-foreground/90 text-lg leading-relaxed">{careerPlan.visionStatement}</p>
                 </CardContent>
               </Card>
+
               <Card className="frosted-glass shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline text-xl text-primary">Personal Analysis</CardTitle>
                     <CardDescription>Strengths to leverage and areas for growth based on your input.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-8">
+                <CardContent className="space-y-8">
                     <div>
                         <h3 className="font-semibold text-lg flex items-center text-primary mb-3">
                             <CheckCircle className="mr-2 h-5 w-5 text-green-400"/> Key Strengths
                         </h3>
-                        <ul className="space-y-2 list-inside">
+                        <ul className="space-y-2 list-inside columns-1 md:columns-2">
                             {careerPlan.keyStrengths.map((strength, i) => (
-                                <li key={i} className="flex items-start">
+                                <li key={i} className="flex items-start break-inside-avoid-column">
                                     <ArrowRight className="h-4 w-4 mr-3 mt-1 text-accent flex-shrink-0" />
                                     <span>{strength}</span>
                                 </li>
                             ))}
                         </ul>
                     </div>
-                     <div>
-                        <h3 className="font-semibold text-lg flex items-center text-primary mb-3">
-                            <Lightbulb className="mr-2 h-5 w-5 text-yellow-400"/> Development Areas
+                    
+                    <div>
+                        <h3 className="font-semibold text-lg flex items-center text-primary mb-4">
+                            <Lightbulb className="mr-2 h-5 w-5 text-yellow-400"/> Recommended Development Areas
                         </h3>
-                        <ul className="space-y-2 list-inside">
-                            {careerPlan.developmentAreas.map((area, i) => (
-                                 <li key={i} className="flex items-center justify-between gap-2">
-                                    <div className="flex items-start">
-                                      <ArrowRight className="h-4 w-4 mr-3 mt-1 text-accent flex-shrink-0" />
-                                      <span>{area}</span>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 text-xs"
-                                      onClick={() => handleAddSkill(area)}
-                                      disabled={addedItems.has(area)}
-                                    >
-                                      {addedItems.has(area) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                      {addedItems.has(area) ? 'Added' : 'Add Skill'}
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+                                <h4 className="font-semibold text-base text-primary mb-2">Technical Skills</h4>
+                                <ul className="space-y-2">
+                                    {careerPlan.developmentAreas.technical.map((skill, i) => (
+                                        <li key={`tech-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
+                                            <span className="flex-1">{skill}</span>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
+                                                {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+                                <h4 className="font-semibold text-base text-primary mb-2">Hard Skills</h4>
+                                <ul className="space-y-2">
+                                    {careerPlan.developmentAreas.hard.map((skill, i) => (
+                                       <li key={`hard-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
+                                           <span className="flex-1">{skill}</span>
+                                           <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
+                                               {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
+                                           </Button>
+                                       </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+                                <h4 className="font-semibold text-base text-primary mb-2">Soft Skills</h4>
+                                <ul className="space-y-2">
+                                    {careerPlan.developmentAreas.soft.map((skill, i) => (
+                                        <li key={`soft-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
+                                            <span className="flex-1">{skill}</span>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
+                                                {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
               </Card>
+
               <Card className="frosted-glass shadow-lg">
                   <CardHeader>
                       <CardTitle className="font-headline text-xl text-primary flex items-center">

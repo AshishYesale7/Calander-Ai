@@ -26,7 +26,11 @@ export type GenerateCareerVisionInput = z.infer<typeof GenerateCareerVisionInput
 const GenerateCareerVisionOutputSchema = z.object({
   visionStatement: z.string().describe("A compelling, single-paragraph career vision statement based on the user's input."),
   keyStrengths: z.array(z.string()).describe("A list of 3-5 key strengths identified from the user's input."),
-  developmentAreas: z.array(z.string()).describe("A list of 3-5 potential areas for skill development."),
+  developmentAreas: z.object({
+    technical: z.array(z.string()).describe("A list of 3-5 key technical skills to develop (e.g., programming languages, frameworks, tools)."),
+    soft: z.array(z.string()).describe("A list of 2-4 key soft skills to develop (e.g., communication, teamwork, leadership)."),
+    hard: z.array(z.string()).describe("A list of 2-3 key hard skills (non-technical but tangible skills) to develop (e.g., project management, data analysis, public speaking).")
+  }).describe("A breakdown of skills to develop, categorized into technical, soft, and hard skills."),
   roadmap: z.array(z.object({
     step: z.number().describe("The step number in the roadmap."),
     title: z.string().describe("A concise title for this step."),
@@ -69,7 +73,7 @@ Based on this input, generate a complete career plan structured according to the
 Instructions:
 1.  **visionStatement**: Synthesize the user's input into a powerful, single-paragraph career vision statement.
 2.  **keyStrengths**: Analyze the user's aspirations to identify and list 3-5 of their implied or stated strengths.
-3.  **developmentAreas**: Based on their goals, suggest 3-5 key areas where they could focus on learning and development.
+3.  **developmentAreas**: Analyze their goals to suggest a categorized list of skills. Provide specific technical skills (like 'Python' or 'React'), soft skills (like 'Public Speaking' or 'Team Collaboration'), and hard skills (non-technical but tangible abilities like 'Project Management' or 'Agile Methodologies').
 4.  **roadmap**: Create a clear, actionable roadmap with 3-5 steps. Each step should have a title, a brief description, and an estimated duration. This should be a logical progression from their current state towards their vision.
 5.  **suggestedResources**: Recommend 2-4 specific, high-quality online resources (courses, books, websites, communities, tools, articles) that align with their goals. For each, provide a title, a valid URL, a brief description explaining its relevance, and a category.
 6.  **diagramSuggestion**: Suggest a type of diagram (like a Flowchart, Mind Map, or Timeline) that the user could create to visually map out their plan. Briefly describe what this diagram should illustrate.
