@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
   CommandDialog,
@@ -71,6 +71,7 @@ export function CommandPalette({
   isFullScreen,
 }: CommandPaletteProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { setTheme, theme } = useTheme();
   
   const [search, setSearch] = useState('');
@@ -115,6 +116,12 @@ export function CommandPalette({
             description: `"${result.title}" has been added to your timeline.`
         });
         onOpenChange(false);
+        // Force a refresh to show the new event
+        if (pathname === '/dashboard') {
+            window.location.reload();
+        } else {
+            router.push('/dashboard');
+        }
     } catch (error) {
         console.error("AI Event Creation Error:", error);
         toast({
