@@ -1,7 +1,8 @@
+
 'use client';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
@@ -9,6 +10,10 @@ import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import { Command } from 'lucide-react';
+import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
+import ProfileModal from '@/components/layout/ProfileModal';
+import SettingsModal from '@/components/layout/SettingsModal';
+import LegalModal from '@/components/layout/LegalModal';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -16,6 +21,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Lifted state for modals
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -50,6 +62,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // Fullscreen effect
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  }, []);
+
+  const handleToggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
     return (
       <div className="flex h-screen w-full items-center justify-center" style={{ backgroundColor: '#15161f' }}>
@@ -58,19 +89,32 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  const modalProps = {
+    setIsCustomizeModalOpen,
+    setIsProfileModalOpen,
+    setIsSettingsModalOpen,
+    setIsLegalModalOpen,
+    handleToggleFullScreen,
+    isFullScreen,
+  };
+
   return (
     <>
       <div className="flex min-h-screen">
-        <SidebarNav />
+        <SidebarNav {...modalProps} />
         <div className="flex flex-1 flex-col md:pl-64"> {/* Adjusted pl for md screens and up */}
-          <Header />
+          <Header {...modalProps} />
           <main className="flex-1 p-6 pb-24 overflow-auto"> {/* Added bottom padding to avoid overlap */}
             {children}
           </main>
         </div>
       </div>
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
-      <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} />
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onOpenChange={setIsCommandPaletteOpen}
+        {...modalProps}
+      />
       {/* Mobile Spotlight Trigger (Dynamic Island) */}
       <button
         onClick={() => setIsCommandPaletteOpen(true)}
@@ -83,6 +127,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>
+
+      {/* Render Modals Here */}
+      <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
+      <ProfileModal isOpen={isProfileModalOpen} onOpenChange={setIsProfileModalOpen} />
+      <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
+      <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
     </>
   );
 }

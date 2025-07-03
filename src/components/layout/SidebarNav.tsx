@@ -38,11 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from '@/hooks/use-theme';
-import { useState, useEffect, useMemo } from 'react'; 
-import CustomizeThemeModal from './CustomizeThemeModal';
-import ProfileModal from './ProfileModal';
-import SettingsModal from './SettingsModal';
-import LegalModal from './LegalModal';
+import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
 const navItems = [
@@ -56,16 +52,27 @@ const navItems = [
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
-export default function SidebarNav() {
+interface SidebarNavProps {
+  setIsCustomizeModalOpen: (open: boolean) => void;
+  setIsProfileModalOpen: (open: boolean) => void;
+  setIsSettingsModalOpen: (open: boolean) => void;
+  setIsLegalModalOpen: (open: boolean) => void;
+  handleToggleFullScreen: () => void;
+  isFullScreen: boolean;
+}
+
+export default function SidebarNav({
+  setIsCustomizeModalOpen,
+  setIsProfileModalOpen,
+  setIsSettingsModalOpen,
+  setIsLegalModalOpen,
+  handleToggleFullScreen,
+  isFullScreen,
+}: SidebarNavProps) {
   const pathname = usePathname();
   const { user, subscription } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const daysLeftInTrial = useMemo(() => {
     if (subscription?.status !== 'trial' || !subscription.endDate) return null;
@@ -75,25 +82,6 @@ export default function SidebarNav() {
     const diffTime = endDate.getTime() - now.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }, [subscription]);
-
-
-  useEffect(() => {
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-  }, []);
-
-  const handleToggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -188,22 +176,6 @@ export default function SidebarNav() {
           </DropdownMenu>
         </div>
       </div>
-      <CustomizeThemeModal
-        isOpen={isCustomizeModalOpen}
-        onOpenChange={setIsCustomizeModalOpen}
-      />
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onOpenChange={setIsProfileModalOpen}
-      />
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onOpenChange={setIsSettingsModalOpen}
-      />
-      <LegalModal
-        isOpen={isLegalModalOpen}
-        onOpenChange={setIsLegalModalOpen}
-      />
     </>
   );
 }

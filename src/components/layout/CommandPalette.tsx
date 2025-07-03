@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,11 @@ import {
   Search,
   Moon,
   Sun,
+  Settings,
+  Palette,
+  UserCircle,
+  Expand,
+  Shrink,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -37,9 +43,22 @@ const menuItems = [
 interface CommandPaletteProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  setIsCustomizeModalOpen: (open: boolean) => void;
+  setIsProfileModalOpen: (open: boolean) => void;
+  setIsSettingsModalOpen: (open: boolean) => void;
+  handleToggleFullScreen: () => void;
+  isFullScreen: boolean;
 }
 
-export function CommandPalette({ isOpen, onOpenChange }: CommandPaletteProps) {
+export function CommandPalette({
+  isOpen,
+  onOpenChange,
+  setIsCustomizeModalOpen,
+  setIsProfileModalOpen,
+  setIsSettingsModalOpen,
+  handleToggleFullScreen,
+  isFullScreen,
+}: CommandPaletteProps) {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
 
@@ -66,6 +85,22 @@ export function CommandPalette({ isOpen, onOpenChange }: CommandPaletteProps) {
           <CommandItem onSelect={() => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light'))}>
             {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
             <span>Toggle Theme</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => setIsSettingsModalOpen(true))}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => setIsCustomizeModalOpen(true))}>
+            <Palette className="mr-2 h-4 w-4" />
+            <span>Customize Theme</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => setIsProfileModalOpen(true))}>
+            <UserCircle className="mr-2 h-4 w-4" />
+            <span>View Profile</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(handleToggleFullScreen)}>
+            {isFullScreen ? <Shrink className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
+            <span>{isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
