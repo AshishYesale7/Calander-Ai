@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { ResourceLink } from '@/types';
 import { mockResourceLinks, mockSkills, mockCareerGoals, mockTimelineEvents } from '@/data/mock';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -59,8 +60,11 @@ export default function ResourcesPage() {
   const { toast } = useToast();
   const { apiKey } = useApiKey();
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Background sync with Firestore
   useEffect(() => {
-    // Background sync with Firestore
     const syncWithFirestore = async () => {
       if (user) {
         try {
@@ -114,6 +118,14 @@ export default function ResourcesPage() {
     setIsModalOpen(true);
   };
   
+  // Effect to handle actions from command palette
+  useEffect(() => {
+    if (searchParams.get('action') === 'newBookmark') {
+      handleOpenModal(null);
+      router.replace('/resources', { scroll: false });
+    }
+  }, [searchParams, router]);
+
   const handleDeleteResource = async (resourceId: string) => {
     const originalResources = bookmarkedResources;
     const newResources = bookmarkedResources.filter(res => res.id !== resourceId);

@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { CareerGoal } from '@/types';
 import { mockCareerGoals } from '@/data/mock';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,9 +58,12 @@ export default function CareerGoalsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<CareerGoal | null>(null);
   const { toast } = useToast();
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
+  // This effect runs once on mount to sync with Firestore in the background
   useEffect(() => {
-    // This effect runs once on mount to sync with Firestore in the background
     const syncWithFirestore = async () => {
       if (user) {
         try {
@@ -75,11 +79,20 @@ export default function CareerGoalsPage() {
     syncWithFirestore();
   }, [user, toast]);
 
-
   const handleOpenModal = (goal: CareerGoal | null) => {
     setEditingGoal(goal);
     setIsModalOpen(true);
   };
+  
+  // Effect to handle actions from command palette
+  useEffect(() => {
+    if (searchParams.get('action') === 'newGoal') {
+      handleOpenModal(null);
+      // Clear the action from the URL
+      router.replace('/career-goals', { scroll: false });
+    }
+  }, [searchParams, router]);
+
 
   const handleDeleteGoal = async (goalId: string) => {
     const originalGoals = goals;

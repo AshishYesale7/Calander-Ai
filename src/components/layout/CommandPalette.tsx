@@ -27,6 +27,7 @@ import {
   UserCircle,
   Expand,
   Shrink,
+  PlusCircle,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -79,6 +80,29 @@ export function CommandPalette({
               <span>{label}</span>
             </CommandItem>
           ))}
+        </CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading="Quick Actions">
+            <CommandItem onSelect={() => runCommand(() => router.push('/dashboard?action=newEvent'))}>
+                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                <span>Add New Event</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push('/career-goals?action=newGoal'))}>
+                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                <span>Add New Goal</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push('/skills?action=newSkill'))}>
+                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                <span>Add New Skill</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push('/resources?action=newBookmark'))}>
+                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                <span>Add Bookmark</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push('/tasks?action=newList'))}>
+                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                <span>New Task List</span>
+            </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Actions">

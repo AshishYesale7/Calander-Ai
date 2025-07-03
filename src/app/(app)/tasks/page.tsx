@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { GoogleTaskList, RawGoogleTask } from '@/types';
@@ -37,7 +38,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -95,6 +95,9 @@ export default function TasksPage() {
   const [newTaskTitles, setNewTaskTitles] = useState<{ [listId: string]: string }>({});
   const [isNewListDialogOpen, setIsNewListDialogOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const fetchAllData = useCallback(async () => {
     if (!user || !isGoogleConnected) {
@@ -141,6 +144,14 @@ export default function TasksPage() {
       setIsLoading(false);
     }
   }, [isGoogleConnected, fetchAllData]);
+  
+  // Effect to handle actions from command palette
+  useEffect(() => {
+    if (searchParams.get('action') === 'newList') {
+      setIsNewListDialogOpen(true);
+      router.replace('/tasks', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleToggleStatus = async (listId: string, taskId: string) => {
     const originalTasks = { ...tasks };

@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import TodaysPlanCard from '@/components/timeline/TodaysPlanCard';
 import EventCalendarView from '@/components/timeline/EventCalendarView';
 import SlidingTimelineView from '@/components/timeline/SlidingTimelineView';
@@ -138,7 +139,10 @@ export default function DashboardPage() {
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-  const importFileRef = useRef<HTMLInputElement>(null);
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   
   const fetchAllEvents = useCallback(async () => {
       if (user) {
@@ -416,6 +420,15 @@ export default function DashboardPage() {
     }
     setIsEditModalOpen(true);
   }, [selectedDateForDayView]);
+  
+  // Effect to handle actions from command palette
+  useEffect(() => {
+    if (searchParams.get('action') === 'newEvent') {
+      handleOpenEditModal();
+      // Clear the action from the URL
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [searchParams, handleOpenEditModal, router]);
 
   const handleCloseEditModal = useCallback(() => {
     setIsEditModalOpen(false);
@@ -516,96 +529,6 @@ export default function DashboardPage() {
 
   }, [activeEvents, toast]);
 
-  const handleImportChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) {
-        toast({ title: 'Not signed in', description: 'You must be signed in to import events.', variant: 'destructive' });
-        return;
-    }
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        const fileContent = event.target?.result;
-        if (typeof fileContent !== 'string') return;
-        
-        try {
-            const response = await fetch('/api/calendar/parse-ics', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ icsContent: fileContent }),
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.message || 'Failed to parse ICS file on server.');
-            }
-
-            const parsedData = result.data;
-            const importedEvents: TimelineEvent[] = [];
-            
-            const existingEventSignatures = new Set(
-                allTimelineEvents.map(evt => `${evt.title}_${evt.date.toISOString()}`)
-            );
-
-            for (const key in parsedData) {
-                if (parsedData.hasOwnProperty(key)) {
-                    const item = parsedData[key];
-                    if (item.type === 'VEVENT') {
-                        const startDate = new Date(item.start);
-                        const eventSignature = `${item.summary}_${startDate.toISOString()}`;
-                        if (existingEventSignatures.has(eventSignature)) {
-                            continue; // Skip duplicate
-                        }
-
-                        const newEvent: TimelineEvent = {
-                            id: `imported-${Date.now()}-${importedEvents.length}`,
-                            title: item.summary,
-                            date: startDate,
-                            endDate: item.end ? new Date(item.end) : undefined,
-                            notes: item.description,
-                            location: item.location,
-                            url: item.url,
-                            type: 'custom',
-                            isAllDay: !item.start.toISOString().includes('T'), // Simple check for all-day
-                            status: 'pending',
-                            isDeletable: true,
-                            priority: 'None'
-                        };
-                        importedEvents.push(newEvent);
-                    }
-                }
-            }
-            
-            if (importedEvents.length > 0) {
-                const updatedEvents = [...allTimelineEvents, ...importedEvents];
-                setAllTimelineEvents(updatedEvents);
-                syncToLocalStorage(updatedEvents);
-
-                // Save new events to Firestore
-                for (const newEvent of importedEvents) {
-                    const { icon, ...data } = newEvent;
-                    const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
-                    await saveTimelineEvent(user.uid, payload, { syncToGoogle: false });
-                }
-                
-                toast({ title: 'Import Successful', description: `${importedEvents.length} new event(s) were imported.` });
-            } else if (result.message) {
-                 toast({ title: 'Import Complete', description: result.message });
-            } else {
-                toast({ title: 'Nothing to Import', description: 'No new events were found in the file.' });
-            }
-
-        } catch (error) {
-            console.error('Error importing .ics file:', error);
-            toast({ title: 'Import Failed', description: error instanceof Error ? error.message : 'The selected file could not be parsed.', variant: 'destructive' });
-        }
-    };
-    reader.readAsText(file, 'UTF-8');
-    e.target.value = ''; // Reset file input
-  }, [user, toast, allTimelineEvents]);
-
 
   return (
     <div className="space-y-8">
@@ -702,7 +625,7 @@ export default function DashboardPage() {
             <Bot className="mr-2 h-5 w-5 text-accent" /> AI-Powered Sync & Data Management
           </CardTitle>
           <CardDescription>
-            Sync your Google data, or import and export your calendar in .ics format.
+            Sync your Google data, or export your calendar in .ics format.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
@@ -715,19 +638,9 @@ export default function DashboardPage() {
                 'Sync Google Calendar & Tasks'
                 )}
             </Button>
-            {/* <Button onClick={() => importFileRef.current?.click()} variant="outline">
-                <Upload className="mr-2 h-4 w-4" /> Import (.ics)
-            </Button> */}
             <Button onClick={handleExportEvents} variant="outline">
                 <Download className="mr-2 h-4 w-4" /> Export (.ics)
             </Button>
-            <input
-                type="file"
-                ref={importFileRef}
-                onChange={handleImportChange}
-                accept=".ics,text/calendar"
-                className="hidden"
-            />
         </CardContent>
       </Card>
 

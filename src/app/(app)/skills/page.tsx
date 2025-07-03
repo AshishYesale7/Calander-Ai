@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Skill } from '@/types';
 import { mockSkills } from '@/data/mock';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -64,9 +65,12 @@ export default function SkillsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const { toast } = useToast();
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
+  // Background sync with Firestore
   useEffect(() => {
-    // Background sync with Firestore
     const syncWithFirestore = async () => {
       if (user) {
         try {
@@ -86,6 +90,14 @@ export default function SkillsPage() {
     setEditingSkill(skill);
     setIsModalOpen(true);
   };
+  
+  // Effect to handle actions from command palette
+  useEffect(() => {
+    if (searchParams.get('action') === 'newSkill') {
+      handleOpenModal(null);
+      router.replace('/skills', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleDeleteSkill = async (skillId: string) => {
     const originalSkills = skills;
