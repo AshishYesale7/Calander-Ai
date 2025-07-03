@@ -35,7 +35,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
-import { createEventFromPrompt } from '@/ai/flows/create-event-flow';
+import { createEventFromPrompt, type CreateEventInput } from '@/ai/flows/create-event-flow';
 import { saveTimelineEvent } from '@/services/timelineService';
 import type { TimelineEvent } from '@/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -85,11 +85,12 @@ export function CommandPalette({
   };
 
   const handleCreateEvent = async () => {
-    if (!search.trim() || !user) return;
+    if (!search.trim() || !user || isCreatingEvent) return;
     setIsCreatingEvent(true);
     
     try {
-        const result = await createEventFromPrompt({ prompt: search, apiKey });
+        const input: CreateEventInput = { prompt: search, apiKey };
+        const result = await createEventFromPrompt(input);
         
         const newEvent: TimelineEvent = {
             id: `ai-${Date.now()}`,
@@ -135,23 +136,30 @@ export function CommandPalette({
         onValueChange={setSearch} 
       />
       <CommandList>
-        <CommandEmpty>
-          {isCreatingEvent ? (
-            <div className="py-6 text-center text-sm flex items-center justify-center gap-2 text-muted-foreground">
-              <LoadingSpinner size="sm" /> Creating event...
-            </div>
-          ) : ( search.trim().length > 2 ? (
-            <CommandItem
-                onSelect={handleCreateEvent}
-                className="flex items-center justify-center cursor-pointer text-center text-sm !bg-accent/10 hover:!bg-accent/20"
-            >
-                <Bot className="mr-2 h-4 w-4 text-accent" />
-                <span>Generate event for: "{search}"</span>
-            </CommandItem>
-          ) : (
-            <div className="py-6 text-center text-sm">No results found.</div>
-          ))}
-        </CommandEmpty>
+        <CommandEmpty>No results found.</CommandEmpty>
+
+        {search.trim().length > 2 && (
+            <CommandGroup heading="AI Actions">
+                 <CommandItem
+                    onSelect={handleCreateEvent}
+                    disabled={isCreatingEvent}
+                    className="cursor-pointer"
+                >
+                    {isCreatingEvent ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2"/>
+                          <span>Creating event...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Bot className="mr-2 h-4 w-4 text-accent" />
+                            <span>Generate event for: "{search}"</span>
+                        </>
+                    )}
+                </CommandItem>
+            </CommandGroup>
+        )}
+
         <CommandGroup heading="Navigation">
           {menuItems.map(({ href, label, icon: Icon }) => (
             <CommandItem key={href} onSelect={() => runCommand(() => router.push(href))}>
