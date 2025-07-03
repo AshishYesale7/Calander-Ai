@@ -47,6 +47,9 @@ const createEventFlow = ai.defineFlow(
 Context:
 - The current date and time is: ${new Date().toISOString()}. Use this to resolve relative dates and times (e.g., "tomorrow", "next Tuesday at 4pm", "in 2 hours").
 
+Here is an example:
+- If the current date is "2024-07-05T10:00:00.000Z" and the user request is "plan a meeting with the team tomorrow at 2pm", the correct output 'date' would be "2024-07-06T14:00:00.000Z" (or the equivalent in UTC based on the full ISO timestamp). The 'endDate' would be one hour later.
+
 User's Request:
 "${input.prompt}"
 

@@ -117,12 +117,10 @@ export function CommandPalette({
         });
         onOpenChange(false);
         
-        // Refresh the page to show the new event without a full reload
-        if (pathname === '/dashboard') {
-            router.refresh();
-        } else {
-            router.push('/dashboard');
-        }
+        // Navigate to the dashboard to ensure the new event is visible.
+        // This is more reliable than router.refresh() for client components.
+        router.push('/dashboard');
+        
     } catch (error) {
         console.error("AI Event Creation Error:", error);
         toast({
