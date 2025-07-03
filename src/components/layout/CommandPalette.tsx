@@ -2,6 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -28,8 +29,17 @@ import {
   Expand,
   Shrink,
   PlusCircle,
+  Bot,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { useApiKey } from '@/hooks/use-api-key';
+import { createEventFromPrompt } from '@/ai/flows/create-event-flow';
+import { saveTimelineEvent } from '@/services/timelineService';
+import type { TimelineEvent } from '@/types';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -62,17 +72,86 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  
+  const [search, setSearch] = useState('');
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { apiKey } = useApiKey();
 
   const runCommand = (command: () => void) => {
     onOpenChange(false);
     command();
   };
 
+  const handleCreateEvent = async () => {
+    if (!search.trim() || !user) return;
+    setIsCreatingEvent(true);
+    
+    try {
+        const result = await createEventFromPrompt({ prompt: search, apiKey });
+        
+        const newEvent: TimelineEvent = {
+            id: `ai-${Date.now()}`,
+            title: result.title,
+            date: new Date(result.date),
+            endDate: result.endDate ? new Date(result.endDate) : undefined,
+            notes: result.notes,
+            isAllDay: result.isAllDay,
+            type: 'ai_suggestion',
+            isDeletable: true,
+            status: 'pending',
+            priority: 'None',
+            location: result.location
+        };
+        
+        const { icon, ...data } = newEvent;
+        const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle: false });
+
+        toast({
+            title: "Event Created with AI",
+            description: `"${result.title}" has been added to your timeline.`
+        });
+        onOpenChange(false);
+    } catch (error) {
+        console.error("AI Event Creation Error:", error);
+        toast({
+            title: "AI Error",
+            description: "Could not create event. The AI might have been unable to understand the request.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsCreatingEvent(false);
+    }
+  };
+
+
   return (
-    <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Type a command or search..." />
+    <CommandDialog open={isOpen} onOpenChange={(open) => { onOpenChange(open); setSearch(''); setIsCreatingEvent(false); }}>
+      <CommandInput 
+        placeholder="Search commands or generate an event..."
+        value={search}
+        onValueChange={setSearch} 
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {isCreatingEvent ? (
+            <div className="py-6 text-center text-sm flex items-center justify-center gap-2 text-muted-foreground">
+              <LoadingSpinner size="sm" /> Creating event...
+            </div>
+          ) : ( search.trim().length > 2 ? (
+            <CommandItem
+                onSelect={handleCreateEvent}
+                className="flex items-center justify-center cursor-pointer text-center text-sm !bg-accent/10 hover:!bg-accent/20"
+            >
+                <Bot className="mr-2 h-4 w-4 text-accent" />
+                <span>Generate event for: "{search}"</span>
+            </CommandItem>
+          ) : (
+            <div className="py-6 text-center text-sm">No results found.</div>
+          ))}
+        </CommandEmpty>
         <CommandGroup heading="Navigation">
           {menuItems.map(({ href, label, icon: Icon }) => (
             <CommandItem key={href} onSelect={() => runCommand(() => router.push(href))}>
