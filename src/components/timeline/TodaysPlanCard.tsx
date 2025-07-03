@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -142,10 +141,10 @@ export default function TodaysPlanCard() {
   const canGoForward = daysFromToday < 3;
 
   const getDisplayDateTitle = (date: Date): string => {
-    if (isToday(date)) return "AI-Powered Daily Plan";
+    if (isToday(date)) return "Today's Plan";
     if (isTomorrow(date)) return "Tomorrow's Plan";
     if (isYesterday(date)) return "Yesterday's Plan";
-    return `Plan for ${format(date, 'MMMM d')}`;
+    return `Plan for ${format(date, 'EEEE, MMMM d')}`;
   };
   
   const renderContent = () => {
