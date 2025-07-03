@@ -116,9 +116,10 @@ export function CommandPalette({
             description: `"${result.title}" has been added to your timeline.`
         });
         onOpenChange(false);
-        // Force a refresh to show the new event
+        
+        // Refresh the page to show the new event without a full reload
         if (pathname === '/dashboard') {
-            window.location.reload();
+            router.refresh();
         } else {
             router.push('/dashboard');
         }
