@@ -12,14 +12,14 @@ import { ai, generateWithApiKey } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // Input schema for the component call
-export const CreateEventInputSchema = z.object({
+const CreateEventInputSchema = z.object({
   prompt: z.string().describe("The user's natural language request for creating an event."),
   apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
 });
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 
 // Output schema the AI must generate
-export const CreateEventOutputSchema = z.object({
+const CreateEventOutputSchema = z.object({
   title: z.string().describe("The concise title for the event."),
   date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
   endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
