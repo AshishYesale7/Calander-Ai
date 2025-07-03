@@ -141,9 +141,9 @@ export default function TodaysPlanCard() {
   const canGoForward = daysFromToday < 3;
 
   const getDisplayDateTitle = (date: Date): string => {
-    if (isToday(date)) return "Today's Plan";
-    if (isTomorrow(date)) return "Tomorrow's Plan";
+    if (isToday(date)) return "AI-Powered Daily Plan";
     if (isYesterday(date)) return "Yesterday's Plan";
+    if (isTomorrow(date)) return "Tomorrow's Plan";
     return `Plan for ${format(date, 'EEEE, MMMM d')}`;
   };
   
