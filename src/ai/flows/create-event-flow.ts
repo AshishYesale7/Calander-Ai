@@ -42,26 +42,39 @@ const createEventFlow = ai.defineFlow(
     outputSchema: CreateEventOutputSchema,
   },
   async (input) => {
-    const promptText = `You are an expert scheduling assistant. Your task is to parse a user's natural language request and convert it into a structured calendar event object.
+    const promptText = `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
 
-Context:
-- The current date and time is: ${new Date().toISOString()}. Use this to resolve relative dates and times (e.g., "tomorrow", "next Tuesday at 4pm", "in 2 hours").
-
-Here is an example:
-- If the current date is "2024-07-05T10:00:00.000Z" and the user request is "plan a meeting with the team tomorrow at 2pm", the correct output 'date' would be "2024-07-06T14:00:00.000Z" (or the equivalent in UTC based on the full ISO timestamp). The 'endDate' would be one hour later.
+Current Context:
+- The current date and time is: ${new Date().toISOString()}. Use this as the reference point for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week").
 
 User's Request:
 "${input.prompt}"
 
 Instructions:
 1.  Analyze the user's request to extract the event's title, start time, end time, and any notes or location.
-2.  If a specific time is not mentioned (e.g., "remind me to call mom on Friday"), create an all-day event by setting 'isAllDay' to true. For all-day events, set the time to the beginning of that day (00:00:00).
-3.  If a start time is mentioned but no end time or duration, infer a reasonable duration. For meetings or calls, assume 1 hour. For tasks, assume 30 minutes.
-4.  If the user provides a vague title, create a concise and clear title.
-5.  Extract any additional details into the 'notes' field.
-6.  All date and time fields in the output must be in the full ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sssZ).
+2.  **Date & Time Processing (Crucial):**
+    -   You MUST resolve all dates and times relative to the "Current Context" provided above.
+    -   The final \`date\` and \`endDate\` fields MUST be in the full ISO 8601 format including timezone information (e.g., \`YYYY-MM-DDTHH:MM:SS.sssZ\`). Assume UTC if no timezone is specified in the user's prompt.
+    -   If the user does not specify an end time or duration, you MUST infer a reasonable duration. For meetings, calls, or appointments, assume 1 hour. For tasks, assume 30 minutes.
+3.  **All-Day Events:**
+    -   If a specific time is not mentioned (e.g., "remind me to call mom on Friday" or "dentist appointment on the 25th"), create an all-day event by setting \`isAllDay\` to true.
+    -   For all-day events, the \`date\` value should be set to the beginning of that day (00:00:00 UTC).
+4.  **Other Fields:**
+    -   If the user provides a vague title, create a concise and clear title.
+    -   Extract any additional details from the prompt into the \`notes\` field.
 
-Generate a JSON object that strictly adheres to the specified output schema.`;
+**Examples (based on a current date of 2024-07-15T10:00:00.000Z):**
+-   **User Request:** "plan a meeting with the team tomorrow at 2pm"
+    -   **Resulting \`date\`:** "2024-07-16T14:00:00.000Z" (assuming UTC)
+    -   **Resulting \`endDate\`:** "2024-07-16T15:00:00.000Z"
+-   **User Request:** "schedule a quick sync in 3 hours"
+    -   **Resulting \`date\`:** "2024-07-15T13:00:00.000Z"
+    -   **Resulting \`endDate\`:** "2024-07-15T13:30:00.000Z" (30 min for a "quick sync")
+-   **User Request:** "block out Friday for project work"
+    -   **Resulting \`isAllDay\`:** true
+    -   **Resulting \`date\`:** "2024-07-19T00:00:00.000Z" (Friday of that week)
+
+Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and the instructions above.`;
 
     const { output } = await generateWithApiKey(input.apiKey, {
       model: 'googleai/gemini-2.0-flash',
