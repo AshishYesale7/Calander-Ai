@@ -51,10 +51,14 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
             endDate: trialEndDate,
         };
         
-        // Save it to the database for this user
-        await updateUserSubscriptionStatus(userId, newTrialSubscription);
+        try {
+            // Save it to the database for this user, but don't let a failure block the user.
+            await updateUserSubscriptionStatus(userId, newTrialSubscription);
+        } catch (error) {
+            console.warn(`Could not save new trial subscription for user ${userId} to Firestore. The user will have a trial for this session only. Error:`, error);
+        }
         
-        // Return the newly created trial subscription
+        // Always return the newly created trial subscription object so the UI is not blocked
         return newTrialSubscription;
     }
 };
