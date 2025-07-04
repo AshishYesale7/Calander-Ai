@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -27,45 +28,31 @@ const GenerateMotivationalQuoteOutputSchema = z.object({
 });
 export type GenerateMotivationalQuoteOutput = z.infer<typeof GenerateMotivationalQuoteOutputSchema>;
 
+
 // The exported function that components will call.
 export async function generateMotivationalQuote(input: GenerateMotivationalQuoteInput): Promise<GenerateMotivationalQuoteOutput> {
-  return motivationalQuoteFlow(input);
-}
+  // Define the prompt with explicit instructions for JSON output.
+  const motivationalQuotePrompt = ai.definePrompt({
+      name: 'motivationalQuotePrompt',
+      input: { schema: GenerateMotivationalQuotePayloadSchema },
+      output: { schema: GenerateMotivationalQuoteOutputSchema },
+      prompt: `You are a motivational speaker. Generate a short, inspiring motivational quote about the following topic: {{{topic}}}.
 
-// Define the prompt with explicit instructions for JSON output.
-const motivationalQuotePrompt = ai.definePrompt({
-    name: 'motivationalQuotePrompt',
-    // The prompt only needs the topic, not the API key.
-    input: { schema: GenerateMotivationalQuotePayloadSchema },
-    output: { schema: GenerateMotivationalQuoteOutputSchema },
-    prompt: `You are a motivational speaker. Generate a short, inspiring motivational quote about the following topic: {{{topic}}}.
+      You must output your response as a JSON object that strictly adheres to the following schema:
+      {
+        "quote": "The generated motivational quote."
+      }
+      `,
+  });
 
-    You must output your response as a JSON object that strictly adheres to the following schema:
-    {
-      "quote": "The generated motivational quote."
-    }
-    `,
-});
+  const { output } = await generateWithApiKey(input.apiKey, {
+      prompt: motivationalQuotePrompt,
+      input: { topic: input.topic },
+  });
 
-// Define the flow that orchestrates the logic.
-const motivationalQuoteFlow = ai.defineFlow(
-  {
-    name: 'motivationalQuoteFlow',
-    inputSchema: GenerateMotivationalQuoteInputSchema,
-    outputSchema: GenerateMotivationalQuoteOutputSchema,
-  },
-  async (input) => {
-    // We use the helper to generate with a custom key if provided.
-    // The prompt only cares about the 'topic', so we pass that from the input.
-    const { output } = await generateWithApiKey(input.apiKey, {
-        prompt: motivationalQuotePrompt,
-        input: { topic: input.topic },
-    });
-
-    if (!output) {
-      throw new Error("The AI model did not return a valid quote.");
-    }
-    
-    return output;
+  if (!output) {
+    throw new Error("The AI model did not return a valid quote.");
   }
-);
+  
+  return output;
+}

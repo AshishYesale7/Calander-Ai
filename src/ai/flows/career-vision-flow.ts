@@ -52,18 +52,8 @@ export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutp
 
 
 export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {
-  return careerVisionFlow(input);
-}
-
-const careerVisionFlow = ai.defineFlow(
-  {
-    name: 'careerVisionFlow',
-    inputSchema: GenerateCareerVisionInputSchema, // Flow now accepts the key
-    outputSchema: GenerateCareerVisionOutputSchema,
-  },
-  async (input) => {
-    // Construct the prompt string manually
-    const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
+  // Construct the prompt string manually
+  const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
 
 User's Aspirations:
 ${input.aspirations}
@@ -78,20 +68,19 @@ Instructions:
 5.  **suggestedResources**: Recommend 2-4 specific, high-quality online resources (courses, books, websites, communities, tools, articles) that align with their goals. For each, provide a title, a valid URL, a brief description explaining its relevance, and a category.
 6.  **diagramSuggestion**: Suggest a type of diagram (like a Flowchart, Mind Map, or Timeline) that the user could create to visually map out their plan. Briefly describe what this diagram should illustrate.
 `;
-    
-    // Call the helper with the key and the generate request
-    const { output } = await generateWithApiKey(input.apiKey, {
-      model: 'googleai/gemini-2.0-flash',
-      prompt: promptText,
-      output: {
-        schema: GenerateCareerVisionOutputSchema,
-      },
-    });
-    
-    if (!output) {
-      throw new Error("The AI model did not return a valid vision statement.");
-    }
-    
-    return output;
+  
+  // Call the helper with the key and the generate request
+  const { output } = await generateWithApiKey(input.apiKey, {
+    model: 'googleai/gemini-2.0-flash',
+    prompt: promptText,
+    output: {
+      schema: GenerateCareerVisionOutputSchema,
+    },
+  });
+  
+  if (!output) {
+    throw new Error("The AI model did not return a valid vision statement.");
   }
-);
+  
+  return output;
+}

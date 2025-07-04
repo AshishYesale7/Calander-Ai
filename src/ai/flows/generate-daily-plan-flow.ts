@@ -8,7 +8,7 @@
  * - GenerateDailyPlanOutput - The return type for the generateDailyPlan function.
  */
 
-import { ai, generateWithApiKey } from '@/ai/genkit';
+import { generateWithApiKey } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getTimelineEvents } from '@/services/timelineService';
 import { getCareerGoals } from '@/services/careerGoalsService';
@@ -47,7 +47,7 @@ export type GenerateDailyPlanOutput = z.infer<typeof GenerateDailyPlanOutputSche
 
 // This is the main exported function now.
 export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<GenerateDailyPlanOutput> {
-  // Fetch all necessary data *inside* the flow.
+  // Fetch all necessary data *inside* the function.
   const [timelineEvents, careerGoals, skills, userPreferences] = await Promise.all([
       getTimelineEvents(input.userId),
       getCareerGoals(input.userId),

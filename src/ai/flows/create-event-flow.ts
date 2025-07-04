@@ -8,7 +8,7 @@
  * - CreateEventInput - The input type for the function.
  * - CreateEventOutput - The return type for the function.
  */
-import { ai, generateWithApiKey } from '@/ai/genkit';
+import { generateWithApiKey } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // Input schema for the component call
@@ -31,18 +31,7 @@ export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
 // Exported function that the UI will call
 export async function createEventFromPrompt(input: CreateEventInput): Promise<CreateEventOutput> {
-  return createEventFlow(input);
-}
-
-// The flow itself
-const createEventFlow = ai.defineFlow(
-  {
-    name: 'createEventFlow',
-    inputSchema: CreateEventInputSchema,
-    outputSchema: CreateEventOutputSchema,
-  },
-  async (input) => {
-    const promptText = `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
+  const promptText = `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
 
 Current Context:
 - The current date and time is: ${new Date().toISOString()}. Use this as the reference point for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week").
@@ -76,17 +65,16 @@ Instructions:
 
 Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and the instructions above.`;
 
-    const { output } = await generateWithApiKey(input.apiKey, {
-      model: 'googleai/gemini-2.0-flash',
-      prompt: promptText,
-      output: {
-        schema: CreateEventOutputSchema,
-      },
-    });
+  const { output } = await generateWithApiKey(input.apiKey, {
+    model: 'googleai/gemini-2.0-flash',
+    prompt: promptText,
+    output: {
+      schema: CreateEventOutputSchema,
+    },
+  });
 
-    if (!output) {
-      throw new Error("The AI model did not return a valid event structure.");
-    }
-    return output;
+  if (!output) {
+    throw new Error("The AI model did not return a valid event structure.");
   }
-);
+  return output;
+}
