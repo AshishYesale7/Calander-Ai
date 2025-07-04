@@ -260,7 +260,7 @@ export default function CareerVisionPage() {
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               rows={6}
-              className="bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:ring-accent"
+              className="bg-input text-foreground placeholder:text-muted-foreground focus-visible:ring-accent"
             />
             <Button onClick={handleGenerateVision} disabled={isLoading || !userInput.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base py-6 px-8">
               {isLoading ? (
@@ -354,8 +354,8 @@ export default function CareerVisionPage() {
                                       <li key={`soft-${i}`} className="flex items-center justify-between gap-2 text-sm text-foreground/90">
                                           <span className="flex-1">{skill}</span>
                                           <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
-                                              {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
-                                          </Button>
+                                             {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
+                                         </Button>
                                       </li>
                                   ))}
                               </ul>
