@@ -19,15 +19,20 @@ export async function POST(request: NextRequest) {
             content = content.substring(1);
         }
 
-        // Robustly normalize all possible line endings to CRLF, which is the iCalendar standard.
-        const normalizedIcsContent = content.replace(/\r\n|\r/g, '\n').replace(/\n/g, '\r\n');
+        // Step 1: Normalize all line endings to a single LF character for easier processing.
+        const normalizedToLf = content.replace(/\r\n|\r/g, '\n');
+
+        // Step 2: Unfold long lines. A folded line in iCalendar starts with a space or tab.
+        // This regex replaces a newline followed by a space or tab with an empty string, effectively joining the lines.
+        const unfoldedContent = normalizedToLf.replace(/\n[\t ]/g, '');
         
-        const finalContent = normalizedIcsContent.trim();
+        const finalContent = unfoldedContent.trim();
         
         if (!finalContent) {
             return NextResponse.json({ success: true, data: {}, message: 'The provided calendar file is empty.' });
         }
         
+        // The `ical` library should handle LF line endings after unfolding.
         const parsedData = ical.parseICS(finalContent);
 
         const hasEvents = Object.values(parsedData).some(item => item.type === 'VEVENT');
