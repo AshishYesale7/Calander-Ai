@@ -19,14 +19,13 @@ export async function POST(request: NextRequest) {
             content = content.substring(1);
         }
 
-        // According to RFC 5545, lines should be terminated by CRLF (\r\n).
-        // First, normalize all possible line endings to the standard CRLF.
-        const normalizedContent = content.replace(/\r\n|\n|\r/g, '\r\n');
-
-        // Next, unfold long lines. A folded line is a CRLF followed by a space or tab.
+        // 1. Normalize all possible line endings to a single newline character (\n).
+        const normalizedContent = content.replace(/\r\n|\r/g, '\n');
+        
+        // 2. Unfold lines. A folded line is a newline followed by a space or a tab.
         // We replace this sequence with an empty string to join the lines.
-        const unfoldedContent = normalizedContent.replace(/\r\n[\t ]/g, '');
-
+        const unfoldedContent = normalizedContent.replace(/\n[ \t]/g, '');
+        
         const finalContent = unfoldedContent.trim();
         
         if (!finalContent) {
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest) {
              return NextResponse.json({ success: false, message: 'Invalid iCalendar format. The file may be corrupt or not a valid .ics file.' }, { status: 400 });
         }
         
-        // This is the error the user was getting. Provide a more helpful message.
+        // The error message the user sees comes from this block.
         if (errorMessage.includes("getLineBreakChar")) {
              return NextResponse.json({ success: false, message: 'Failed to parse calendar due to inconsistent line endings. Please try exporting the file again.' }, { status: 400 });
         }
