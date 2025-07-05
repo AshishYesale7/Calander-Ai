@@ -139,6 +139,8 @@ export default function DashboardPage() {
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -425,7 +427,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (searchParams.get('action') === 'newEvent') {
       handleOpenEditModal();
-      // Clear the action from the URL
       router.replace('/dashboard', { scroll: false });
     }
   }, [searchParams, handleOpenEditModal, router]);
@@ -528,6 +529,94 @@ export default function DashboardPage() {
     toast({ title: 'Export Successful', description: 'Your calendar has been downloaded as an .ics file.' });
 
   }, [activeEvents, toast]);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsImporting(true);
+    toast({ title: 'Importing...', description: 'Reading and parsing your calendar file.' });
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        if (!content) {
+            toast({ title: 'Error', description: 'Could not read file content.', variant: 'destructive' });
+            setIsImporting(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/calendar/parse-ics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ icsContent: content }),
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to parse ICS file on the server.');
+            }
+            
+            const parsedEvents = result.data;
+            const eventsToSave: TimelineEvent[] = [];
+
+            for (const key in parsedEvents) {
+                const item = parsedEvents[key];
+                if (item.type === 'VEVENT' && item.summary && item.start) {
+                    const startDate = new Date(item.start);
+                    const endDate = item.end ? new Date(item.end) : undefined;
+                    
+                    const isAllDay = !item.start.includes('T') || (item.end && !item.end.includes('T'));
+
+                    const newEvent: TimelineEvent = {
+                        id: `ics-${item.uid || Date.now()}-${Math.random()}`,
+                        title: item.summary,
+                        date: startDate,
+                        endDate: endDate,
+                        notes: item.description || '',
+                        location: item.location || '',
+                        isAllDay: isAllDay,
+                        type: 'custom',
+                        isDeletable: true,
+                        status: 'pending',
+                        priority: 'None',
+                    };
+                    eventsToSave.push(newEvent);
+                }
+            }
+            
+            if (eventsToSave.length === 0) {
+                toast({ title: 'No Events Found', description: 'The ICS file did not contain any importable events.' });
+                setIsImporting(false);
+                return;
+            }
+
+            for (const event of eventsToSave) {
+                const { icon, ...data } = event;
+                const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
+                await saveTimelineEvent(user.uid, payload, { syncToGoogle: false });
+            }
+
+            await fetchAllEvents();
+            toast({ title: 'Import Successful', description: `${eventsToSave.length} event(s) have been added to your timeline.` });
+
+        } catch (error: any) {
+            toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsImporting(false);
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    };
+    reader.readAsText(file);
+  };
 
 
   return (
@@ -638,6 +727,17 @@ export default function DashboardPage() {
                 'Sync Google Calendar & Tasks'
                 )}
             </Button>
+            <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
+                {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
+                Import (.ics)
+            </Button>
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept=".ics,text/calendar"
+                className="hidden"
+            />
             <Button onClick={handleExportEvents} variant="outline">
                 <Download className="mr-2 h-4 w-4" /> Export (.ics)
             </Button>
