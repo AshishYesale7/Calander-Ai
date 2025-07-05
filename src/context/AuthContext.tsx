@@ -1,4 +1,3 @@
-
 'use client';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -52,28 +51,28 @@ const MissingConfiguration = () => (
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   const isSubscribed = !!subscription && 
     (subscription.status === 'active' || subscription.status === 'trial') && 
     (subscription.endDate && new Date(subscription.endDate) > new Date());
 
-  const fetchSubscription = useCallback(async (uid: string) => {
-    try {
-        const userSub = await getUserSubscription(uid);
-        setSubscription(userSub);
-    } catch (error) {
-        console.error("Failed to fetch user subscription:", error);
-        setSubscription(null);
-    }
-  }, []);
-
   const refreshSubscription = useCallback(async () => {
     if (user) {
-        await fetchSubscription(user.uid);
+      setSubscriptionLoading(true);
+      try {
+        const userSub = await getUserSubscription(user.uid);
+        setSubscription(userSub);
+      } catch (error) {
+        console.error("Failed to fetch user subscription:", error);
+        setSubscription(null);
+      } finally {
+        setSubscriptionLoading(false);
+      }
     }
-  }, [user, fetchSubscription]);
+  }, [user]);
 
   const refreshUser = useCallback(async () => {
     if (auth.currentUser) {
@@ -84,24 +83,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
 
+  // Effect 1: Handle Firebase auth state changes
   useEffect(() => {
     setMounted(true);
     if (!auth) {
-      setLoading(false);
+      setAuthLoading(false);
+      setSubscriptionLoading(false); // No auth means no sub loading
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Effect 2: Handle subscription fetching based on user state
+  useEffect(() => {
+    // Wait until the auth state is resolved
+    if (authLoading) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchSubscription(currentUser.uid);
-      } else {
-        setSubscription(null);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [fetchSubscription]);
+    if (user) {
+      setSubscriptionLoading(true);
+      getUserSubscription(user.uid)
+        .then(setSubscription)
+        .catch((error) => {
+          console.error("Error in subscription fetch effect:", error);
+          setSubscription(null);
+        })
+        .finally(() => {
+          setSubscriptionLoading(false);
+        });
+    } else {
+      // If auth is done loading and there's no user, we're not loading subscription either.
+      setSubscription(null);
+      setSubscriptionLoading(false);
+    }
+  }, [user, authLoading]);
 
   if (!mounted) {
     return (
@@ -114,6 +134,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   if (!isFirebaseConfigured) {
     return <MissingConfiguration />;
   }
+
+  const loading = authLoading || subscriptionLoading;
 
   if (loading) {
     return (
