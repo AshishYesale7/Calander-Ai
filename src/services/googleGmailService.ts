@@ -100,7 +100,16 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string): 
     });
 
     const detailedMessages = await Promise.all(messagePromises);
-    return detailedMessages.filter((msg): msg is RawGmailMessage => msg !== null);
+    const nonNullMessages = detailedMessages.filter((msg): msg is RawGmailMessage => msg !== null);
+    
+    // Filter out security-sensitive emails before returning
+    const otpRegex = /\b(otp|one-time password|verification code|security code|your code is)\b/i;
+    const secureMessages = nonNullMessages.filter(msg => {
+        const combinedText = `${msg.subject} ${msg.snippet}`;
+        return !otpRegex.test(combinedText);
+    });
+
+    return secureMessages;
 
   } catch (error) {
     console.error(`Error fetching Gmail messages for user ${userId}:`, error);
