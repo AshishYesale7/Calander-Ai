@@ -104,7 +104,9 @@ export default function SignUpForm() {
       window.location.href = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
 
     } catch (error: any) {
-      if (error.code === 'auth/account-exists-with-different-credential') {
+      if (error.code === 'auth/popup-closed-by-user') {
+          console.log("Sign-up popup closed by user.");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
         const email = error.customData.email;
         toast({
           title: 'Account Exists',
@@ -120,7 +122,8 @@ export default function SignUpForm() {
           variant: 'destructive',
         });
       }
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 

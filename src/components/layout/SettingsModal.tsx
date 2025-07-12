@@ -228,7 +228,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         startPollingForConnection();
 
     } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use') {
+        if (error.code === 'auth/popup-closed-by-user') {
+            console.log("Google link popup closed by user.");
+        } else if (error.code === 'auth/credential-already-in-use') {
             toast({
                 title: 'Google Account In Use',
                 description: "This Google account is already linked to another user. Please sign out and sign in with Google to merge accounts.",

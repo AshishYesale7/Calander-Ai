@@ -1,7 +1,7 @@
 
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, linkWithPopup, fetchSignInMethodsForEmail, linkWithPhoneNumber } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, linkWithPopup, fetchSignInMethodsForEmail } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -116,7 +116,9 @@ export default function SignInForm() {
       }
       router.push('/dashboard');
     } catch (error: any) {
-        if (error.code === 'auth/account-exists-with-different-credential') {
+        if (error.code === 'auth/popup-closed-by-user') {
+            console.log("Sign-in popup closed by user.");
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData.email;
              const methods = await fetchSignInMethodsForEmail(auth, email);
              toast({
@@ -132,6 +134,7 @@ export default function SignInForm() {
                 variant: 'destructive',
             });
         }
+    } finally {
       setLoading(false); 
     }
   };
