@@ -231,7 +231,7 @@ export default function SignInForm() {
   }
 
   return (
-    <Card className="frosted-glass p-6 md:p-8">
+    <Card className="frosted-glass p-6 md:p-8 w-full max-w-sm ml-0 md:ml-12 lg:ml-24">
       <div className="flex justify-center mb-6">
         <Image
           src="https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg"
@@ -312,7 +312,7 @@ export default function SignInForm() {
                         id="phone-number"
                         international
                         defaultCountry="US"
-                        countryCallingCodeEditable={false}
+                        countryCallingCodeEditable={true}
                         placeholder="Enter phone number"
                         value={phoneNumber}
                         onChange={setPhoneNumber}

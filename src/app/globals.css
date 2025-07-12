@@ -220,9 +220,9 @@ body {
 /* Style the dropdown menu */
 .PhoneInputCountrySelect-menu {
   @apply bg-popover text-popover-foreground border-border rounded-md shadow-lg;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  background-color: hsla(var(--popover), 0.8);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: hsl(var(--popover));
 }
 
 
@@ -412,4 +412,3 @@ body {
   background-color: hsl(var(--accent) / 0.8);
 }
     
-
