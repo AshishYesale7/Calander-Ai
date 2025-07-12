@@ -102,11 +102,11 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string): 
     const detailedMessages = await Promise.all(messagePromises);
     const nonNullMessages = detailedMessages.filter((msg): msg is RawGmailMessage => msg !== null);
     
-    // Filter out security-sensitive emails before returning
-    const otpRegex = /\b(otp|one-time password|verification code|security code|your code is)\b/i;
+    // Expanded regex to filter out security-sensitive emails before returning
+    const securityKeywordsRegex = /\b(otp|one-time password|verification code|security code|your code is|password reset|reset your password|security alert|confirm your account|verify your email|authentication request)\b/i;
     const secureMessages = nonNullMessages.filter(msg => {
         const combinedText = `${msg.subject} ${msg.snippet}`;
-        return !otpRegex.test(combinedText);
+        return !securityKeywordsRegex.test(combinedText);
     });
 
     return secureMessages;
