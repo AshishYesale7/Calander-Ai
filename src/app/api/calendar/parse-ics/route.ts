@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
             content = content.substring(1);
         }
 
-        // 1. Normalize all possible line endings to a single newline character (\n).
-        const normalizedContent = content.replace(/\r\n|\r/g, '\n');
+        // 1. Normalize all possible line endings to CRLF (\r\n), which `ical` expects.
+        const normalizedContent = content.replace(/\r\n|\r|\n/g, '\r\n');
         
         // 2. Unfold lines. A folded line is a newline followed by a space or a tab.
         // We replace this sequence with an empty string to join the lines.
-        const unfoldedContent = normalizedContent.replace(/\n[ \t]/g, '');
+        const unfoldedContent = normalizedContent.replace(/\r\n[ \t]/g, '');
         
         const finalContent = unfoldedContent.trim();
         

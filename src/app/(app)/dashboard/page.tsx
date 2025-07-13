@@ -505,24 +505,26 @@ export default function DashboardPage() {
       }
       return format(date, "yyyyMMdd'T'HHmmss'Z'");
     };
+    
+    const CRLF = '\r\n';
 
     const icsEvents = activeEvents.map(event => {
-      let icsEvent = 'BEGIN:VEVENT\n';
-      icsEvent += `UID:${event.id}@calendar.ai\n`;
-      icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}\n`;
-      icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}\n`;
+      let icsEvent = 'BEGIN:VEVENT' + CRLF;
+      icsEvent += `UID:${event.id}@calendar.ai` + CRLF;
+      icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}` + CRLF;
+      icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}` + CRLF;
       if (event.endDate) {
-        icsEvent += `DTEND${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.endDate, !!event.isAllDay)}\n`;
+        icsEvent += `DTEND${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.endDate, !!event.isAllDay)}` + CRLF;
       }
-      icsEvent += `SUMMARY:${event.title}\n`;
-      if (event.notes) icsEvent += `DESCRIPTION:${event.notes.replace(/\n/g, '\\n')}\n`;
-      if (event.location) icsEvent += `LOCATION:${event.location}\n`;
-      if (event.url) icsEvent += `URL:${event.url}\n`;
-      icsEvent += 'END:VEVENT\n';
+      icsEvent += `SUMMARY:${event.title}` + CRLF;
+      if (event.notes) icsEvent += `DESCRIPTION:${event.notes.replace(/\n/g, '\\n')}` + CRLF;
+      if (event.location) icsEvent += `LOCATION:${event.location}` + CRLF;
+      if (event.url) icsEvent += `URL:${event.url}` + CRLF;
+      icsEvent += 'END:VEVENT' + CRLF;
       return icsEvent;
     }).join('');
 
-    const icsFileContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Calendar.ai//AI Calendar Assistant//EN\n${icsEvents}END:VCALENDAR`;
+    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Calendar.ai//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
     
     const blob = new Blob([icsFileContent], { type: 'text/calendar;charset=utf-8' });
     saveAs(blob, 'calendar.ai.ics');
