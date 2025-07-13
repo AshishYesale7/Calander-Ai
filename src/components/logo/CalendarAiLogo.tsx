@@ -5,7 +5,7 @@ export const CalendarAiLogo = ({ className }: { className?: string }) => (
     viewBox="0 0 100 100"
     xmlns="http://www.w3.org/2000/svg"
     className={cn("h-8 w-8", className)}
-    aria-label="Calendar.ai Logo"
+    aria-label="Carrer Calander Logo"
   >
     <defs>
       <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">

@@ -1,16 +1,16 @@
 
 'use client';
 
-import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { ApiKeyProvider } from '@/context/ApiKeyContext';
 import { AuthProvider } from '@/context/AuthContext';
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from '@/context/ThemeContext';
 import { useTheme } from '@/hooks/use-theme';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { usePathname } from 'next/navigation';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { ApiKeyProvider } from '@/context/ApiKeyContext';
+import './globals.css';
 
 function AppThemeApplicator({ children }: { children: ReactNode }) {
   const { 
@@ -113,7 +113,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Calendar.ai</title>
+        <title>Carrer Calander</title>
         <meta name="description" content="Your AI-powered calendar and planning assistant." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

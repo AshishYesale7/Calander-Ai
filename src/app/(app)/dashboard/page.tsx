@@ -1,34 +1,33 @@
 
 'use client';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import TodaysPlanCard from '@/components/timeline/TodaysPlanCard';
-import EventCalendarView from '@/components/timeline/EventCalendarView';
-import SlidingTimelineView from '@/components/timeline/SlidingTimelineView';
-import TimelineListView from '@/components/timeline/TimelineListView';
+import type { ActionableInsight, ProcessGoogleDataInput } from '@/ai/flows/process-google-data-flow';
+import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import DayTimetableView from '@/components/timeline/DayTimetableView';
 import EditEventModal from '@/components/timeline/EditEventModal';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AlertCircle, Bot, Calendar, List, CalendarDays as CalendarIconLucide, PlusCircle, Upload, Download } from 'lucide-react';
-import { processGoogleData } from '@/ai/flows/process-google-data-flow';
-import type { ProcessGoogleDataInput, ActionableInsight } from '@/ai/flows/process-google-data-flow';
-import { mockTimelineEvents } from '@/data/mock';
-import type { TimelineEvent } from '@/types';
-import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay, subDays } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from '@/lib/utils';
-import { useApiKey } from '@/hooks/use-api-key';
-import { useAuth } from '@/context/AuthContext';
-import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
-import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
-import { getGoogleTasks } from '@/services/googleTasksService';
+import EventCalendarView from '@/components/timeline/EventCalendarView';
 import ImportantEmailsCard from '@/components/timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCard';
-import { saveAs } from 'file-saver';
+import SlidingTimelineView from '@/components/timeline/SlidingTimelineView';
+import TimelineListView from '@/components/timeline/TimelineListView';
+import TodaysPlanCard from '@/components/timeline/TodaysPlanCard';
 import TrashPanel from '@/components/timeline/TrashPanel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/context/AuthContext';
+import { mockTimelineEvents } from '@/data/mock';
+import { useApiKey } from '@/hooks/use-api-key';
+import { useToast } from '@/hooks/use-toast';
+import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
+import { getGoogleTasks } from '@/services/googleTasksService';
+import { deleteTimelineEvent, getTimelineEvents, permanentlyDeleteTimelineEvent, restoreTimelineEvent, saveTimelineEvent } from '@/services/timelineService';
+import type { TimelineEvent } from '@/types';
+import { addMonths, startOfDay as dfnsStartOfDay, format, isSameDay, parseISO, startOfMonth, subDays, subMonths } from 'date-fns';
+import { saveAs } from 'file-saver';
+import { AlertCircle, Bot, Calendar, CalendarDays as CalendarIconLucide, Download, List, PlusCircle, Upload } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -510,7 +509,7 @@ export default function DashboardPage() {
 
     const icsEvents = activeEvents.map(event => {
       let icsEvent = 'BEGIN:VEVENT' + CRLF;
-      icsEvent += `UID:${event.id}@calendar.ai` + CRLF;
+      icsEvent += `UID:${event.id}@Carrer Calander` + CRLF;
       icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}` + CRLF;
       icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}` + CRLF;
       if (event.endDate) {
@@ -524,10 +523,10 @@ export default function DashboardPage() {
       return icsEvent;
     }).join('');
 
-    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Calendar.ai//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
+    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Carrer Calander//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
     
     const blob = new Blob([icsFileContent], { type: 'text/calendar;charset=utf-8' });
-    saveAs(blob, 'calendar.ai.ics');
+    saveAs(blob, 'Carrer Calander.ics');
     toast({ title: 'Export Successful', description: 'Your calendar has been downloaded as an .ics file.' });
 
   }, [activeEvents, toast]);

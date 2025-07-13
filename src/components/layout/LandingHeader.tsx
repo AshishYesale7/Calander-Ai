@@ -1,11 +1,11 @@
 
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { usePathname } from 'next/navigation';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
 export const LandingHeader = () => {
@@ -18,7 +18,7 @@ export const LandingHeader = () => {
             <div className="landing-header-glassy">
                 <Link href="/" className="flex items-center gap-2 px-3 shrink-0">
                     <CalendarAiLogo />
-                    <h1 className="font-headline text-lg font-semibold text-white/90 hidden sm:block">Calendar.ai</h1>
+                    <h1 className="font-headline text-lg font-semibold text-white/90 hidden sm:block">Carrer Calander</h1>
                 </Link>
                 <div className="h-6 w-px bg-white/20 hidden md:block"></div>
                 <nav className="hidden md:flex items-center gap-1">

@@ -1,15 +1,15 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import Script from 'next/script';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CheckCircle, Crown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
+import { useEffect, useState } from 'react';
 
 // Define a structure for currency data
 interface Currency {
@@ -124,8 +124,8 @@ export default function SubscriptionPage() {
             const options = {
                 key: data.key_id,
                 subscription_id: data.subscription_id,
-                name: 'Calendar.ai Subscription',
-                description: `Calendar.ai - ${plans[planId].title}`,
+                name: 'Carrer Calander Subscription',
+                description: `Carrer Calander - ${plans[planId].title}`,
                 image: 'https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg',
                 handler: async function (response: any) {
                     const verificationRes = await fetch('/api/payment/verify', {

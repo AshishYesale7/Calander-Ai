@@ -1,17 +1,17 @@
 
 'use client';
 
-import Link from 'next/link';
-import { useRef, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { LandingHeader } from '@/components/layout/LandingHeader';
-import StarryBackground from '@/components/landing/StarryBackground';
-import { Badge } from '@/components/ui/badge';
 import CursorArrow from '@/components/landing/CursorArrow';
+import StarryBackground from '@/components/landing/StarryBackground';
+import { LandingHeader } from '@/components/layout/LandingHeader';
 import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { ArrowRight, Bot, Brain, Calendar, Check, Github, Linkedin, Twitter } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
 // Define a structure for currency data
 interface Currency {
@@ -139,7 +139,7 @@ export default function LandingPage() {
                     <div className="relative z-10 max-w-4xl">
                         <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Your Calendar, Reimagined.</h1>
                         <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
-                            Calendar.ai is your intelligent assistant for perfect organization. Sync your life, generate smart daily plans, and achieve your goals with the power of AI.
+                            Carrer Calander is your intelligent assistant for perfect organization. Sync your life, generate smart daily plans, and achieve your goals with the power of AI.
                         </p>
                         <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-7 px-10 rounded-full">
                             <Link href="/auth/signup" ref={ctaButtonRef}>Get Started For Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
@@ -161,14 +161,14 @@ export default function LandingPage() {
                             <div className="text-center max-w-3xl mx-auto mb-16">
                                 <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">A Glimpse Into Your Future</h2>
                                 <p className="mt-4 text-lg text-foreground/80">
-                                    Calendar.ai combines powerful AI with intuitive planning tools to give you unparalleled clarity on your life.
+                                    Carrer Calander combines powerful AI with intuitive planning tools to give you unparalleled clarity on your life.
                                 </p>
                             </div>
                             <div className="grid md:grid-cols-3 gap-8">
                                 <FeatureCard
                                     icon={Calendar}
                                     title="Intelligent Sync"
-                                    description="Connect Google Calendar, Tasks, and Gmail. Calendar.ai processes everything into one unified, smart timeline."
+                                    description="Connect Google Calendar, Tasks, and Gmail. Carrer Calander processes everything into one unified, smart timeline."
                                 />
                                 <FeatureCard
                                     icon={Bot}
@@ -190,7 +190,7 @@ export default function LandingPage() {
                             <div className="text-center max-w-3xl mx-auto mb-16">
                                 <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Choose Your Plan</h2>
                                 <p className="mt-4 text-lg text-gray-200">
-                                    Start for free, then unlock the full power of Calendar.ai with a plan that fits your journey.
+                                    Start for free, then unlock the full power of Carrer Calander with a plan that fits your journey.
                                 </p>
                             </div>
                             <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
@@ -232,7 +232,7 @@ export default function LandingPage() {
                                 <div className="col-span-1 md:col-span-2">
                                     <Link href="/" className="flex items-center gap-2 mb-4">
                                         <CalendarAiLogo />
-                                        <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+                                        <h1 className="font-headline text-2xl font-semibold text-white">Carrer Calander</h1>
                                     </Link>
                                     <p className="max-w-md text-sm text-foreground/60">Your AI-powered assistant for calendar and life organization. Turn aspirations into actionable plans and unlock your full potential.</p>
                                 </div>
@@ -253,7 +253,7 @@ export default function LandingPage() {
                                 </div>
                             </div>
                             <div className="mt-16 pt-8 border-t border-border/20 flex flex-col sm:flex-row justify-between items-center">
-                                <p className="text-sm">&copy; {new Date().getFullYear()} Calendar.ai. All rights reserved.</p>
+                                <p className="text-sm">&copy; {new Date().getFullYear()} Carrer Calander. All rights reserved.</p>
                                 <div className="flex gap-4 mt-4 sm:mt-0">
                                     <Link href="#" className="hover:text-primary transition-colors"><Github className="h-5 w-5" /></Link>
                                     <Link href="#" className="hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></Link>

@@ -9,13 +9,13 @@
  */
 
 import { generateWithApiKey } from '@/ai/genkit';
-import { z } from 'genkit';
-import { getTimelineEvents } from '@/services/timelineService';
 import { getCareerGoals } from '@/services/careerGoalsService';
 import { getSkills } from '@/services/skillsService';
+import { getTimelineEvents } from '@/services/timelineService';
 import { getUserPreferences } from '@/services/userService';
+import type { RoutineItem } from '@/types';
 import { addHours, format, isSameDay } from 'date-fns';
-import type { CareerGoal, Skill, TimelineEvent, RoutineItem } from '@/types';
+import { z } from 'genkit';
 
 // Main input schema for the payload - now much simpler
 const GenerateDailyPlanPayloadSchema = z.object({
@@ -112,7 +112,7 @@ export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<
   
   const timelineEventsText = timelineEvents.map(e => `- Event: "${e.title}" on ${format(e.date, 'PPP')}.`).join('\n');
 
-  const promptText = `You are an expert productivity and career coach AI named 'Calendar.ai'.
+  const promptText = `You are an expert productivity and career coach AI named 'Carrer Calander'.
 Your goal is to create a highly personalized, scannable, and motivating daily plan for a user that flows chronologically from their wake-up time.
 
 Today's date is: ${currentDateStr}

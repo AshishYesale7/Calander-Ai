@@ -1,24 +1,24 @@
 
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck } from 'lucide-react';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { ClipboardCheck, Crown, Expand, FileText, LogOut, Menu, Moon, Palette, Settings, Shrink, Sun, UserCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
@@ -88,7 +88,7 @@ export default function Header({
                 <div className="flex items-center justify-center gap-2">
                   <CalendarAiLogo />
                   <SheetTitle asChild>
-                    <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+                    <h1 className="font-headline text-2xl font-semibold text-white">Carrer Calander</h1>
                   </SheetTitle>
                 </div>
               </Link>

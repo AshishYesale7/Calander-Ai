@@ -1,6 +1,6 @@
 
 {
-  "name": "Calendar.ai",
+  "name": "Carrer Calander",
   "description": "An AI-powered calendar assistant built with Next.js and Genkit. This file serves as a reference for the environment variables required for deployment.",
   "env": {
     "GEMINI_API_KEY": {

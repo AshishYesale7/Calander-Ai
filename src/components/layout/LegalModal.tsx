@@ -1,22 +1,22 @@
 
 'use client';
 
+import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
 } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface LegalModalProps {
   isOpen: boolean;
@@ -57,15 +57,15 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
                                 <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
                                 <p>Please read these terms and conditions carefully before using Our Service.</p>
                                 
-                                <p><strong>1. Acceptance of Terms:</strong> By accessing and using Calendar.ai ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.</p>
+                                <p><strong>1. Acceptance of Terms:</strong> By accessing and using Carrer Calander ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.</p>
 
                                 <p><strong>2. Subscription:</strong> Our Service is billed on a subscription basis. You will be billed in advance on a recurring, periodic basis (such as monthly or annually), depending on the subscription plan you select. Your Subscription will automatically renew at the end of each billing cycle unless you cancel it.</p>
 
                                 <p><strong>3. User Accounts:</strong> When you create an account with us, you must provide us information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
 
-                                <p><strong>4. Intellectual Property:</strong> The Service and its original content (excluding Content provided by users), features and functionality are and will remain the exclusive property of Calendar.ai and its licensors. The Service is protected by copyright, trademark, and other laws of both the country and foreign countries.</p>
+                                <p><strong>4. Intellectual Property:</strong> The Service and its original content (excluding Content provided by users), features and functionality are and will remain the exclusive property of Carrer Calander and its licensors. The Service is protected by copyright, trademark, and other laws of both the country and foreign countries.</p>
                                 
-                                <p><strong>5. Limitation of Liability:</strong> In no event shall Calendar.ai, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
+                                <p><strong>5. Limitation of Liability:</strong> In no event shall Carrer Calander, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.</p>
 
                                 <p><strong>6. Governing Law:</strong> These Terms shall be governed and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions.</p>
                                 
@@ -77,11 +77,11 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
                         <TabsContent value="privacy">
                             <LegalModalContent title="Privacy Policy">
                                 <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
-                                <p>Calendar.ai ("us", "we", or "our") operates the Calendar.ai application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service.</p>
+                                <p>Carrer Calander ("us", "we", or "our") operates the Carrer Calander application (the "Service"). This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service.</p>
 
                                 <p><strong>1. Information Collection and Use:</strong> We collect several different types of information for various purposes to provide and improve our Service to you. This includes your email, name (as provided during signup), and data you voluntarily enter into the application such as career goals, skills, and timeline events.</p>
 
-                                <p><strong>2. Use of Data:</strong> Calendar.ai uses the collected data for various purposes: to provide and maintain the Service; to notify you about changes to our Service; to provide customer care and support; to provide analysis or valuable information so that we can improve the Service.</p>
+                                <p><strong>2. Use of Data:</strong> Carrer Calander uses the collected data for various purposes: to provide and maintain the Service; to notify you about changes to our Service; to provide customer care and support; to provide analysis or valuable information so that we can improve the Service.</p>
 
                                 <p><strong>3. Data Storage and Security:</strong> Your data is stored securely using Firebase's Firestore database. We take all steps reasonably necessary to ensure that your data is treated securely and in accordance with this Privacy Policy. The security of your data is important to us but remember that no method of transmission over the Internet or method of electronic storage is 100% secure.</p>
                                 
@@ -95,7 +95,7 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
                         <TabsContent value="refund">
                              <LegalModalContent title="Cancellation & Refund Policy">
                                 <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
-                                <p>This policy outlines the terms for cancellation and refunds for subscriptions to the Calendar.ai service.</p>
+                                <p>This policy outlines the terms for cancellation and refunds for subscriptions to the Carrer Calander service.</p>
 
                                 <p><strong>1. Subscription Cancellation:</strong> You can cancel your subscription at any time through your account settings. The cancellation will take effect at the end of your current billing cycle. You will continue to have access to the Service until the end of the billing period.</p>
                                 
@@ -113,7 +113,7 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
                                  <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
                                  <p>This policy explains how our digital services are delivered.</p>
 
-                                <p><strong>1. Nature of Service:</strong> Calendar.ai is a fully digital Software-as-a-Service (SaaS) application. We do not sell or ship any physical goods or products.</p>
+                                <p><strong>1. Nature of Service:</strong> Carrer Calander is a fully digital Software-as-a-Service (SaaS) application. We do not sell or ship any physical goods or products.</p>
 
                                 <p><strong>2. Service Delivery:</strong> Upon successful payment and subscription activation, you will receive immediate access to our application. Access is provided via your user account, which you can log into from our website.</p>
                                 

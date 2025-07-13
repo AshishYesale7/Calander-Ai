@@ -1,43 +1,42 @@
 
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import {
-  LayoutDashboard,
-  Target,
-  Brain,
-  Eye,
-  Newspaper,
-  Lightbulb,
-  LogOut,
-  Settings,
-  UserCircle,
-  Moon,
-  Sun,
-  Palette,
-  Expand,
-  Shrink,
-  FileText,
-  Crown,
-  ClipboardCheck,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
+import { auth } from '@/lib/firebase';
+import { cn } from '@/lib/utils';
+import { signOut } from 'firebase/auth';
+import {
+    Brain,
+    ClipboardCheck,
+    Crown,
+    Expand,
+    Eye,
+    FileText,
+    LayoutDashboard,
+    Lightbulb,
+    LogOut,
+    Moon,
+    Newspaper,
+    Palette,
+    Settings,
+    Shrink,
+    Sun,
+    Target,
+    UserCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
@@ -99,7 +98,7 @@ export default function SidebarNav({
           <Link href="/dashboard" className="text-center">
             <div className="flex items-center justify-center gap-2">
               <CalendarAiLogo />
-              <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+              <h1 className="font-headline text-2xl font-semibold text-white">Carrer Calander</h1>
             </div>
           </Link>
         </div>
