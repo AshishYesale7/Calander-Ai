@@ -517,7 +517,7 @@ export default function DashboardPage() {
         icsEvent += `DTEND${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.endDate, !!event.isAllDay)}` + CRLF;
       }
       icsEvent += `SUMMARY:${event.title}` + CRLF;
-      if (event.notes) icsEvent += `DESCRIPTION:${event.notes.replace(/\n/g, '\\n')}` + CRLF;
+      if (event.notes) icsEvent += `DESCRIPTION:${event.notes.replace(/\r\n|\n|\r/g, '\\n')}` + CRLF;
       if (event.location) icsEvent += `LOCATION:${event.location}` + CRLF;
       if (event.url) icsEvent += `URL:${event.url}` + CRLF;
       icsEvent += 'END:VEVENT' + CRLF;
