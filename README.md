@@ -74,7 +74,8 @@ This project utilizes a suite of modern technologies to deliver a robust, intell
 *   **Framer Motion:** Used for animations and interactive elements.
 *   **Date-fns:** A modern and lightweight library for date manipulation.
 
-## 5. Getting Started
+
+## Getting Started
 
 To get started with local development, first install the dependencies:
 
@@ -92,7 +93,7 @@ npm run dev
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
 
-## 6. Environment Variables
+## Environment Variables
 
 To run this project, you will need to create a `.env` file and add the following variables. The `app.json` file in this repository also serves as a reference.
 
@@ -124,7 +125,7 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=
 NEXT_PUBLIC_BASE_URL=
 ```
 
-## 7. Deployment
+## Deployment
 
 ### Firebase App Hosting
 
