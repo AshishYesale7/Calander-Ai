@@ -18,7 +18,7 @@ export const LandingHeader = () => {
             <div className="landing-header-glassy">
                 <Link href="/" className="flex items-center gap-2 px-3 shrink-0">
                     <CalendarAiLogo />
-                    <h1 className="font-headline text-lg font-semibold text-white/90 hidden sm:block">Carrer Calander</h1>
+                    <h1 className="font-headline text-lg font-semibold text-white/90 hidden sm:block">Career Calender</h1>
                 </Link>
                 <div className="h-6 w-px bg-white/20 hidden md:block"></div>
                 <nav className="hidden md:flex items-center gap-1">

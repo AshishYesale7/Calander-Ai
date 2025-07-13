@@ -124,8 +124,8 @@ export default function SubscriptionPage() {
             const options = {
                 key: data.key_id,
                 subscription_id: data.subscription_id,
-                name: 'Carrer Calander Subscription',
-                description: `Carrer Calander - ${plans[planId].title}`,
+                name: 'Career Calender Subscription',
+                description: `Career Calender - ${plans[planId].title}`,
                 image: 'https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg',
                 handler: async function (response: any) {
                     const verificationRes = await fetch('/api/payment/verify', {

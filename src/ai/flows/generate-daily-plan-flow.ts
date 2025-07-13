@@ -112,7 +112,7 @@ export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<
   
   const timelineEventsText = timelineEvents.map(e => `- Event: "${e.title}" on ${format(e.date, 'PPP')}.`).join('\n');
 
-  const promptText = `You are an expert productivity and career coach AI named 'Carrer Calander'.
+  const promptText = `You are an expert productivity and career coach AI named 'Career Calender'.
 Your goal is to create a highly personalized, scannable, and motivating daily plan for a user that flows chronologically from their wake-up time.
 
 Today's date is: ${currentDateStr}

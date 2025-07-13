@@ -53,7 +53,7 @@ export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutp
 
 export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {
   // Construct the prompt string manually
-  const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Carrer Calander'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
+  const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Career Calender'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
 
 User's Aspirations:
 ${input.aspirations}

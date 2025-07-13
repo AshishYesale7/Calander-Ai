@@ -509,7 +509,7 @@ export default function DashboardPage() {
 
     const icsEvents = activeEvents.map(event => {
       let icsEvent = 'BEGIN:VEVENT' + CRLF;
-      icsEvent += `UID:${event.id}@Carrer Calander` + CRLF;
+      icsEvent += `UID:${event.id}@Career Calender` + CRLF;
       icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}` + CRLF;
       icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}` + CRLF;
       if (event.endDate) {
@@ -523,10 +523,10 @@ export default function DashboardPage() {
       return icsEvent;
     }).join('');
 
-    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Carrer Calander//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
+    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Career Calender//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
     
     const blob = new Blob([icsFileContent], { type: 'text/calendar;charset=utf-8' });
-    saveAs(blob, 'Carrer Calander.ics');
+    saveAs(blob, 'Career Calender.ics');
     toast({ title: 'Export Successful', description: 'Your calendar has been downloaded as an .ics file.' });
 
   }, [activeEvents, toast]);

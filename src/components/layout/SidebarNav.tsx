@@ -98,7 +98,7 @@ export default function SidebarNav({
           <Link href="/dashboard" className="text-center">
             <div className="flex items-center justify-center gap-2">
               <CalendarAiLogo />
-              <h1 className="font-headline text-2xl font-semibold text-white">Carrer Calander</h1>
+              <h1 className="font-headline text-2xl font-semibold text-white">Career Calender</h1>
             </div>
           </Link>
         </div>

@@ -88,7 +88,7 @@ export default function Header({
                 <div className="flex items-center justify-center gap-2">
                   <CalendarAiLogo />
                   <SheetTitle asChild>
-                    <h1 className="font-headline text-2xl font-semibold text-white">Carrer Calander</h1>
+                    <h1 className="font-headline text-2xl font-semibold text-white">Career Calender</h1>
                   </SheetTitle>
                 </div>
               </Link>

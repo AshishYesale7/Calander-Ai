@@ -113,7 +113,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Carrer Calander</title>
+        <title>Career Calender</title>
         <meta name="description" content="Your AI-powered calendar and planning assistant." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
