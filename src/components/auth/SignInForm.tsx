@@ -26,7 +26,6 @@ import { Label } from '@/components/ui/label';
 
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
-import { getGoogleTokensFromFirestore } from '@/services/googleAuthService';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -89,35 +88,47 @@ export default function SignInForm() {
     }
   }
 
+  useEffect(() => {
+    const handleAuthSuccess = (event: MessageEvent) => {
+      if (event.data === 'auth-success') {
+        window.location.reload();
+      }
+    };
+    window.addEventListener('message', handleAuthSuccess);
+    return () => {
+      window.removeEventListener('message', handleAuthSuccess);
+    };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.events');
+    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+    provider.addScope('https://www.googleapis.com/auth/tasks');
+
     try {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
 
       if (auth.currentUser) {
           await linkWithPopup(auth.currentUser, provider);
           toast({ title: 'Success', description: 'Your Google account has been linked.' });
-          router.push('/dashboard');
+          // No need to redirect, just let them stay in settings.
           return;
       }
 
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      const tokens = await getGoogleTokensFromFirestore(user.uid);
-      if (!tokens) {
-        toast({ title: 'Connecting Google Account...', description: 'Please authorize access to your Google Calendar and Gmail.' });
-        const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
-        const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
-        window.open(authUrl, '_blank', 'width=500,height=600');
-      } else {
-        toast({ title: 'Success', description: 'Signed in with Google successfully.' });
-      }
-      router.push('/dashboard');
+      const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
+      const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
+      window.open(authUrl, '_blank', 'width=500,height=600');
+      toast({ title: 'Connecting Google Account...', description: 'Please authorize access in the popup window.' });
+
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
             console.log("Sign-in popup closed by user.");
+            toast({ title: 'Sign-in cancelled', description: 'You closed the Google Sign-In window.', variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData.email;
              const methods = await fetchSignInMethodsForEmail(auth, email);

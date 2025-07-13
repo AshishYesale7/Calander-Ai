@@ -158,45 +158,17 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     });
   };
   
-  const startPollingForConnection = () => {
-    if (pollIntervalRef.current || !user) return;
-    
-    setIsPolling(true);
-    let attempts = 0;
-    const maxAttempts = 40;
-    
-    pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        if (attempts > maxAttempts || !pollIntervalRef.current) {
-            if(pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            setIsPolling(false);
-            if (attempts > maxAttempts) {
-                toast({ title: 'Timeout', description: 'Google connection status check timed out.', variant: 'destructive'});
-            }
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/auth/google/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid }),
-            });
-            const data = await res.json();
-
-            if (data.isConnected) {
-                clearInterval(pollIntervalRef.current!);
-                pollIntervalRef.current = null;
-                setIsPolling(false);
-                setIsGoogleConnected(true);
-                toast({ title: 'Success!', description: 'Your Google account has been connected.' });
-            }
-        } catch (error) {
-            console.error('Polling error:', error);
-        }
-    }, 3000);
-  }
+  useEffect(() => {
+    const handleAuthSuccess = (event: MessageEvent) => {
+      if (event.data === 'auth-success') {
+        window.location.reload();
+      }
+    };
+    window.addEventListener('message', handleAuthSuccess);
+    return () => {
+      window.removeEventListener('message', handleAuthSuccess);
+    };
+  }, []);
 
   const handleConnectGoogle = async () => {
     if (!user) {
@@ -210,7 +182,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     if (isGoogleProviderLinked) {
         toast({ title: 'Opening Google...', description: 'Please authorize access in the new tab.' });
         window.open(authUrl, '_blank', 'width=500,height=600');
-        startPollingForConnection();
         return;
     }
 
@@ -225,7 +196,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         
         toast({ title: 'Account Linked!', description: 'Now granting permissions in the new tab.' });
         window.open(authUrl, '_blank', 'width=500,height=600');
-        startPollingForConnection();
 
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
@@ -240,7 +210,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         } else if (error.code === 'auth/provider-already-linked') {
              toast({ title: 'Re-authorizing...', description: 'Your account is already linked. Redirecting to grant permissions.' });
              window.open(authUrl, '_blank', 'width=500,height=600');
-             startPollingForConnection();
         } else {
             console.error("Google link error:", error);
             toast({

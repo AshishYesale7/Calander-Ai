@@ -102,7 +102,11 @@ export async function GET(request: NextRequest) {
                 <p>This window will now close.</p>
               </div>
               <script>
-                setTimeout(() => window.close(), 1500);
+                // Notify the main window to reload and then close the popup.
+                if (window.opener) {
+                  window.opener.postMessage('auth-success', '*');
+                }
+                setTimeout(() => window.close(), 500);
               </script>
             </body>
           </html>

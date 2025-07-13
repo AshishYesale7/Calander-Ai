@@ -91,21 +91,39 @@ export default function SignUpForm() {
     }
   }
 
+  useEffect(() => {
+    const handleAuthSuccess = (event: MessageEvent) => {
+      if (event.data === 'auth-success') {
+        window.location.reload();
+      }
+    };
+    window.addEventListener('message', handleAuthSuccess);
+    return () => {
+      window.removeEventListener('message', handleAuthSuccess);
+    };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.events');
+    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+    provider.addScope('https://www.googleapis.com/auth/tasks');
+
     try {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      toast({ title: 'Account Created! Connecting Google...', description: 'Please authorize access to your Google Calendar and Gmail.' });
+      toast({ title: 'Account Created! Connecting Google...', description: 'Please authorize access in the popup window.' });
       const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
-      window.location.href = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
+      const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
+      window.open(authUrl, '_blank', 'width=500,height=600');
 
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
           console.log("Sign-up popup closed by user.");
+          toast({ title: 'Sign-up cancelled', description: 'You closed the Google Sign-Up window.', variant: 'default' });
       } else if (error.code === 'auth/account-exists-with-different-credential') {
         const email = error.customData.email;
         toast({
