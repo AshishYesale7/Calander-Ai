@@ -16,9 +16,6 @@ import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
 import {
   SidebarProvider,
-  Sidebar,
-  SidebarTrigger,
-  SidebarInset,
   useSidebar,
 } from '@/components/ui/sidebar';
 
@@ -107,8 +104,8 @@ function AppContent({ children }: { children: ReactNode }) {
     isFullScreen,
   };
   
-  const mainContentPadding = sidebarState === 'expanded' ? '64' : '16';
-  const paddingClass = isMobile ? '' : `md:pl-${mainContentPadding}`;
+  const mainContentPadding = sidebarState === 'expanded' ? 'pl-64' : 'pl-16';
+  const paddingClass = isMobile ? '' : mainContentPadding;
 
   return (
     <>
@@ -116,7 +113,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <SidebarNav {...modalProps} />
         <div className={`flex flex-1 flex-col ${paddingClass}`}>
           <Header {...modalProps} />
-          <main className="flex-1 p-6 pb-24 overflow-auto">
+          <main className="flex-1 overflow-auto p-6 pb-24">
             {children}
           </main>
         </div>
@@ -130,7 +127,7 @@ function AppContent({ children }: { children: ReactNode }) {
       {/* Mobile Spotlight Trigger (Dynamic Island) */}
       <button
         onClick={() => setIsCommandPaletteOpen(true)}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-full border border-border/30 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md transition-all hover:scale-105 active:scale-95 md:hidden"
+        className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border border-border/30 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md transition-all hover:scale-105 active:scale-95 md:hidden"
         aria-label="Open command palette"
       >
         <Command className="h-4 w-4 text-muted-foreground" />

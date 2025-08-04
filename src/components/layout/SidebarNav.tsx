@@ -40,7 +40,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
-import { Sidebar, useSidebar } from '../ui/sidebar';
+import { Sidebar, SidebarTrigger, useSidebar } from '../ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -96,18 +96,21 @@ export default function SidebarNav({
   
   return (
     <Sidebar collapsible="icon">
-        <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
-          <Link href="/dashboard" className="text-center">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+          <Link href="/dashboard" className="text-center flex-1">
             <div className={cn(
-              "flex items-center justify-center gap-2",
-              sidebarState === 'collapsed' && 'w-8'
+              "flex items-center gap-2",
+              sidebarState === 'collapsed' ? 'justify-center' : 'justify-start'
             )}>
-              <CalendarAiLogo />
+              <CalendarAiLogo className="shrink-0" />
               {sidebarState === 'expanded' && (
                 <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
               )}
             </div>
           </Link>
+          {sidebarState === 'expanded' && (
+            <SidebarTrigger className="ml-auto" />
+          )}
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-4">
           {navItems.map((item) => (
