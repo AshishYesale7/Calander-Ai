@@ -107,15 +107,16 @@ function AppContent({ children }: { children: ReactNode }) {
     isFullScreen,
   };
   
-  const mainContentPadding = isMobile ? '0' : sidebarState === 'expanded' ? '64' : '16';
+  const mainContentPadding = sidebarState === 'expanded' ? '64' : '16';
+  const paddingClass = isMobile ? '' : `md:pl-${mainContentPadding}`;
 
   return (
     <>
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
-        <div className={`flex flex-1 flex-col md:pl-${mainContentPadding}`}> {/* Adjusted pl for md screens and up */}
+        <div className={`flex flex-1 flex-col ${paddingClass}`}>
           <Header {...modalProps} />
-          <main className="flex-1 p-6 pb-24 overflow-auto"> {/* Added bottom padding to avoid overlap */}
+          <main className="flex-1 p-6 pb-24 overflow-auto">
             {children}
           </main>
         </div>
