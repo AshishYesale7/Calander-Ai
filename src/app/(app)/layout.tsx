@@ -9,13 +9,20 @@ import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-import { Command } from 'lucide-react';
+import { Command, PanelLeft } from 'lucide-react';
 import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import ProfileModal from '@/components/layout/ProfileModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarTrigger,
+  SidebarInset,
+  useSidebar,
+} from '@/components/ui/sidebar';
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -80,6 +87,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       }
     }
   };
+  
+  const { isMobile, state: sidebarState } = useSidebar();
 
   if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
     return (
@@ -97,12 +106,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     handleToggleFullScreen,
     isFullScreen,
   };
+  
+  const mainContentPadding = isMobile ? '0' : sidebarState === 'expanded' ? '64' : '16';
 
   return (
     <>
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
-        <div className="flex flex-1 flex-col md:pl-64"> {/* Adjusted pl for md screens and up */}
+        <div className={`flex flex-1 flex-col md:pl-${mainContentPadding}`}> {/* Adjusted pl for md screens and up */}
           <Header {...modalProps} />
           <main className="flex-1 p-6 pb-24 overflow-auto"> {/* Added bottom padding to avoid overlap */}
             {children}
@@ -135,4 +146,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
     </>
   );
+}
+
+export default function AppLayout({ children }: { children: ReactNode }) {
+  // We wrap the content in the provider so that `useSidebar` can be used within AppContent
+  return (
+    <SidebarProvider>
+      <AppContent>{children}</AppContent>
+    </SidebarProvider>
+  )
 }

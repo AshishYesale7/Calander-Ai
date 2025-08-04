@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, PanelLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -21,6 +21,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { SidebarTrigger } from '../ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -74,51 +75,56 @@ export default function Header({
   
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-6 md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 frosted-glass text-sidebar-foreground bg-sidebar flex flex-col">
-            <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
-              <Link href="/dashboard" className="text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <CalendarAiLogo />
-                  <SheetTitle asChild>
-                    <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
-                  </SheetTitle>
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-6">
+        <div className="flex items-center gap-2">
+           <SidebarTrigger className="md:flex hidden" />
+           <div className="md:hidden">
+              <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0 frosted-glass text-sidebar-foreground bg-sidebar flex flex-col">
+                <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
+                  <Link href="/dashboard" className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <CalendarAiLogo />
+                      <SheetTitle asChild>
+                        <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+                      </SheetTitle>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-            </div>
-            <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-auto p-4">
-              {subscription?.status === 'trial' && typeof daysLeftInTrial === 'number' && daysLeftInTrial >= 0 && (
-                <div className="text-center p-2 mx-2 mb-2 rounded-md bg-accent/10 border border-accent/20">
-                  <p className="text-sm font-semibold text-accent">{daysLeftInTrial} days left in your trial</p>
-                  <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90" onClick={() => router.push('/subscription')}>Upgrade Now</Button>
+                <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+                <div className="mt-auto p-4">
+                  {subscription?.status === 'trial' && typeof daysLeftInTrial === 'number' && daysLeftInTrial >= 0 && (
+                    <div className="text-center p-2 mx-2 mb-2 rounded-md bg-accent/10 border border-accent/20">
+                      <p className="text-sm font-semibold text-accent">{daysLeftInTrial} days left in your trial</p>
+                      <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90" onClick={() => router.push('/subscription')}>Upgrade Now</Button>
+                    </div>
+                  )}
+                  <div className="border-t border-sidebar-border -mx-4 mb-4" />
+                  <Button variant="ghost" onClick={toggleTheme} className="w-full justify-start gap-3 mb-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>
+                  </Button>
                 </div>
-              )}
-              <div className="border-t border-sidebar-border -mx-4 mb-4" />
-              <Button variant="ghost" onClick={toggleTheme} className="w-full justify-start gap-3 mb-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+              </SheetContent>
+            </Sheet>
+           </div>
+        </div>
         
         <div className="flex items-center gap-4">
           <DropdownMenu>

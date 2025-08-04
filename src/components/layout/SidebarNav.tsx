@@ -40,6 +40,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { Sidebar, useSidebar } from '../ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -73,6 +74,7 @@ export default function SidebarNav({
   const { user, subscription } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
 
   const daysLeftInTrial = useMemo(() => {
     if (subscription?.status !== 'trial' || !subscription.endDate) return null;
@@ -93,13 +95,17 @@ export default function SidebarNav({
   };
   
   return (
-    <>
-      <div className="hidden md:flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground fixed left-0 top-0 frosted-glass">
+    <Sidebar collapsible="icon">
         <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
           <Link href="/dashboard" className="text-center">
-            <div className="flex items-center justify-center gap-2">
+            <div className={cn(
+              "flex items-center justify-center gap-2",
+              sidebarState === 'collapsed' && 'w-8'
+            )}>
               <CalendarAiLogo />
-              <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+              {sidebarState === 'expanded' && (
+                <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+              )}
             </div>
           </Link>
         </div>
@@ -112,36 +118,38 @@ export default function SidebarNav({
                 'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 pathname === item.href
                   ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground'
+                  : 'text-sidebar-foreground',
+                sidebarState === 'collapsed' && 'justify-center'
               )}
+              title={sidebarState === 'collapsed' ? item.label : undefined}
             >
-              <item.icon className="h-5 w-5" />
-              {item.label}
+              <item.icon className="h-5 w-5 shrink-0" />
+              {sidebarState === 'expanded' && <span>{item.label}</span>}
             </Link>
           ))}
         </nav>
         <div className="mt-auto p-4">
-          {subscription?.status === 'trial' && typeof daysLeftInTrial === 'number' && daysLeftInTrial >= 0 && (
+          {sidebarState === 'expanded' && subscription?.status === 'trial' && typeof daysLeftInTrial === 'number' && daysLeftInTrial >= 0 && (
             <div className="text-center p-2 mx-2 mb-2 rounded-md bg-accent/10 border border-accent/20">
-              <p className="text-sm font-semibold text-accent">{daysLeftInTrial} days left in your trial</p>
-              <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => router.push('/subscription')}>Upgrade Now</Button>
+              <p className="text-sm font-semibold text-accent">{daysLeftInTrial} days left in trial</p>
+              <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => router.push('/subscription')}>Upgrade</Button>
             </div>
           )}
           <div className="border-t border-sidebar-border -mx-4 mb-4" />
-          <Button variant="ghost" onClick={toggleTheme} className="w-full justify-start gap-3 mb-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>
+          <Button variant="ghost" onClick={toggleTheme} className={cn("w-full justify-start gap-3 mb-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
+            {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
+            {sidebarState === 'expanded' && <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className={cn("w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
+                <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || user?.email || 'User'} />
                   <AvatarFallback>
                     {user?.email ? user.email.charAt(0).toUpperCase() : <UserCircle size={20} />}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{user?.displayName || user?.email}</span>
+                {sidebarState === 'expanded' && <span className="truncate">{user?.displayName || user?.email}</span>}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 frosted-glass">
@@ -175,7 +183,6 @@ export default function SidebarNav({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-    </>
+    </Sidebar>
   );
 }
