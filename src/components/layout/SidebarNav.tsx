@@ -100,7 +100,7 @@ export default function SidebarNav({
           <Link href="/dashboard" className="text-center flex-1">
             <div className={cn(
               "flex items-center gap-2 transition-all",
-              sidebarState === 'collapsed' ? 'justify-center' : 'justify-start'
+              sidebarState === 'collapsed' && 'justify-center'
             )}>
               <CalendarAiLogo className="shrink-0" />
               {sidebarState === 'expanded' && (
@@ -108,9 +108,7 @@ export default function SidebarNav({
               )}
             </div>
           </Link>
-          {sidebarState === 'expanded' && (
-            <SidebarTrigger className="ml-auto" />
-          )}
+          <SidebarTrigger className={cn("ml-auto", sidebarState === 'collapsed' && 'hidden')} />
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-2">
           {navItems.map((item) => (
@@ -185,6 +183,11 @@ export default function SidebarNav({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {sidebarState === 'collapsed' && (
+            <div className="mt-2">
+              <SidebarTrigger />
+            </div>
+          )}
         </div>
     </Sidebar>
   );
