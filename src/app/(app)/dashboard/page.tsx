@@ -651,7 +651,7 @@ export default function DashboardPage() {
             
             <TabsContent value="calendar" className="mt-0 space-y-8">
                <div className="flex items-start">
-                  <div className="flex-1 min-w-0">
+                  <div className={cn("flex-1 min-w-0 transition-all duration-300", isTrashPanelOpen && "md:mr-[384px] lg:mr-[384px]")}>
                     <EventCalendarView
                         events={activeEvents}
                         month={activeDisplayMonth}
@@ -664,12 +664,14 @@ export default function DashboardPage() {
                     />
                   </div>
                   {isTrashPanelOpen && (
-                    <TrashPanel
-                      deletedEvents={recentlyDeletedEvents}
-                      onRestore={handleRestoreEvent}
-                      onPermanentDelete={handlePermanentDelete}
-                      onClose={() => setIsTrashPanelOpen(false)}
-                    />
+                    <div className="absolute right-0 top-0 h-full">
+                        <TrashPanel
+                          deletedEvents={recentlyDeletedEvents}
+                          onRestore={handleRestoreEvent}
+                          onPermanentDelete={handlePermanentDelete}
+                          onClose={() => setIsTrashPanelOpen(false)}
+                        />
+                    </div>
                   )}
                </div>
               {selectedDateForDayView ? (
