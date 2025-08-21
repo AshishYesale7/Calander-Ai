@@ -179,7 +179,7 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
   }
 
   return (
-    <Card className={cn("hidden lg:flex flex-col frosted-glass shadow-lg w-full max-h-[calc(100vh-10rem)]", className)}>
+    <Card className={cn("md:flex flex-col frosted-glass shadow-lg w-full max-h-[calc(100vh-10rem)]", className)}>
       <CardHeader className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
             <CardTitle className="font-headline text-xl text-primary flex items-center">
