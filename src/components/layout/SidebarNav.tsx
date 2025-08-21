@@ -40,7 +40,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
-import { Sidebar, SidebarTrigger, useSidebar } from '../ui/sidebar';
+import { Sidebar, useSidebar } from '../ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -108,7 +108,6 @@ export default function SidebarNav({
               )}
             </div>
           </Link>
-          <SidebarTrigger className={cn("ml-auto", sidebarState === 'collapsed' && 'hidden')} />
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-2">
           {navItems.map((item) => (
@@ -183,11 +182,6 @@ export default function SidebarNav({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {sidebarState === 'collapsed' && (
-            <div className="mt-2">
-              <SidebarTrigger />
-            </div>
-          )}
         </div>
     </Sidebar>
   );
