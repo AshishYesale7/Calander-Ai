@@ -95,16 +95,16 @@ export default function SidebarNav({
   };
   
   return (
-    <Sidebar collapsible="icon">
-        <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+    <Sidebar collapsible="icon" className="hidden md:flex md:flex-col">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
           <Link href="/dashboard" className="text-center flex-1">
             <div className={cn(
-              "flex items-center gap-2",
+              "flex items-center gap-2 transition-all",
               sidebarState === 'collapsed' ? 'justify-center' : 'justify-start'
             )}>
               <CalendarAiLogo className="shrink-0" />
               {sidebarState === 'expanded' && (
-                <h1 className="font-headline text-2xl font-semibold text-white">Calendar.ai</h1>
+                <h1 className="font-headline text-2xl font-semibold text-white animate-in fade-in duration-300">Calendar.ai</h1>
               )}
             </div>
           </Link>
@@ -112,7 +112,7 @@ export default function SidebarNav({
             <SidebarTrigger className="ml-auto" />
           )}
         </div>
-        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+        <nav className="flex-1 space-y-2 overflow-y-auto p-2">
           {navItems.map((item) => (
             <Link
               key={item.label}
@@ -127,21 +127,21 @@ export default function SidebarNav({
               title={sidebarState === 'collapsed' ? item.label : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {sidebarState === 'expanded' && <span>{item.label}</span>}
+              {sidebarState === 'expanded' && <span className="animate-in fade-in duration-300">{item.label}</span>}
             </Link>
           ))}
         </nav>
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-2">
           {sidebarState === 'expanded' && subscription?.status === 'trial' && typeof daysLeftInTrial === 'number' && daysLeftInTrial >= 0 && (
-            <div className="text-center p-2 mx-2 mb-2 rounded-md bg-accent/10 border border-accent/20">
+            <div className="text-center p-2 mx-2 mb-2 rounded-md bg-accent/10 border border-accent/20 animate-in fade-in duration-300">
               <p className="text-sm font-semibold text-accent">{daysLeftInTrial} days left in trial</p>
               <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => router.push('/subscription')}>Upgrade</Button>
             </div>
           )}
-          <div className="border-t border-sidebar-border -mx-4 mb-4" />
-          <Button variant="ghost" onClick={toggleTheme} className={cn("w-full justify-start gap-3 mb-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
+          <div className="border-t border-sidebar-border -mx-2 mb-2" />
+          <Button variant="ghost" onClick={toggleTheme} className={cn("w-full justify-start gap-3 mb-1 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
             {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
-            {sidebarState === 'expanded' && <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>}
+            {sidebarState === 'expanded' && <span className="animate-in fade-in duration-300">{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -152,7 +152,7 @@ export default function SidebarNav({
                     {user?.email ? user.email.charAt(0).toUpperCase() : <UserCircle size={20} />}
                   </AvatarFallback>
                 </Avatar>
-                {sidebarState === 'expanded' && <span className="truncate">{user?.displayName || user?.email}</span>}
+                {sidebarState === 'expanded' && <span className="truncate animate-in fade-in duration-300">{user?.displayName || user?.email}</span>}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 frosted-glass">

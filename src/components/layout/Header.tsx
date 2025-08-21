@@ -21,6 +21,9 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { useSidebar } from '../ui/sidebar';
+import { SidebarTrigger } from '../ui/sidebar';
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -53,6 +56,7 @@ export default function Header({
   const { user, subscription } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
 
   const daysLeftInTrial = useMemo(() => {
     if (subscription?.status !== 'trial' || !subscription.endDate) return null;
@@ -75,7 +79,7 @@ export default function Header({
   return (
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md md:justify-end">
-        <div className="md:hidden">
+        <div className="flex items-center gap-4 md:hidden">
           <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon">

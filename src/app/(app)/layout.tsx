@@ -18,6 +18,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -104,14 +105,15 @@ function AppContent({ children }: { children: ReactNode }) {
     isFullScreen,
   };
   
-  const mainContentPadding = sidebarState === 'expanded' ? 'pl-64' : 'pl-16';
-  const paddingClass = isMobile ? '' : mainContentPadding;
-
   return (
     <>
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
-        <div className={`flex flex-1 flex-col ${paddingClass}`}>
+        <div className={cn(
+          "flex flex-1 flex-col transition-[padding-left] duration-300 ease-in-out",
+          !isMobile && sidebarState === 'expanded' && 'pl-64',
+          !isMobile && sidebarState === 'collapsed' && 'pl-12' // Corresponds to --sidebar-width-icon
+        )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">
             {children}
