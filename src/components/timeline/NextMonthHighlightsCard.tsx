@@ -27,9 +27,10 @@ const getStatusStyles = (status: TimelineEvent['status'] = 'pending') => {
 
 interface NextMonthHighlightsCardProps {
     events: TimelineEvent[];
+    className?: string;
 }
 
-export default function NextMonthHighlightsCard({ events }: NextMonthHighlightsCardProps) {
+export default function NextMonthHighlightsCard({ events, className }: NextMonthHighlightsCardProps) {
     const nextMonthEvents = useMemo(() => {
         const now = new Date();
         const nextMonthStart = startOfMonth(addMonths(now, 1));
@@ -51,7 +52,7 @@ export default function NextMonthHighlightsCard({ events }: NextMonthHighlightsC
     }, [events]);
 
     return (
-        <Card className="frosted-glass shadow-lg w-full">
+        <Card className={cn("frosted-glass shadow-lg w-full", className)}>
             <CardContent className="p-4 space-y-4">
                 <div className="flex items-center">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>
