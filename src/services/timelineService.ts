@@ -73,10 +73,11 @@ export const saveTimelineEvent = async (
                         googleEventId = newGoogleEvent.id;
                     }
                 }
-            } else if (!options.syncToGoogle && googleEventId) {
-                // User wants to unsync this event, delete it from Google Calendar
-                await deleteGoogleCalendarEvent(userId, googleEventId);
-                googleEventId = null; // Clear the ID from our record
+            } else if (!options.syncToGoogle && googleEventId && event.id.startsWith('gcal-')) {
+                // This case should be handled carefully. We don't want to accidentally delete Google events.
+                // The logic to delete is now explicitly in deleteTimelineEvent.
+                // This block is left intentionally empty to prevent accidental deletion on save.
+                // The googleEventId will be preserved unless explicitly deleted.
             }
         } catch (error) {
             console.error("Error syncing event to Google Calendar:", error);
@@ -88,7 +89,7 @@ export const saveTimelineEvent = async (
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
         endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
-        googleEventId: googleEventId, // Persist the new or nulled ID
+        googleEventId: googleEventId, // Persist the new or existing ID
     };
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
