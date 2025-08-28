@@ -111,8 +111,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <SidebarNav {...modalProps} />
         <div className={cn(
           "flex flex-1 flex-col transition-[padding-left] duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' && 'pl-64',
-          !isMobile && sidebarState === 'collapsed' && 'pl-12' // Corresponds to --sidebar-width-icon
+          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
         )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">

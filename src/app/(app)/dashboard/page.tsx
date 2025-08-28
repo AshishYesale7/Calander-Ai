@@ -627,9 +627,9 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <TodaysPlanCard />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="xl:col-span-2 space-y-8">
           <Tabs defaultValue="calendar">
             <div className="flex justify-between items-center mb-4 gap-2">
               <TabsList className="inline-flex h-auto p-1 rounded-full bg-muted/50 backdrop-blur-sm border border-border/30">
@@ -707,7 +707,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-1 space-y-8">
+        <div className="xl:col-span-1 space-y-8">
           <ImportantEmailsCard />
           <NextMonthHighlightsCard events={activeEvents} />
         </div>
