@@ -4,7 +4,7 @@
 import { google } from 'googleapis';
 import { getAuthenticatedClient } from './googleAuthService';
 import type { RawCalendarEvent, TimelineEvent } from '@/types';
-import { startOfMonth, endOfMonth, formatISO, format, addDays, addHours, addMonths, subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, formatISO, format, addDays, addHours, addMonths, subMonths, startOfDay } from 'date-fns';
 
 function timelineEventToGoogleEvent(event: TimelineEvent) {
   const googleEvent: any = {
@@ -15,12 +15,15 @@ function timelineEventToGoogleEvent(event: TimelineEvent) {
   };
 
   if (event.isAllDay) {
-    googleEvent.start = { date: format(event.date, 'yyyy-MM-dd') };
-    // Google's end date for all-day events is exclusive, so add a day.
-    const endDate = event.endDate ? addDays(event.endDate, 1) : addDays(event.date, 1);
-    googleEvent.end = { date: format(endDate, 'yyyy-MM-dd') };
+    googleEvent.start = { date: format(startOfDay(event.date), 'yyyy-MM-dd') };
+    // For all-day events, Google's end date is exclusive.
+    // If an `endDate` is provided, we need to set the Google event's end to the day *after* it.
+    // If no `endDate` is provided, it's a single-day event, so the end is the day after the start date.
+    const endDateForGoogle = event.endDate ? addDays(startOfDay(event.endDate), 1) : addDays(startOfDay(event.date), 1);
+    googleEvent.end = { date: format(endDateForGoogle, 'yyyy-MM-dd') };
   } else {
     googleEvent.start = { dateTime: event.date.toISOString() };
+    // If no end date, default to a 1-hour duration.
     const endDate = event.endDate || addHours(event.date, 1);
     googleEvent.end = { dateTime: endDate.toISOString() };
   }
