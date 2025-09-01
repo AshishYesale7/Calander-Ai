@@ -219,33 +219,33 @@ export default function NewsPage() {
                 <Accordion type="single" collapsible className="w-full">
                     {history.map(item => (
                         <AccordionItem value={item.id} key={item.id}>
-                            <AccordionTrigger className="hover:no-underline">
-                                <div className="flex justify-between items-center w-full">
-                                    <span className="font-semibold text-base text-left">{item.keyword}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-muted-foreground font-normal">
-                                            {formatDistanceToNow(item.createdAt, { addSuffix: true })}
-                                        </span>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={e => e.stopPropagation()}>
-                                                    <Trash2 className="h-4 w-4"/>
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent className="frosted-glass">
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Delete this search?</AlertDialogTitle>
-                                                    <AlertDialogDescription>This will remove "{item.keyword}" from your history.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteHistory(item.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
+                            <div className="flex w-full items-center justify-between hover:bg-muted/30 rounded-md">
+                                <AccordionTrigger className="flex-1 text-left px-4 py-2 hover:no-underline">
+                                        <span className="font-semibold text-base">{item.keyword}</span>
+                                </AccordionTrigger>
+                                <div className="flex items-center gap-2 pr-4">
+                                    <span className="text-xs text-muted-foreground font-normal">
+                                        {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+                                    </span>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10">
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="frosted-glass">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete this search?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will remove "{item.keyword}" from your history.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteHistory(item.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
-                            </AccordionTrigger>
+                            </div>
                             <AccordionContent>
                                 {item.deadlines.length > 0 ? (
                                     <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={handleAddEventToTimeline} />
