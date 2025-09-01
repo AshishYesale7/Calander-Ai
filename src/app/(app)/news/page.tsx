@@ -33,18 +33,34 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import EditEventModal from '@/components/timeline/EditEventModal';
 
 export default function NewsPage() {
   const [keyword, setKeyword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [history, setHistory] = useState<TrackedKeyword[]>([]);
-  const [addedDeadlineIds, setAddedDeadlineIds] = useState<Set<string>>(new Set());
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [eventToCreate, setEventToCreate] = useState<TimelineEvent | null>(null);
+  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
 
   const { toast } = useToast();
   const { apiKey } = useApiKey();
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if(user) {
+        fetch('/api/auth/google/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid }),
+        })
+        .then(res => res.json())
+        .then(data => setIsGoogleConnected(data.isConnected));
+    }
+  }, [user]);
 
   const fetchHistory = useCallback(async () => {
     if (!user) return;
@@ -110,23 +126,12 @@ export default function NewsPage() {
     }
   };
 
-  const handleAddEventToTimeline = async (deadline: DeadlineItem, searchKeyword: string) => {
-    if (!user) return;
-    const deadlineIdentifier = `${deadline.title}-${deadline.date}`;
-    
-    if (addedDeadlineIds.has(deadlineIdentifier)) {
-        toast({title: 'Already Added', description: 'This deadline is already in your calendar.'});
-        return;
-    }
-    
-    toast({ title: "Adding to timeline...", description: `Saving "${deadline.title}" to your calendar.` });
-    
-    // Crucial Fix: Use startOfDay to ensure time is stripped for all-day events,
-    // preventing timezone-related date shifts.
+  const handleAddEventToTimeline = (deadline: DeadlineItem, searchKeyword: string) => {
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
         date: startOfDay(new Date(deadline.date)),
+        endDate: undefined,
         type: 'deadline',
         notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
         isAllDay: true,
@@ -134,18 +139,31 @@ export default function NewsPage() {
         priority: 'Medium',
         status: 'pending'
     };
-
+    setEventToCreate(newEvent);
+    setIsEditModalOpen(true);
+  };
+  
+  const handleSaveFromModal = async (updatedEvent: TimelineEvent, syncToGoogle: boolean) => {
+    if (!user) {
+      toast({ title: 'Not signed in', description: 'You must be signed in to save events.', variant: 'destructive' });
+      return;
+    }
+    setIsEditModalOpen(false);
+    
+    toast({ title: "Saving event...", description: `Adding "${updatedEvent.title}" to your calendar.` });
+    
     try {
-        const { icon, ...data } = newEvent;
-        const payload: any = {
-          ...data,
-          date: data.date.toISOString(),
-          endDate: null,
+        const { icon, ...data } = updatedEvent;
+        const payload = {
+            ...data,
+            date: data.date.toISOString(),
+            endDate: data.endDate ? data.endDate.toISOString() : null,
         };
-        
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle: true });
-        toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
-        setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle });
+        toast({
+            title: "Event Added",
+            description: `"${updatedEvent.title}" has been successfully added to your timeline.`
+        });
     } catch(error: any) {
         let description = 'An unknown error occurred while saving the event.';
         if (typeof error.message === 'string') {
@@ -160,117 +178,131 @@ export default function NewsPage() {
     }
   };
 
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') handleSearch();
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
-          <Newspaper className="mr-3 h-8 w-8 text-accent" />
-          AI Opportunity Tracker
-        </h1>
-        <p className="text-foreground/80 mt-1">
-          Enter a topic, exam, or company to find and track important upcoming deadlines.
-        </p>
-      </div>
+    <>
+      <div className="space-y-8">
+        <div>
+          <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
+            <Newspaper className="mr-3 h-8 w-8 text-accent" />
+            AI Opportunity Tracker
+          </h1>
+          <p className="text-foreground/80 mt-1">
+            Enter a topic, exam, or company to find and track important upcoming deadlines.
+          </p>
+        </div>
 
-      <Card className="frosted-glass shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary flex items-center">
-            <Search className="mr-2 h-5 w-5" />
-            Track a New Topic
-          </CardTitle>
-          <CardDescription>
-            For example: "GATE 2025", "Google Summer of Code", or "Microsoft SWE Internships".
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              ref={inputRef}
-              placeholder="Enter keyword..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              className="bg-input/50"
-            />
-            <Button 
-              onClick={handleSearch} 
-              disabled={isLoading || !keyword.trim()}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
-            >
-              {isLoading ? (
-                <><LoadingSpinner size="sm" className="mr-2"/>Tracking...</>
-              ) : (
-                <><Bot className="mr-2 h-4 w-4" />Find Deadlines</>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="frosted-glass shadow-lg">
-        <CardHeader>
+        <Card className="frosted-glass shadow-lg">
+          <CardHeader>
             <CardTitle className="font-headline text-xl text-primary flex items-center">
-                <History className="mr-2 h-5 w-5" />
-                Tracked History
+              <Search className="mr-2 h-5 w-5" />
+              Track a New Topic
             </CardTitle>
             <CardDescription>
-                Your previously tracked topics. Click to expand and see deadlines.
+              For example: "GATE 2025", "Google Summer of Code", or "Microsoft SWE Internships".
             </CardDescription>
-        </CardHeader>
-        <CardContent>
-            {isHistoryLoading ? (
-                <div className="flex justify-center p-8"><LoadingSpinner /></div>
-            ) : history.length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
-                    {history.map(item => (
-                        <AccordionItem value={item.id} key={item.id}>
-                            <div className="flex w-full items-center justify-between hover:bg-muted/30 rounded-md">
-                                <AccordionTrigger className="flex-1 text-left px-4 py-2 hover:no-underline">
-                                        <span className="font-semibold text-base">{item.keyword}</span>
-                                </AccordionTrigger>
-                                <div className="flex items-center gap-2 pr-4">
-                                    <span className="text-xs text-muted-foreground font-normal">
-                                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                                    </span>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10">
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="frosted-glass">
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete this search?</AlertDialogTitle>
-                                                <AlertDialogDescription>This will remove "{item.keyword}" from your history.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteHistory(item.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
-                            <AccordionContent>
-                                {item.deadlines.length > 0 ? (
-                                    <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={(deadline) => handleAddEventToTimeline(deadline, item.keyword)} />
-                                ) : (
-                                    <p className="text-muted-foreground text-center text-sm p-4">No deadlines were found for this topic.</p>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-            ) : (
-                <p className="text-center text-muted-foreground p-8">Your search history is empty. Track a topic to get started!</p>
-            )}
-        </CardContent>
-      </Card>
-    </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                ref={inputRef}
+                placeholder="Enter keyword..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading}
+                className="bg-input/50"
+              />
+              <Button 
+                onClick={handleSearch} 
+                disabled={isLoading || !keyword.trim()}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
+                {isLoading ? (
+                  <><LoadingSpinner size="sm" className="mr-2"/>Tracking...</>
+                ) : (
+                  <><Bot className="mr-2 h-4 w-4" />Find Deadlines</>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="frosted-glass shadow-lg">
+          <CardHeader>
+              <CardTitle className="font-headline text-xl text-primary flex items-center">
+                  <History className="mr-2 h-5 w-5" />
+                  Tracked History
+              </CardTitle>
+              <CardDescription>
+                  Your previously tracked topics. Click to expand and see deadlines.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              {isHistoryLoading ? (
+                  <div className="flex justify-center p-8"><LoadingSpinner /></div>
+              ) : history.length > 0 ? (
+                  <Accordion type="single" collapsible className="w-full">
+                      {history.map(item => (
+                          <AccordionItem value={item.id} key={item.id}>
+                              <div className="flex w-full items-center justify-between hover:bg-muted/30 rounded-md">
+                                  <AccordionTrigger className="flex-1 text-left px-4 py-2 hover:no-underline">
+                                          <span className="font-semibold text-base">{item.keyword}</span>
+                                  </AccordionTrigger>
+                                  <div className="flex items-center gap-2 pr-4">
+                                      <span className="text-xs text-muted-foreground font-normal">
+                                          {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                                      </span>
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10">
+                                                  <Trash2 className="h-4 w-4"/>
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent className="frosted-glass">
+                                              <AlertDialogHeader>
+                                                  <AlertDialogTitle>Delete this search?</AlertDialogTitle>
+                                                  <AlertDialogDescription>This will remove "{item.keyword}" from your history.</AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => handleDeleteHistory(item.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                  </div>
+                              </div>
+                              <AccordionContent>
+                                  {item.deadlines.length > 0 ? (
+                                      <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={(deadline) => handleAddEventToTimeline(deadline, item.keyword)} />
+                                  ) : (
+                                      <p className="text-muted-foreground text-center text-sm p-4">No deadlines were found for this topic.</p>
+                                  )}
+                              </AccordionContent>
+                          </AccordionItem>
+                      ))}
+                  </Accordion>
+              ) : (
+                  <p className="text-center text-muted-foreground p-8">Your search history is empty. Track a topic to get started!</p>
+              )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {eventToCreate && (
+        <EditEventModal
+          isOpen={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          eventToEdit={eventToCreate}
+          onSubmit={handleSaveFromModal}
+          isAddingNewEvent={true}
+          isGoogleConnected={!!isGoogleConnected}
+        />
+      )}
+    </>
   );
 }
