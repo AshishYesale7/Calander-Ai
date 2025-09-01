@@ -132,11 +132,17 @@ export default function NewsPage() {
     };
 
     const { icon, ...payload } = newEvent;
-    const dataToSave = {
+    
+    // Correctly prepare data for saving
+    const dataToSave: any = {
       ...payload,
       date: payload.date.toISOString(),
-      endDate: payload.endDate ? payload.endDate.toISOString() : null,
     };
+    
+    // ONLY include endDate if it exists. Do not send `null`.
+    if (payload.endDate) {
+      dataToSave.endDate = payload.endDate.toISOString();
+    }
     
     toast({ title: "Adding to timeline..." });
 
@@ -147,8 +153,7 @@ export default function NewsPage() {
     } catch(error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({ title: 'Sync Error', description: errorMessage, variant: 'destructive', duration: 8000 });
-        // Even if Google sync fails, we mark it as added locally if Firestore save succeeded
-        setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
+        // Don't mark as added if there was an error.
     }
   };
 
@@ -265,4 +270,5 @@ export default function NewsPage() {
       </Card>
     </div>
   );
-}
+
+    
