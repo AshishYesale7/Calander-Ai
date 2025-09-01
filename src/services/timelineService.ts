@@ -44,7 +44,7 @@ type SaveTimelineEventOptions = {
 
 export const saveTimelineEvent = async (
     userId: string,
-    event: Omit<TimelineEvent, 'icon' | 'date' | 'endDate'> & { date: string; endDate?: string | null },
+    event: Omit<TimelineEvent, 'icon' | 'date' | 'endDate' | 'deletedAt'> & { date: string; endDate?: string | null; deletedAt?: string | null },
     options: SaveTimelineEventOptions
 ): Promise<void> => {
     const eventsCollection = getTimelineEventsCollection(userId);
@@ -52,14 +52,17 @@ export const saveTimelineEvent = async (
 
     let googleEventId = event.googleEventId || null;
     const client = await getAuthenticatedClient(userId);
+    
+    const eventDate = new Date(event.date);
+    const eventEndDate = event.endDate ? new Date(event.endDate) : undefined;
 
     // This block handles the Google Calendar sync logic.
     if (client && options.syncToGoogle) {
       try {
         const eventPayloadForGoogle: TimelineEvent = {
           ...event,
-          date: new Date(event.date),
-          endDate: event.endDate ? new Date(event.endDate) : undefined,
+          date: eventDate,
+          endDate: eventEndDate,
         } as TimelineEvent;
 
         if (googleEventId) {
@@ -79,9 +82,8 @@ export const saveTimelineEvent = async (
     // Prepare data for Firestore.
     const dataToSave: any = {
         ...event,
-        date: Timestamp.fromDate(new Date(event.date)),
-        // Only include endDate if it is a valid date string.
-        endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
+        date: Timestamp.fromDate(eventDate),
+        endDate: eventEndDate ? Timestamp.fromDate(eventEndDate) : null,
     };
     
     if (googleEventId) {
@@ -89,6 +91,10 @@ export const saveTimelineEvent = async (
     } else {
         delete dataToSave.googleEventId;
     }
+
+    // Explicitly delete null/undefined fields that we don't want to store.
+    if (!dataToSave.endDate) delete dataToSave.endDate;
+    if (!dataToSave.deletedAt) delete dataToSave.deletedAt;
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
 };
