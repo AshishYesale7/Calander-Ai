@@ -6,6 +6,7 @@ import type { TimelineEvent } from '@/types';
 import { collection, getDocs, doc, setDoc, deleteDoc, Timestamp, query, orderBy, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { getAuthenticatedClient } from './googleAuthService';
 import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalendarEvent } from './googleCalendarService';
+import { startOfDay } from 'date-fns';
 
 const getTimelineEventsCollection = (userId: string) => {
   if (!db) {
@@ -53,7 +54,10 @@ export const saveTimelineEvent = async (
     let googleEventId = event.googleEventId || null;
     const client = await getAuthenticatedClient(userId);
     
-    const eventDate = new Date(event.date);
+    let eventDate = new Date(event.date);
+    if (event.isAllDay) {
+        eventDate = startOfDay(eventDate);
+    }
     const eventEndDate = event.endDate ? new Date(event.endDate) : undefined;
 
     // This block handles the Google Calendar sync logic.

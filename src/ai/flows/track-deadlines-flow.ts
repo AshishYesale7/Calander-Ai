@@ -19,7 +19,7 @@ const TrackDeadlinesInputSchema = z.object({
 export type TrackDeadlinesInput = z.infer<typeof TrackDeadlinesInputSchema>;
 
 const DeadlineSchema = z.object({
-  date: z.string().datetime().describe("The exact date and time of the deadline in ISO 8601 format."),
+  date: z.string().datetime().describe("The exact date of the deadline in ISO 8601 format (YYYY-MM-DD). Do not include time information."),
   title: z.string().describe("The official name of the event or deadline (e.g., 'Application Closes', 'Registration Starts')."),
   description: z.string().describe("A concise, one-sentence summary of what this deadline is for."),
   category: z.enum(['Exam', 'Internship', 'Job', 'Other']).describe("The category of the deadline."),
@@ -39,7 +39,7 @@ User's Keyword: "${input.keyword}"
 Instructions:
 1.  **Simulate Search:** Based on the keyword, find the most critical dates (e.g., application start/end, registration deadlines, exam dates, announcement dates).
 2.  **Extract Key Information:** For each date you find, extract the following details:
-    -   **date:** The precise date in ISO 8601 format. If only a date is given, assume it's for the end of that day (e.g., '2024-09-15' becomes '2024-09-15T23:59:59.000Z').
+    -   **date:** The precise date in **YYYY-MM-DD** format. You MUST NOT include any time information (e.g., '2024-09-15').
     -   **title:** A short, official-sounding title for the event (e.g., "Application Window Opens", "Registration Deadline", "Exam Date").
     -   **description:** A brief, clear summary of the event.
     -   **category:** Classify the opportunity as 'Exam', 'Internship', 'Job', or 'Other'.

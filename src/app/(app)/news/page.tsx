@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { DeadlineItem, TrackedKeyword } from '@/types';
@@ -21,7 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,7 +123,7 @@ export default function NewsPage() {
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
-        date: new Date(deadline.date),
+        date: startOfDay(new Date(deadline.date)),
         type: 'deadline',
         notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
         isAllDay: true,
@@ -138,8 +137,8 @@ export default function NewsPage() {
         const payload: any = {
           ...data,
           date: data.date.toISOString(),
-          // Ensure endDate is not present if it doesn't exist, preventing null values
         };
+        // Ensure endDate is not present if it doesn't exist on the source object
         if (data.endDate) {
           payload.endDate = data.endDate.toISOString();
         }
@@ -148,7 +147,6 @@ export default function NewsPage() {
         toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
         setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
     } catch(error: any) {
-        // Enhanced error handling
         let description = 'An unknown error occurred while saving the event.';
         if (typeof error.message === 'string') {
             if (error.message.includes('Google Calendar')) {
@@ -158,7 +156,6 @@ export default function NewsPage() {
             }
         }
         toast({ title: 'Save Error', description, variant: 'destructive', duration: 8000 });
-        // Don't mark as added if there was an error.
     }
   };
 
@@ -237,7 +234,7 @@ export default function NewsPage() {
                                 </AccordionTrigger>
                                 <div className="flex items-center gap-2 pr-4">
                                     <span className="text-xs text-muted-foreground font-normal">
-                                        {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+                                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                                     </span>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -275,6 +272,4 @@ export default function NewsPage() {
       </Card>
     </div>
   );
-
-    
-
+}
