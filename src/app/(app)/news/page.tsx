@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { DeadlineItem, TrackedKeyword } from '@/types';
@@ -138,10 +139,6 @@ export default function NewsPage() {
           ...data,
           date: data.date.toISOString(),
         };
-        // Ensure endDate is not present if it doesn't exist on the source object
-        if (data.endDate) {
-          payload.endDate = data.endDate.toISOString();
-        }
 
         await saveTimelineEvent(user.uid, payload, { syncToGoogle: true });
         toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
