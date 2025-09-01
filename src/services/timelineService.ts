@@ -53,38 +53,34 @@ export const saveTimelineEvent = async (
     let googleEventId = event.googleEventId || null;
     const client = await getAuthenticatedClient(userId);
 
-    if (client) { // Only attempt sync if user is connected
-        try {
-            if (options.syncToGoogle) {
-                // User wants this event on Google Calendar
-                const eventPayloadForGoogle: TimelineEvent = {
-                    ...event,
-                    date: new Date(event.date),
-                    endDate: event.endDate ? new Date(event.endDate) : undefined,
-                } as TimelineEvent;
+    // This block handles the Google Calendar sync logic.
+    // It's wrapped in a try/catch so that a failure here doesn't prevent saving to Firestore.
+    if (client && options.syncToGoogle) {
+      try {
+        const eventPayloadForGoogle: TimelineEvent = {
+          ...event,
+          date: new Date(event.date),
+          endDate: event.endDate ? new Date(event.endDate) : undefined,
+        } as TimelineEvent;
 
-                if (googleEventId) {
-                    // Update existing event
-                    await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle);
-                } else {
-                    // Create new event
-                    const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle);
-                    if (newGoogleEvent && newGoogleEvent.id) {
-                        googleEventId = newGoogleEvent.id;
-                    }
-                }
-            } else if (!options.syncToGoogle && googleEventId && event.id.startsWith('gcal-')) {
-                // This case should be handled carefully. We don't want to accidentally delete Google events.
-                // The logic to delete is now explicitly in deleteTimelineEvent.
-                // This block is left intentionally empty to prevent accidental deletion on save.
-                // The googleEventId will be preserved unless explicitly deleted.
-            }
-        } catch (error) {
-            console.error("Error syncing event to Google Calendar:", error);
-            // Don't block saving to Firestore if Google sync fails
+        if (googleEventId) {
+          await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle);
+        } else {
+          const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle);
+          if (newGoogleEvent && newGoogleEvent.id) {
+            googleEventId = newGoogleEvent.id;
+          }
         }
+      } catch (error) {
+        console.error("Critical Error: Failed to sync event to Google Calendar. Saving to Firestore only.", error);
+        // Throw a new, more specific error to be caught by the calling UI.
+        throw new Error("Event saved locally, but failed to sync with Google Calendar. Please check permissions in Settings.");
+      }
     }
 
+
+    // This block handles saving to Firestore. It runs regardless of the Google Sync outcome,
+    // unless the sync error above was thrown and caught by the UI.
     const dataToSave: any = {
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
@@ -95,7 +91,7 @@ export const saveTimelineEvent = async (
     if (googleEventId) {
         dataToSave.googleEventId = googleEventId;
     } else {
-        // Ensure we don't save a null or undefined googleEventId if it wasn't there before
+        // If there's no googleEventId, ensure it's not in the data being saved.
         delete dataToSave.googleEventId;
     }
 

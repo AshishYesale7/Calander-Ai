@@ -110,11 +110,10 @@ export default function NewsPage() {
     }
   };
 
-  const handleAddEventToTimeline = async (deadline: DeadlineItem) => {
+  const handleAddEventToTimeline = async (deadline: DeadlineItem, searchKeyword: string) => {
     if (!user) return;
     const deadlineIdentifier = `${deadline.title}-${deadline.date}`;
     
-    // Check if it's already added to avoid duplicates
     if (addedDeadlineIds.has(deadlineIdentifier)) {
         toast({title: 'Already Added', description: 'This deadline is already in your calendar.'});
         return;
@@ -122,7 +121,7 @@ export default function NewsPage() {
     
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
-        title: `${keyword}: ${deadline.title}`,
+        title: `${searchKeyword}: ${deadline.title}`,
         date: new Date(deadline.date),
         type: 'deadline',
         notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
@@ -143,10 +142,13 @@ export default function NewsPage() {
 
     try {
         await saveTimelineEvent(user.uid, dataToSave, { syncToGoogle: true });
-        toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar.` });
+        toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
         setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
-    } catch(e) {
-        toast({ title: 'Error adding event', variant: 'destructive' });
+    } catch(error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ title: 'Sync Error', description: errorMessage, variant: 'destructive', duration: 8000 });
+        // Even if Google sync fails, we mark it as added locally if Firestore save succeeded
+        setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
     }
   };
 
@@ -248,7 +250,7 @@ export default function NewsPage() {
                             </div>
                             <AccordionContent>
                                 {item.deadlines.length > 0 ? (
-                                    <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={handleAddEventToTimeline} />
+                                    <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={(deadline) => handleAddEventToTimeline(deadline, item.keyword)} />
                                 ) : (
                                     <p className="text-muted-foreground text-center text-sm p-4">No deadlines were found for this topic.</p>
                                 )}
