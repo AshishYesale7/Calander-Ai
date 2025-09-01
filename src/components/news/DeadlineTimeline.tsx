@@ -6,12 +6,13 @@ import { format, isPast } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DeadlineItem } from '@/types';
 
 interface DeadlineTimelineProps {
   deadlines: DeadlineItem[];
+  onAddToCalendar: (deadline: DeadlineItem) => void;
 }
 
 const getCategoryClass = (category: DeadlineItem['category']) => {
@@ -37,7 +38,7 @@ const getCategoryDotClass = (category: DeadlineItem['category']) => {
 };
 
 
-export default function DeadlineTimeline({ deadlines }: DeadlineTimelineProps) {
+export default function DeadlineTimeline({ deadlines, onAddToCalendar }: DeadlineTimelineProps) {
   const [selectedDeadline, setSelectedDeadline] = useState<DeadlineItem | null>(deadlines[0] || null);
 
   const handleSelect = (deadline: DeadlineItem) => {
@@ -49,7 +50,7 @@ export default function DeadlineTimeline({ deadlines }: DeadlineTimelineProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-4">
       {/* The Timeline Visualization */}
       <div className="relative w-full">
         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-border/50 -translate-y-1/2"></div>
@@ -113,11 +114,16 @@ export default function DeadlineTimeline({ deadlines }: DeadlineTimelineProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-foreground/80">{selectedDeadline.description}</p>
-                   <Button asChild variant="outline" size="sm">
-                    <a href={selectedDeadline.sourceUrl} target="_blank" rel="noopener noreferrer">
-                      View Source <ExternalLink className="ml-2 h-4 w-4" />
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="default" size="sm" onClick={() => onAddToCalendar(selectedDeadline)}>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add to Calendar
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                        <a href={selectedDeadline.sourceUrl} target="_blank" rel="noopener noreferrer">
+                        View Source <ExternalLink className="ml-2 h-4 w-4" />
+                        </a>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

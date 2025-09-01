@@ -164,9 +164,17 @@ export interface CareerVisionHistoryItem {
 }
 
 export interface DeadlineItem {
-    date: string;
+    date: string; // ISO 8601 format
     title: string;
     description: string;
     category: 'Exam' | 'Internship' | 'Job' | 'Other';
     sourceUrl: string;
+}
+
+// New type for storing tracked keywords
+export interface TrackedKeyword {
+    id: string;
+    keyword: string;
+    deadlines: DeadlineItem[];
+    createdAt: Date;
 }
