@@ -162,3 +162,11 @@ export interface CareerVisionHistoryItem {
   plan: GenerateCareerVisionOutput;
   createdAt: Date;
 }
+
+export interface DeadlineItem {
+    date: string;
+    title: string;
+    description: string;
+    category: 'Exam' | 'Internship' | 'Job' | 'Other';
+    sourceUrl: string;
+}
