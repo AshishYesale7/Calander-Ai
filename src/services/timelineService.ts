@@ -85,12 +85,19 @@ export const saveTimelineEvent = async (
         }
     }
 
-    const dataToSave = {
+    const dataToSave: any = {
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
         endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
-        googleEventId: googleEventId, // Persist the new or existing ID
     };
+    
+    // Only include googleEventId if it has a value.
+    if (googleEventId) {
+        dataToSave.googleEventId = googleEventId;
+    } else {
+        // Ensure we don't save a null or undefined googleEventId if it wasn't there before
+        delete dataToSave.googleEventId;
+    }
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
 };
