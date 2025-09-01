@@ -55,6 +55,7 @@ export const saveTimelineEvent = async (
     const client = await getAuthenticatedClient(userId);
     
     let eventDate = new Date(event.date);
+    // Crucial fix: Ensure all-day events are always set to the start of the day UTC.
     if (event.isAllDay) {
         eventDate = startOfDay(eventDate);
     }

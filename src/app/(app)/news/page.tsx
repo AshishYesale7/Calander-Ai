@@ -121,6 +121,8 @@ export default function NewsPage() {
     
     toast({ title: "Adding to timeline...", description: `Saving "${deadline.title}" to your calendar.` });
     
+    // Crucial Fix: Use startOfDay to ensure time is stripped for all-day events,
+    // preventing timezone-related date shifts.
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
@@ -138,8 +140,9 @@ export default function NewsPage() {
         const payload: any = {
           ...data,
           date: data.date.toISOString(),
+          endDate: null,
         };
-
+        
         await saveTimelineEvent(user.uid, payload, { syncToGoogle: true });
         toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
         setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
@@ -153,6 +156,7 @@ export default function NewsPage() {
             }
         }
         toast({ title: 'Save Error', description, variant: 'destructive', duration: 8000 });
+        console.error("Save Timeline Event Error:", error);
     }
   };
 
