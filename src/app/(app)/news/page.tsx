@@ -133,18 +133,13 @@ export default function NewsPage() {
 
     const { icon, ...payload } = newEvent;
     
-    // Correctly prepare data for saving
     const dataToSave: any = {
       ...payload,
       date: payload.date.toISOString(),
+      endDate: payload.endDate ? payload.endDate.toISOString() : null,
     };
     
-    // ONLY include endDate if it exists. Do not send `null`.
-    if (payload.endDate) {
-      dataToSave.endDate = payload.endDate.toISOString();
-    }
-    
-    toast({ title: "Adding to timeline..." });
+    toast({ title: "Adding to timeline...", description: `Saving "${deadline.title}" to your calendar.` });
 
     try {
         await saveTimelineEvent(user.uid, dataToSave, { syncToGoogle: true });

@@ -54,7 +54,6 @@ export const saveTimelineEvent = async (
     const client = await getAuthenticatedClient(userId);
 
     // This block handles the Google Calendar sync logic.
-    // It's wrapped in a try/catch so that a failure here doesn't prevent saving to Firestore.
     if (client && options.syncToGoogle) {
       try {
         const eventPayloadForGoogle: TimelineEvent = {
@@ -73,25 +72,21 @@ export const saveTimelineEvent = async (
         }
       } catch (error) {
         console.error("Critical Error: Failed to sync event to Google Calendar. Saving to Firestore only.", error);
-        // Throw a new, more specific error to be caught by the calling UI.
         throw new Error("Event saved locally, but failed to sync with Google Calendar. Please check permissions in Settings.");
       }
     }
 
-
-    // This block handles saving to Firestore. It runs regardless of the Google Sync outcome,
-    // unless the sync error above was thrown and caught by the UI.
+    // Prepare data for Firestore.
     const dataToSave: any = {
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
+        // Only include endDate if it is a valid date string.
         endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
     };
     
-    // Only include googleEventId if it has a value.
     if (googleEventId) {
         dataToSave.googleEventId = googleEventId;
     } else {
-        // If there's no googleEventId, ensure it's not in the data being saved.
         delete dataToSave.googleEventId;
     }
 
@@ -108,16 +103,13 @@ export const deleteTimelineEvent = async (userId: string, eventId: string): Prom
         if (docSnap.exists()) {
             const eventData = docSnap.data();
             if (eventData.googleEventId) {
-                // If the event is linked to Google, delete it there first.
                 await deleteGoogleCalendarEvent(userId, eventData.googleEventId);
             }
         }
     } catch (error) {
         console.error(`Error deleting associated Google Calendar event for event ${eventId}:`, error);
-        // We will still proceed to soft delete from Firestore even if the Google delete fails.
     }
     
-    // Set the deletedAt timestamp for soft delete
     await setDoc(eventDocRef, { deletedAt: Timestamp.now() }, { merge: true });
 };
 
@@ -135,32 +127,26 @@ export const restoreTimelineEvent = async (userId: string, eventId: string): Pro
     const eventData = fromFirestore(eventSnap);
     let newGoogleEventId = eventData.googleEventId || null;
 
-    // Check if the event was previously synced with Google.
     if (eventData.googleEventId) {
         try {
-            // Re-create the event on Google Calendar, as it was deleted.
             const newGoogleEvent = await createGoogleCalendarEvent(userId, eventData);
             if (newGoogleEvent && newGoogleEvent.id) {
                 newGoogleEventId = newGoogleEvent.id;
             } else {
-                // If creation failed for some reason, we nullify the ID to prevent sync issues.
                 newGoogleEventId = null;
             }
         } catch (error) {
             console.error(`Failed to re-create Google Calendar event for ${eventId}. Event will be restored locally only.`, error);
-            // We set the ID to null so the app knows it's no longer synced.
             newGoogleEventId = null; 
         }
     }
 
-    // Restore the event in Firestore by removing 'deletedAt' and updating the Google Event ID.
     await updateDoc(eventDocRef, {
         deletedAt: deleteField(),
-        googleEventId: newGoogleEventId, // Update with the new ID, or null if it failed/wasn't synced
+        googleEventId: newGoogleEventId,
     });
 };
 
-// New function to permanently delete an event from Firestore
 export const permanentlyDeleteTimelineEvent = async (userId: string, eventId: string): Promise<void> => {
     const eventsCollection = getTimelineEventsCollection(userId);
     const eventDocRef = doc(eventsCollection, eventId);
