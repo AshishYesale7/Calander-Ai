@@ -119,6 +119,8 @@ export default function NewsPage() {
         return;
     }
     
+    toast({ title: "Adding to timeline...", description: `Saving "${deadline.title}" to your calendar.` });
+    
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
@@ -131,23 +133,31 @@ export default function NewsPage() {
         status: 'pending'
     };
 
-    const { icon, ...payload } = newEvent;
-    
-    const dataToSave: any = {
-      ...payload,
-      date: payload.date.toISOString(),
-      endDate: payload.endDate ? payload.endDate.toISOString() : null,
-    };
-    
-    toast({ title: "Adding to timeline...", description: `Saving "${deadline.title}" to your calendar.` });
-
     try {
-        await saveTimelineEvent(user.uid, dataToSave, { syncToGoogle: true });
+        const { icon, ...data } = newEvent;
+        const payload: any = {
+          ...data,
+          date: data.date.toISOString(),
+          // Ensure endDate is not present if it doesn't exist, preventing null values
+        };
+        if (data.endDate) {
+          payload.endDate = data.endDate.toISOString();
+        }
+
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle: true });
         toast({ title: "Event Added", description: `"${deadline.title}" added to your main calendar and synced to Google.` });
         setAddedDeadlineIds(prev => new Set(prev.add(deadlineIdentifier)));
-    } catch(error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ title: 'Sync Error', description: errorMessage, variant: 'destructive', duration: 8000 });
+    } catch(error: any) {
+        // Enhanced error handling
+        let description = 'An unknown error occurred while saving the event.';
+        if (typeof error.message === 'string') {
+            if (error.message.includes('Google Calendar')) {
+                description = `Event saved locally, but failed to sync with Google Calendar. Please check permissions in Settings.`;
+            } else {
+                description = error.message;
+            }
+        }
+        toast({ title: 'Save Error', description, variant: 'destructive', duration: 8000 });
         // Don't mark as added if there was an error.
     }
   };
@@ -267,3 +277,4 @@ export default function NewsPage() {
   );
 
     
+
