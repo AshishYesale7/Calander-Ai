@@ -34,6 +34,10 @@ const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
 const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | undefined => {
   if (!dateInput) return undefined;
+  // This is the fix: If it's already a valid Date object, return it directly.
+  if (dateInput instanceof Date && !isNaN(dateInput.valueOf())) {
+    return dateInput;
+  }
   if (typeof dateInput === 'string') {
     try {
       const parsed = parseISO(dateInput);
@@ -46,9 +50,6 @@ const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | u
       console.warn(`Error parsing date string with parseISO: ${dateInput}. Returning undefined. Error: ${e}`);
       return undefined;
     }
-  }
-  if (dateInput instanceof Date && !isNaN(dateInput.valueOf())) {
-    return dateInput;
   }
   console.warn(`Invalid date input type or value: ${dateInput}. Returning undefined.`);
   return undefined;
