@@ -6,9 +6,10 @@ import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Globe, Slash, Bell } from 'lucide-react';
+import { Globe, Slash, Bell, CalendarIcon as CalendarIconLucide } from 'lucide-react';
+import { format } from 'date-fns';
 
-import type { TimelineEvent, UserPreferences } from '@/types';
+import type { TimelineEvent, UserPreferences, RepeatFrequency, EarlyReminder } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -34,8 +35,9 @@ import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import { getUserPreferences } from '@/services/userService';
 import { useAuth } from '@/context/AuthContext';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
 
 const eventTypes: TimelineEvent['type'][] = [
   'exam',
@@ -76,6 +78,21 @@ const PREDEFINED_COLORS = [
   { name: 'Pink', value: '#F9A8D4' },
 ];
 
+const earlyReminderOptions: { value: EarlyReminder; label: string }[] = [
+    { value: 'none', label: 'None' },
+    { value: 'on_day', label: 'On day of event' },
+    { value: '1_day', label: '1 day before' },
+    { value: '2_days', label: '2 days before' },
+    { value: '1_week', label: '1 week before' },
+];
+
+const repeatOptions: { value: RepeatFrequency; label: string }[] = [
+    { value: 'none', label: 'Never' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'yearly', label: 'Yearly' },
+];
 
 const editEventFormSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
@@ -93,7 +110,9 @@ const editEventFormSchema = z.object({
   imageUrl: z.string().url({ message: 'Please enter a valid image URL.' }).optional().or(z.literal('')),
   reminder: z.object({
     enabled: z.boolean(),
-    daysBefore: z.number().min(1).max(3),
+    earlyReminder: z.enum(['none', 'on_day', '1_day', '2_days', '1_week']),
+    repeat: z.enum(['none', 'daily', 'weekly', 'monthly', 'yearly']),
+    repeatEndDate: z.string().optional().nullable(),
   }),
   syncToGoogle: z.boolean().default(false),
 }).refine(data => {
@@ -159,7 +178,9 @@ const EditEventForm: FC<EditEventFormProps> = ({
       imageUrl: '',
       reminder: {
         enabled: true,
-        daysBefore: 1,
+        earlyReminder: '1_day',
+        repeat: 'none',
+        repeatEndDate: null,
       },
       syncToGoogle: false,
     },
@@ -186,7 +207,12 @@ const EditEventForm: FC<EditEventFormProps> = ({
       priority: eventToEdit.priority || 'None',
       url: eventToEdit.url || '',
       imageUrl: eventToEdit.imageUrl || '',
-      reminder: eventToEdit.reminder || { enabled: true, daysBefore: 1 },
+      reminder: eventToEdit.reminder || {
+        enabled: true,
+        earlyReminder: '1_day',
+        repeat: 'none',
+        repeatEndDate: null,
+      },
       syncToGoogle: isAddingNewEvent ? isGoogleConnected : !!eventToEdit.googleEventId,
     });
   }, [eventToEdit, form, isAddingNewEvent, isGoogleConnected]);
@@ -199,21 +225,18 @@ const EditEventForm: FC<EditEventFormProps> = ({
       const startDate = new Date(startDateTimeStr);
 
       if (checked) {
-          // Set to user's wake up time
           const dayOfWeek = startDate.getDay();
           const sleepRoutine = userPreferences?.routine.find(r => r.activity.toLowerCase() === 'sleep' && r.days.includes(dayOfWeek));
-          const wakeUpTime = sleepRoutine?.endTime || '07:00'; // Default to 7 AM
+          const wakeUpTime = sleepRoutine?.endTime || '07:00';
           
           const [wakeHours, wakeMinutes] = wakeUpTime.split(':').map(Number);
           startDate.setHours(wakeHours, wakeMinutes, 0, 0);
           form.setValue("startDateTime", formatDateForInput(startDate));
           
-          // Set end time to 11:59 PM on the same day
           const endDate = new Date(startDate);
           endDate.setHours(23, 59, 59, 999);
           form.setValue("endDateTime", formatDateForInput(endDate));
       } else {
-          // Unchecked: clear the end date
           form.setValue("endDateTime", "");
       }
   };
@@ -222,11 +245,12 @@ const EditEventForm: FC<EditEventFormProps> = ({
     const { value } = e.target;
     form.setValue('startDateTime', value);
     
-    // If "All Day" is checked, uncheck it upon manual time change.
     if (form.getValues('isAllDay')) {
       form.setValue('isAllDay', false);
     }
   };
+
+  const isRepeatEnabled = form.watch('reminder.repeat') !== 'none';
 
   return (
     <Form {...form}>
@@ -270,7 +294,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
                     <Input 
                       type="datetime-local" 
                       {...field}
-                      onChange={handleStartTimeChange} // Use custom change handler
+                      onChange={handleStartTimeChange}
                     />
                 </FormControl>
                 <FormMessage />
@@ -494,9 +518,9 @@ const EditEventForm: FC<EditEventFormProps> = ({
             <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
               <div className="flex flex-row items-center justify-between">
                 <div className="space-y-0.5">
-                  <FormLabel className="flex items-center gap-2"><Bell className="h-4 w-4"/>Enable Reminder</FormLabel>
+                  <FormLabel className="flex items-center gap-2"><Bell className="h-4 w-4"/>Reminders</FormLabel>
                   <FormDescription>
-                    Get a notification for this event.
+                    Set up reminders for this event.
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -507,34 +531,91 @@ const EditEventForm: FC<EditEventFormProps> = ({
                 </FormControl>
               </div>
               {field.value && (
-                <div className="pt-3">
+                <div className="pt-4 space-y-4">
                   <FormField
                     control={form.control}
-                    name="reminder.daysBefore"
-                    render={({ field: daysField }) => (
+                    name="reminder.earlyReminder"
+                    render={({ field: earlyReminderField }) => (
                       <FormItem>
-                        <FormLabel>Notify me</FormLabel>
-                        <FormControl>
-                           <RadioGroup
-                            onValueChange={(value) => daysField.onChange(Number(value))}
-                            defaultValue={String(daysField.value)}
-                            className="flex items-center gap-2 pt-1"
-                          >
-                            {[1, 2, 3].map((day) => (
-                              <FormItem key={day} className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value={String(day)} id={`reminder-${day}`} />
-                                </FormControl>
-                                <Label htmlFor={`reminder-${day}`} className="font-normal">
-                                  {day} day{day > 1 && 's'} before
-                                </Label>
-                              </FormItem>
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
+                        <FormLabel>Early Reminder</FormLabel>
+                        <Select onValueChange={earlyReminderField.onChange} defaultValue={earlyReminderField.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select reminder time" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {earlyReminderOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="reminder.repeat"
+                    render={({ field: repeatField }) => (
+                      <FormItem>
+                        <FormLabel>Repeat</FormLabel>
+                        <Select onValueChange={repeatField.onChange} defaultValue={repeatField.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select repeat frequency" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {repeatOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  {isRepeatEnabled && (
+                     <FormField
+                        control={form.control}
+                        name="reminder.repeatEndDate"
+                        render={({ field: repeatEndField }) => (
+                            <FormItem>
+                                <FormLabel>End Repeat</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !repeatEndField.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {repeatEndField.value ? (
+                                            format(new Date(repeatEndField.value), "PPP")
+                                            ) : (
+                                            <span>Never</span>
+                                            )}
+                                            <CalendarIconLucide className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={repeatEndField.value ? new Date(repeatEndField.value) : undefined}
+                                        onSelect={(date) => repeatEndField.onChange(date ? format(date, 'yyyy-MM-dd') : null)}
+                                        initialFocus
+                                        />
+                                         <div className="p-2 border-t border-border">
+                                            <Button variant="ghost" className="w-full justify-center" onClick={() => repeatEndField.onChange(null)}>Never</Button>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </FormItem>
+                        )}
+                    />
+                  )}
                 </div>
               )}
             </FormItem>
