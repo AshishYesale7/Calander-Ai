@@ -2,13 +2,13 @@
 'use client';
 
 import type { FC} from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Globe, Slash } from 'lucide-react';
 
-import type { TimelineEvent} from '@/types';
+import type { TimelineEvent, UserPreferences } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -32,6 +32,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
+import { getUserPreferences } from '@/services/userService';
+import { useAuth } from '@/context/AuthContext';
 
 const eventTypes: TimelineEvent['type'][] = [
   'exam',
@@ -131,6 +133,9 @@ const EditEventForm: FC<EditEventFormProps> = ({
   isAddingNewEvent,
   isGoogleConnected,
 }) => {
+  const { user } = useAuth();
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+
   const form = useForm<EditEventFormValues>({
     resolver: zodResolver(editEventFormSchema),
     defaultValues: {
@@ -151,6 +156,12 @@ const EditEventForm: FC<EditEventFormProps> = ({
   });
 
   useEffect(() => {
+    if (user) {
+      getUserPreferences(user.uid).then(setUserPreferences);
+    }
+  }, [user]);
+
+  useEffect(() => {
     form.reset({
       title: eventToEdit.title || '',
       notes: eventToEdit.notes || '',
@@ -168,6 +179,43 @@ const EditEventForm: FC<EditEventFormProps> = ({
       syncToGoogle: isAddingNewEvent ? isGoogleConnected : !!eventToEdit.googleEventId,
     });
   }, [eventToEdit, form, isAddingNewEvent, isGoogleConnected]);
+  
+  const handleAllDayChange = (checked: boolean) => {
+      form.setValue('isAllDay', checked);
+      const startDateTimeStr = form.getValues("startDateTime");
+      if (!startDateTimeStr) return;
+
+      const startDate = new Date(startDateTimeStr);
+
+      if (checked) {
+          // Set to user's wake up time
+          const dayOfWeek = startDate.getDay();
+          const sleepRoutine = userPreferences?.routine.find(r => r.activity.toLowerCase() === 'sleep' && r.days.includes(dayOfWeek));
+          const wakeUpTime = sleepRoutine?.endTime || '07:00'; // Default to 7 AM
+          
+          const [wakeHours, wakeMinutes] = wakeUpTime.split(':').map(Number);
+          startDate.setHours(wakeHours, wakeMinutes, 0, 0);
+          form.setValue("startDateTime", formatDateForInput(startDate));
+          
+          // Set end time to 11:59 PM on the same day
+          const endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          form.setValue("endDateTime", formatDateForInput(endDate));
+      } else {
+          // Unchecked: clear the end date
+          form.setValue("endDateTime", "");
+      }
+  };
+
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    form.setValue('startDateTime', value);
+    
+    // If "All Day" is checked, uncheck it upon manual time change.
+    if (form.getValues('isAllDay')) {
+      form.setValue('isAllDay', false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -208,7 +256,11 @@ const EditEventForm: FC<EditEventFormProps> = ({
                 <FormItem>
                 <FormLabel>Start Date & Time</FormLabel>
                 <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input 
+                      type="datetime-local" 
+                      {...field}
+                      onChange={handleStartTimeChange} // Use custom change handler
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -238,20 +290,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) {
-                      const startDateTime = form.getValues("startDateTime");
-                      if (startDateTime) {
-                        const startDate = new Date(startDateTime);
-                        const endDate = new Date(startDate);
-                        endDate.setHours(23, 59, 59, 999);
-                        form.setValue("endDateTime", formatDateForInput(endDate));
-                      }
-                    } else {
-                      form.setValue("endDateTime", "");
-                    }
-                  }}
+                  onCheckedChange={handleAllDayChange}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
@@ -259,7 +298,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
                   All-day event
                 </FormLabel>
                 <FormDescription>
-                  This will set the end time to 11:59 PM automatically.
+                  Sets start time to your wakeup time and end time to 11:59 PM.
                 </FormDescription>
               </div>
             </FormItem>

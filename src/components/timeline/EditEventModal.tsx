@@ -42,7 +42,6 @@ const EditEventModal: FC<EditEventModalProps> = ({
     // This logic is now primarily handled in the form itself for immediate UI feedback.
     // This block ensures data consistency before saving.
     if (values.isAllDay) {
-      startDate = startOfDay(startDate);
       if (!endDate || endDate < startDate) {
         endDate = new Date(startDate);
         endDate.setHours(23, 59, 59, 999);
