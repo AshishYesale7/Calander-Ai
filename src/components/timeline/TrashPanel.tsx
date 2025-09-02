@@ -51,8 +51,8 @@ export default function TrashPanel({ deletedEvents, onRestore, onPermanentDelete
                     <div className="space-y-2 p-2">
                         {deletedEvents.length > 0 ? (
                             deletedEvents.map(event => (
-                                <div key={event.id} className="p-2 rounded-md bg-background/50 hover:bg-background/80 transition-colors flex items-center justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
+                                <div key={event.id} className="p-2 rounded-md bg-background/50 hover:bg-background/80 transition-colors grid grid-cols-[1fr,auto] items-center gap-2">
+                                    <div className="min-w-0">
                                         <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
                                         {event.deletedAt && (
                                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -60,7 +60,7 @@ export default function TrashPanel({ deletedEvents, onRestore, onPermanentDelete
                                             </p>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                    <div className="flex items-center gap-1">
                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => handleRestore(event)}>
                                             <RotateCcw className="h-4 w-4" />
                                         </Button>
