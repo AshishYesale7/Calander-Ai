@@ -6,7 +6,7 @@ import type { TimelineEvent } from '@/types';
 import { collection, getDocs, doc, setDoc, deleteDoc, Timestamp, query, orderBy, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { getAuthenticatedClient } from './googleAuthService';
 import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalendarEvent } from './googleCalendarService';
-import { startOfDay } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 
 const getTimelineEventsCollection = (userId: string) => {
   if (!db) {
@@ -55,19 +55,23 @@ export const saveTimelineEvent = async (
     const client = await getAuthenticatedClient(userId);
     
     let eventDate = new Date(event.date);
-    // Crucial fix: Ensure all-day events are always set to the start of the day UTC.
-    if (event.isAllDay) {
-        eventDate = startOfDay(eventDate);
-    }
-    const eventEndDate = event.endDate ? new Date(event.endDate) : undefined;
-
+    let eventEndDate = event.endDate ? new Date(event.endDate) : undefined;
+    
     // This block handles the Google Calendar sync logic.
     if (client && options.syncToGoogle) {
       try {
+        // If an event is "all day", we convert it to a timed event for Google Calendar
+        // to prevent the "two-day" event issue.
+        if (event.isAllDay) {
+          eventDate = startOfDay(eventDate);
+          eventEndDate = endOfDay(eventDate);
+        }
+
         const eventPayloadForGoogle: TimelineEvent = {
           ...event,
           date: eventDate,
           endDate: eventEndDate,
+          isAllDay: false, // Always send as timed event to Google
         } as TimelineEvent;
 
         if (googleEventId) {
@@ -85,10 +89,11 @@ export const saveTimelineEvent = async (
     }
 
     // Prepare data for Firestore.
+    // We restore the original date/endDate for our internal database.
     const dataToSave: any = {
         ...event,
-        date: Timestamp.fromDate(eventDate),
-        endDate: eventEndDate ? Timestamp.fromDate(eventEndDate) : null,
+        date: Timestamp.fromDate(new Date(event.date)),
+        endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
     };
     
     if (googleEventId) {

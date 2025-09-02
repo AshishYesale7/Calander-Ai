@@ -21,7 +21,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { formatDistanceToNow, startOfDay } from 'date-fns';
+import { formatDistanceToNow, startOfDay, endOfDay } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -127,14 +127,16 @@ export default function NewsPage() {
   };
 
   const handleAddEventToTimeline = (deadline: DeadlineItem, searchKeyword: string) => {
+    const deadlineDate = new Date(deadline.date);
+    
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
-        date: startOfDay(new Date(deadline.date)),
-        endDate: undefined,
+        date: startOfDay(deadlineDate), // Start of the day in local timezone
+        endDate: endOfDay(deadlineDate), // End of the day in local timezone
         type: 'deadline',
         notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
-        isAllDay: true,
+        isAllDay: false, // Treat as a timed event spanning the day
         isDeletable: true,
         priority: 'Medium',
         status: 'pending'
