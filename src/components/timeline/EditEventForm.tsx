@@ -35,6 +35,7 @@ import { Separator } from '../ui/separator';
 import { getUserPreferences } from '@/services/userService';
 import { useAuth } from '@/context/AuthContext';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 const eventTypes: TimelineEvent['type'][] = [
   'exam',
