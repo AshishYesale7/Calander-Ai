@@ -18,15 +18,21 @@ const TrackDeadlinesInputSchema = z.object({
 });
 export type TrackDeadlinesInput = z.infer<typeof TrackDeadlinesInputSchema>;
 
+const SourceLinkSchema = z.object({
+  title: z.string().describe("A descriptive title for the link (e.g., 'Official Website', 'Registration Portal', 'FAQ Page')."),
+  url: z.string().url().describe("The direct, plausible URL for the source."),
+});
+
 const DeadlineSchema = z.object({
   date: z.string().datetime().describe("The exact date of the deadline in ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ). For all-day events, this should be set to midnight UTC for that day (e.g., '2024-09-15T00:00:00.000Z')."),
   title: z.string().describe("The official name of the event or deadline (e.g., 'Application Closes', 'Registration Starts')."),
   description: z.string().describe("A concise, one-sentence summary of what this deadline is for."),
   category: z.enum(['Exam', 'Internship', 'Job', 'Other']).describe("The category of the deadline."),
-  sourceUrl: z.string().url().describe("The official source URL where this information was found."),
+  sourceLinks: z.array(SourceLinkSchema).optional().describe("A list of 1-3 official source URLs where this information was found, each with a descriptive title."),
 });
 
 const TrackDeadlinesOutputSchema = z.object({
+  summary: z.string().optional().describe("An optional summary providing context if the most immediate deadlines have passed (e.g., 'Registrations for 2025 have closed, showing dates for the 2026 cycle.')."),
   deadlines: z.array(DeadlineSchema).describe("A list of key dates and deadlines related to the keyword."),
 });
 export type TrackDeadlinesOutput = z.infer<typeof TrackDeadlinesOutputSchema>;
@@ -39,15 +45,27 @@ Today's date is: ${new Date().toISOString()}.
 User's Keyword: "${input.keyword}"
 
 **CRITICAL INSTRUCTIONS:**
-1.  **Focus on the Future:** You MUST ONLY return dates that are in the future relative to today's date provided above. Ignore all past events, dates, or deadlines from previous years.
-2.  **Prioritize Official Sources:** You MUST prioritize information from official sources. For exams, this means the official organizing body's website (e.g., gate.iitd.ac.in). For internships/jobs, this means the company's own careers page (e.g., careers.google.com). For academic deadlines, use the university's official website.
-3.  **Extract Key Information:** For each valid, upcoming date you find, extract the following:
-    -   **date:** The precise date in **full ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)**. For all-day events, use midnight UTC (e.g., "2024-09-15T00:00:00.000Z"). This is crucial.
-    -   **title:** A short, official-sounding title for the event (e.g., "Application Window Opens", "Registration Deadline", "Exam Date").
-    -   **description:** A brief, clear summary of the event.
-    -   **category:** Classify the opportunity as 'Exam', 'Internship', 'Job', or 'Other'.
-    -   **sourceUrl:** Provide a plausible, official-looking URL for the source.
-4.  **Handle No Information:** If you cannot find any verifiable, official, *upcoming* dates for the keyword, you MUST return an empty 'deadlines' array. Do not invent information or provide past data.
+1.  **Analyze the Full Lifecycle & Be Proactive:**
+    *   First, search for deadlines for the most immediate upcoming cycle (e.g., if it's 2024, look for the 2024-2025 cycle).
+    *   Examine the full lifecycle: registration start, registration end, exam date, etc.
+    *   **If the registration period for the current cycle has already passed**, you MUST provide a 'summary' message explaining this (e.g., "Registrations for 2025 have closed, but here are the key upcoming dates for that cycle.").
+    *   **If the query is generic (e.g., "GATE Exam") and registrations for the current cycle are closed, you MUST proactively search for the *next* available cycle (e.g., 2026) and provide those dates instead.** Clearly state this in the 'summary'.
+
+2.  **Focus on the Future:** You MUST ONLY return deadline dates that are in the future relative to today's date. Ignore all past events unless they provide critical context for the 'summary'.
+
+3.  **Prioritize Official Sources:** You MUST prioritize information from official sources.
+    *   For exams: The official organizing body's website (e.g., gate.iitd.ac.in).
+    *   For internships/jobs: The company's own careers page (e.g., careers.google.com).
+    *   For academic deadlines: The university's official website.
+
+4.  **Extract Key Information for Each Deadline:**
+    *   **date:** The precise date in **full ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)**. For all-day events, use midnight UTC (e.g., "2024-09-15T00:00:00.000Z").
+    *   **title:** A short, official-sounding title for the event (e.g., "Application Window Opens", "Registration Deadline").
+    *   **description:** A brief, clear summary of the event.
+    *   **category:** Classify the opportunity as 'Exam', 'Internship', 'Job', or 'Other'.
+    *   **sourceLinks:** Provide a list of 1-3 plausible, official-looking URLs for the sources. Each must have a descriptive 'title' (e.g., "Official Website", "Registration Portal").
+
+5.  **Handle No Information:** If you cannot find any verifiable, official, *upcoming* dates for the keyword, you MUST return an empty 'deadlines' array and no summary. Do not invent information.
 
 Now, generate a JSON object that strictly adheres to the output schema based on the user's request and all the instructions above.
 `;

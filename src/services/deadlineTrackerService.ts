@@ -19,6 +19,7 @@ const fromFirestore = (docData: any): TrackedKeyword => {
         keyword: data.keyword,
         deadlines: data.deadlines,
         createdAt: (data.createdAt as Timestamp).toDate(),
+        summary: data.summary,
     };
 };
 
@@ -29,14 +30,23 @@ export const getTrackedKeywords = async (userId: string): Promise<TrackedKeyword
   return snapshot.docs.map(fromFirestore);
 };
 
-export const saveTrackedKeyword = async (userId: string, keyword: string, deadlines: DeadlineItem[]): Promise<TrackedKeyword> => {
+export const saveTrackedKeyword = async (userId: string, keyword: string, deadlines: DeadlineItem[], summary?: string): Promise<TrackedKeyword> => {
   const collectionRef = getTrackedKeywordsCollection(userId);
   
-  const dataToSave = {
+  const dataToSave: {
+    keyword: string;
+    deadlines: DeadlineItem[];
+    createdAt: Timestamp;
+    summary?: string;
+  } = {
     keyword,
     deadlines,
     createdAt: Timestamp.now(),
   };
+
+  if (summary) {
+    dataToSave.summary = summary;
+  }
 
   const docRef = await addDoc(collectionRef, dataToSave);
   return {

@@ -163,12 +163,17 @@ export interface CareerVisionHistoryItem {
   createdAt: Date;
 }
 
+export interface SourceLink {
+    title: string;
+    url: string;
+}
+
 export interface DeadlineItem {
     date: string; // ISO 8601 format
     title: string;
     description: string;
     category: 'Exam' | 'Internship' | 'Job' | 'Other';
-    sourceUrl: string;
+    sourceLinks?: SourceLink[];
 }
 
 // New type for storing tracked keywords
@@ -177,4 +182,5 @@ export interface TrackedKeyword {
     keyword: string;
     deadlines: DeadlineItem[];
     createdAt: Date;
+    summary?: string;
 }

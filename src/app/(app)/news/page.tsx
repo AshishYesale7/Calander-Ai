@@ -97,7 +97,7 @@ export default function NewsPage() {
           description: `The AI could not find any specific upcoming deadlines for "${keyword}". Try a broader term.`,
         });
       } else {
-        const newTrackedKeyword = await saveTrackedKeyword(user.uid, keyword, response.deadlines);
+        const newTrackedKeyword = await saveTrackedKeyword(user.uid, keyword, response.deadlines, response.summary);
         setHistory(prev => [newTrackedKeyword, ...prev.filter(item => item.keyword.toLowerCase() !== keyword.toLowerCase())]);
         setKeyword(''); // Clear input on success
       }
@@ -137,7 +137,7 @@ export default function NewsPage() {
         date: startOfDay(deadlineDate),
         endDate: endOfDay(deadlineDate),
         type: 'deadline',
-        notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
+        notes: `${deadline.description}\n\nSources:\n${(deadline.sourceLinks || []).map(l => `${l.title}: ${l.url}`).join('\n')}`,
         isAllDay: false,
         isDeletable: true,
         priority: 'Medium',
@@ -281,6 +281,11 @@ export default function NewsPage() {
                                   </div>
                               </div>
                               <AccordionContent>
+                                  {item.summary && (
+                                    <div className="px-4 py-3 mb-4 text-sm text-center text-amber-200 bg-amber-900/40 border border-amber-500/30 rounded-lg">
+                                      <p>{item.summary}</p>
+                                    </div>
+                                  )}
                                   {item.deadlines.length > 0 ? (
                                       <DeadlineTimeline deadlines={item.deadlines} onAddToCalendar={(deadline) => handleAddEventToTimeline(deadline, item.keyword)} />
                                   ) : (

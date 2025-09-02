@@ -6,7 +6,7 @@ import { format, isPast } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExternalLink, PlusCircle } from 'lucide-react';
+import { ExternalLink, PlusCircle, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DeadlineItem } from '@/types';
 
@@ -114,15 +114,17 @@ export default function DeadlineTimeline({ deadlines, onAddToCalendar }: Deadlin
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-foreground/80">{selectedDeadline.description}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button variant="default" size="sm" onClick={() => onAddToCalendar(selectedDeadline)}>
                       <PlusCircle className="mr-2 h-4 w-4" /> Add to Calendar
                     </Button>
-                    <Button asChild variant="outline" size="sm">
-                        <a href={selectedDeadline.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        View Source <ExternalLink className="ml-2 h-4 w-4" />
-                        </a>
-                    </Button>
+                    {(selectedDeadline.sourceLinks || []).map((link, index) => (
+                         <Button asChild variant="outline" size="sm" key={index}>
+                            <a href={link.url} target="_blank" rel="noopener noreferrer">
+                            {link.title} <ExternalLink className="ml-2 h-4 w-4" />
+                            </a>
+                        </Button>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
