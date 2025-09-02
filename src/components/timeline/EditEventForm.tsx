@@ -248,6 +248,8 @@ const EditEventForm: FC<EditEventFormProps> = ({
                         endDate.setHours(23, 59, 59, 999);
                         form.setValue("endDateTime", formatDateForInput(endDate));
                       }
+                    } else {
+                      form.setValue("endDateTime", "");
                     }
                   }}
                 />
