@@ -16,6 +16,11 @@ export interface UserPreferences {
   routine: RoutineItem[];
 }
 
+export interface EventReminder {
+  enabled: boolean;
+  daysBefore: number; // e.g., 1, 2, 3
+}
+
 export interface TimelineEvent {
   id: string;
   date: Date; // Start date and time
@@ -33,6 +38,7 @@ export interface TimelineEvent {
   isDeletable?: boolean;
   isAllDay?: boolean; // Flag for all-day events
   color?: string; // Optional custom color for the event
+  reminder?: EventReminder; // New reminder settings
   googleEventId?: string; // ID of the event in Google Calendar
   googleTaskId?: string; // ID of the event in Google Tasks
   deletedAt?: Date; // For soft deletes

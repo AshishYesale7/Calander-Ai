@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Globe, Slash } from 'lucide-react';
+import { Globe, Slash, Bell } from 'lucide-react';
 
 import type { TimelineEvent, UserPreferences } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import { getUserPreferences } from '@/services/userService';
 import { useAuth } from '@/context/AuthContext';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const eventTypes: TimelineEvent['type'][] = [
   'exam',
@@ -89,6 +90,10 @@ const editEventFormSchema = z.object({
   priority: z.enum(eventPriorities).optional(),
   url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
   imageUrl: z.string().url({ message: 'Please enter a valid image URL.' }).optional().or(z.literal('')),
+  reminder: z.object({
+    enabled: z.boolean(),
+    daysBefore: z.number().min(1).max(3),
+  }),
   syncToGoogle: z.boolean().default(false),
 }).refine(data => {
   if (data.startDateTime && data.endDateTime) {
@@ -151,6 +156,10 @@ const EditEventForm: FC<EditEventFormProps> = ({
       location: '',
       url: '',
       imageUrl: '',
+      reminder: {
+        enabled: true,
+        daysBefore: 1,
+      },
       syncToGoogle: false,
     },
   });
@@ -176,6 +185,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
       priority: eventToEdit.priority || 'None',
       url: eventToEdit.url || '',
       imageUrl: eventToEdit.imageUrl || '',
+      reminder: eventToEdit.reminder || { enabled: true, daysBefore: 1 },
       syncToGoogle: isAddingNewEvent ? isGoogleConnected : !!eventToEdit.googleEventId,
     });
   }, [eventToEdit, form, isAddingNewEvent, isGoogleConnected]);
@@ -475,6 +485,60 @@ const EditEventForm: FC<EditEventFormProps> = ({
         />
 
         <Separator />
+
+        <FormField
+          control={form.control}
+          name="reminder.enabled"
+          render={({ field }) => (
+            <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
+              <div className="flex flex-row items-center justify-between">
+                <div className="space-y-0.5">
+                  <FormLabel className="flex items-center gap-2"><Bell className="h-4 w-4"/>Enable Reminder</FormLabel>
+                  <FormDescription>
+                    Get a notification for this event.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </div>
+              {field.value && (
+                <div className="pt-3">
+                  <FormField
+                    control={form.control}
+                    name="reminder.daysBefore"
+                    render={({ field: daysField }) => (
+                      <FormItem>
+                        <FormLabel>Notify me</FormLabel>
+                        <FormControl>
+                           <RadioGroup
+                            onValueChange={(value) => daysField.onChange(Number(value))}
+                            defaultValue={String(daysField.value)}
+                            className="flex items-center gap-2 pt-1"
+                          >
+                            {[1, 2, 3].map((day) => (
+                              <FormItem key={day} className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={String(day)} id={`reminder-${day}`} />
+                                </FormControl>
+                                <Label htmlFor={`reminder-${day}`} className="font-normal">
+                                  {day} day{day > 1 && 's'} before
+                                </Label>
+                              </FormItem>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}

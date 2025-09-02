@@ -63,6 +63,7 @@ const EditEventModal: FC<EditEventModalProps> = ({
       priority: values.priority || 'None',
       url: values.url || '',
       imageUrl: values.imageUrl || '',
+      reminder: values.reminder,
     };
     
     onSubmit(updatedEvent, values.syncToGoogle);

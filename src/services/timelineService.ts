@@ -27,6 +27,7 @@ const fromFirestore = (docData: any): TimelineEvent => {
         // Ensure deletable is set, defaulting based on ID prefix if not present
         isDeletable: data.isDeletable === undefined ? (docData.id.startsWith('ai-') ? true : false) : data.isDeletable,
         googleEventId: data.googleEventId || undefined,
+        reminder: data.reminder || { enabled: true, daysBefore: 1 }, // Default reminder setting
     };
 };
 
@@ -85,6 +86,7 @@ export const saveTimelineEvent = async (
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
         endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
+        reminder: event.reminder || { enabled: true, daysBefore: 1 },
     };
     
     if (googleEventId) {
