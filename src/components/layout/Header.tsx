@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -39,6 +39,7 @@ interface HeaderProps {
   setIsProfileModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   setIsLegalModalOpen: (open: boolean) => void;
+  setIsTimezoneModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
 }
@@ -48,6 +49,7 @@ export default function Header({
   setIsProfileModalOpen,
   setIsSettingsModalOpen,
   setIsLegalModalOpen,
+  setIsTimezoneModalOpen,
   handleToggleFullScreen,
   isFullScreen,
 }: HeaderProps) {
@@ -144,6 +146,10 @@ export default function Header({
                  <DropdownMenuItem onClick={() => setIsCustomizeModalOpen(true)}>
                   <Palette className="mr-2 h-4 w-4" />
                   <span>Customize Theme</span>
+                </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setIsTimezoneModalOpen(true)}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  <span>Date & Time Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)}>
                   <UserCircle className="mr-2 h-4 w-4" />

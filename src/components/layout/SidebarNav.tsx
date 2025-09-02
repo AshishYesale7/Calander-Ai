@@ -22,6 +22,7 @@ import {
   FileText,
   Crown,
   ClipboardCheck,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -58,6 +59,7 @@ interface SidebarNavProps {
   setIsProfileModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   setIsLegalModalOpen: (open: boolean) => void;
+  setIsTimezoneModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
 }
@@ -67,6 +69,7 @@ export default function SidebarNav({
   setIsProfileModalOpen,
   setIsSettingsModalOpen,
   setIsLegalModalOpen,
+  setIsTimezoneModalOpen,
   handleToggleFullScreen,
   isFullScreen,
 }: SidebarNavProps) {
@@ -158,6 +161,10 @@ export default function SidebarNav({
               <DropdownMenuItem onClick={() => setIsCustomizeModalOpen(true)}>
                 <Palette className="mr-2 h-4 w-4" />
                 <span>Customize Theme</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsTimezoneModalOpen(true)}>
+                <Clock className="mr-2 h-4 w-4" />
+                <span>Date & Time Settings</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)}>
                 <UserCircle className="mr-2 h-4 w-4" />

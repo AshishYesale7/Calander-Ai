@@ -2,20 +2,14 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Bot, Trash2, RefreshCw, Globe } from 'lucide-react';
+import { CalendarDays, Bot, Trash2, RefreshCw } from 'lucide-react';
 import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
 import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check } from 'lucide-react';
-import { timezones } from '@/lib/timezones';
-import { useTimezone } from '@/hooks/use-timezone';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface EventCalendarViewProps {
   events: TimelineEvent[];
@@ -26,51 +20,6 @@ interface EventCalendarViewProps {
   isSyncing: boolean;
   isTrashOpen: boolean;
   onToggleTrash: () => void;
-}
-
-const TimezoneSelector = () => {
-    const { timezone, setTimezone } = useTimezone();
-    const [open, setOpen] = useState(false);
-
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Select timezone">
-                    <Globe className="h-4 w-4" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-[300px]" align="end">
-                <Command>
-                    <CommandInput placeholder="Search timezone..." />
-                    <CommandList>
-                      <ScrollArea className="h-72">
-                        <CommandEmpty>No timezone found.</CommandEmpty>
-                        <CommandGroup>
-                            {timezones.map((tz) => (
-                                <CommandItem
-                                    key={tz}
-                                    value={tz}
-                                    onSelect={(currentValue) => {
-                                        setTimezone(currentValue);
-                                        setOpen(false);
-                                    }}
-                                >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            timezone === tz ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {tz}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                      </ScrollArea>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    )
 }
 
 export default function EventCalendarView({
@@ -128,7 +77,6 @@ export default function EventCalendarView({
                 <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
                 <span className="sr-only">Sync with Google Calendar</span>
             </Button>
-            <TimezoneSelector />
             <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
                 <Trash2 className="h-4 w-4" />
                 <span className="sr-only">Open Trash</span>

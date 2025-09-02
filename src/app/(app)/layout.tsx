@@ -14,6 +14,7 @@ import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import ProfileModal from '@/components/layout/ProfileModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
+import TimezoneModal from '@/components/layout/TimezoneModal';
 import {
   SidebarProvider,
   useSidebar,
@@ -32,6 +33,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
@@ -101,6 +103,7 @@ function AppContent({ children }: { children: ReactNode }) {
     setIsProfileModalOpen,
     setIsSettingsModalOpen,
     setIsLegalModalOpen,
+    setIsTimezoneModalOpen,
     handleToggleFullScreen,
     isFullScreen,
   };
@@ -143,6 +146,7 @@ function AppContent({ children }: { children: ReactNode }) {
       <ProfileModal isOpen={isProfileModalOpen} onOpenChange={setIsProfileModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
       <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
+      <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
     </>
   );
 }
