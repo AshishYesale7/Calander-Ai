@@ -34,6 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import EditEventModal from '@/components/timeline/EditEventModal';
+import { useTimezone } from '@/hooks/use-timezone';
 
 export default function NewsPage() {
   const [keyword, setKeyword] = useState('');
@@ -48,6 +49,7 @@ export default function NewsPage() {
   const { toast } = useToast();
   const { apiKey } = useApiKey();
   const { user } = useAuth();
+  const { timezone } = useTimezone();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -132,11 +134,11 @@ export default function NewsPage() {
     const newEvent: TimelineEvent = {
         id: `deadline-${Date.now()}`,
         title: `${searchKeyword}: ${deadline.title}`,
-        date: startOfDay(deadlineDate), // Start of the day in local timezone
-        endDate: endOfDay(deadlineDate), // End of the day in local timezone
+        date: startOfDay(deadlineDate),
+        endDate: endOfDay(deadlineDate),
         type: 'deadline',
         notes: `Source: ${deadline.sourceUrl}\nDescription: ${deadline.description}`,
-        isAllDay: false, // Treat as a timed event spanning the day
+        isAllDay: false,
         isDeletable: true,
         priority: 'Medium',
         status: 'pending'
@@ -161,7 +163,7 @@ export default function NewsPage() {
             date: data.date.toISOString(),
             endDate: data.endDate ? data.endDate.toISOString() : null,
         };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle });
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone });
         toast({
             title: "Event Added",
             description: `"${updatedEvent.title}" has been successfully added to your timeline.`

@@ -29,6 +29,7 @@ import ImportantEmailsCard from '@/components/timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCard';
 import { saveAs } from 'file-saver';
 import TrashPanel from '@/components/timeline/TrashPanel';
+import { useTimezone } from '@/hooks/use-timezone';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -137,6 +138,7 @@ export default function DashboardPage() {
   const [isAddingNewEvent, setIsAddingNewEvent] = useState(false);
   
   const { apiKey } = useApiKey();
+  const { timezone } = useTimezone();
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
@@ -298,9 +300,7 @@ export default function DashboardPage() {
           for (const event of uniqueNewEventsToAdd) {
             const { icon, ...data } = event;
             const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
-            // For newly imported events, we want to sync them back if they are edited.
-            // So syncToGoogle should be true.
-            await saveTimelineEvent(user.uid, payload, { syncToGoogle: true });
+            await saveTimelineEvent(user.uid, payload, { syncToGoogle: true, timezone });
           }
           toast({ title: "Timeline Updated", description: `${uniqueNewEventsToAdd.length} new item(s) from Google were added.` });
       } else {
@@ -320,7 +320,7 @@ export default function DashboardPage() {
       }
     }
     setIsLoading(false);
-  }, [user, apiKey, isGoogleConnected, toast, allTimelineEvents, transformInsightToEvent]);
+  }, [user, apiKey, isGoogleConnected, toast, allTimelineEvents, transformInsightToEvent, timezone]);
 
   // This is now a soft delete handler
   const handleDeleteTimelineEvent = async (eventId: string) => {
@@ -454,7 +454,7 @@ export default function DashboardPage() {
             date: data.date.toISOString(),
             endDate: data.endDate ? data.endDate.toISOString() : null,
         };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle });
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone });
         await fetchAllEvents(); // Refetch to get latest state
         toast({
             title: isAddingNewEvent ? "Event Added" : "Event Updated",
@@ -465,7 +465,7 @@ export default function DashboardPage() {
         await fetchAllEvents(); // Refetch to revert optimistic state on error
         toast({ title: "Sync Error", description: "Could not save to server. Your changes have been reverted.", variant: "destructive" });
     }
-  }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents]);
+  }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents, timezone]);
 
   const handleEventStatusUpdate = useCallback(async (eventId: string, newStatus: 'completed' | 'missed') => {
     const eventToUpdate = allTimelineEvents.find(event => event.id === eventId);
@@ -488,13 +488,13 @@ export default function DashboardPage() {
         endDate: data.endDate ? data.endDate.toISOString() : null,
       };
       // Status changes on their own don't trigger a google sync
-      await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId });
+      await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId, timezone });
     } catch (error) {
       console.error("Failed to save event status to Firestore", error);
       await fetchAllEvents(); // Revert on failure
       toast({ title: "Sync Error", description: "Could not save status to server. Change is saved locally.", variant: "destructive" });
     }
-  }, [allTimelineEvents, user, toast, fetchAllEvents]);
+  }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
 
   const handleExportEvents = useCallback(() => {
     if (activeEvents.length === 0) {
@@ -605,7 +605,7 @@ export default function DashboardPage() {
             for (const event of eventsToSave) {
                 const { icon, ...data } = event;
                 const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
-                await saveTimelineEvent(user.uid, payload, { syncToGoogle: false });
+                await saveTimelineEvent(user.uid, payload, { syncToGoogle: false, timezone });
             }
 
             await fetchAllEvents();

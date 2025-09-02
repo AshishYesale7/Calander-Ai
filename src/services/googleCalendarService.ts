@@ -6,36 +6,31 @@ import { getAuthenticatedClient } from './googleAuthService';
 import type { RawCalendarEvent, TimelineEvent } from '@/types';
 import { startOfMonth, endOfMonth, formatISO, format, addDays, addHours, addMonths, subMonths, startOfDay } from 'date-fns';
 
-function timelineEventToGoogleEvent(event: TimelineEvent) {
+function timelineEventToGoogleEvent(event: TimelineEvent, timezone: string) {
   const googleEvent: any = {
     summary: event.title,
     description: event.notes,
     location: event.location,
-    // You can add more mappings here, like for attendees, etc.
   };
 
   if (event.isAllDay) {
     googleEvent.start = { date: format(startOfDay(event.date), 'yyyy-MM-dd') };
-    // For all-day events, Google's end date is exclusive.
-    // If an `endDate` is provided, we need to set the Google event's end to the day *after* it.
-    // If no `endDate` is provided, it's a single-day event, so the end is the day after the start date.
     const endDateForGoogle = event.endDate ? addDays(startOfDay(event.endDate), 1) : addDays(startOfDay(event.date), 1);
     googleEvent.end = { date: format(endDateForGoogle, 'yyyy-MM-dd') };
   } else {
-    googleEvent.start = { dateTime: event.date.toISOString() };
-    // If no end date, default to a 1-hour duration.
+    googleEvent.start = { dateTime: event.date.toISOString(), timeZone: timezone };
     const endDate = event.endDate || addHours(event.date, 1);
-    googleEvent.end = { dateTime: endDate.toISOString() };
+    googleEvent.end = { dateTime: endDate.toISOString(), timeZone: timezone };
   }
   return googleEvent;
 }
 
-export async function createGoogleCalendarEvent(userId: string, event: TimelineEvent) {
+export async function createGoogleCalendarEvent(userId: string, event: TimelineEvent, timezone: string) {
   const client = await getAuthenticatedClient(userId);
   if (!client) throw new Error("User is not authenticated with Google.");
 
   const calendar = google.calendar({ version: 'v3', auth: client });
-  const googleEvent = timelineEventToGoogleEvent(event);
+  const googleEvent = timelineEventToGoogleEvent(event, timezone);
 
   const response = await calendar.events.insert({
     calendarId: 'primary',
@@ -45,12 +40,12 @@ export async function createGoogleCalendarEvent(userId: string, event: TimelineE
   return response.data;
 }
 
-export async function updateGoogleCalendarEvent(userId: string, googleEventId: string, event: TimelineEvent) {
+export async function updateGoogleCalendarEvent(userId: string, googleEventId: string, event: TimelineEvent, timezone: string) {
   const client = await getAuthenticatedClient(userId);
   if (!client) throw new Error("User is not authenticated with Google.");
   
   const calendar = google.calendar({ version: 'v3', auth: client });
-  const googleEvent = timelineEventToGoogleEvent(event);
+  const googleEvent = timelineEventToGoogleEvent(event, timezone);
 
   const response = await calendar.events.update({
     calendarId: 'primary',

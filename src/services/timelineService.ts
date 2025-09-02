@@ -41,6 +41,7 @@ export const getTimelineEvents = async (userId: string): Promise<TimelineEvent[]
 
 type SaveTimelineEventOptions = {
     syncToGoogle: boolean;
+    timezone: string;
 };
 
 export const saveTimelineEvent = async (
@@ -60,24 +61,16 @@ export const saveTimelineEvent = async (
     // This block handles the Google Calendar sync logic.
     if (client && options.syncToGoogle) {
       try {
-        // If an event is "all day", we convert it to a timed event for Google Calendar
-        // to prevent the "two-day" event issue.
-        if (event.isAllDay) {
-          eventDate = startOfDay(eventDate);
-          eventEndDate = endOfDay(eventDate);
-        }
-
         const eventPayloadForGoogle: TimelineEvent = {
           ...event,
           date: eventDate,
           endDate: eventEndDate,
-          isAllDay: false, // Always send as timed event to Google
         } as TimelineEvent;
 
         if (googleEventId) {
-          await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle);
+          await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle, options.timezone);
         } else {
-          const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle);
+          const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle, options.timezone);
           if (newGoogleEvent && newGoogleEvent.id) {
             googleEventId = newGoogleEvent.id;
           }
@@ -88,8 +81,6 @@ export const saveTimelineEvent = async (
       }
     }
 
-    // Prepare data for Firestore.
-    // We restore the original date/endDate for our internal database.
     const dataToSave: any = {
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
@@ -102,7 +93,6 @@ export const saveTimelineEvent = async (
         delete dataToSave.googleEventId;
     }
 
-    // Explicitly delete null/undefined fields that we don't want to store.
     if (!dataToSave.endDate) delete dataToSave.endDate;
     if (!dataToSave.deletedAt) delete dataToSave.deletedAt;
 
@@ -145,7 +135,8 @@ export const restoreTimelineEvent = async (userId: string, eventId: string): Pro
 
     if (eventData.googleEventId) {
         try {
-            const newGoogleEvent = await createGoogleCalendarEvent(userId, eventData);
+            // Restore functionality will just use the default timezone as it's a non-critical recovery path.
+            const newGoogleEvent = await createGoogleCalendarEvent(userId, eventData, 'UTC');
             if (newGoogleEvent && newGoogleEvent.id) {
                 newGoogleEventId = newGoogleEvent.id;
             } else {
