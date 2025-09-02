@@ -36,8 +36,8 @@ export default function TrashPanel({ deletedEvents, onRestore, onPermanentDelete
     };
 
     return (
-        <Card className="frosted-glass flex flex-col w-full md:w-80 lg:w-96 flex-shrink-0 border-l border-border/30 rounded-l-none animate-in slide-in-from-right-20 duration-300">
-            <CardHeader className="p-4 flex-row justify-between items-center">
+        <Card className="frosted-glass flex flex-col h-full w-full rounded-l-none border-l-0">
+            <CardHeader className="p-4 flex-row justify-between items-center border-b border-border/30">
                 <div>
                     <CardTitle className="font-headline text-lg text-primary">Recently Deleted</CardTitle>
                     <CardDescription className="text-xs">Items are cleared after 3 days.</CardDescription>

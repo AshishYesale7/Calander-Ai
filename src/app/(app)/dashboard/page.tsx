@@ -15,7 +15,7 @@ import { AlertCircle, Bot, Calendar, List, CalendarDays as CalendarIconLucide, P
 import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import type { ProcessGoogleDataInput, ActionableInsight } from '@/ai/flows/process-google-data-flow';
 import { mockTimelineEvents } from '@/data/mock';
-import type { TimelineEvent } from '@/types';
+import type { TimelineEvent, UserPreferences } from '@/types';
 import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
 import { getGoogleTasks } from '@/services/googleTasksService';
+import { getUserPreferences } from '@/services/userService';
 import ImportantEmailsCard from '@/components/timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCard';
 import { saveAs } from 'file-saver';
@@ -35,7 +36,6 @@ const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
 const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | undefined => {
   if (!dateInput) return undefined;
-  // This is the fix: If it's already a valid Date object, return it directly.
   if (dateInput instanceof Date && !isNaN(dateInput.valueOf())) {
     return dateInput;
   }
@@ -59,14 +59,14 @@ const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | u
 const syncToLocalStorage = (events: TimelineEvent[]) => {
     if (typeof window !== 'undefined') {
         const serializableEvents = events.map(event => {
-            const { icon, ...rest } = event; // Exclude icon from serialization
+            const { icon, ...rest } = event;
             return {
             ...rest,
             date: (event.date instanceof Date && !isNaN(event.date.valueOf())) ? event.date.toISOString() : new Date().toISOString(),
             endDate: (event.endDate instanceof Date && !isNaN(event.endDate.valueOf())) ? event.endDate.toISOString() : undefined,
-            deletedAt: event.deletedAt ? event.deletedAt.toISOString() : undefined, // Include deletedAt
-            color: event.color, // Include color
-            googleEventId: event.googleEventId, // Include googleEventId
+            deletedAt: event.deletedAt ? event.deletedAt.toISOString() : undefined,
+            color: event.color,
+            googleEventId: event.googleEventId,
             googleTaskId: event.googleTaskId,
             };
         });
@@ -147,7 +147,6 @@ export default function DashboardPage() {
   
   const searchParams = useSearchParams();
   const router = useRouter();
-
   
   const fetchAllEvents = useCallback(async () => {
       if (user) {
@@ -173,7 +172,6 @@ export default function DashboardPage() {
 
     for (const event of allTimelineEvents) {
       if (event.deletedAt) {
-        // Check if deletedAt is a valid date and within the last 3 days
         if (event.deletedAt instanceof Date && !isNaN(event.deletedAt.valueOf()) && event.deletedAt > threeDaysAgo) {
           deleted.push(event);
         }
@@ -181,7 +179,6 @@ export default function DashboardPage() {
         active.push(event);
       }
     }
-    // Sort deleted events by most recent first
     return { activeEvents: active, recentlyDeletedEvents: deleted.sort((a,b) => b.deletedAt!.getTime() - a.deletedAt!.getTime()) };
   }, [allTimelineEvents]);
 
@@ -322,13 +319,11 @@ export default function DashboardPage() {
     setIsLoading(false);
   }, [user, apiKey, isGoogleConnected, toast, allTimelineEvents, transformInsightToEvent, timezone]);
 
-  // This is now a soft delete handler
   const handleDeleteTimelineEvent = async (eventId: string) => {
     const originalEvents = allTimelineEvents;
     const eventToDelete = originalEvents.find(event => event.id === eventId);
     if (!eventToDelete || !user) return;
     
-    // Optimistic UI Update
     const newEvents = originalEvents.map(event => 
       event.id === eventId ? { ...event, deletedAt: new Date() } : event
     );
@@ -348,9 +343,7 @@ export default function DashboardPage() {
     }
     
     try {
-      // This service function now performs a soft delete
       await deleteTimelineEvent(user.uid, eventId);
-      // No need to refetch, optimistic update is sufficient for moving to trash
     } catch (error) {
       console.error("Failed to soft-delete event in Firestore", error);
       setAllTimelineEvents(originalEvents);
@@ -362,13 +355,13 @@ export default function DashboardPage() {
   const handleRestoreEvent = async (eventId: string) => {
     if (!user) return;
     await restoreTimelineEvent(user.uid, eventId);
-    await fetchAllEvents(); // Refetch to update UI correctly
+    await fetchAllEvents();
   };
 
   const handlePermanentDelete = async (eventId: string) => {
     if (!user) return;
     await permanentlyDeleteTimelineEvent(user.uid, eventId);
-    await fetchAllEvents(); // Refetch
+    await fetchAllEvents();
     toast({ title: 'Event Permanently Deleted' });
   };
 
@@ -426,7 +419,6 @@ export default function DashboardPage() {
     setIsEditModalOpen(true);
   }, [selectedDateForDayView]);
   
-  // Effect to handle actions from command palette
   useEffect(() => {
     if (searchParams.get('action') === 'newEvent') {
       handleOpenEditModal();
@@ -455,14 +447,14 @@ export default function DashboardPage() {
             endDate: data.endDate ? data.endDate.toISOString() : null,
         };
         await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone });
-        await fetchAllEvents(); // Refetch to get latest state
+        await fetchAllEvents();
         toast({
             title: isAddingNewEvent ? "Event Added" : "Event Updated",
             description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
         });
     } catch (error) {
         console.error("Failed to save event:", error);
-        await fetchAllEvents(); // Refetch to revert optimistic state on error
+        await fetchAllEvents();
         toast({ title: "Sync Error", description: "Could not save to server. Your changes have been reverted.", variant: "destructive" });
     }
   }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents, timezone]);
@@ -487,11 +479,10 @@ export default function DashboardPage() {
         date: data.date.toISOString(),
         endDate: data.endDate ? data.endDate.toISOString() : null,
       };
-      // Status changes on their own don't trigger a google sync
       await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId, timezone });
     } catch (error) {
       console.error("Failed to save event status to Firestore", error);
-      await fetchAllEvents(); // Revert on failure
+      await fetchAllEvents();
       toast({ title: "Sync Error", description: "Could not save status to server. Change is saved locally.", variant: "destructive" });
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
@@ -629,7 +620,6 @@ export default function DashboardPage() {
       <TodaysPlanCard />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-        {/* Left Column */}
         <div className="xl:col-span-2 space-y-8">
           <Tabs defaultValue="calendar">
             <div className="flex justify-between items-center mb-4 gap-2">
@@ -653,30 +643,30 @@ export default function DashboardPage() {
             </div>
             
             <TabsContent value="calendar" className="mt-0 space-y-8">
-               <div className="flex items-start">
-                  <div className={cn("flex-1 min-w-0 transition-all duration-300", isTrashPanelOpen && "md:mr-[384px] lg:mr-[384px]")}>
-                    <EventCalendarView
-                        events={activeEvents}
-                        month={activeDisplayMonth}
-                        onMonthChange={setActiveDisplayMonth}
-                        onDayClick={handleDayClickFromCalendar}
-                        onSync={handleSyncCalendarData}
-                        isSyncing={isLoading}
-                        onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
-                        isTrashOpen={isTrashPanelOpen}
-                    />
+              <div className="relative">
+                <div className={cn("transition-all duration-300", isTrashPanelOpen && "pr-0 md:pr-[24rem]")}>
+                  <EventCalendarView
+                      events={activeEvents}
+                      month={activeDisplayMonth}
+                      onMonthChange={setActiveDisplayMonth}
+                      onDayClick={handleDayClickFromCalendar}
+                      onSync={handleSyncCalendarData}
+                      isSyncing={isLoading}
+                      onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
+                      isTrashOpen={isTrashPanelOpen}
+                  />
+                </div>
+                {isTrashPanelOpen && (
+                  <div className="absolute right-0 top-0 h-full w-full md:w-96">
+                      <TrashPanel
+                        deletedEvents={recentlyDeletedEvents}
+                        onRestore={handleRestoreEvent}
+                        onPermanentDelete={handlePermanentDelete}
+                        onClose={() => setIsTrashPanelOpen(false)}
+                      />
                   </div>
-                  {isTrashPanelOpen && (
-                    <div className="absolute right-0 top-0 h-full">
-                        <TrashPanel
-                          deletedEvents={recentlyDeletedEvents}
-                          onRestore={handleRestoreEvent}
-                          onPermanentDelete={handlePermanentDelete}
-                          onClose={() => setIsTrashPanelOpen(false)}
-                        />
-                    </div>
-                  )}
-               </div>
+                )}
+              </div>
               {selectedDateForDayView ? (
                   <DayTimetableView
                       date={selectedDateForDayView}
@@ -707,13 +697,11 @@ export default function DashboardPage() {
           </Tabs>
         </div>
 
-        {/* Right Column */}
         <div className="xl:col-span-1 space-y-8">
           <ImportantEmailsCard />
           <NextMonthHighlightsCard events={activeEvents} />
         </div>
       </div>
-
 
       <Card className="frosted-glass shadow-lg">
         <CardHeader>
