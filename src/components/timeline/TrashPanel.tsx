@@ -51,36 +51,36 @@ export default function TrashPanel({ deletedEvents, onRestore, onPermanentDelete
                     <div className="space-y-2 p-2">
                         {deletedEvents.length > 0 ? (
                             deletedEvents.map(event => (
-                                <div key={event.id} className="p-2 rounded-md bg-background/50 hover:bg-background/80 transition-colors">
-                                    <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
-                                    <div className="flex justify-between items-center mt-1">
+                                <div key={event.id} className="p-2 rounded-md bg-background/50 hover:bg-background/80 transition-colors flex items-center justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">{event.title}</p>
                                         {event.deletedAt && (
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                                 <Info size={12}/> Deleted {formatDistanceToNow(event.deletedAt, { addSuffix: true })}
                                             </p>
                                         )}
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => handleRestore(event)}>
-                                                <RotateCcw className="h-4 w-4" />
-                                            </Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="frosted-glass">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
-                                                        <AlertDialogDescription>This will permanently delete "{event.title}". This action cannot be undone.</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onPermanentDelete(event.id)}>Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => handleRestore(event)}>
+                                            <RotateCcw className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="frosted-glass">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+                                                    <AlertDialogDescription>This will permanently delete "{event.title}". This action cannot be undone.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onPermanentDelete(event.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
                                 </div>
                             ))
