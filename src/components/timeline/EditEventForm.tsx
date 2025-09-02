@@ -238,7 +238,18 @@ const EditEventForm: FC<EditEventFormProps> = ({
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) {
+                      const startDateTime = form.getValues("startDateTime");
+                      if (startDateTime) {
+                        const startDate = new Date(startDateTime);
+                        const endDate = new Date(startDate);
+                        endDate.setHours(23, 59, 59, 999);
+                        form.setValue("endDateTime", formatDateForInput(endDate));
+                      }
+                    }
+                  }}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
@@ -246,7 +257,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
                   All-day event
                 </FormLabel>
                 <FormDescription>
-                  If checked, the specific time will be disregarded.
+                  This will set the end time to 11:59 PM automatically.
                 </FormDescription>
               </div>
             </FormItem>

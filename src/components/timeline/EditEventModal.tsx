@@ -12,6 +12,7 @@ import {
 import type { TimelineEvent } from '@/types';
 import EditEventForm from './EditEventForm';
 import type { EditEventFormValues } from './EditEventForm';
+import { startOfDay } from 'date-fns';
 
 interface EditEventModalProps {
   isOpen: boolean;
@@ -38,10 +39,13 @@ const EditEventModal: FC<EditEventModalProps> = ({
     let startDate = new Date(values.startDateTime);
     let endDate: Date | undefined = values.endDateTime ? new Date(values.endDateTime) : undefined;
 
+    // This logic is now primarily handled in the form itself for immediate UI feedback.
+    // This block ensures data consistency before saving.
     if (values.isAllDay) {
-      startDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
-      if (endDate) {
-        endDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0, 0, 0, 0);
+      startDate = startOfDay(startDate);
+      if (!endDate || endDate < startDate) {
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999);
       }
     }
     
