@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode} from 'react';
 import { useEffect } from 'react';
 import { ApiKeyProvider } from '@/context/ApiKeyContext';
+import { TimezoneProvider } from '@/context/TimezoneContext';
 
 function AppThemeApplicator({ children }: { children: ReactNode }) {
   const { 
@@ -125,10 +126,12 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <ApiKeyProvider>
-              <AppThemeApplicator>
-                {children}
-                <Toaster />
-              </AppThemeApplicator>
+              <TimezoneProvider>
+                <AppThemeApplicator>
+                  {children}
+                  <Toaster />
+                </AppThemeApplicator>
+              </TimezoneProvider>
             </ApiKeyProvider>
           </ThemeProvider>
         </AuthProvider>

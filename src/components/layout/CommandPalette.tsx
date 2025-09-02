@@ -39,6 +39,7 @@ import { createEventFromPrompt, type CreateEventInput } from '@/ai/flows/create-
 import { saveTimelineEvent } from '@/services/timelineService';
 import type { TimelineEvent } from '@/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useTimezone } from '@/hooks/use-timezone';
 
 
 const menuItems = [
@@ -79,6 +80,7 @@ export function CommandPalette({
   const { toast } = useToast();
   const { user } = useAuth();
   const { apiKey } = useApiKey();
+  const { timezone } = useTimezone();
 
   const runCommand = (command: () => void) => {
     onOpenChange(false);
@@ -90,7 +92,7 @@ export function CommandPalette({
     setIsCreatingEvent(true);
     
     try {
-        const input: CreateEventInput = { prompt: search, apiKey };
+        const input: CreateEventInput = { prompt: search, apiKey, timezone };
         const result = await createEventFromPrompt(input);
         
         const newEvent: TimelineEvent = {
