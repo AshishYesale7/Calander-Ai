@@ -103,7 +103,7 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
 
   // Effect to register the service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
       navigator.serviceWorker
         .register('/firebase-messaging-sw.js')
         .then((registration) => {
