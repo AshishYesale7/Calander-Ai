@@ -175,38 +175,24 @@ body {
 }
 
 /* New styles for AI Command Palette */
-@keyframes aurora-border {
-  0% { --aurora-angle: 0deg; }
-  100% { --aurora-angle: 360deg; }
+.command-palette-ai-bar {
+    @apply fixed bottom-8 left-1/2 -translate-x-1/2 w-[90vw] max-w-3xl z-50;
+    @apply flex items-center justify-center p-2 rounded-full;
+    @apply bg-black/40 backdrop-blur-md border border-white/10;
+    @apply transition-all duration-300 ease-in-out;
 }
 
-.command-dialog-ai-mode {
-    @apply rounded-xl border-0 bg-transparent;
-    padding: 1px; /* The 'border' width */
-    position: relative;
-    background: hsl(var(--card) / 0.6);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-}
-.command-dialog-ai-mode::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    border-radius: inherit;
-    background: conic-gradient(
-        from var(--aurora-angle),
-        hsl(var(--accent) / 0.8),
-        hsl(var(--primary) / 0.8),
-        hsl(280 90% 70% / 0.8),
-        hsl(var(--primary) / 0.8),
-        hsl(var(--accent) / 0.8)
-    );
-    animation: aurora-border 4s linear infinite;
+.command-palette-ai-bar[data-state="closed"] {
+    @apply opacity-0 -translate-y-4 pointer-events-none;
 }
 
-.command-dialog-ai-mode [cmdk-list] {
-  @apply hidden; /* Hide the list when in AI mode */
+.command-palette-ai-bar [cmdk-input-wrapper] {
+    @apply border-none;
+}
+
+.command-palette-ai-bar input {
+    @apply bg-transparent text-lg text-white placeholder:text-gray-400;
+    @apply border-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none;
 }
 
 /* Custom styles for react-phone-number-input */

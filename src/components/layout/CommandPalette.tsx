@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CommandDialog,
   CommandEmpty,
@@ -29,11 +29,13 @@ import {
   Expand,
   Shrink,
   PlusCircle,
+  X,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -69,7 +71,6 @@ export function CommandPalette({
   
   const [search, setSearch] = useState('');
   const [pages, setPages] = useState<('commandList' | 'aiChat')[]>(['commandList']);
-  const [hasMatchingItems, setHasMatchingItems] = useState(true);
   const activePage = pages[pages.length - 1];
 
   const runCommand = useCallback((command: () => void) => {
@@ -137,28 +138,49 @@ export function CommandPalette({
       .filter(group => group.items.length > 0);
   }, [search, groups]);
 
-  useEffect(() => {
-    setHasMatchingItems(filteredGroups.length > 0);
-  }, [filteredGroups]);
-  
-  const isAiMode = !hasMatchingItems && search.trim().length > 0;
+  const hasMatchingItems = filteredGroups.length > 0;
+  const isAiMode = activePage === 'aiChat' || (isOpen && !hasMatchingItems && search.trim().length > 0);
 
+  if (isAiMode && activePage !== 'aiChat') {
+    return (
+        <div 
+            className="command-palette-ai-bar"
+            // This outer div handles the open state for animations
+            data-state={isOpen ? 'open' : 'closed'}
+        >
+            <div className="flex items-center w-full max-w-3xl">
+                <CalendarAiLogo className="h-7 w-7 mr-3 shrink-0" />
+                <CommandInput 
+                    placeholder="Ask AI anything..."
+                    value={search}
+                    onValueChange={setSearch}
+                    onKeyDown={onKeyDown}
+                    isAiMode={true}
+                    className="h-14"
+                />
+                <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => onOpenChange(false)}>
+                    <X className="h-5 w-5"/>
+                </Button>
+            </div>
+        </div>
+    );
+  }
+  
+  // This is the standard command palette modal.
   return (
-    <CommandDialog open={isOpen} onOpenChange={onOpenChange} isAiMode={isAiMode}>
+    <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
       {activePage === 'commandList' ? (
         <>
           <CommandInput 
-            placeholder="Ask AI or type a command..."
+            placeholder="Type a command or search..."
             value={search}
             onValueChange={setSearch}
             onKeyDown={onKeyDown}
-            isAiMode={isAiMode}
           />
           <CommandList>
-            <CommandEmpty>
-                <div className="flex items-center justify-center p-6 gap-2">
-                    <CalendarAiLogo className="h-6 w-6 animate-pulse" />
-                    <span className="text-muted-foreground text-base">Ask AI anything...</span>
+             <CommandEmpty>
+                <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
+                    No results found. Press Enter to ask AI.
                 </div>
             </CommandEmpty>
             {filteredGroups.map((group) => (

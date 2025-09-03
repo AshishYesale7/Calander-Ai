@@ -34,8 +34,7 @@ const CommandDialog = ({ children, isAiMode, ...props }: CommandDialogProps) => 
     <Dialog {...props}>
       <DialogContent 
         className={cn(
-          "overflow-hidden p-0 shadow-lg sm:max-w-2xl frosted-glass",
-          isAiMode && "command-dialog-ai-mode" // New class for AI mode
+          "overflow-hidden p-0 shadow-lg sm:max-w-2xl frosted-glass"
         )}
       >
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
