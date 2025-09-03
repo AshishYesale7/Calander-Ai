@@ -1,13 +1,9 @@
 
 'use server';
-/**
- * @fileOverview A flow for sending push notifications to a user by calling a dedicated API route.
- *
- * - sendNotification - Sends a push notification to a specific user.
- * - SendNotificationInput - The input type for the sendNotification function.
- */
 
 import { z } from 'genkit';
+import { getAdminApp } from '@/lib/firebase-admin';
+import type { Message } from 'firebase-admin/messaging';
 
 const SendNotificationInputSchema = z.object({
   userId: z.string().describe('The ID of the user to send the notification to.'),
@@ -17,29 +13,48 @@ const SendNotificationInputSchema = z.object({
 });
 export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 
-/**
- * This function is now a client-side friendly wrapper that calls our dedicated API route.
- * It does not use the Firebase Admin SDK directly.
- */
+
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
-    const response = await fetch(`${baseUrl}/api/notifications/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-    });
+    const adminApp = getAdminApp();
+    const db = adminApp.firestore();
+    const messaging = adminApp.messaging();
 
-    const result = await response.json();
+    const tokensCollectionRef = db.collection('users').doc(input.userId).collection('fcmTokens');
+    const querySnapshot = await tokensCollectionRef.get();
+    
+    const tokens = querySnapshot.docs.map(doc => doc.id);
 
-    if (!response.ok) {
-        throw new Error(result.message || 'Failed to send notification via API.');
+    if (tokens.length === 0) {
+      console.log(`No FCM tokens found for user ${input.userId}. Cannot send notification.`);
+      return { success: true, message: 'User has no registered devices for notifications.' };
     }
 
-    return { success: result.success, message: result.message };
-  } catch (error) {
-    console.error('Error calling send notification API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown client-side error occurred.';
+    const message: Message = {
+      notification: {
+        title: input.title,
+        body: input.body,
+      },
+      webpush: {
+        fcmOptions: {
+          link: input.url || process.env.NEXT_PUBLIC_BASE_URL || '/',
+        },
+        notification: {
+            icon: '/logo.png'
+        }
+      },
+      token: tokens[0], // Sending to the first token for now. For multicast, use `sendEachForMulticast`
+    };
+
+    // To send to multiple tokens, use messaging.sendEachForMulticast({ tokens, ... })
+    const response = await messaging.send(message);
+    console.log('Successfully sent message:', response);
+    return { success: true, message: 'Notification sent successfully.' };
+
+  } catch (error: any) {
+    console.error('Error sending push notification:', error);
+    // Provide a more specific error message if available
+    const errorMessage = error.errorInfo?.message || error.message || 'An unknown server-side error occurred.';
     return { success: false, message: errorMessage };
   }
 }
