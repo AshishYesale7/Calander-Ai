@@ -60,13 +60,11 @@ function AppContent({ children }: { children: ReactNode }) {
         sessionStorage.setItem('seenTodaysPlanModal', 'true');
       }
       
-      const hasBeenAskedForNotifications = sessionStorage.getItem('askedForNotifications');
-      if (!hasBeenAskedForNotifications && 'Notification' in window && Notification.permission === 'default') {
+      if ('Notification' in window && Notification.permission === 'default') {
           const requestPermission = async () => {
             if (!messaging) return;
             try {
                 const permission = await Notification.requestPermission();
-                sessionStorage.setItem('askedForNotifications', 'true');
                 if (permission === 'granted') {
                     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
                     if (!vapidKey) {
