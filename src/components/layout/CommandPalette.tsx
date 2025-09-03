@@ -83,17 +83,6 @@ export function CommandPalette({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
-  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (search.trim().length > 0) {
-           setPages(p => [...p, 'aiChat']);
-        }
-      }
-    },
-    [search]
-  );
   
   const groups = useMemo(() => {
     return [
@@ -133,6 +122,22 @@ export function CommandPalette({
       }))
       .filter(group => group.items.length > 0);
   }, [search, groups]);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+      // Check if any commands are visible in the list
+      const hasVisibleCommands = filteredGroups.reduce((acc, group) => acc + group.items.length, 0) > 0;
+      
+      if (e.key === "Enter") {
+        // If there is search text AND there are no visible commands, activate AI chat
+        if (search.trim().length > 0 && !hasVisibleCommands) {
+            e.preventDefault();
+            setPages(p => [...p, 'aiChat']);
+        }
+        // Otherwise, do nothing and let cmdk handle the default behavior (selecting an item)
+      }
+    },
+    [search, filteredGroups]
+  );
   
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
@@ -145,14 +150,14 @@ export function CommandPalette({
             onKeyDown={onKeyDown}
           />
           <CommandList>
-            <CommandEmpty className="py-6 text-center text-sm">
+            <CommandEmpty>
                 {search.trim().length > 0 ? (
                     <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
                         <CalendarAiLogo className="h-6 w-6" />
                         <span>Press Enter to ask AI anything...</span>
                     </div>
                 ) : (
-                    "No results found."
+                   <div className="py-6 text-center text-sm">No results found.</div>
                 )}
             </CommandEmpty>
             {filteredGroups.map((group) => (
