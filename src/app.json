@@ -9,11 +9,11 @@
     },
     "GOOGLE_CLIENT_ID": {
       "description": "Google OAuth Client ID for Calendar/Gmail integration.",
-      "required": false
+      "required": true
     },
     "GOOGLE_CLIENT_SECRET": {
       "description": "Google OAuth Client Secret for Calendar/Gmail integration.",
-      "required": false
+      "required": true
     },
     "NEXT_PUBLIC_BASE_URL": {
       "description": "The public URL of your deployed application (e.g., https://yourapp.web.app).",
@@ -45,27 +45,27 @@
     },
     "NEXT_PUBLIC_FIREBASE_VAPID_KEY": {
       "description": "The VAPID key from Firebase Console > Project Settings > Cloud Messaging > Web configuration. Required for web push notifications.",
-      "required": false
+      "required": true
     },
     "RAZORPAY_KEY_ID": {
       "description": "Your Razorpay Key ID for processing payments.",
-      "required": false
+      "required": true
     },
     "RAZORPAY_KEY_SECRET": {
       "description": "Your Razorpay Key Secret for verifying payments.",
-      "required": false
+      "required": true
     },
     "RAZORPAY_PLAN_ID_MONTHLY": {
       "description": "The Plan ID for your monthly subscription from the Razorpay dashboard.",
-      "required": false
+      "required": true
     },
     "RAZORPAY_PLAN_ID_YEARLY": {
       "description": "The Plan ID for your yearly subscription from the Razorpay dashboard.",
-      "required": false
+      "required": true
     },
     "NEXT_PUBLIC_RAZORPAY_KEY_ID": {
       "description": "The public Razorpay Key ID, same as RAZORPAY_KEY_ID.",
-      "required": false
+      "required": true
     }
   }
 }
