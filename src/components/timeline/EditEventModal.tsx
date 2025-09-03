@@ -82,7 +82,7 @@ const EditEventModal: FC<EditEventModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg frosted-glass p-0">
+      <DialogContent className="sm:max-w-2xl frosted-glass p-0">
         <DialogHeader className="p-6 pb-4 border-b border-border/30">
           <DialogTitle className="font-headline text-xl text-primary">{dialogTitle}</DialogTitle>
           <DialogDescription>

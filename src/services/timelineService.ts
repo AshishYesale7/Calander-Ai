@@ -93,7 +93,7 @@ export const saveTimelineEvent = async (
     if (googleEventId) {
         dataToSave.googleEventId = googleEventId;
     } else {
-        delete dataToSave.googleEventId;
+        dataToSave.googleEventId = deleteField();
     }
 
     if (!dataToSave.endDate) delete dataToSave.endDate;
@@ -104,7 +104,8 @@ export const saveTimelineEvent = async (
     // After successfully saving, send a notification if reminders are on.
     if (event.reminder && event.reminder.enabled && event.reminder.earlyReminder !== 'none') {
         const reminderMapping = {
-            'on_day': 'On the day',
+            'none': '', // Should not happen due to the if condition
+            'on_day': 'On the day of the event',
             '1_day': '1 day before',
             '2_days': '2 days before',
             '1_week': '1 week before'
@@ -160,7 +161,7 @@ export const restoreTimelineEvent = async (userId: string, eventId: string): Pro
     const eventData = fromFirestore(eventSnap);
     let newGoogleEventId = eventData.googleEventId || null;
 
-    if (eventData.googleEventId) {
+    if (eventData.isDeletable && eventData.googleEventId) { // Check if it was a synced event
         try {
             // Restore functionality will just use the default timezone as it's a non-critical recovery path.
             const newGoogleEvent = await createGoogleCalendarEvent(userId, eventData, 'UTC');
@@ -186,5 +187,3 @@ export const permanentlyDeleteTimelineEvent = async (userId: string, eventId: st
     const eventDocRef = doc(eventsCollection, eventId);
     await deleteDoc(eventDocRef);
 };
-
-    

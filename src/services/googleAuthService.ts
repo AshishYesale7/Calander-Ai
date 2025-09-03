@@ -90,7 +90,13 @@ export async function saveGoogleTokensToFirestore(userId: string, newTokens: Cre
     };
     
     if (!tokensToSave.refresh_token) {
-        console.warn("Saving Google tokens without a refresh token. User may need to re-authenticate if the session expires completely.");
+        // If we get new tokens that DON'T have a refresh token, but we already have one stored, keep the old one.
+        // This is crucial because Google often only sends the refresh token on the very first authorization.
+        if (existingTokens?.refresh_token) {
+            tokensToSave.refresh_token = existingTokens.refresh_token;
+        } else {
+           console.warn("Saving Google tokens without a refresh token. User may need to re-authenticate if the session expires completely.");
+        }
     }
     
     await setDoc(userDocRef, { google_tokens: tokensToSave }, { merge: true });

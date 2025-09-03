@@ -196,5 +196,3 @@ export interface TrackedKeyword {
     createdAt: Date;
     summary?: string;
 }
-
-    
