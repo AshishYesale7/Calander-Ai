@@ -111,7 +111,7 @@ export function CommandPalette({
         
         const { icon, ...data } = newEvent;
         const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle: false });
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle: false, timezone });
 
         toast({
             title: "Event Created with AI",
