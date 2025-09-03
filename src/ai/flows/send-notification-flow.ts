@@ -23,11 +23,9 @@ export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 // This function is not a Genkit flow, but a regular server-side utility.
 // It directly interacts with Firebase Admin SDK.
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
-  // Initialize Firebase Admin SDK if it hasn't been already, *inside* the function
+  // Initialize Firebase Admin SDK if it hasn't been already, *inside* the function.
+  // This is the most reliable way to prevent conflicts in a Next.js environment.
   if (admin.apps.length === 0) {
-    // In a real production environment, you would use GOOGLE_APPLICATION_CREDENTIALS
-    // or a more secure method of providing credentials.
-    // For this context, we assume the environment is already configured.
     admin.initializeApp();
   }
   
