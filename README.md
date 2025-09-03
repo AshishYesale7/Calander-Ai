@@ -1,3 +1,4 @@
+
 # FutureSight: Your AI-Powered Career Calendar
 
 Welcome to FutureSight, an intelligent planning application designed to help ambitious students and young professionals navigate the complexities of career development. This isn't just a calendar; it's a proactive assistant that helps you manage your time, track your goals, and build a clear path to success with the help of powerful AI.
@@ -36,7 +37,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Advanced User Experience:**
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
-    *   **Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) to quickly navigate the app, perform actions, and even create calendar events from natural language prompts (e.g., "Schedule a meeting with the team tomorrow at 2 PM").
+    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and intelligently falls back to a conversational AI assistant. If a typed query doesn't match a built-in command, the palette prompts the user to "Ask AI anything," allowing for seamless natural language event creation and other interactions.
 
 ## 3. Link to Prototype
 

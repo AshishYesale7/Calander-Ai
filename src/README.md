@@ -38,7 +38,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
     *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
-    *   **Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) to quickly navigate the app, perform actions, and even create calendar events from natural language prompts (e.g., "Schedule a meeting with the team tomorrow at 2 PM").
+    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and intelligently falls back to a conversational AI assistant. If a typed query doesn't match a built-in command, the palette prompts the user to "Ask AI anything," allowing for seamless natural language event creation and other interactions.
     *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
 
 ## 3. Link to Prototype
