@@ -20,13 +20,16 @@ const CreateEventInputSchema = z.object({
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 
 // Output schema the AI must generate
-const CreateEventOutputSchema = z.object({
+export const CreateEventOutputSchema = z.object({
   title: z.string().describe("The concise title for the event."),
   date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
   endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
   notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
   isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
   location: z.string().optional().describe("The location of the event, if mentioned."),
+  reminder: z.object({
+    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
+  }).optional().describe("Reminder settings for the event.")
 });
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
@@ -50,20 +53,22 @@ Instructions:
 3.  **All-Day Events:**
     -   If a specific time is not mentioned (e.g., "remind me to call mom on Friday" or "dentist appointment on the 25th"), create an all-day event by setting \`isAllDay\` to true.
     -   For all-day events, the \`date\` value should be set to the beginning of that day (00:00:00) in the user's specified timezone.
-4.  **Other Fields:**
+4.  **Reminders:**
+    -   Examine the user's prompt for keywords that imply a reminder is needed, such as "remind me", "alert", "don't forget", "set a reminder".
+    -   If such keywords are found, you MUST set the \`reminder.enabled\` field to \`true\`. Otherwise, it should be \`false\` or omitted.
+5.  **Other Fields:**
     -   If the user provides a vague title, create a concise and clear title.
     -   Extract any additional details from the prompt into the \`notes\` field.
 
 **Examples (based on a current date of 2024-07-15T10:00:00.000Z and a user timezone of 'America/Los_Angeles'):**
--   **User Request:** "plan a meeting with the team tomorrow at 2pm"
-    -   **Resulting \`date\`:** "2024-07-16T14:00:00.000-07:00" (or equivalent ISO string for PST)
+-   **User Request:** "remind me to plan a meeting with the team tomorrow at 2pm"
+    -   **Resulting \`date\`:** "2024-07-16T14:00:00.000-07:00"
     -   **Resulting \`endDate\`:** "2024-07-16T15:00:00.000-07:00"
+    -   **Resulting \`reminder.enabled\`:** true
 -   **User Request:** "schedule a quick sync in 3 hours"
     -   **Resulting \`date\`:** "2024-07-15T13:00:00.000Z" (Assuming the current time was 10:00 UTC)
-    -   **Resulting \`endDate\`:** "2024-07-15T13:30:00.000Z" (30 min for a "quick sync")
--   **User Request:** "block out Friday for project work"
-    -   **Resulting \`isAllDay\`:** true
-    -   **Resulting \`date\`:** "2024-07-19T00:00:00.000-07:00" (Friday of that week in the user's timezone)
+    -   **Resulting \`endDate\`:** "2024-07-15T13:30:00.000Z"
+    -   **Resulting \`reminder.enabled\`:** false
 
 Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and the instructions above.`;
 
@@ -71,6 +76,7 @@ Now, generate a JSON object that strictly adheres to the specified output schema
     model: 'googleai/gemini-2.0-flash',
     prompt: promptText,
     output: {
+      format: 'json',
       schema: CreateEventOutputSchema,
     },
   });
