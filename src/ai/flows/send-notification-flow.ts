@@ -11,8 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import * as admin from 'firebase-admin';
 import { getMessaging } from 'firebase-admin/messaging';
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin SDK if it hasn't been already
 if (admin.apps.length === 0) {
@@ -33,14 +32,12 @@ export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 // This function is not a Genkit flow, but a regular server-side utility.
 // It directly interacts with Firebase Admin SDK.
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
-  if (!db) {
-    throw new Error("Firestore is not initialized on the server.");
-  }
+  const db = getFirestore();
   
   try {
-    // 1. Get all FCM tokens for the user from Firestore
-    const tokensCollectionRef = collection(db, 'users', input.userId, 'fcmTokens');
-    const querySnapshot = await getDocs(tokensCollectionRef);
+    // 1. Get all FCM tokens for the user from Firestore using the Admin SDK
+    const tokensCollectionRef = db.collection('users').doc(input.userId).collection('fcmTokens');
+    const querySnapshot = await tokensCollectionRef.get();
     
     const tokens = querySnapshot.docs.map(doc => doc.id);
 
