@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -72,7 +72,6 @@ export function CommandPalette({
   isFullScreen,
 }: CommandPaletteProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { setTheme, theme } = useTheme();
   
   const [search, setSearch] = useState('');
@@ -81,6 +80,17 @@ export function CommandPalette({
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { timezone } = useTimezone();
+
+  useEffect(() => {
+    // Reset state when the dialog closes
+    if (!isOpen) {
+      const timer = setTimeout(() => {
+        setSearch('');
+        setIsCreatingEvent(false);
+      }, 300); // delay to allow for closing animation
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const runCommand = (command: () => void) => {
     onOpenChange(false);
@@ -106,7 +116,8 @@ export function CommandPalette({
             isDeletable: true,
             status: 'pending',
             priority: 'None',
-            location: result.location
+            location: result.location,
+            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
         };
         
         const { icon, ...data } = newEvent;
@@ -117,11 +128,11 @@ export function CommandPalette({
             title: "Event Created with AI",
             description: `"${result.title}" has been added to your timeline.`
         });
-        onOpenChange(false);
         
-        // Navigate to the dashboard to ensure the new event is visible.
-        // This is more reliable than router.refresh() for client components.
+        // A full navigation is more reliable for state updates than router.refresh() here
         router.push('/dashboard');
+        // We close the dialog after the navigation is initiated
+        onOpenChange(false);
         
     } catch (error) {
         console.error("AI Event Creation Error:", error);
@@ -137,9 +148,9 @@ export function CommandPalette({
 
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={(open) => { onOpenChange(open); setSearch(''); setIsCreatingEvent(false); }}>
+    <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
       <CommandInput 
-        placeholder="Search commands or generate an event..."
+        placeholder="Search or generate an event..."
         value={search}
         onValueChange={setSearch} 
       />
