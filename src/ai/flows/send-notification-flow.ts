@@ -16,7 +16,7 @@ export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
   try {
-    const adminApp = getAdminApp();
+    const adminApp = await getAdminApp();
     const db = adminApp.firestore();
     const messaging = adminApp.messaging();
 

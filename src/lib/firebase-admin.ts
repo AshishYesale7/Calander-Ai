@@ -3,7 +3,7 @@
 import * as admin from 'firebase-admin';
 
 // This function ensures that the Firebase Admin SDK is initialized only once.
-export function getAdminApp(): admin.app.App {
+export async function getAdminApp(): Promise<admin.app.App> {
   // If the app is already initialized, return the existing instance.
   if (admin.apps.length > 0) {
     return admin.apps[0]!;
