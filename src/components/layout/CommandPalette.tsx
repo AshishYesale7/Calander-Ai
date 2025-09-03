@@ -150,33 +150,33 @@ export function CommandPalette({
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
       <CommandInput 
-        placeholder="Search or generate an event..."
+        placeholder="Type a command or generate an event..."
         value={search}
         onValueChange={setSearch} 
       />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty className="hidden" />
 
-        {search.trim().length > 2 && (
-            <CommandGroup heading="AI Actions">
-                 <CommandItem
-                    onSelect={handleCreateEvent}
-                    disabled={isCreatingEvent}
-                    className="cursor-pointer"
-                >
-                    {isCreatingEvent ? (
-                        <>
-                          <LoadingSpinner size="sm" className="mr-2"/>
-                          <span>Creating event...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Bot className="mr-2 h-4 w-4 text-accent" />
-                            <span>Generate event for: "{search}"</span>
-                        </>
-                    )}
-                </CommandItem>
-            </CommandGroup>
+        {search.trim().length > 0 && (
+          <CommandGroup heading="AI Assistant">
+            <CommandItem
+              onSelect={handleCreateEvent}
+              disabled={isCreatingEvent}
+              className="cursor-pointer"
+            >
+              {isCreatingEvent ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  <span>Creating event...</span>
+                </>
+              ) : (
+                <>
+                  <Bot className="mr-2 h-4 w-4 text-accent" />
+                  <span>Generate event for: "{search}"</span>
+                </>
+              )}
+            </CommandItem>
+          </CommandGroup>
         )}
 
         <CommandGroup heading="Navigation">
