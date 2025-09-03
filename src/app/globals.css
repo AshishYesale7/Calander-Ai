@@ -174,6 +174,19 @@ body {
     pointer-events: none; /* Make sure the overlay isn't interactive */
 }
 
+/* New styles for AI Command Palette */
+.command-dialog-ai-mode {
+  @apply rounded-full border-2 bg-gradient-to-br from-amber-900/40 to-fuchsia-900/30;
+  border-color: hsl(var(--accent) / 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 40px hsl(var(--accent) / 0.2), inset 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+.command-dialog-ai-mode [cmdk-list] {
+  @apply hidden; /* Hide the list when in AI mode */
+}
+
 /* Custom styles for react-phone-number-input */
 .phone-input-container .PhoneInputInput {
   @apply bg-transparent text-foreground border-0 border-b-2 border-border rounded-none px-1 py-2 h-auto focus:ring-0 focus-visible:ring-0 focus-visible:outline-none focus:border-primary placeholder:text-muted-foreground;

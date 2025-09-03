@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
+import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { cn } from '@/lib/utils';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -67,6 +69,7 @@ export function CommandPalette({
   
   const [search, setSearch] = useState('');
   const [pages, setPages] = useState<('commandList' | 'aiChat')[]>(['commandList']);
+  const [hasMatchingItems, setHasMatchingItems] = useState(true);
   const activePage = pages[pages.length - 1];
 
   const runCommand = useCallback((command: () => void) => {
@@ -74,13 +77,12 @@ export function CommandPalette({
     command();
   }, [onOpenChange]);
 
-  // Reset to command list view when dialog is closed
   useEffect(() => {
     if (!isOpen) {
       const timer = setTimeout(() => {
         setSearch('');
         setPages(['commandList']);
-      }, 200); // Delay to prevent UI flicker
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -88,7 +90,6 @@ export function CommandPalette({
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        // When user hits Enter, switch to the AI chat interface
         if (search.trim().length > 0) {
            setPages(p => [...p, 'aiChat']);
         }
@@ -96,9 +97,54 @@ export function CommandPalette({
     },
     [search]
   );
+  
+  const groups = useMemo(() => {
+    return [
+      {
+        heading: 'Navigation',
+        items: menuItems,
+      },
+      {
+        heading: 'Quick Actions',
+        items: [
+            { id: 'newEvent', label: 'Add New Event', icon: PlusCircle, action: () => runCommand(() => router.push('/dashboard?action=newEvent')) },
+            { id: 'newGoal', label: 'Add New Goal', icon: PlusCircle, action: () => runCommand(() => router.push('/career-goals?action=newGoal')) },
+            { id: 'newSkill', label: 'Add New Skill', icon: PlusCircle, action: () => runCommand(() => router.push('/skills?action=newSkill')) },
+            { id: 'newBookmark', label: 'Add Bookmark', icon: PlusCircle, action: () => runCommand(() => router.push('/resources?action=newBookmark')) },
+            { id: 'newList', label: 'New Task List', icon: PlusCircle, action: () => runCommand(() => router.push('/tasks?action=newList')) },
+        ]
+      },
+      {
+        heading: 'Actions',
+        items: [
+            { id: 'toggleTheme', label: 'Toggle Theme', icon: theme === 'dark' ? Sun : Moon, action: () => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light')) },
+            { id: 'settings', label: 'Settings', icon: Settings, action: () => runCommand(() => setIsSettingsModalOpen(true)) },
+            { id: 'customizeTheme', label: 'Customize Theme', icon: Palette, action: () => runCommand(() => setIsCustomizeModalOpen(true)) },
+            { id: 'viewProfile', label: 'View Profile', icon: UserCircle, action: () => runCommand(() => setIsProfileModalOpen(true)) },
+            { id: 'toggleFullscreen', label: isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen', icon: isFullScreen ? Shrink : Expand, action: () => runCommand(handleToggleFullScreen) },
+        ]
+      },
+    ]
+  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, setIsProfileModalOpen, handleToggleFullScreen]);
+  
+  const filteredGroups = useMemo(() => {
+    if (!search) return groups;
+    return groups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
+      }))
+      .filter(group => group.items.length > 0);
+  }, [search, groups]);
+
+  useEffect(() => {
+    setHasMatchingItems(filteredGroups.length > 0);
+  }, [filteredGroups]);
+  
+  const isAiMode = !hasMatchingItems && search.trim().length > 0;
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
+    <CommandDialog open={isOpen} onOpenChange={onOpenChange} isAiMode={isAiMode}>
       {activePage === 'commandList' ? (
         <>
           <CommandInput 
@@ -106,63 +152,28 @@ export function CommandPalette({
             value={search}
             onValueChange={setSearch}
             onKeyDown={onKeyDown}
+            isAiMode={isAiMode}
           />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Navigation">
-              {menuItems.map(({ href, label, icon: Icon }) => (
-                <CommandItem key={href} onSelect={() => runCommand(() => router.push(href))}>
-                  <Icon className="mr-2 h-4 w-4" />
-                  <span>{label}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Quick Actions">
-                <CommandItem onSelect={() => runCommand(() => router.push('/dashboard?action=newEvent'))}>
-                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                    <span>Add New Event</span>
-                </CommandItem>
-                <CommandItem onSelect={() => runCommand(() => router.push('/career-goals?action=newGoal'))}>
-                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                    <span>Add New Goal</span>
-                </CommandItem>
-                <CommandItem onSelect={() => runCommand(() => router.push('/skills?action=newSkill'))}>
-                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                    <span>Add New Skill</span>
-                </CommandItem>
-                <CommandItem onSelect={() => runCommand(() => router.push('/resources?action=newBookmark'))}>
-                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                    <span>Add Bookmark</span>
-                </CommandItem>
-                <CommandItem onSelect={() => runCommand(() => router.push('/tasks?action=newList'))}>
-                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                    <span>New Task List</span>
-                </CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light'))}>
-                {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                <span>Toggle Theme</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setIsSettingsModalOpen(true))}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setIsCustomizeModalOpen(true))}>
-                <Palette className="mr-2 h-4 w-4" />
-                <span>Customize Theme</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setIsProfileModalOpen(true))}>
-                <UserCircle className="mr-2 h-4 w-4" />
-                <span>View Profile</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(handleToggleFullScreen)}>
-                {isFullScreen ? <Shrink className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
-                <span>{isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</span>
-              </CommandItem>
-            </CommandGroup>
+            <CommandEmpty>
+                <div className="flex items-center justify-center p-6 gap-2">
+                    <CalendarAiLogo className="h-6 w-6 animate-pulse" />
+                    <span className="text-muted-foreground text-base">Ask AI anything...</span>
+                </div>
+            </CommandEmpty>
+            {filteredGroups.map((group) => (
+                <React.Fragment key={group.heading}>
+                    <CommandGroup heading={group.heading}>
+                    {group.items.map(({ id, href, label, icon: Icon, action }) => (
+                        <CommandItem key={id || href} onSelect={action || (() => runCommand(() => router.push(href!)))}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        <span>{label}</span>
+                        </CommandItem>
+                    ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                </React.Fragment>
+            ))}
           </CommandList>
         </>
       ) : (
