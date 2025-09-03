@@ -11,6 +11,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  Command,
 } from '@/components/ui/command';
 import {
   LayoutDashboard,
@@ -145,28 +146,27 @@ export function CommandPalette({
     return (
         <div 
             className="command-palette-ai-bar"
-            // This outer div handles the open state for animations
             data-state={isOpen ? 'open' : 'closed'}
         >
-            <div className="flex items-center w-full max-w-3xl">
-                <CalendarAiLogo className="h-7 w-7 mr-3 shrink-0" />
-                <CommandInput 
-                    placeholder="Ask AI anything..."
-                    value={search}
-                    onValueChange={setSearch}
-                    onKeyDown={onKeyDown}
-                    isAiMode={true}
-                    className="h-14"
-                />
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => onOpenChange(false)}>
-                    <X className="h-5 w-5"/>
-                </Button>
-            </div>
+            <Command className="w-full">
+                <div className="flex items-center w-full max-w-3xl">
+                    <CommandInput 
+                        placeholder="Ask AI anything..."
+                        value={search}
+                        onValueChange={setSearch}
+                        onKeyDown={onKeyDown}
+                        isAiMode={true}
+                        className="h-14"
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => onOpenChange(false)}>
+                        <X className="h-5 w-5"/>
+                    </Button>
+                </div>
+            </Command>
         </div>
     );
   }
   
-  // This is the standard command palette modal.
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
       {activePage === 'commandList' ? (
@@ -180,7 +180,8 @@ export function CommandPalette({
           <CommandList>
              <CommandEmpty>
                 <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
-                    No results found. Press Enter to ask AI.
+                    <CalendarAiLogo className="h-6 w-6" />
+                    Press Enter to ask AI...
                 </div>
             </CommandEmpty>
             {filteredGroups.map((group) => (
