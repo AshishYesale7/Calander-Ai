@@ -36,7 +36,7 @@ function AppContent({ children }: { children: ReactNode }) {
   // Lifted state for modals
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen]_useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
