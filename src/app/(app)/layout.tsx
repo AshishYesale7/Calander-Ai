@@ -86,11 +86,8 @@ function AppContent({ children }: { children: ReactNode }) {
   // Logic to show modals once per session, ONLY on the dashboard
   useEffect(() => {
     if (!loading && user && isSubscribed && pathname === '/dashboard') {
-      const hasSeenPlanModal = sessionStorage.getItem('seenTodaysPlanModal');
-      if (!hasSeenPlanModal) {
-        setIsPlanModalOpen(true);
-        sessionStorage.setItem('seenTodaysPlanModal', 'true');
-      }
+      // Show the plan modal every time the dashboard is loaded.
+      setIsPlanModalOpen(true);
       
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
           // Show our custom modal instead of directly calling the browser prompt
@@ -134,7 +131,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
   if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
     return (
-      <div className="flex h-screen w-full items-center justify-center" style={{ backgroundColor: '#15161f' }}>
+      <div className="flex h-screen w-full items-center justify-center preloader-background">
         <Preloader />
       </div>
     );

@@ -10,7 +10,7 @@ import {
   AccordionItem,
 } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
 import { generateDailyPlan } from '@/ai/flows/generate-daily-plan-flow';
 import type { DailyPlan } from '@/types';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -237,6 +237,19 @@ export default function TodaysPlanCard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 pl-4">
+                     <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fetchAndGeneratePlan(displayDate, true);
+                      }}
+                      className="h-8 w-8 p-0 shrink-0"
+                      aria-label="Refresh plan"
+                      disabled={isLoading}
+                    >
+                      <RefreshCw className={`h-5 w-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
