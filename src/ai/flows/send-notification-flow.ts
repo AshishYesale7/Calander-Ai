@@ -1,16 +1,13 @@
 
 'use server';
 /**
- * @fileOverview A flow for sending push notifications to a user.
+ * @fileOverview A flow for sending push notifications to a user by calling a dedicated API route.
  *
  * - sendNotification - Sends a push notification to a specific user.
  * - SendNotificationInput - The input type for the sendNotification function.
  */
 
 import { z } from 'genkit';
-import * as admin from 'firebase-admin';
-import { getMessaging } from 'firebase-admin/messaging';
-import { getFirestore } from 'firebase-admin/firestore';
 
 const SendNotificationInputSchema = z.object({
   userId: z.string().describe('The ID of the user to send the notification to.'),
@@ -20,64 +17,28 @@ const SendNotificationInputSchema = z.object({
 });
 export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 
-// This function is not a Genkit flow, but a regular server-side utility.
-// It directly interacts with Firebase Admin SDK.
+/**
+ * This function is now a client-side friendly wrapper that calls our dedicated API route.
+ * It does not use the Firebase Admin SDK directly.
+ */
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
-  // Initialize Firebase Admin SDK if it hasn't been already, *inside* the function.
-  // This is the most reliable way to prevent conflicts in a Next.js environment.
-  if (admin.apps.length === 0) {
-    admin.initializeApp();
-  }
-  
-  const db = getFirestore();
-  
   try {
-    // 1. Get all FCM tokens for the user from Firestore using the Admin SDK
-    const tokensCollectionRef = db.collection('users').doc(input.userId).collection('fcmTokens');
-    const querySnapshot = await tokensCollectionRef.get();
-    
-    const tokens = querySnapshot.docs.map(doc => doc.id);
+    const response = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+    });
 
-    if (tokens.length === 0) {
-      console.log(`No FCM tokens found for user ${input.userId}. Cannot send notification.`);
-      return { success: true, message: 'No devices to send to.' };
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(result.message || 'Failed to send notification via API.');
     }
 
-    // 2. Construct the notification payload
-    const message: admin.messaging.MulticastMessage = {
-      tokens: tokens,
-      notification: {
-        title: input.title,
-        body: input.body,
-      },
-      webpush: {
-        fcmOptions: {
-          link: input.url || process.env.NEXT_PUBLIC_BASE_URL || '/',
-        },
-        notification: {
-            icon: '/logo.png' // Make sure you have a logo.png in your /public folder
-        }
-      },
-    };
-
-    // 3. Send the message
-    const batchResponse = await getMessaging().sendEachForMulticast(message);
-    
-    console.log(`${batchResponse.successCount} messages were sent successfully`);
-    
-    if (batchResponse.failureCount > 0) {
-        batchResponse.responses.forEach(resp => {
-            if (!resp.success) {
-                console.error(`Failed to send to token: ${resp.messageId}`, resp.error);
-                // TODO: In a real app, you would handle outdated/invalid tokens here by deleting them.
-            }
-        });
-    }
-
-    return { success: true, message: `${batchResponse.successCount} notification(s) sent.` };
+    return { success: result.success, message: result.message };
   } catch (error) {
-    console.error('Error sending push notification:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    console.error('Error calling send notification API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown client-side error occurred.';
     return { success: false, message: errorMessage };
   }
 }
