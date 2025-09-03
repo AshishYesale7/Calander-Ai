@@ -23,7 +23,8 @@ export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
  */
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch('/api/notifications/send', {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
+    const response = await fetch(`${baseUrl}/api/notifications/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
