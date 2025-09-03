@@ -16,11 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2 } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/lib/firebase';
+import { auth, messaging } from '@/lib/firebase';
 import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getToken } from 'firebase/messaging';
+
 
 declare global {
   interface Window {
@@ -63,9 +65,18 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isPolling, setIsPolling] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
+  const [notificationPermission, setNotificationPermission] = useState('default');
+
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, [isOpen]);
+
 
   useEffect(() => {
     return () => {
@@ -332,6 +343,34 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
+  const handleRequestNotificationPermission = async () => {
+    if (!messaging) {
+      toast({ title: 'Error', description: 'Push notifications are not supported on this browser.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+
+      if (permission === 'granted') {
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.error("VAPID key is missing.");
+            toast({ title: 'Configuration Error', description: 'Push notification setup is incomplete on the server.', variant: 'destructive' });
+            return;
+        }
+        const fcmToken = await getToken(messaging, { vapidKey });
+        console.log("FCM Token:", fcmToken);
+        // TODO: Send this fcmToken to your server and save it against the user's ID
+        toast({ title: 'Success', description: 'Push notifications have been enabled!' });
+      } else {
+        toast({ title: 'Notifications Denied', description: 'You can enable notifications from your browser settings later.', variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Error getting notification permission or token:', error);
+      toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -345,6 +384,28 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto px-1">
+            <div className="space-y-3 px-2">
+                 <Label className="font-semibold text-base flex items-center text-primary">
+                    <Bell className="mr-2 h-4 w-4" /> Push Notifications
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Receive reminders for your upcoming events directly on your device.
+                </p>
+                {notificationPermission === 'granted' ? (
+                     <div className="flex items-center justify-between h-10">
+                        <p className="text-sm text-green-400 font-medium flex items-center">
+                            <CheckCircle className="mr-2 h-4 w-4" /> Notifications Enabled
+                        </p>
+                    </div>
+                ) : (
+                    <Button onClick={handleRequestNotificationPermission} variant="outline" className="w-full" disabled={notificationPermission === 'denied'}>
+                        {notificationPermission === 'denied' ? 'Permission Denied in Browser' : 'Enable Push Notifications'}
+                    </Button>
+                )}
+            </div>
+
+            <Separator/>
+
             <div className="space-y-3 px-2">
                  <Label className="font-semibold text-base flex items-center text-primary">
                     <Globe className="mr-2 h-4 w-4" /> Google Integration
