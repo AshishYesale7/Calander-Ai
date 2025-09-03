@@ -196,3 +196,9 @@ export interface TrackedKeyword {
     createdAt: Date;
     summary?: string;
 }
+
+// New type for conversational AI
+export interface ChatMessage {
+    role: 'user' | 'model' | 'tool';
+    content: string;
+}

@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -29,18 +29,9 @@ import {
   Expand,
   Shrink,
   PlusCircle,
-  Bot,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
-import { useApiKey } from '@/hooks/use-api-key';
-import { createEventFromPrompt, type CreateEventInput } from '@/ai/flows/create-event-flow';
-import { saveTimelineEvent } from '@/services/timelineService';
-import type { TimelineEvent } from '@/types';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useTimezone } from '@/hooks/use-timezone';
-
+import AiAssistantChat from './AiAssistantChat';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -75,176 +66,108 @@ export function CommandPalette({
   const { setTheme, theme } = useTheme();
   
   const [search, setSearch] = useState('');
-  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const { apiKey } = useApiKey();
-  const { timezone } = useTimezone();
+  const [pages, setPages] = useState<('commandList' | 'aiChat')[]>(['commandList']);
+  const activePage = pages[pages.length - 1];
 
+  const runCommand = useCallback((command: () => void) => {
+    onOpenChange(false);
+    command();
+  }, [onOpenChange]);
+
+  // Reset to command list view when dialog is closed
   useEffect(() => {
-    // Reset state when the dialog closes
     if (!isOpen) {
       const timer = setTimeout(() => {
         setSearch('');
-        setIsCreatingEvent(false);
-      }, 300); // delay to allow for closing animation
+        setPages(['commandList']);
+      }, 200); // Delay to prevent UI flicker
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  const runCommand = (command: () => void) => {
-    onOpenChange(false);
-    command();
-  };
-
-  const handleCreateEvent = async () => {
-    if (!search.trim() || !user || isCreatingEvent) return;
-    setIsCreatingEvent(true);
-    
-    try {
-        const input: CreateEventInput = { prompt: search, apiKey, timezone };
-        const result = await createEventFromPrompt(input);
-        
-        const newEvent: TimelineEvent = {
-            id: `ai-${Date.now()}`,
-            title: result.title,
-            date: new Date(result.date),
-            endDate: result.endDate ? new Date(result.endDate) : undefined,
-            notes: result.notes,
-            isAllDay: result.isAllDay,
-            type: 'ai_suggestion',
-            isDeletable: true,
-            status: 'pending',
-            priority: 'None',
-            location: result.location,
-            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
-        };
-        
-        const { icon, ...data } = newEvent;
-        const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle: false, timezone });
-
-        toast({
-            title: "Event Created with AI",
-            description: `"${result.title}" has been added to your timeline.`
-        });
-        
-        // A full navigation is more reliable for state updates than router.refresh() here
-        router.push('/dashboard');
-        // We close the dialog after the navigation is initiated
-        onOpenChange(false);
-        
-    } catch (error) {
-        console.error("AI Event Creation Error:", error);
-        toast({
-            title: "AI Error",
-            description: "Could not create event. The AI might have been unable to understand the request.",
-            variant: "destructive"
-        });
-    } finally {
-        setIsCreatingEvent(false);
-    }
-  };
-
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        // When user hits Enter, switch to the AI chat interface
+        if (search.trim().length > 0) {
+           setPages(p => [...p, 'aiChat']);
+        }
+      }
+    },
+    [search]
+  );
 
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
-      <CommandInput 
-        placeholder="Type a command or generate an event..."
-        value={search}
-        onValueChange={setSearch} 
-      />
-      <CommandList>
-        <CommandEmpty className="hidden" />
-
-        {search.trim().length > 0 && (
-          <CommandGroup heading="AI Assistant">
-            <CommandItem
-              onSelect={handleCreateEvent}
-              disabled={isCreatingEvent}
-              className="cursor-pointer"
-            >
-              {isCreatingEvent ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  <span>Creating event...</span>
-                </>
-              ) : (
-                <>
-                  <Bot className="mr-2 h-4 w-4 text-accent" />
-                  <span>Generate event for: "{search}"</span>
-                </>
-              )}
-            </CommandItem>
-          </CommandGroup>
-        )}
-
-        <CommandGroup heading="Navigation">
-          {menuItems.map(({ href, label, icon: Icon }) => (
-            <CommandItem key={href} onSelect={() => runCommand(() => router.push(href))}>
-              <Icon className="mr-2 h-4 w-4" />
-              <span>{label}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Quick Actions">
-            <CommandItem onSelect={() => runCommand(() => router.push('/dashboard?action=newEvent'))}>
-                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                <span>Add New Event</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push('/career-goals?action=newGoal'))}>
-                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                <span>Add New Goal</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push('/skills?action=newSkill'))}>
-                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                <span>Add New Skill</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push('/resources?action=newBookmark'))}>
-                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                <span>Add Bookmark</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push('/tasks?action=newList'))}>
-                <PlusCircle className="mr-2 h-4 w-4 text-accent" />
-                <span>New Task List</span>
-            </CommandItem>
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light'))}>
-            {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-            <span>Toggle Theme</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => setIsSettingsModalOpen(true))}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => setIsCustomizeModalOpen(true))}>
-            <Palette className="mr-2 h-4 w-4" />
-            <span>Customize Theme</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => setIsProfileModalOpen(true))}>
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>View Profile</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(handleToggleFullScreen)}>
-            {isFullScreen ? <Shrink className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
-            <span>{isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</span>
-          </CommandItem>
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="External Links">
-          <CommandItem onSelect={() => runCommand(() => window.open('https://google.com', '_blank'))}>
-            <Search className="mr-2 h-4 w-4" />
-            <span>Search Google</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => window.open('https://duckduckgo.com', '_blank'))}>
-            <Search className="mr-2 h-4 w-4" />
-            <span>Search DuckDuckGo</span>
-          </CommandItem>
-        </CommandGroup>
-      </CommandList>
+      {activePage === 'commandList' ? (
+        <>
+          <CommandInput 
+            placeholder="Ask AI or type a command..."
+            value={search}
+            onValueChange={setSearch}
+            onKeyDown={onKeyDown}
+          />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup heading="Navigation">
+              {menuItems.map(({ href, label, icon: Icon }) => (
+                <CommandItem key={href} onSelect={() => runCommand(() => router.push(href))}>
+                  <Icon className="mr-2 h-4 w-4" />
+                  <span>{label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Quick Actions">
+                <CommandItem onSelect={() => runCommand(() => router.push('/dashboard?action=newEvent'))}>
+                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                    <span>Add New Event</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => router.push('/career-goals?action=newGoal'))}>
+                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                    <span>Add New Goal</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => router.push('/skills?action=newSkill'))}>
+                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                    <span>Add New Skill</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => router.push('/resources?action=newBookmark'))}>
+                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                    <span>Add Bookmark</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => router.push('/tasks?action=newList'))}>
+                    <PlusCircle className="mr-2 h-4 w-4 text-accent" />
+                    <span>New Task List</span>
+                </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Actions">
+              <CommandItem onSelect={() => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light'))}>
+                {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                <span>Toggle Theme</span>
+              </CommandItem>
+              <CommandItem onSelect={() => runCommand(() => setIsSettingsModalOpen(true))}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </CommandItem>
+              <CommandItem onSelect={() => runCommand(() => setIsCustomizeModalOpen(true))}>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Customize Theme</span>
+              </CommandItem>
+              <CommandItem onSelect={() => runCommand(() => setIsProfileModalOpen(true))}>
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>View Profile</span>
+              </CommandItem>
+              <CommandItem onSelect={() => runCommand(handleToggleFullScreen)}>
+                {isFullScreen ? <Shrink className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
+                <span>{isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</span>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </>
+      ) : (
+         <AiAssistantChat initialPrompt={search} onBack={() => setPages(p => p.slice(0, -1))} />
+      )}
     </CommandDialog>
   );
 }
