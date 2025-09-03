@@ -7,19 +7,10 @@
  * - SendNotificationInput - The input type for the sendNotification function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import * as admin from 'firebase-admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getFirestore } from 'firebase-admin/firestore';
-
-// Initialize Firebase Admin SDK if it hasn't been already
-if (admin.apps.length === 0) {
-    // In a real production environment, you would use GOOGLE_APPLICATION_CREDENTIALS
-    // or a more secure method of providing credentials.
-    // For this context, we assume the environment is already configured.
-    admin.initializeApp();
-}
 
 const SendNotificationInputSchema = z.object({
   userId: z.string().describe('The ID of the user to send the notification to.'),
@@ -32,6 +23,14 @@ export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 // This function is not a Genkit flow, but a regular server-side utility.
 // It directly interacts with Firebase Admin SDK.
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
+  // Initialize Firebase Admin SDK if it hasn't been already, *inside* the function
+  if (admin.apps.length === 0) {
+    // In a real production environment, you would use GOOGLE_APPLICATION_CREDENTIALS
+    // or a more secure method of providing credentials.
+    // For this context, we assume the environment is already configured.
+    admin.initializeApp();
+  }
+  
   const db = getFirestore();
   
   try {
