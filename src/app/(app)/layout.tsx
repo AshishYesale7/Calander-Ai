@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -39,6 +40,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,28 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   }, [user, loading, isSubscribed, router, pathname]);
 
+  const requestNotificationPermission = async () => {
+    if (!messaging) return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+          console.error("VAPID key is missing.");
+          return;
+        }
+        const fcmToken = await getToken(messaging, { vapidKey });
+        console.log("FCM Token obtained:", fcmToken);
+        // TODO: Send fcmToken to your server to store it against the user.
+        toast({ title: 'Success!', description: 'You will now receive notifications for upcoming events.' });
+      } else {
+        toast({ title: 'Notifications Denied', description: 'You can enable notifications from your browser settings later.', variant: 'default' });
+      }
+    } catch (error) {
+      console.error("An error occurred while getting notification permission.", error);
+    }
+  };
+
   // Logic to show modals once per session, ONLY on the dashboard
   useEffect(() => {
     if (!loading && user && isSubscribed && pathname === '/dashboard') {
@@ -61,27 +85,8 @@ function AppContent({ children }: { children: ReactNode }) {
       }
       
       if ('Notification' in window && Notification.permission === 'default') {
-          const requestPermission = async () => {
-            if (!messaging) return;
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-                    if (!vapidKey) {
-                        console.error("VAPID key is missing.");
-                        return;
-                    }
-                    const fcmToken = await getToken(messaging, { vapidKey });
-                    console.log("FCM Token obtained:", fcmToken);
-                    // TODO: Send fcmToken to your server to store it against the user.
-                    toast({ title: 'Success!', description: 'You will now receive notifications for upcoming events.' });
-                }
-            } catch (error) {
-                console.error("An error occurred while getting notification permission.", error);
-            }
-          };
-          // Request after a short delay to not overwhelm the user immediately
-          setTimeout(requestPermission, 3000);
+          // Show our custom modal instead of directly calling the browser prompt
+          setTimeout(() => setIsNotificationModalOpen(true), 3000);
       }
     }
   }, [user, loading, isSubscribed, pathname, toast]);
@@ -176,6 +181,11 @@ function AppContent({ children }: { children: ReactNode }) {
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
       <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
       <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
+      <NotificationPermissionModal
+        isOpen={isNotificationModalOpen}
+        onOpenChange={setIsNotificationModalOpen}
+        onConfirm={requestNotificationPermission}
+      />
     </>
   );
 }
