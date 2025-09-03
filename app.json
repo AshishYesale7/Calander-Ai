@@ -43,6 +43,10 @@
       "description": "Firebase App ID from your Firebase project settings.",
       "required": true
     },
+    "NEXT_PUBLIC_FIREBASE_VAPID_KEY": {
+      "description": "The VAPID key from Firebase Console > Project Settings > Cloud Messaging > Web configuration. Required for web push notifications.",
+      "required": false
+    },
     "RAZORPAY_KEY_ID": {
       "description": "Your Razorpay Key ID for processing payments.",
       "required": false
