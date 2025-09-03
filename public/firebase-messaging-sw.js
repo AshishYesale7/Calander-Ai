@@ -1,28 +1,41 @@
-// Import the Firebase app and messaging libraries
-import { initializeApp } from 'firebase/app';
-import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
-// Import the configuration from the new file
-self.importScripts('/firebase-config.js');
+// This file must be in the public folder.
 
-// Check if the config was loaded correctly
-if (self.firebaseConfig) {
-  // Initialize the Firebase app in the service worker
-  const app = initializeApp(self.firebaseConfig);
-  const messaging = getMessaging(app);
+// Import and initialize the Firebase SDK
+// These scripts are loaded from the Firebase CDN.
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-  onBackgroundMessage(messaging, (payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    
-    const notificationTitle = payload.notification?.title || 'New Notification';
-    const notificationOptions = {
-      body: payload.notification?.body || 'You have a new message.',
-      icon: '/logo.png' // Make sure you have a logo.png in your public folder
-    };
+// IMPORTANT: This configuration is public and safe to expose.
+// It's the same configuration you use to initialize Firebase on the client-side.
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
-  });
+// Initialize the Firebase app in the service worker with the Firebase config
+firebase.initializeApp(firebaseConfig);
 
-} else {
-  console.error("Firebase config not found. Service worker cannot be initialized.");
-}
+// Retrieve an instance of Firebase Messaging so that it can handle background messages.
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+
+  if (!payload.notification) {
+    console.warn("No notification payload received.");
+    return;
+  }
+  
+  const notificationTitle = payload.notification.title || 'New Notification';
+  const notificationOptions = {
+    body: payload.notification.body || '',
+    icon: payload.notification.icon || '/favicon.ico'
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
