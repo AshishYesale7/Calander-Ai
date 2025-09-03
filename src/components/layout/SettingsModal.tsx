@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -36,6 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getToken } from 'firebase/messaging';
+import { sendNotification } from '@/ai/flows/send-notification-flow';
 
 
 declare global {
@@ -66,6 +67,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const [notificationPermission, setNotificationPermission] = useState('default');
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -372,6 +374,32 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
+  const handleSendTestNotification = async () => {
+    if (!user) {
+        toast({ title: 'Error', description: 'You must be logged in to send a notification.', variant: 'destructive' });
+        return;
+    }
+    setIsSendingTest(true);
+    try {
+        const result = await sendNotification({
+            userId: user.uid,
+            title: 'Test Notification from Calendar.ai',
+            body: 'If you can see this, your push notifications are working correctly!',
+            url: '/dashboard'
+        });
+        if (result.success) {
+            toast({ title: 'Test Sent!', description: 'Check your device for a notification.' });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error("Test notification error:", error);
+        toast({ title: 'Error', description: (error as Error).message || 'Failed to send test notification.', variant: 'destructive' });
+    } finally {
+        setIsSendingTest(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg frosted-glass">
@@ -402,6 +430,21 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                         {notificationPermission === 'denied' ? 'Permission Denied in Browser' : 'Enable Push Notifications'}
                     </Button>
                 )}
+            </div>
+
+            <Separator/>
+            
+            <div className="space-y-3 px-2">
+                <Label className="font-semibold text-base flex items-center text-primary">
+                    <Send className="mr-2 h-4 w-4" /> Test Push Notification
+                </Label>
+                 <p className="text-sm text-muted-foreground">
+                    Use this button to send a test notification to your devices to ensure everything is configured correctly.
+                </p>
+                <Button onClick={handleSendTestNotification} variant="outline" className="w-full" disabled={isSendingTest || notificationPermission !== 'granted'}>
+                    {isSendingTest && <LoadingSpinner size="sm" className="mr-2" />}
+                    {notificationPermission !== 'granted' ? 'Enable Notifications First' : 'Send Test Notification'}
+                </Button>
             </div>
 
             <Separator/>
