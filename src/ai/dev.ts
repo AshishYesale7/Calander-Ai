@@ -13,4 +13,5 @@ import '@/ai/flows/summarize-email-flow.ts';
 import '@/ai/flows/generate-daily-plan-flow.ts';
 import '@/ai/flows/create-event-flow.ts';
 import '@/ai/flows/track-deadlines-flow.ts';
+import '@/ai/flows/send-notification-flow.ts';
 

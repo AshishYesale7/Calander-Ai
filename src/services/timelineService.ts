@@ -7,6 +7,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, Timestamp, query, orderBy,
 import { getAuthenticatedClient } from './googleAuthService';
 import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalendarEvent } from './googleCalendarService';
 import { startOfDay, endOfDay } from 'date-fns';
+import { sendNotification } from '@/ai/flows/send-notification-flow';
 
 const getTimelineEventsCollection = (userId: string) => {
   if (!db) {
@@ -99,6 +100,22 @@ export const saveTimelineEvent = async (
     if (!dataToSave.deletedAt) delete dataToSave.deletedAt;
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
+
+    // After successfully saving, send a notification if reminders are on.
+    if (event.reminder.enabled) {
+        try {
+            await sendNotification({
+                userId: userId,
+                title: 'Event Reminder Set',
+                body: `You'll be reminded about "${event.title}".`,
+                url: `/dashboard`
+            });
+        } catch (notificationError) {
+            console.warn("Failed to send confirmation notification:", notificationError);
+            // We don't throw an error here because the event was saved successfully.
+            // This is a non-critical failure.
+        }
+    }
 };
 
 // This function now performs a "soft delete"
