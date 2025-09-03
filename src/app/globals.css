@@ -174,6 +174,31 @@ body {
     pointer-events: none; /* Make sure the overlay isn't interactive */
 }
 
+/* NEW: Styles for the glassmorphic command palette */
+.cmdk-dialog-glass {
+  background-color: rgba(16, 16, 20, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 1.25rem; /* ~20px */
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  box-shadow: 
+    0 0 80px rgba(0, 255, 255, 0.15), 
+    0 0 30px rgba(0, 255, 128, 0.15);
+}
+
+.cmdk-dialog-glass [cmdk-input-wrapper] {
+  @apply border-white/10;
+}
+
+.cmdk-dialog-glass [cmdk-item] {
+  @apply rounded-lg h-12;
+}
+
+.cmdk-dialog-glass [cmdk-separator] {
+  @apply bg-white/10;
+}
+
+
 /* Custom styles for react-phone-number-input */
 .phone-input-container .PhoneInputInput {
   @apply bg-transparent text-foreground border-0 border-b-2 border-border rounded-none px-1 py-2 h-auto focus:ring-0 focus-visible:ring-0 focus-visible:outline-none focus:border-primary placeholder:text-muted-foreground;
