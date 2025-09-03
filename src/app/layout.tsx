@@ -101,6 +101,20 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     };
   }, [isMounted]);
 
+  // Effect to register the service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/firebase-messaging-sw.js')
+        .then((registration) => {
+          console.log('Service Worker registration successful, scope is:', registration.scope);
+        })
+        .catch((err) => {
+          console.error('Service Worker registration failed:', err);
+        });
+    }
+  }, []);
+
 
   return <>{children}</>;
 }
