@@ -1,0 +1,71 @@
+
+{
+  "name": "Calendar.ai",
+  "description": "An AI-powered calendar assistant built with Next.js and Genkit. This file serves as a reference for the environment variables required for deployment.",
+  "env": {
+    "GEMINI_API_KEY": {
+      "description": "Your Google AI Gemini API key.",
+      "required": true
+    },
+    "GOOGLE_CLIENT_ID": {
+      "description": "Google OAuth Client ID for Calendar/Gmail integration.",
+      "required": false
+    },
+    "GOOGLE_CLIENT_SECRET": {
+      "description": "Google OAuth Client Secret for Calendar/Gmail integration.",
+      "required": false
+    },
+    "NEXT_PUBLIC_BASE_URL": {
+      "description": "The public URL of your deployed application (e.g., https://yourapp.web.app).",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_API_KEY": {
+      "description": "Firebase API Key from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN": {
+      "description": "Firebase Auth Domain from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": {
+      "description": "Firebase Project ID from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET": {
+      "description": "Firebase Storage Bucket from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": {
+      "description": "Firebase Messaging Sender ID from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_APP_ID": {
+      "description": "Firebase App ID from your Firebase project settings.",
+      "required": true
+    },
+    "NEXT_PUBLIC_FIREBASE_VAPID_KEY": {
+      "description": "The VAPID key from Firebase Console > Project Settings > Cloud Messaging > Web configuration. Required for web push notifications.",
+      "required": false
+    },
+    "RAZORPAY_KEY_ID": {
+      "description": "Your Razorpay Key ID for processing payments.",
+      "required": false
+    },
+    "RAZORPAY_KEY_SECRET": {
+      "description": "Your Razorpay Key Secret for verifying payments.",
+      "required": false
+    },
+    "RAZORPAY_PLAN_ID_MONTHLY": {
+      "description": "The Plan ID for your monthly subscription from the Razorpay dashboard.",
+      "required": false
+    },
+    "RAZORPAY_PLAN_ID_YEARLY": {
+      "description": "The Plan ID for your yearly subscription from the Razorpay dashboard.",
+      "required": false
+    },
+    "NEXT_PUBLIC_RAZORPAY_KEY_ID": {
+      "description": "The public Razorpay Key ID, same as RAZORPAY_KEY_ID.",
+      "required": false
+    }
+  }
+}

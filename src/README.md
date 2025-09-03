@@ -1,3 +1,4 @@
+
 # FutureSight: Your AI-Powered Career Calendar
 
 Welcome to FutureSight, an intelligent planning application designed to help ambitious students and young professionals navigate the complexities of career development. This isn't just a calendar; it's a proactive assistant that helps you manage your time, track your goals, and build a clear path to success with the help of powerful AI.
@@ -142,4 +143,3 @@ The `apphosting.yaml` file is already set up. To deploy your app, you will need 
 You can also deploy this application to Heroku with a single click using the button below. Heroku will automatically detect the `app.json` file and guide you through setting up the required environment variables.
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/AshishYesale7/FutureSight/tree/master)
-```

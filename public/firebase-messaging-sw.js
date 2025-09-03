@@ -1,48 +1,45 @@
 
-// This service worker file must be located in the public directory.
-// It is used to handle background push notifications.
-
-// Import and initialize the Firebase SDK
-// This is a special import syntax for service workers
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compat.js");
+// Import the Firebase app and messaging packages
+import { initializeApp } from "firebase/app";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
 // Your web app's Firebase configuration
-// This needs to be populated with your actual Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// A simple check to see if the config keys have been replaced.
-// You should replace the placeholder values above with your actual
-// Firebase project's configuration.
-if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-    console.error("Firebase config not set up in firebase-messaging-sw.js");
-} else {
-    firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 
-    // Retrieve an instance of Firebase Messaging so that it can handle background
-    // messages.
-    const messaging = firebase.messaging();
+// This listener handles messages received when the app is in the background or closed.
+onBackgroundMessage(messaging, (payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  
+  // Customize the notification here
+  const notificationTitle = payload.notification?.title || 'New Notification';
+  const notificationOptions = {
+    body: payload.notification?.body || '',
+    icon: payload.notification?.icon || '/logo.png', // Fallback icon
+    data: {
+        url: payload.fcmOptions?.link || '/' // Pass URL from the data payload
+    }
+  };
 
-    messaging.onBackgroundMessage((payload) => {
-        console.log(
-            "[firebase-messaging-sw.js] Received background message ",
-            payload
-        );
-        
-        // Customize notification here
-        const notificationTitle = payload.notification.title;
-        const notificationOptions = {
-            body: payload.notification.body,
-            icon: payload.notification.icon || "/logo.png",
-        };
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
 
-        self.registration.showNotification(notificationTitle, notificationOptions);
-    });
-}
+// Optional: Handle notification click
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    
+    const urlToOpen = event.notification.data.url || '/';
+
+    event.waitUntil(
+        self.clients.openWindow(urlToOpen)
+    );
+});

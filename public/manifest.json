@@ -1,21 +1,21 @@
+
 {
-  "name": "Calendar.ai",
   "short_name": "Calendar.ai",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#7c3aed",
-  "description": "Your AI-powered calendar and planning assistant.",
+  "name": "Calendar.ai: AI-Powered Planning",
   "icons": [
     {
       "src": "/logo-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
       "src": "/logo-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": "/dashboard",
+  "background_color": "#1a1b26",
+  "display": "standalone",
+  "theme_color": "#4a6580"
 }
