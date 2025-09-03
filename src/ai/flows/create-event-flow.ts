@@ -20,7 +20,7 @@ const CreateEventInputSchema = z.object({
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 
 // Output schema the AI must generate
-export const CreateEventOutputSchema = z.object({
+const CreateEventOutputSchema = z.object({
   title: z.string().describe("The concise title for the event."),
   date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
   endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
@@ -70,7 +70,7 @@ Instructions:
     -   **Resulting \`endDate\`:** "2024-07-15T13:30:00.000Z"
     -   **Resulting \`reminder.enabled\`:** false
 
-Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and the instructions above.`;
+Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and all the instructions above.`;
 
   const { output } = await generateWithApiKey(input.apiKey, {
     model: 'googleai/gemini-2.0-flash',

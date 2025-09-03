@@ -7,7 +7,21 @@
 import { generateWithApiKey } from '@/ai/genkit';
 import { z } from 'genkit';
 import type { ChatMessage } from '@/types';
-import { CreateEventOutputSchema, createEventFromPrompt } from './create-event-flow';
+import type { CreateEventOutput } from './create-event-flow';
+
+// We define the schema for the event object locally now, as it cannot be imported from a 'use server' file.
+const EventSchemaForConversation = z.object({
+  title: z.string().describe("The concise title for the event."),
+  date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
+  endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
+  notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
+  isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
+  location: z.string().optional().describe("The location of the event, if mentioned."),
+  reminder: z.object({
+    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
+  }).optional().describe("Reminder settings for the event.")
+});
+
 
 // Input schema for the conversational flow
 const ConversationalEventInputSchema = z.object({
@@ -25,7 +39,7 @@ export type ConversationalEventInput = z.infer<typeof ConversationalEventInputSc
 // The AI will either ask a clarifying question OR provide the final event data.
 const ConversationalEventOutputSchema = z.object({
     response: z.string().optional().describe("The AI's response to the user. This is used for asking clarifying questions or confirming the event creation."),
-    event: CreateEventOutputSchema.optional().describe("The structured calendar event object. This should only be provided when all necessary information has been gathered."),
+    event: EventSchemaForConversation.optional().describe("The structured calendar event object. This should only be provided when all necessary information has been gathered."),
 });
 export type ConversationalEventOutput = z.infer<typeof ConversationalEventOutputSchema>;
 
