@@ -103,7 +103,7 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
 
   // Effect to register the service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       const registerServiceWorker = async () => {
           try {
               const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
@@ -112,7 +112,8 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
               console.error('Service Worker registration failed:', err);
           }
       };
-      registerServiceWorker();
+      window.addEventListener('load', registerServiceWorker);
+      return () => window.removeEventListener('load', registerServiceWorker);
     }
   }, []);
 
@@ -136,6 +137,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="font-body antialiased">
         <AuthProvider>

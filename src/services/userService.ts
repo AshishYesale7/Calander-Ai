@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
 
 const getUserDocRef = (userId: string) => {
@@ -63,5 +63,20 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         console.error("Failed to get user preferences from Firestore:", error);
         // Propagate error to be handled by the UI
         throw new Error("Could not retrieve your preferences.");
+    }
+};
+
+export const saveUserFCMToken = async (userId: string, token: string): Promise<void> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    const tokensCollectionRef = collection(db, 'users', userId, 'fcmTokens');
+    const tokenDocRef = doc(tokensCollectionRef, token);
+    try {
+        // Using setDoc with the token as the ID prevents duplicate tokens from being saved.
+        await setDoc(tokenDocRef, { createdAt: new Date() });
+    } catch (error) {
+        console.error("Failed to save FCM token to Firestore:", error);
+        throw new Error("Could not save notification token.");
     }
 };

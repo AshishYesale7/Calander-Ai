@@ -24,6 +24,7 @@ import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
+import { saveUserFCMToken } from '@/services/userService';
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -54,24 +55,31 @@ function AppContent({ children }: { children: ReactNode }) {
   }, [user, loading, isSubscribed, router, pathname]);
 
   const requestNotificationPermission = async () => {
-    if (!messaging) return;
+    if (!messaging || !user) return;
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
         if (!vapidKey) {
           console.error("VAPID key is missing.");
+          toast({ title: 'Configuration Error', description: 'Cannot enable notifications without a VAPID key.', variant: 'destructive'});
           return;
         }
         const fcmToken = await getToken(messaging, { vapidKey });
-        console.log("FCM Token obtained:", fcmToken);
-        // TODO: Send fcmToken to your server to store it against the user.
-        toast({ title: 'Success!', description: 'You will now receive notifications for upcoming events.' });
+        
+        if (fcmToken) {
+            console.log("FCM Token obtained:", fcmToken);
+            await saveUserFCMToken(user.uid, fcmToken);
+            toast({ title: 'Success!', description: 'You will now receive notifications for upcoming events.' });
+        } else {
+            throw new Error("Could not retrieve FCM token.");
+        }
       } else {
         toast({ title: 'Notifications Denied', description: 'You can enable notifications from your browser settings later.', variant: 'default' });
       }
     } catch (error) {
       console.error("An error occurred while getting notification permission.", error);
+      toast({ title: 'Notification Error', description: 'Could not set up notifications. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -84,7 +92,7 @@ function AppContent({ children }: { children: ReactNode }) {
         sessionStorage.setItem('seenTodaysPlanModal', 'true');
       }
       
-      if ('Notification' in window && Notification.permission === 'default') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
           // Show our custom modal instead of directly calling the browser prompt
           setTimeout(() => setIsNotificationModalOpen(true), 3000);
       }
