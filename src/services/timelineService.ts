@@ -28,7 +28,7 @@ const fromFirestore = (docData: any): TimelineEvent => {
         // Ensure deletable is set, defaulting based on ID prefix if not present
         isDeletable: data.isDeletable === undefined ? (docData.id.startsWith('ai-') ? true : false) : data.isDeletable,
         googleEventId: data.googleEventId || undefined,
-        reminder: data.reminder || { enabled: true, daysBefore: 1 }, // Default reminder setting
+        reminder: data.reminder || { enabled: true, earlyReminder: '1_day', repeat: 'none', repeatEndDate: null },
     };
 };
 
@@ -87,7 +87,7 @@ export const saveTimelineEvent = async (
         ...event,
         date: Timestamp.fromDate(new Date(event.date)),
         endDate: event.endDate ? Timestamp.fromDate(new Date(event.endDate)) : null,
-        reminder: event.reminder || { enabled: true, daysBefore: 1 },
+        reminder: event.reminder || { enabled: true, earlyReminder: '1_day', repeat: 'none', repeatEndDate: null },
     };
     
     if (googleEventId) {
@@ -102,12 +102,20 @@ export const saveTimelineEvent = async (
     await setDoc(eventDocRef, dataToSave, { merge: true });
 
     // After successfully saving, send a notification if reminders are on.
-    if (event.reminder.enabled) {
+    if (event.reminder && event.reminder.enabled && event.reminder.earlyReminder !== 'none') {
+        const reminderMapping = {
+            'on_day': 'On the day',
+            '1_day': '1 day before',
+            '2_days': '2 days before',
+            '1_week': '1 week before'
+        }
+        const reminderText = reminderMapping[event.reminder.earlyReminder] || 'at the scheduled time';
+
         try {
             await sendNotification({
                 userId: userId,
-                title: 'Event Reminder Set',
-                body: `You'll be reminded about "${event.title}".`,
+                title: 'Reminder Set',
+                body: `You'll be reminded for "${event.title}" ${reminderText}.`,
                 url: `/dashboard`
             });
         } catch (notificationError) {
@@ -178,3 +186,5 @@ export const permanentlyDeleteTimelineEvent = async (userId: string, eventId: st
     const eventDocRef = doc(eventsCollection, eventId);
     await deleteDoc(eventDocRef);
 };
+
+    
