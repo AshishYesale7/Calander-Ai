@@ -11,7 +11,6 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-  Command,
 } from '@/components/ui/command';
 import {
   LayoutDashboard,
@@ -21,7 +20,6 @@ import {
   Newspaper,
   Lightbulb,
   ClipboardCheck,
-  Search,
   Moon,
   Sun,
   Settings,
@@ -30,13 +28,10 @@ import {
   Expand,
   Shrink,
   PlusCircle,
-  X,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
-import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -138,51 +133,27 @@ export function CommandPalette({
       }))
       .filter(group => group.items.length > 0);
   }, [search, groups]);
-
-  const hasMatchingItems = filteredGroups.length > 0;
-  const isAiMode = activePage === 'aiChat' || (isOpen && !hasMatchingItems && search.trim().length > 0);
-
-  if (isAiMode && activePage !== 'aiChat') {
-    return (
-        <div 
-            className="command-palette-ai-bar"
-            data-state={isOpen ? 'open' : 'closed'}
-        >
-            <Command className="w-full">
-                <div className="flex items-center w-full max-w-3xl">
-                    <CommandInput 
-                        placeholder="Ask AI anything..."
-                        value={search}
-                        onValueChange={setSearch}
-                        onKeyDown={onKeyDown}
-                        isAiMode={true}
-                        className="h-14"
-                    />
-                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => onOpenChange(false)}>
-                        <X className="h-5 w-5"/>
-                    </Button>
-                </div>
-            </Command>
-        </div>
-    );
-  }
   
   return (
     <CommandDialog open={isOpen} onOpenChange={onOpenChange}>
       {activePage === 'commandList' ? (
         <>
           <CommandInput 
-            placeholder="Type a command or search..."
+            placeholder="Type a command or ask AI..."
             value={search}
             onValueChange={setSearch}
             onKeyDown={onKeyDown}
           />
           <CommandList>
-             <CommandEmpty>
-                <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
-                    <CalendarAiLogo className="h-6 w-6" />
-                    Press Enter to ask AI...
-                </div>
+            <CommandEmpty className="py-6 text-center text-sm">
+                {search.trim().length > 0 ? (
+                    <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
+                        <CalendarAiLogo className="h-6 w-6" />
+                        <span>Press Enter to ask AI anything...</span>
+                    </div>
+                ) : (
+                    "No results found."
+                )}
             </CommandEmpty>
             {filteredGroups.map((group) => (
                 <React.Fragment key={group.heading}>
@@ -194,7 +165,7 @@ export function CommandPalette({
                         </CommandItem>
                     ))}
                     </CommandGroup>
-                    <CommandSeparator />
+                    {filteredGroups.indexOf(group) < filteredGroups.length - 1 && <CommandSeparator />}
                 </React.Fragment>
             ))}
           </CommandList>

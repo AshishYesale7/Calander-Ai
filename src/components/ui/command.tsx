@@ -8,7 +8,6 @@ import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { CalendarAiLogo } from "../logo/CalendarAiLogo"
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
@@ -25,11 +24,9 @@ const Command = React.forwardRef<
 ))
 Command.displayName = CommandPrimitive.displayName
 
-interface CommandDialogProps extends DialogProps {
-  isAiMode?: boolean;
-}
+interface CommandDialogProps extends DialogProps {}
 
-const CommandDialog = ({ children, isAiMode, ...props }: CommandDialogProps) => {
+const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
       <DialogContent 
@@ -46,19 +43,14 @@ const CommandDialog = ({ children, isAiMode, ...props }: CommandDialogProps) => 
 
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & { isAiMode?: boolean }
->(({ className, isAiMode, ...props }, ref) => (
-  <div className={cn("flex items-center border-b px-3", isAiMode && "border-none")} cmdk-input-wrapper="">
-    {isAiMode ? (
-      <CalendarAiLogo className="mr-2 h-5 w-5 shrink-0" />
-    ) : (
-      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-    )}
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
+>(({ className, ...props }, ref) => (
+  <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
         "flex h-12 w-full rounded-md bg-transparent py-3 text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        isAiMode && "placeholder:text-foreground/80",
         className
       )}
       {...props}

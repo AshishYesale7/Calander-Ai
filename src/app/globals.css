@@ -174,27 +174,6 @@ body {
     pointer-events: none; /* Make sure the overlay isn't interactive */
 }
 
-/* New styles for AI Command Palette */
-.command-palette-ai-bar {
-    @apply fixed bottom-8 left-1/2 -translate-x-1/2 w-[90vw] max-w-3xl z-50;
-    @apply flex items-center justify-center p-2 rounded-full;
-    @apply bg-black/40 backdrop-blur-md border border-white/10;
-    @apply transition-all duration-300 ease-in-out;
-}
-
-.command-palette-ai-bar[data-state="closed"] {
-    @apply opacity-0 -translate-y-4 pointer-events-none;
-}
-
-.command-palette-ai-bar [cmdk-input-wrapper] {
-    @apply border-none;
-}
-
-.command-palette-ai-bar input {
-    @apply bg-transparent text-lg text-white placeholder:text-gray-400;
-    @apply border-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none;
-}
-
 /* Custom styles for react-phone-number-input */
 .phone-input-container .PhoneInputInput {
   @apply bg-transparent text-foreground border-0 border-b-2 border-border rounded-none px-1 py-2 h-auto focus:ring-0 focus-visible:ring-0 focus-visible:outline-none focus:border-primary placeholder:text-muted-foreground;
@@ -432,6 +411,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--accent) / 0.8);
 }
-    
-
-    
