@@ -20,18 +20,23 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { getToken } from 'firebase/messaging';
+import { messaging } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Lifted state for modals
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen]_useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -46,16 +51,42 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   }, [user, loading, isSubscribed, router, pathname]);
 
-  // Logic to show modal once per session, ONLY on the dashboard
+  // Logic to show modals once per session, ONLY on the dashboard
   useEffect(() => {
     if (!loading && user && isSubscribed && pathname === '/dashboard') {
-      const hasSeenModal = sessionStorage.getItem('seenTodaysPlanModal');
-      if (!hasSeenModal) {
+      const hasSeenPlanModal = sessionStorage.getItem('seenTodaysPlanModal');
+      if (!hasSeenPlanModal) {
         setIsPlanModalOpen(true);
         sessionStorage.setItem('seenTodaysPlanModal', 'true');
       }
+      
+      const hasBeenAskedForNotifications = sessionStorage.getItem('askedForNotifications');
+      if (!hasBeenAskedForNotifications && 'Notification' in window && Notification.permission === 'default') {
+          const requestPermission = async () => {
+            if (!messaging) return;
+            try {
+                const permission = await Notification.requestPermission();
+                sessionStorage.setItem('askedForNotifications', 'true');
+                if (permission === 'granted') {
+                    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+                    if (!vapidKey) {
+                        console.error("VAPID key is missing.");
+                        return;
+                    }
+                    const fcmToken = await getToken(messaging, { vapidKey });
+                    console.log("FCM Token obtained:", fcmToken);
+                    // TODO: Send fcmToken to your server to store it against the user.
+                    toast({ title: 'Success!', description: 'You will now receive notifications for upcoming events.' });
+                }
+            } catch (error) {
+                console.error("An error occurred while getting notification permission.", error);
+            }
+          };
+          // Request after a short delay to not overwhelm the user immediately
+          setTimeout(requestPermission, 3000);
+      }
     }
-  }, [user, loading, isSubscribed, pathname]);
+  }, [user, loading, isSubscribed, pathname, toast]);
 
   // Keyboard shortcut for command palette
   useEffect(() => {

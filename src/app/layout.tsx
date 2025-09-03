@@ -104,14 +104,15 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
   // Effect to register the service worker
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
-      navigator.serviceWorker
-        .register('/firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log('Service Worker registration successful, scope is:', registration.scope);
-        })
-        .catch((err) => {
-          console.error('Service Worker registration failed:', err);
-        });
+      const registerServiceWorker = async () => {
+          try {
+              const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+              console.log('Service Worker registration successful, scope is:', registration.scope);
+          } catch (err) {
+              console.error('Service Worker registration failed:', err);
+          }
+      };
+      registerServiceWorker();
     }
   }, []);
 
