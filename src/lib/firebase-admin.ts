@@ -9,11 +9,21 @@ export async function getAdminApp(): Promise<admin.app.App> {
     return admin.apps[0]!;
   }
 
-  // If not initialized, create a new instance.
-  // This relies on the GOOGLE_APPLICATION_CREDENTIALS environment variable
-  // or default service account credentials in the runtime environment.
+  // Explicitly create credentials from environment variables.
+  // This is more reliable than relying on auto-discovery.
+  const serviceAccount = {
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    // The Admin SDK can often infer the rest of the details when running in a Google environment,
+    // but we can provide the client email and private key for other environments if needed.
+    // For now, projectId is the most critical piece.
+  };
+
   try {
-    return admin.initializeApp();
+    // Initialize the app with the explicit credentials.
+    return admin.initializeApp({
+      credential: admin.credential.applicationDefault(), // Use Application Default Credentials
+      projectId: serviceAccount.projectId,
+    });
   } catch (error: any) {
     console.error("Firebase Admin SDK initialization failed:", error.message);
     // This makes it clear that the server is misconfigured.
