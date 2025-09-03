@@ -1,24 +1,17 @@
+
 'use server';
 
 import { type NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { getAdminApp } from '@/lib/firebase-admin';
 import { getMessaging } from 'firebase-admin/messaging';
 
-// Initialize Firebase Admin SDK
-// Service account credentials can be automatically discovered
-// in managed environments like Firebase App Hosting.
-// Ensure your service account has "Firebase Cloud Messaging API (V1)" permissions.
-if (admin.apps.length === 0) {
-  try {
-    admin.initializeApp();
-  } catch (error) {
-    console.error('Firebase Admin initialization error:', error);
-  }
-}
-
 export async function POST(request: NextRequest) {
-  if (!admin.apps.length) {
-    return NextResponse.json({ success: false, message: 'Firebase Admin not initialized.' }, { status: 500 });
+  try {
+    // getAdminApp() will initialize or get the existing app instance.
+    getAdminApp();
+  } catch (error: any) {
+    console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
+    return NextResponse.json({ success: false, message: 'Internal server error: Could not initialize Firebase Admin.', error: error.message }, { status: 500 });
   }
 
   try {
@@ -28,7 +21,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Missing required fields (userId, title, body).' }, { status: 400 });
     }
     
-    const db = admin.firestore();
+    // We get the Firestore instance from the initialized app.
+    const db = getAdminApp().firestore();
     const tokensCollectionRef = db.collection('users').doc(userId).collection('fcmTokens');
     const querySnapshot = await tokensCollectionRef.get();
     
