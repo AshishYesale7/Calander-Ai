@@ -43,10 +43,15 @@ const GenerateCareerVisionOutputSchema = z.object({
     description: z.string().describe("A brief, one-sentence explanation of why this resource is useful for the user's specific goals."),
     category: z.enum(['book', 'course', 'tool', 'article', 'community', 'website', 'other']).describe("The category of the resource.")
   })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools. Ensure the links are specific and deep where possible."),
+  // Updated diagramSuggestion to include chart data
   diagramSuggestion: z.object({
-      type: z.enum(['Flowchart', 'Mind Map', 'Timeline']).describe("The type of diagram suggested."),
-      description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path.")
-  }).describe("A suggestion for a diagram the user could create to visualize their career plan.")
+      type: z.enum(['Flowchart', 'Mind Map', 'Timeline', 'Bar Chart']).describe("The type of diagram suggested. You must select 'Bar Chart'."),
+      description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path."),
+      data: z.array(z.object({
+          name: z.string().describe("The name of the data point, corresponding to a roadmap step title."),
+          durationMonths: z.number().describe("The average estimated duration for the step, converted to months. E.g., '1-3 months' is 2, '6 weeks' is 1.5, '1 year' is 12."),
+      })).describe("An array of data objects formatted for a bar chart. Each object represents a step in the roadmap."),
+  }).describe("A suggestion for a diagram and its data to visualize the user's career plan.")
 });
 export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutputSchema>;
 
@@ -66,7 +71,10 @@ Instructions:
 3.  **developmentAreas**: Analyze their goals to suggest a categorized list of skills. Provide specific technical skills (like 'Python' or 'React'), soft skills (like 'Public Speaking' or 'Team Collaboration'), and hard skills (non-technical but tangible abilities like 'Project Management' or 'Agile Methodologies').
 4.  **roadmap**: Create a clear, actionable roadmap with 3-5 steps. Each step should have a title, a brief description, and an estimated duration. This should be a logical progression from their current state towards their vision.
 5.  **suggestedResources**: Recommend 2-4 specific, high-quality online resources (courses, books, websites, communities, tools, articles) that align with their goals. For each, provide a title, a valid URL, a brief description explaining its relevance, and a category.
-6.  **diagramSuggestion**: Suggest a type of diagram (like a Flowchart, Mind Map, or Timeline) that the user could create to visually map out their plan. Briefly describe what this diagram should illustrate.
+6.  **diagramSuggestion**: 
+    -   Your output for 'type' MUST be "Bar Chart".
+    -   Your 'description' MUST explain that the bar chart visualizes the estimated timeline for each roadmap step.
+    -   **CRUCIAL**: For the 'data' field, you MUST generate an array of objects. Each object must have a 'name' (the title of the roadmap step) and a 'durationMonths' (the average duration of that step converted into a number of months). For example, if a step has a duration of "1-3 months", the value for 'durationMonths' should be 2. If it's "6 weeks", it should be 1.5. If it's "1 year", it should be 12.
 `;
   
   // Call the helper with the key and the generate request

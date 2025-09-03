@@ -5,7 +5,7 @@ import type { CareerGoal, Skill, CareerVisionHistoryItem, ResourceLink } from '@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2, FileText } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2, FileText, BarChart } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
@@ -30,6 +30,7 @@ import { saveBookmarkedResource } from '@/services/resourcesService';
 import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import CareerRoadmapChart from '@/components/career-vision/CareerRoadmapChart';
 
 const getResourceIcon = (category: ResourceLink['category']) => {
   switch (category) {
@@ -355,7 +356,7 @@ export default function CareerVisionPage() {
                                           <span className="flex-1">{skill}</span>
                                           <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-accent" onClick={() => handleAddSkill(skill)} disabled={addedItems.has(skill)} title={`Add skill: ${skill}`}>
                                              {addedItems.has(skill) ? <CheckCircle className="h-4 w-4 text-green-500" /> : <PlusCircle className="h-4 w-4" />}
-                                         </Button>
+                                          </Button>
                                       </li>
                                   ))}
                               </ul>
@@ -401,63 +402,63 @@ export default function CareerVisionPage() {
                     ))}
                 </CardContent>
             </Card>
-             <div className="grid md:grid-cols-2 gap-6">
-                <Card className="frosted-glass shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl text-primary flex items-center">
-                            <BookOpen className="mr-2 h-5 w-5 text-accent"/> Suggested Resources
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="space-y-3">
-                            {careerPlan.suggestedResources.map((res, i) => {
-                              const resourceId = `resource-${res.url}`;
-                              return (
-                                 <li key={i} className="p-3 rounded-md border border-border/50 bg-background/30">
-                                    <div className="flex items-start gap-3">
-                                        <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-accent flex-shrink-0">
-                                            {getResourceIcon(res.category)}
-                                        </div>
-                                        <div className="flex-1">
-                                            <a href={res.url} target="_blank" rel="noopener noreferrer" className="font-medium hover:text-accent transition-colors block">{res.title}</a>
-                                            <p className="text-xs text-muted-foreground capitalize">{res.category}</p>
-                                            <p className="text-sm text-foreground/80 mt-1">{res.description}</p>
-                                        </div>
-                                        <div className="flex flex-col gap-2 items-end">
-                                             <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleAddResource(res)}
-                                                disabled={addedItems.has(resourceId)}
-                                              >
-                                                {addedItems.has(resourceId) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                                {addedItems.has(resourceId) ? 'Added' : 'Add'}
-                                              </Button>
-                                              <a href={res.url} target="_blank" rel="noopener noreferrer">
-                                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                      <ExternalLink className="h-4 w-4" />
-                                                  </Button>
-                                              </a>
-                                        </div>
+
+            <Card className="frosted-glass shadow-lg">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center">
+                       <BarChart className="mr-2 h-5 w-5 text-accent"/> Visualize Your Plan
+                    </CardTitle>
+                    <CardDescription>{careerPlan.diagramSuggestion.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <CareerRoadmapChart data={careerPlan.diagramSuggestion.data} />
+                </CardContent>
+            </Card>
+
+            <Card className="frosted-glass shadow-lg">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center">
+                        <BookOpen className="mr-2 h-5 w-5 text-accent"/> Suggested Resources
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ul className="space-y-3">
+                        {careerPlan.suggestedResources.map((res, i) => {
+                          const resourceId = `resource-${res.url}`;
+                          return (
+                             <li key={i} className="p-3 rounded-md border border-border/50 bg-background/30">
+                                <div className="flex items-start gap-3">
+                                    <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-accent flex-shrink-0">
+                                        {getResourceIcon(res.category)}
                                     </div>
-                                </li>
-                              )
-                            })}
-                        </ul>
-                    </CardContent>
-                </Card>
-                <Card className="frosted-glass shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl text-primary flex items-center">
-                           <Palette className="mr-2 h-5 w-5 text-accent"/> Visualize Your Plan
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <h4 className="font-semibold text-primary">{careerPlan.diagramSuggestion.type}</h4>
-                        <p className="text-muted-foreground mt-1 text-sm">{careerPlan.diagramSuggestion.description}</p>
-                    </CardContent>
-                </Card>
-              </div>
+                                    <div className="flex-1">
+                                        <a href={res.url} target="_blank" rel="noopener noreferrer" className="font-medium hover:text-accent transition-colors block">{res.title}</a>
+                                        <p className="text-xs text-muted-foreground capitalize">{res.category}</p>
+                                        <p className="text-sm text-foreground/80 mt-1">{res.description}</p>
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-end">
+                                         <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleAddResource(res)}
+                                            disabled={addedItems.has(resourceId)}
+                                          >
+                                            {addedItems.has(resourceId) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                                            {addedItems.has(resourceId) ? 'Added' : 'Add'}
+                                          </Button>
+                                          <a href={res.url} target="_blank" rel="noopener noreferrer">
+                                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                  <ExternalLink className="h-4 w-4" />
+                                              </Button>
+                                          </a>
+                                    </div>
+                                </div>
+                            </li>
+                          )
+                        })}
+                    </ul>
+                </CardContent>
+            </Card>
           </div>
         )}
       </div>
