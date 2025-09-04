@@ -7,7 +7,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Bar, CartesianGrid, Line, XAxis, YAxis } from 'recharts';
 import type { CodingActivity, PlatformStats } from '@/types';
 import { useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, subMonths, addMonths } from 'date-fns';
 
 const MOCK_SOLVED_PROBLEMS_DATA: { month: string; solved: number }[] = [
   { month: 'Jan', solved: 30 },
