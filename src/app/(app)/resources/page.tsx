@@ -6,7 +6,7 @@ import type { ResourceLink } from '@/types';
 import { mockResourceLinks } from '@/data/mock';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, LinkIcon, PlusCircle, Bot, ExternalLink, Trash2, Edit3, BookOpen, Share2, Palette, FileText } from 'lucide-react';
+import { Lightbulb, Link as LinkIcon, PlusCircle, Bot, ExternalLink, Trash2, Edit3, BookOpen, Share2, Palette, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { suggestResources } from '@/ai/flows/suggest-resources';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
