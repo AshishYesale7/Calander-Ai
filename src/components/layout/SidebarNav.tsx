@@ -54,7 +54,7 @@ const navItems = [
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/automations', label: 'Automations', icon: LayoutGrid },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
-  { href: '/codefolio', label: 'Codefolio', icon: Code },
+  { href: '/extension', label: 'Extension', icon: Code },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 

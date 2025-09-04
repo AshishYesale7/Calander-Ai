@@ -99,13 +99,13 @@ const ContributionGraph = ({ activity }: { activity: CodingActivity[] }) => {
     );
 };
 
-export default function CodefolioPage() {
+export default function ExtensionPage() {
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
           <Code className="mr-3 h-8 w-8 text-accent" />
-          Codefolio
+          Extension
         </h1>
         <p className="text-foreground/80 mt-1">
           Track your coding progress across different platforms.
