@@ -202,3 +202,13 @@ export interface ChatMessage {
     role: 'user' | 'model' | 'tool';
     content: string;
 }
+
+// New type for user-defined workflow shortcuts
+export interface Shortcut {
+    id: string;
+    title: string;
+    icon: string; // Lucide icon name
+    color: string; // Tailwind color class
+    actionType: 'url' | 'in-app-route';
+    actionValue: string;
+}

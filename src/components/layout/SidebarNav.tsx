@@ -23,6 +23,7 @@ import {
   Crown,
   ClipboardCheck,
   Clock,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -50,6 +51,7 @@ const navItems = [
   { href: '/career-vision', label: 'Career Vision', icon: Eye },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
+  { href: '/workflows', label: 'Workflows', icon: LayoutGrid },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];

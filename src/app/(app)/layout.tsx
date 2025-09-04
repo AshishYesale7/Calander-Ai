@@ -86,8 +86,11 @@ function AppContent({ children }: { children: ReactNode }) {
   // Logic to show modals once per session, ONLY on the dashboard
   useEffect(() => {
     if (!loading && user && isSubscribed && pathname === '/dashboard') {
-      // Show the plan modal every time the dashboard is loaded.
-      setIsPlanModalOpen(true);
+      const alreadyShown = sessionStorage.getItem('planModalShown');
+      if (!alreadyShown) {
+        setIsPlanModalOpen(true);
+        sessionStorage.setItem('planModalShown', 'true');
+      }
       
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
           // Show our custom modal instead of directly calling the browser prompt
