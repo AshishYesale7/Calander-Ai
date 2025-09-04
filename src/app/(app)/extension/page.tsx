@@ -1,10 +1,10 @@
 
 'use client';
 
-import { BarChart, LineChart, Code, Activity } from 'lucide-react';
+import { BarChart, LineChart as LineChartIcon, Code, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, CartesianGrid, Line, XAxis, YAxis } from 'recharts';
+import { Bar, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import type { CodingActivity, PlatformStats } from '@/types';
 import { useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, subMonths, addMonths } from 'date-fns';
@@ -116,7 +116,7 @@ export default function ExtensionPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="font-headline text-xl text-primary flex items-center">
-              <LineChart className="mr-2 h-5 w-5" />
+              <LineChartIcon className="mr-2 h-5 w-5" />
               Solved Problems
             </CardTitle>
             <CardDescription>Past 6 Months</CardDescription>
