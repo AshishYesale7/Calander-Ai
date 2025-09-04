@@ -1,187 +1,140 @@
 
 'use client';
 
-import { BarChart, LineChart as LineChartIcon, Code, Activity } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
-import type { CodingActivity, PlatformStats } from '@/types';
-import { useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, subMonths, addMonths } from 'date-fns';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search, Download, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 
-const MOCK_SOLVED_PROBLEMS_DATA: { month: string; solved: number }[] = [
-  { month: 'Jan', solved: 30 },
-  { month: 'Feb', solved: 45 },
-  { month: 'Mar', solved: 60 },
-  { month: 'Apr', solved: 50 },
-  { month: 'May', solved: 75 },
-  { month: 'Jun', solved: 90 },
+// --- Mock Data ---
+// In a real application, this would come from a database or API.
+const allPlugins = [
+  { name: 'Android Studio', logo: '/logos/android-studio.svg' },
+  { name: 'AppCode', logo: '/logos/appcode.svg' },
+  { name: 'Chrome', logo: '/logos/chrome.svg' },
+  { name: 'Figma', logo: '/logos/figma.svg' },
+  { name: 'VS Code', logo: '/logos/vscode.svg' },
+  { name: 'Blender', logo: '/logos/blender.svg' },
+  { name: 'Azure Data Studio', logo: '/logos/azure-data-studio.svg' },
+  { name: 'Brave', logo: '/logos/brave.svg' },
+  { name: 'Canva', logo: '/logos/canva.svg' },
+  { name: 'CLion', logo: '/logos/clion.svg' },
+  { name: 'Discord', logo: '/logos/discord.svg' },
+  { name: 'Eclipse', logo: '/logos/eclipse.svg' },
+  { name: 'DataGrip', logo: '/logos/datagrip.svg' },
+  { name: 'DataSpell', logo: '/logos/dataspell.svg' },
+  { name: 'DBeaver', logo: '/logos/dbeaver.svg' },
+  { name: 'Delphi', logo: '/logos/delphi.svg' },
 ];
+// --- End Mock Data ---
 
-const MOCK_PLATFORM_STATS: PlatformStats[] = [
-    { id: '1', name: 'LeetCode', username: 'code-master', problemsSolved: 150, contests: 10 },
-    { id: '2', name: 'Codeforces', username: 'cf-user', problemsSolved: 200, contests: 25 },
-    { id: '3', name: 'HackerRank', username: 'hr-champ', problemsSolved: 120, contests: 5 },
-];
+type Plugin = (typeof allPlugins)[0];
 
-const MOCK_CODING_ACTIVITY: CodingActivity[] = Array.from({ length: 120 }).map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    return {
-        date,
-        count: Math.random() > 0.3 ? Math.floor(Math.random() * 5) + 1 : 0,
-    };
-}).reverse();
+interface FullScreenPluginViewProps {
+  plugin: Plugin;
+  onClose: () => void;
+}
 
-
-const chartConfig = {
-  solved: {
-    label: 'Problems Solved',
-    color: 'hsl(var(--accent))',
-  },
-};
-
-const ContributionGraph = ({ activity }: { activity: CodingActivity[] }) => {
-    const months = useMemo(() => {
-        const end = new Date();
-        const start = subMonths(end, 4);
-        const monthStarts = [];
-        let current = start;
-        while(current <= end) {
-            monthStarts.push(startOfMonth(current));
-            current = startOfMonth(addMonths(current, 1));
-        }
-        return monthStarts;
-    }, []);
-
-    const activityByDate = useMemo(() => {
-        return new Map(activity.map(a => [format(a.date, 'yyyy-MM-dd'), a.count]));
-    }, [activity]);
-
-    const getIntensityClass = (count: number) => {
-        if (count === 0) return 'bg-muted/50';
-        if (count <= 1) return 'bg-green-500/30';
-        if (count <= 3) return 'bg-green-500/60';
-        return 'bg-green-500/90';
-    };
-
-    return (
-        <div className="flex justify-start gap-3 overflow-x-auto p-1">
-            {months.map(monthStart => {
-                 const monthEnd = endOfMonth(monthStart);
-                 const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-                 const firstDayOfWeek = getDay(monthStart); // 0 (Sun) to 6 (Sat)
-                 
-                 return (
-                    <div key={format(monthStart, 'yyyy-MM')} className="flex flex-col">
-                        <div className="text-sm font-medium text-center mb-2">{format(monthStart, 'MMM')}</div>
-                         <div className="grid grid-cols-7 grid-rows-6 gap-1.5">
-                            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                                <div key={`empty-${i}`} className="w-4 h-4" />
-                            ))}
-                            {daysInMonth.map(day => {
-                                const dayKey = format(day, 'yyyy-MM-dd');
-                                const count = activityByDate.get(dayKey) || 0;
-                                const isToday = isSameDay(day, new Date());
-                                return (
-                                    <div
-                                        key={dayKey}
-                                        className={`w-4 h-4 rounded-sm ${getIntensityClass(count)} ${isToday ? 'ring-2 ring-accent' : ''}`}
-                                        title={`${dayKey}: ${count} contributions`}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-                 )
-            })}
+const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-background z-50 flex flex-col animate-in fade-in duration-300">
+      <header className="p-4 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <Image src={plugin.logo} alt={`${plugin.name} logo`} width={32} height={32} />
+          <h2 className="text-xl font-semibold">{plugin.name}</h2>
         </div>
-    );
+        <Button variant="outline" onClick={onClose}>
+          Close Extension
+        </Button>
+      </header>
+      <main className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
+          <p className="text-muted-foreground mt-2">This area would contain the full-screen UI for the extension.</p>
+        </div>
+      </main>
+    </div>
+  );
 };
+
 
 export default function ExtensionPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(['VS Code']));
+  const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
+
+  const filteredPlugins = allPlugins.filter((plugin) =>
+    plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const handleInstall = (pluginName: string) => {
+    setInstalledPlugins((prev) => new Set(prev).add(pluginName));
+  };
+  
+  const handleOpen = (plugin: Plugin) => {
+    setActivePlugin(plugin);
+  };
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
-          <Code className="mr-3 h-8 w-8 text-accent" />
-          Extension
-        </h1>
-        <p className="text-foreground/80 mt-1">
-          Track your coding progress across different platforms.
+    <div className="space-y-12">
+      <div className="text-center max-w-2xl mx-auto">
+        <h1 className="text-5xl font-bold font-headline text-primary">Plugins</h1>
+        <p className="mt-4 text-lg text-foreground/80">
+          Open source plugins for automatic programming metrics.
+          Already have the plugin? View your <a href="#" className="text-accent hover:underline">plugins status</a> or <a href="#" className="text-accent hover:underline">get help</a>.
         </p>
       </div>
 
-      <Card className="frosted-glass shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="font-headline text-xl text-primary flex items-center">
-              <LineChartIcon className="mr-2 h-5 w-5" />
-              Solved Problems
-            </CardTitle>
-            <CardDescription>Past 6 Months</CardDescription>
-          </div>
-           <div className="text-right">
-                <p className="text-2xl font-bold text-accent">500</p>
-                <p className="text-xs text-muted-foreground">Total Solved</p>
-           </div>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-60 w-full">
-            <LineChart accessibilityLayer data={MOCK_SOLVED_PROBLEMS_DATA}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.2} />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-              <YAxis tickLine={false} axisLine={false} />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="line" />}
-              />
-              <Line dataKey="solved" type="monotone" stroke="var(--color-solved)" strokeWidth={3} dot={false} />
-            </LineChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="frosted-glass shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between">
-           <div>
-            <CardTitle className="font-headline text-xl text-primary flex items-center">
-              <Activity className="mr-2 h-5 w-5" />
-              Contribution Graph
-            </CardTitle>
-            <CardDescription>Past 4 Months</CardDescription>
-          </div>
-          <div className="text-right">
-                <p className="text-2xl font-bold text-accent">15</p>
-                <p className="text-xs text-muted-foreground">Day Streak</p>
-           </div>
-        </CardHeader>
-        <CardContent>
-          <ContributionGraph activity={MOCK_CODING_ACTIVITY} />
-        </CardContent>
-      </Card>
+      <div className="max-w-lg mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            className="pl-10 h-12 text-lg"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
       
-       <Card className="frosted-glass shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">Platforms</CardTitle>
-          <CardDescription>Your stats from connected coding platforms.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {MOCK_PLATFORM_STATS.map(platform => (
-            <div key={platform.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
-              <div>
-                <p className="font-semibold">{platform.name}</p>
-                <p className="text-sm text-muted-foreground">{platform.username}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg text-primary">{platform.problemsSolved}</p>
-                <p className="text-xs text-muted-foreground">Problems</p>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+        {filteredPlugins.map((plugin) => {
+            const isInstalled = installedPlugins.has(plugin.name);
+            return (
+                 <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
+                    <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40">
+                         <Image
+                            src={plugin.logo}
+                            alt={`${plugin.name} logo`}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-contain"
+                          />
+                    </div>
+                    <div className="text-center">
+                        <p className="font-medium text-sm text-foreground">{plugin.name}</p>
+                        {isInstalled ? (
+                             <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
+                                <ExternalLink className="h-3 w-3 mr-1.5"/> Open
+                            </Button>
+                        ) : (
+                             <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
+                                <Download className="h-3 w-3 mr-1.5"/> Install
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )
+        })}
+      </div>
+      
+      {activePlugin && (
+        <FullScreenPluginView 
+          plugin={activePlugin} 
+          onClose={() => setActivePlugin(null)} 
+        />
+      )}
     </div>
   );
 }
