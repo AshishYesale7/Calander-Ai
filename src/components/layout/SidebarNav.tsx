@@ -24,6 +24,7 @@ import {
   ClipboardCheck,
   Clock,
   LayoutGrid,
+  Code,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -51,8 +52,9 @@ const navItems = [
   { href: '/career-vision', label: 'Career Vision', icon: Eye },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
-  { href: '/workflows', label: 'Workflows', icon: LayoutGrid },
+  { href: '/automations', label: 'Automations', icon: LayoutGrid },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
+  { href: '/codefolio', label: 'Codefolio', icon: Code },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 

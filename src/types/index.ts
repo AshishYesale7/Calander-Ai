@@ -212,3 +212,17 @@ export interface Shortcut {
     actionType: 'url' | 'in-app-route';
     actionValue: string;
 }
+
+// New types for Codefolio feature
+export interface CodingActivity {
+    date: Date;
+    count: number;
+}
+
+export interface PlatformStats {
+    id: string;
+    name: 'LeetCode' | 'Codeforces' | 'HackerRank' | 'Other';
+    username: string;
+    problemsSolved: number;
+    contests: number;
+}

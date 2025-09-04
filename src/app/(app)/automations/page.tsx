@@ -102,7 +102,7 @@ const ShortcutCard = ({ shortcut, onEdit, onDelete }: { shortcut: Shortcut; onEd
 };
 
 
-export default function WorkflowsPage() {
+export default function AutomationsPage() {
     const [shortcuts, setShortcuts] = useState<Shortcut[]>(mockWorkflows);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
@@ -135,7 +135,7 @@ export default function WorkflowsPage() {
             <div>
                 <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
                     <LayoutGrid className="mr-3 h-8 w-8 text-accent" />
-                    Workflows
+                    Automations
                 </h1>
                 <p className="text-foreground/80 mt-1">
                     Create your own shortcuts to automate tasks and open frequently used links.
