@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download, ExternalLink, Code, Settings } from 'lucide-react';
+import { Search, Download, ExternalLink, Code, Settings, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
 import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
@@ -157,7 +157,7 @@ export default function ExtensionPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(['VS Code', 'Codefolio Ally', 'Discord']));
+  const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set(['VS Code', 'Codefolio Ally', 'Discord']));
   const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
 
   // New state for Codefolio Ally
@@ -184,7 +184,7 @@ export default function ExtensionPage() {
   }, [user]);
 
   const handleInstall = (pluginName: string) => {
-    setInstalledPlugins((prev) => new Set(prev).add(pluginName));
+    setInstalledPluginsSet((prev) => new Set(prev).add(pluginName));
   };
 
   const handleOpen = (plugin: Plugin) => {
@@ -242,9 +242,60 @@ export default function ExtensionPage() {
     setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
   };
 
-  const filteredPlugins = allPlugins.filter((plugin) =>
-    plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { installedList, marketplaceList } = useMemo(() => {
+    const installed = allPlugins.filter(plugin => 
+        installedPluginsSet.has(plugin.name) && 
+        plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const marketplace = allPlugins.filter(plugin => 
+        !installedPluginsSet.has(plugin.name) &&
+        plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return { installedList: installed, marketplaceList: marketplace };
+  }, [searchTerm, installedPluginsSet]);
+
+
+  const PluginCardItem = ({ plugin }: { plugin: Plugin }) => {
+    const isInstalled = installedPluginsSet.has(plugin.name);
+    const isCodefolio = plugin.name === 'Codefolio Ally';
+
+    return (
+        <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
+            <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
+                {plugin.logo.startsWith('/') ? (
+                    <Code className="h-12 w-12 text-accent" />
+                ) : (
+                    <Image
+                        src={plugin.logo}
+                        alt={`${plugin.name} logo`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-contain"
+                    />
+                )}
+            </div>
+            <div className="text-center">
+                <p className="font-medium text-sm text-foreground">{plugin.name}</p>
+                <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
+
+                {isCheckingLogin && isCodefolio ? (
+                    <Button disabled variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs">
+                        <LoadingSpinner size="sm" />
+                    </Button>
+                ) : isInstalled ? (
+                    <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
+                        <ExternalLink className="h-3 w-3 mr-1.5"/> Open
+                    </Button>
+                ) : (
+                    <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
+                        <Download className="h-3 w-3 mr-1.5"/> Install
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+  };
+
 
   return (
     <div className="space-y-12">
@@ -260,7 +311,7 @@ export default function ExtensionPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder="Search all plugins..."
             className="pl-10 h-12 text-lg"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -268,50 +319,42 @@ export default function ExtensionPage() {
         </div>
       </div>
 
-      <Card className="frosted-glass p-4 md:p-8">
+       <Card className="frosted-glass p-4 md:p-8">
+        <CardHeader className="p-0 pb-6">
+            <CardTitle className="font-headline text-2xl text-primary flex items-center gap-2">
+                <CheckCircle className="h-6 w-6 text-green-400"/>
+                Installed Plugins
+            </CardTitle>
+            <CardDescription>Plugins that are currently active in your workspace.</CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
-            {filteredPlugins.map((plugin) => {
-                const isInstalled = installedPlugins.has(plugin.name);
-                const isCodefolio = plugin.name === 'Codefolio Ally';
+          {installedList.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+                {installedList.map((plugin) => <PluginCardItem key={plugin.name} plugin={plugin} />)}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-muted-foreground">
+                <p>No installed plugins match your search.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                return (
-                    <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
-                        <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
-                           {plugin.logo.startsWith('/') ? (
-                             <Code className="h-12 w-12 text-accent" />
-                            ) : (
-                                <Image
-                                    src={plugin.logo}
-                                    alt={`${plugin.name} logo`}
-                                    width={80}
-                                    height={80}
-                                    className="w-full h-full object-contain"
-                                />
-                            )}
-                        </div>
-                        <div className="text-center">
-                            <p className="font-medium text-sm text-foreground">{plugin.name}</p>
-                            <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
-
-                            {isCheckingLogin && isCodefolio ? (
-                                <Button disabled variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs">
-                                    <LoadingSpinner size="sm" />
-                                </Button>
-                            ) : isInstalled ? (
-                                <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
-                                    <ExternalLink className="h-3 w-3 mr-1.5"/> Open
-                                </Button>
-                            ) : (
-                                <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
-                                    <Download className="h-3 w-3 mr-1.5"/> Install
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                )
-            })}
-          </div>
+      <Card className="frosted-glass p-4 md:p-8">
+        <CardHeader className="p-0 pb-6">
+            <CardTitle className="font-headline text-2xl text-primary">Marketplace</CardTitle>
+            <CardDescription>Discover new plugins to enhance your productivity.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {marketplaceList.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+                {marketplaceList.map((plugin) => <PluginCardItem key={plugin.name} plugin={plugin} />)}
+            </div>
+          ) : (
+             <div className="text-center py-10 text-muted-foreground">
+                <p>No available plugins match your search.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
