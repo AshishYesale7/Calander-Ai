@@ -7,7 +7,6 @@ import { useAuth } from './AuthContext';
 import { getStreakData, updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { usePathname } from 'next/navigation';
-import { useStreakTracker } from '@/hooks/useStreakTracker';
 
 interface StreakContextType {
   streakData: StreakData | null;
@@ -59,8 +58,6 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
     initializeStreak();
   }, [user, pathname]);
   
-  // Initialize the tracker hook, which contains the setInterval logic
-  useStreakTracker();
 
   return (
     <StreakContext.Provider value={{ streakData, setStreakData, isLoading, setIsLoading }}>
