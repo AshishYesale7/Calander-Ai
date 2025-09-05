@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Bell, Trophy } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -18,12 +18,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useTheme } from '@/hooks/use-theme';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { SidebarTrigger } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
 import Image from 'next/image';
+import { allPlugins } from '@/data/plugins';
+import { getInstalledPlugins } from '@/services/userService';
+import { Code } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -37,7 +45,6 @@ const navItems = [
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
-// Custom SVG icon for Extensions, updated to look like a puzzle piece.
 const ExtensionIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}>
         <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
@@ -71,6 +78,17 @@ export default function Header({
   const { user, subscription } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (user) {
+        getInstalledPlugins(user.uid).then(names => setInstalledPluginNames(new Set(names)));
+    }
+  }, [user]);
+
+  const installedPlugins = useMemo(() => {
+    return allPlugins.filter(p => installedPluginNames.has(p.name));
+  }, [installedPluginNames]);
 
   const daysLeftInTrial = useMemo(() => {
     if (subscription?.status !== 'trial' || !subscription.endDate) return null;
@@ -143,12 +161,41 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-              <Link href="/extension">
-                  <ExtensionIcon className="h-5 w-5" />
-                  <span className="sr-only">Extensions</span>
-              </Link>
-          </Button>
+          <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/extension">
+                        <ExtensionIcon className="h-5 w-5" />
+                        <span className="sr-only">Extensions</span>
+                    </Link>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 frosted-glass">
+                <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Installed Plugins</h4>
+                    <div className="space-y-2">
+                        {installedPlugins.length > 0 ? (
+                           installedPlugins.map(plugin => (
+                               <div key={plugin.name} className="flex items-center gap-2 text-sm">
+                                   {plugin.logo.startsWith('/') ? (
+                                        <Code className="h-5 w-5 text-accent" />
+                                    ) : (
+                                        <Image src={plugin.logo} alt={`${plugin.name} logo`} width={20} height={20} />
+                                    )}
+                                   <span>{plugin.name}</span>
+                               </div>
+                           ))
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No plugins installed.</p>
+                        )}
+                    </div>
+                     <Button variant="outline" className="w-full" asChild>
+                        <Link href="/extension">Manage Plugins</Link>
+                    </Button>
+                </div>
+              </PopoverContent>
+          </Popover>
+          
           <NotificationPanel />
           <DropdownMenu>
               <DropdownMenuTrigger asChild>
