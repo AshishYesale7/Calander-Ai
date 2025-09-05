@@ -73,7 +73,7 @@ const ContributionGraphCard = () => {
             }
         });
         
-        return { grid, monthLabels };
+        return { grid, monthLabels: labels };
     }, [days]);
     
     const { currentStreak, totalContributions } = useMemo(() => {
