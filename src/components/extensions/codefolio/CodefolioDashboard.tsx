@@ -9,7 +9,7 @@ import WeeklyTargetCard from "./WeeklyTargetCard";
 import WeeklyActivityChart from "./WeeklyActivityChart";
 import PlatformStatsCard from "./PlatformStatsCard";
 import UpcomingContests from "./UpcomingContests";
-import type { AllPlatformsUserData } from "@/ai/flows/fetch-coding-stats-flow";
+import type { AllPlatformsUserData, Contest } from "@/ai/flows/fetch-coding-stats-flow";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApiKey } from "@/hooks/use-api-key";
@@ -17,6 +17,9 @@ import { getCodingUsernames } from "@/services/userService";
 import { fetchCodingStats } from "@/ai/flows/fetch-coding-stats-flow";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
+import type { TimelineEvent } from "@/types";
+import { saveTimelineEvent } from "@/services/timelineService";
+import { useTimezone } from "@/hooks/use-timezone";
 
 export default function CodefolioDashboard() {
   const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
@@ -24,6 +27,7 @@ export default function CodefolioDashboard() {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
+  const { timezone } = useTimezone();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +61,53 @@ export default function CodefolioDashboard() {
 
   const longestStreak = Math.max(0, ...Object.values(userData || {}).map(p => (p && !p.error ? p.streak : 0) || 0));
 
+  const handleAddContestToTimeline = async (contest: Contest) => {
+    if (!user) {
+        toast({ title: "Not Signed In", description: "You must be signed in to add events.", variant: "destructive"});
+        return;
+    }
+
+    const startTime = new Date(contest.startTimeSeconds * 1000);
+    const endTime = new Date((contest.startTimeSeconds + contest.durationSeconds) * 1000);
+
+    const newEvent: Omit<TimelineEvent, 'icon' | 'date' | 'endDate' | 'deletedAt'> & { date: string; endDate?: string | null; deletedAt?: string | null } = {
+        id: `contest-${contest.id}`,
+        title: `Codeforces: ${contest.name}`,
+        date: startTime.toISOString(),
+        endDate: endTime.toISOString(),
+        type: 'exam',
+        notes: `Upcoming Codeforces contest. Duration: ${Math.round(contest.durationSeconds / 60)} minutes.`,
+        url: `https://codeforces.com/contests/${contest.id}`,
+        isAllDay: false,
+        isDeletable: true,
+        priority: 'Medium',
+        status: 'pending',
+        reminder: {
+          enabled: true,
+          earlyReminder: '1_day',
+          repeat: 'none',
+        },
+        googleEventId: undefined, // Ensure it's not trying to update a non-existent google event
+    };
+
+    try {
+        await saveTimelineEvent(user.uid, newEvent, { syncToGoogle: true, timezone });
+        toast({
+            title: "Contest Added!",
+            description: `"${contest.name}" has been added to your timeline.`,
+        });
+        return true;
+    } catch (error: any) {
+        toast({
+            title: "Failed to Add Contest",
+            description: error.message || "An unknown error occurred.",
+            variant: 'destructive',
+        });
+        return false;
+    }
+  };
+
+
   if (isLoading) {
     return (
         <div className="flex items-center justify-center h-full p-8">
@@ -80,7 +131,7 @@ export default function CodefolioDashboard() {
                 {userData.codeforces && !userData.codeforces.error && (
                     <>
                         <ContestCalendar contests={userData.codeforces?.contests} />
-                        <UpcomingContests contests={userData.codeforces?.contests} />
+                        <UpcomingContests contests={userData.codeforces?.contests} onAddContest={handleAddContestToTimeline} />
                     </>
                 )}
             </div>

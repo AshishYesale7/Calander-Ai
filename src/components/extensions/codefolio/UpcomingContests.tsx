@@ -3,29 +3,28 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Check, ChefHat } from "lucide-react";
+import { ChevronRight, Check, ChefHat, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import type { Contest } from "@/ai/flows/fetch-coding-stats-flow";
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format } from 'date-fns';
 
 interface UpcomingContestsProps {
     contests?: Contest[];
+    onAddContest: (contest: Contest) => Promise<boolean>;
 }
 
-export default function UpcomingContests({ contests = [] }: UpcomingContestsProps) {
+export default function UpcomingContests({ contests = [], onAddContest }: UpcomingContestsProps) {
     const [added, setAdded] = useState<Set<number>>(new Set());
+    const [isLoading, setIsLoading] = useState<number | null>(null);
 
-    const handleAdd = (id: number) => {
-        setAdded(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
-            } else {
-                newSet.add(id);
-            }
-            return newSet;
-        });
+    const handleAdd = async (contest: Contest) => {
+        setIsLoading(contest.id);
+        const success = await onAddContest(contest);
+        if (success) {
+            setAdded(prev => new Set(prev).add(contest.id));
+        }
+        setIsLoading(null);
     };
 
     if (contests.length === 0) {
@@ -59,13 +58,21 @@ export default function UpcomingContests({ contests = [] }: UpcomingContestsProp
                                 <Badge variant="secondary" className="text-xs">
                                     {Math.round(contest.durationSeconds / 3600)} hrs
                                 </Badge>
-                                <Button size="sm" className="h-6 px-2 text-xs" variant={isAdded ? "default" : "outline"} onClick={() => handleAdd(contest.id)}>
-                                    {isAdded ? (
+                                <Button 
+                                    size="sm" 
+                                    className="h-6 px-2 text-xs" 
+                                    variant={isAdded ? "default" : "outline"} 
+                                    onClick={() => handleAdd(contest)}
+                                    disabled={isAdded || isLoading === contest.id}
+                                >
+                                    {isLoading === contest.id ? (
+                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : isAdded ? (
                                         <Check className="h-3 w-3 mr-1" />
                                     ) : (
                                         <ChefHat className="h-3 w-3 mr-1" />
                                     )}
-                                    {isAdded ? 'Added' : 'Add'}
+                                    {isLoading === contest.id ? 'Adding...' : isAdded ? 'Added' : 'Add'}
                                 </Button>
                             </div>
                         </div>
