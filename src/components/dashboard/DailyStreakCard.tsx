@@ -23,6 +23,47 @@ const DailyFlameIcon = ({ isComplete }: { isComplete: boolean }) => (
     </svg>
 );
 
+const CircularTimer = ({ progress, size }: { progress: number, size: number }) => {
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#4A4A4A" // Grey track
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#FFD46E" // Yellow progress
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+        {/* The traveling ball */}
+        <circle
+          cx={size / 2 + radius * Math.cos(2 * Math.PI * (progress / 100) - Math.PI / 2)}
+          cy={size / 2 + radius * Math.sin(2 * Math.PI * (progress / 100) - Math.PI / 2)}
+          r={strokeWidth} // Ball size same as stroke width
+          fill="#FFE9B7" // Lighter yellow for the ball
+        />
+      </g>
+    </svg>
+  );
+};
+
+
 const FlameIcon = ({ isComplete }: { isComplete: boolean }) => (
     <svg width="48" height="48" viewBox="0 0 512 512" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg">
         <path style={{fill: isComplete ? '#971D2E' : '#4A4A4A'}} d="M34.595,462.184c0,27.51,22.307,49.816,49.816,49.816h343.178v-33.211L34.595,462.184z"></path>
@@ -85,7 +126,6 @@ export default function DailyStreakCard() {
                 longestStreak: streakData.longestStreak,
                 rank: userRankData ? leaderboard.indexOf(userRankData) + 1 : undefined,
                 totalUsers: leaderboard.length,
-                apiKey
             });
             
             const updatedData = { ...streakData, insight: result.insight };
@@ -170,8 +210,11 @@ export default function DailyStreakCard() {
                           )}
                         </div>
                     </div>
-                    <div className="flex-shrink-0">
-                         <FlameIcon isComplete={streakData.todayStreakCompleted} />
+                    <div className="flex-shrink-0 relative">
+                         <CircularTimer progress={progressPercent} size={64}/>
+                         <div className="absolute inset-0 flex items-center justify-center">
+                            <FlameIcon isComplete={streakData.todayStreakCompleted} />
+                         </div>
                     </div>
                 </div>
 
@@ -187,20 +230,6 @@ export default function DailyStreakCard() {
                                 </div>
                             </div>
                         ))}
-                    </div>
-
-                    <div className="pt-2">
-                        <div className="relative h-2 w-full bg-gray-500/50 rounded-full">
-                            <div 
-                                className="absolute h-2 bg-white rounded-full transition-all duration-300"
-                                style={{ width: `${progressPercent}%` }}
-                            >
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-4 w-4 rounded-full bg-white shadow border-2 border-amber-600"></div>
-                            </div>
-                        </div>
-                        <p className="text-center text-xs text-white/70 mt-2">
-                            {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
-                        </p>
                     </div>
                 </div>
             </div>

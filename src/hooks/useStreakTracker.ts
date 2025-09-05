@@ -45,7 +45,7 @@ export const useStreakTracker = () => {
                     lastActivityDate: new Date(),
                     timeSpentToday: 0,
                     todayStreakCompleted: false,
-                    completedDays: [],
+                    completedDays: [], // Initialize with an empty array
                 };
                 await saveData(newStreakData);
                 setStreakData(newStreakData);
