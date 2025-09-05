@@ -120,7 +120,7 @@ const ContributionGraphCard = () => {
         if (level === 3) return 'bg-cyan-500/70';
         if (level === 2) return 'bg-cyan-500/50';
         if (level === 1) return 'bg-cyan-500/30';
-        return 'bg-muted/30 border border-black/10';
+        return 'bg-muted/30 border border-white/10';
     };
 
     return (
