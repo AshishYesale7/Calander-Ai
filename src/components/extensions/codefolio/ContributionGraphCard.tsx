@@ -84,7 +84,7 @@ const ContributionGraphCard = () => {
                     </div>
                     <div>
                         <CardTitle className="text-lg font-semibold">Contribution Graph</CardTitle>
-                        <CardDescription className="text-sm mt-1">past 4 months</CardDescription>
+                        <CardDescription className="text-sm mt-1">Sample visualization (last 4 months)</CardDescription>
                     </div>
                 </div>
                 <Badge variant="outline" className="bg-background/80">0 Days streak</Badge>
