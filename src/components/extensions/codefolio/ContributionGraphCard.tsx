@@ -19,7 +19,6 @@ const ContributionGraphCard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
-    // We want to show the last full year of activity up to today.
     const { startDate, endDate } = useMemo(() => {
         const today = endOfDay(new Date());
         const start = startOfWeek(subYears(today, 1), { weekStartsOn: 1 }); // Start on a Monday
@@ -45,54 +44,52 @@ const ContributionGraphCard = () => {
         return map;
     }, [activity]);
     
-    const { columns, monthLabels } = useMemo(() => {
+    const { weeks, monthLabels } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
-        const cols: Date[][] = [];
+        const weeks: Date[][] = [];
         
-        if (days.length > 0) {
-            let week: Date[] = [];
-            days.forEach(day => {
-                week.push(day);
-                if (getDay(day) === 0) { // Sunday, end of the week based on date-fns
-                    cols.push(week);
-                    week = [];
-                }
-            });
-            if (week.length > 0) {
-                cols.push(week);
-            }
+        // Group days into weeks, starting on Monday
+        for (let i = 0; i < days.length; i += 7) {
+            weeks.push(days.slice(i, i + 7));
         }
 
-        const labels: { key: string; name: string, colStart: number }[] = [];
+        const labels: { name: string; weekIndex: number }[] = [];
         let lastMonth = -1;
         
-        cols.forEach((week, colIndex) => {
-            const firstValidDay = week.find(d => d);
-            if (firstValidDay) {
-                const month = getMonth(firstValidDay);
-                if (month !== lastMonth) {
-                    const monthName = format(firstValidDay, 'MMM');
-                    if(!labels.some(l => l.name === monthName && l.colStart > colIndex - 4)) {
-                         labels.push({
-                            key: `${monthName}-${colIndex}`,
-                            name: monthName,
-                            colStart: colIndex + 1,
-                        });
-                        lastMonth = month;
-                    }
+        weeks.forEach((week, weekIndex) => {
+            const firstDayOfMonth = week.find(day => {
+                const month = getMonth(day);
+                if (month !== lastMonth && getDay(day) >= 1 && getDay(day) <= 3) {
+                     // Only add label if month changes near start of week
+                    lastMonth = month;
+                    return true;
+                }
+                 if(day.getDate() === 1) {
+                    lastMonth = getMonth(day);
+                    return true;
+                }
+                return false;
+            });
+
+            if (firstDayOfMonth) {
+                const monthName = format(firstDayOfMonth, 'MMM');
+                if(!labels.some(l => l.name === monthName && weekIndex < l.weekIndex + 4)) {
+                     labels.push({
+                        name: monthName,
+                        weekIndex: weekIndex,
+                    });
                 }
             }
         });
         
-        return { columns: cols, monthLabels: labels };
+        return { weeks, monthLabels };
     }, [startDate, endDate]);
     
     useEffect(() => {
         if (scrollContainerRef.current) {
-            // Scroll to the far right to show the most recent data first
             scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
         }
-    }, [isLoading, columns]); // Re-run when data loads and columns are calculated
+    }, [isLoading, weeks]);
 
 
     const { currentStreak, totalContributions } = useMemo(() => {
@@ -145,47 +142,48 @@ const ContributionGraphCard = () => {
                     <div className="h-36 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
-                    <div className="flex gap-x-3">
-                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around pt-8 shrink-0">
+                    <div className="flex gap-3">
+                        <div className="flex flex-col gap-y-2 text-xs text-muted-foreground pt-8 shrink-0">
                            <span>Mon</span>
-                           <span>Wed</span>
-                           <span>Fri</span>
+                           <span className="mt-[6px]">Wed</span>
+                           <span className="mt-[6px]">Fri</span>
                         </div>
-                        <div className="flex-1 overflow-hidden">
-                             <div 
-                                className="grid grid-flow-col gap-x-2.5 pl-px mb-1" 
-                                style={{ gridTemplateColumns: `repeat(${columns.length}, 12px)` }}
-                              >
-                                {monthLabels.map((month) => (
-                                    <div 
-                                        key={month.key}
-                                        className="text-xs text-muted-foreground text-left"
-                                        style={{ gridColumnStart: month.colStart }}
-                                    >
-                                        {month.name}
+                        <div className="w-full overflow-hidden">
+                             <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
+                                <div className="relative">
+                                     <div className="grid grid-flow-col auto-cols-[16px] gap-x-1 mb-1 h-6">
+                                        {monthLabels.map((month) => (
+                                            <div 
+                                                key={month.name + month.weekIndex}
+                                                className="text-xs text-muted-foreground text-left"
+                                                style={{ gridColumnStart: month.weekIndex + 1 }}
+                                            >
+                                                {month.name}
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                            <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
-                                <div className="grid grid-rows-7 grid-flow-col gap-1 w-max">
-                                {columns.map((week, weekIndex) => (
-                                    week.map((day, dayIndex) => {
-                                        if (!day) return <div key={`pad-${weekIndex}-${dayIndex}`} className="w-2.5 h-2.5" />;
-                                        const dateString = format(day, 'yyyy-MM-dd');
-                                        const level = contributions.get(dateString) || 0;
-                                        return (
-                                            <Tooltip key={dateString} delayDuration={100}>
-                                                <TooltipTrigger asChild>
-                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px]", getLevelColor(level))} />
-                                                </TooltipTrigger>
-                                                <TooltipContent className="p-2">
-                                                    <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        );
-                                    })
-                                ))}
+                                    <div className="grid grid-flow-col auto-cols-[12px] gap-1 w-max">
+                                    {weeks.map((week, weekIndex) => (
+                                        <div key={weekIndex} className="grid grid-rows-7 gap-1">
+                                            {week.map((day) => {
+                                                if (!day) return <div key={`pad-${weekIndex}`} className="w-3 h-3" />;
+                                                const dateString = format(day, 'yyyy-MM-dd');
+                                                const level = contributions.get(dateString) || 0;
+                                                return (
+                                                    <Tooltip key={dateString} delayDuration={100}>
+                                                        <TooltipTrigger asChild>
+                                                            <div className={cn("w-3 h-3 rounded-[2px]", getLevelColor(level))} />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="p-2">
+                                                            <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                            <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                );
+                                            })}
+                                        </div>
+                                    ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -198,5 +196,3 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
-
-    
