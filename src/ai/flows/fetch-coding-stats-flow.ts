@@ -71,11 +71,18 @@ export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<Al
   const { codeforces, leetcode, codechef } = input;
   const result: AllPlatformsUserData = {};
   
-  // TODO: Implement real API calls to fetch data from coding platforms.
-  // Example for Codeforces:
+  // DEVELOPER NOTE:
+  // To implement real-time data fetching, you will need to replace the placeholder
+  // data below with actual API calls to the respective platforms.
+  // This will likely involve using `fetch()` and handling API keys if required.
+
+  // --- Example for Codeforces ---
   if (codeforces) {
-    // result.codeforces = await fetchCodeforcesData(codeforces);
-    // For now, returning an error message as a placeholder.
+    // 1. Find the official Codeforces API documentation.
+    // 2. Make a `fetch` call to the appropriate endpoint, e.g., `https://codeforces.com/api/user.info?handles=${codeforces}`
+    // 3. Parse the JSON response.
+    // 4. Map the response data to the `CodeforcesDataSchema` structure.
+    // 5. Handle potential errors (e.g., user not found, API rate limits).
     result.codeforces = {
       username: codeforces,
       rating: 0,
@@ -86,9 +93,10 @@ export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<Al
     };
   }
 
-  // Example for LeetCode:
+  // --- Example for LeetCode ---
   if (leetcode) {
-    // result.leetcode = await fetchLeetCodeData(leetcode);
+    // LeetCode has a GraphQL API that you may need to call.
+    // Research how to query the LeetCode API for user stats.
     result.leetcode = {
       username: leetcode,
       totalSolved: 0,
@@ -100,9 +108,10 @@ export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<Al
     };
   }
 
-  // Example for CodeChef:
+  // --- Example for CodeChef ---
   if (codechef) {
-    // result.codechef = await fetchCodeChefData(codechef);
+    // CodeChef may require OAuth or an API key.
+    // Check their developer documentation for how to access user data.
     result.codechef = {
       username: codechef,
       rating: 0,
