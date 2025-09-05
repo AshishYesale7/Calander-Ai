@@ -62,6 +62,7 @@ export const getUserActivity = async (userId: string, startDate: Date, endDate: 
     return snapshot.docs.map(fromFirestore);
   } catch (error) {
     console.error("Failed to get user activity from Firestore:", error);
-    throw new Error("Could not retrieve user activity.");
+    // Return an empty array on error to prevent the client from crashing
+    return [];
   }
 };
