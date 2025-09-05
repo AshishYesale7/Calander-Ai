@@ -15,7 +15,7 @@ import { getCodingUsernames, saveCodingUsernames, getInstalledPlugins, saveInsta
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
-import { allPlugins } from '@/data/plugins';
+import { allPlugins, DEFAULT_PLUGINS } from '@/data/plugins';
 import { usePlugin } from '@/hooks/use-plugin';
 
 type Plugin = (typeof allPlugins)[0];
@@ -267,7 +267,7 @@ export default function ExtensionPage() {
       )}
 
       {/* The fullscreen view is also controlled by the context */}
-      {activePlugin && plugin.component && (
+      {activePlugin && activePlugin.component && (
         <FullScreenPluginView />
       )}
     </div>
