@@ -122,7 +122,8 @@ export default function ExtensionPage() {
                 // If usernames are present, we consider the user "logged in".
                 // The dashboard component will be responsible for fetching the actual stats.
                 setIsCodefolioLoggedIn(true);
-                setCodefolioUserData({} as AllPlatformsUserData); 
+                // Pass null initially, dashboard will fetch its own data
+                setCodefolioUserData(null); 
             } else {
                 setIsCodefolioLoggedIn(false);
             }
@@ -165,12 +166,12 @@ export default function ExtensionPage() {
 
       // Filter out any undefined usernames before saving
       const definedUsernames = Object.fromEntries(
-        Object.entries(usernamesToSave).filter(([, value]) => value !== undefined)
+        Object.entries(usernamesToSave).filter(([, value]) => value !== undefined && value !== null)
       );
 
       saveCodingUsernames(user.uid, definedUsernames).then(() => {
           setIsCodefolioLoggedIn(true);
-          setCodefolioUserData(data);
+          setCodefolioUserData(data); // Pass fetched data to the dashboard
           setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
           toast({ title: "Success", description: "Usernames saved and data fetched!" });
       }).catch(err => {
@@ -180,7 +181,11 @@ export default function ExtensionPage() {
   
   const handleCodefolioLogout = () => {
     if (!user) return;
-    saveCodingUsernames(user.uid, {}).then(() => {
+    saveCodingUsernames(user.uid, {
+        codeforces: undefined,
+        leetcode: undefined,
+        codechef: undefined,
+    }).then(() => {
       setIsCodefolioLoggedIn(false);
       setCodefolioUserData(null);
       setActivePlugin(null);

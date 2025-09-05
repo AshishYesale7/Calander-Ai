@@ -16,6 +16,7 @@ import { useApiKey } from "@/hooks/use-api-key";
 import { getCodingUsernames } from "@/services/userService";
 import { fetchCodingStats } from "@/ai/flows/fetch-coding-stats-flow";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useToast } from "@/hooks/use-toast";
 
 interface CodefolioDashboardProps {
   userData: AllPlatformsUserData | null;
@@ -26,6 +27,7 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
   const [isLoading, setIsLoading] = useState(!initialData);
   const { user } = useAuth();
   const { apiKey } = useApiKey();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,21 +35,27 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
       setIsLoading(true);
       try {
         const usernames = await getCodingUsernames(user.uid);
-        if (usernames && Object.keys(usernames).length > 0) {
+        if (usernames && Object.values(usernames).some(u => u)) {
           const stats = await fetchCodingStats({ ...usernames, apiKey });
           setUserData(stats);
+        } else {
+          // This case might happen if the component is loaded directly without login flow
+          toast({ title: "No usernames found", description: "Please set up your coding platform usernames.", variant: "destructive"});
         }
       } catch (error) {
         console.error("Failed to fetch coding stats", error);
+        toast({ title: "Error", description: "Could not fetch your latest coding stats.", variant: "destructive"});
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!userData) {
+    // If initialData is null, it means we need to fetch it.
+    // This happens when the user is already logged in and revisits the page.
+    if (initialData === null) {
       fetchData();
     }
-  }, [user, apiKey, userData]);
+  }, [user, apiKey, initialData, toast]);
   
   const totalSolved = Object.values(userData || {}).reduce((acc, platform) => {
     if (platform && platform.totalSolved) {
@@ -60,9 +68,11 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
 
   if (isLoading) {
     return (
-        <div className="flex items-center justify-center h-full">
-            <LoadingSpinner size="lg" />
-            <p className="ml-4">Fetching your latest coding stats...</p>
+        <div className="flex items-center justify-center h-full p-8">
+            <div className="text-center">
+                <LoadingSpinner size="lg" />
+                <p className="ml-4 mt-4 text-muted-foreground">Fetching your latest coding stats...</p>
+            </div>
         </div>
     )
   }

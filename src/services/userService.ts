@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
 
 type CodingUsernames = {
@@ -21,7 +21,14 @@ const getUserDocRef = (userId: string) => {
 export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     try {
-        await setDoc(userDocRef, { codingUsernames: usernames }, { merge: true });
+        const usernamesToSave: { [key: string]: string | undefined | null } = {};
+        for (const key in usernames) {
+            const typedKey = key as keyof CodingUsernames;
+            // Set to null to remove the field if the value is undefined.
+            usernamesToSave[typedKey] = usernames[typedKey] || null;
+        }
+
+        await setDoc(userDocRef, { codingUsernames: usernamesToSave }, { merge: true });
     } catch (error) {
         console.error("Failed to save coding usernames to Firestore:", error);
         throw new Error("Could not save coding usernames.");
