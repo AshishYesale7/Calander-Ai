@@ -10,8 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
 
 const ContributionGraphCard = () => {
     const { user } = useAuth();
@@ -21,7 +19,6 @@ const ContributionGraphCard = () => {
     
     const { startDate, endDate } = useMemo(() => {
         const today = endOfDay(new Date());
-        // Start on the Monday of the week that contains the date one year ago.
         const start = startOfWeek(subYears(today, 1), { weekStartsOn: 1 }); 
         return { startDate: start, endDate: today };
     }, []);
@@ -49,7 +46,6 @@ const ContributionGraphCard = () => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
         const weeks: Date[][] = [];
         
-        // Group days into weeks, starting on Monday
         for (let i = 0; i < days.length; i += 7) {
             weeks.push(days.slice(i, i + 7));
         }
@@ -63,7 +59,6 @@ const ContributionGraphCard = () => {
             const month = getMonth(firstDayOfWeek);
             
             if (month !== lastMonth) {
-                // Heuristic to place month label: if the week starts in the new month, or if the month changes mid-week
                 const monthChangesInWeek = week.some(day => getMonth(day) !== lastMonth && lastMonth !== -1);
                 if (weekIndex === 0 || getMonth(week[0]) !== lastMonth) {
                     lastMonth = month;
@@ -158,19 +153,18 @@ const ContributionGraphCard = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="grid grid-flow-col auto-cols-[16px] gap-1 w-max">
+                                    <div className="grid grid-flow-col auto-cols-[20px] gap-1 w-max">
                                     {weeks.map((week, weekIndex) => (
                                         <div key={weekIndex} className="contents">
                                             <div className="grid grid-rows-7 gap-1">
                                                 {week.map((day, dayIndex) => {
-                                                    if (!day) return <div key={`pad-${weekIndex}-${dayIndex}`} className="w-4 h-4" />;
+                                                    if (!day) return <div key={`pad-${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
                                                     const dateString = format(day, 'yyyy-MM-dd');
                                                     const level = contributions.get(dateString) || 0;
                                                     return (
                                                         <Tooltip key={dateString} delayDuration={100}>
                                                             <TooltipTrigger asChild>
-                                                                <div className={cn("w-4 h-4 rounded-[2px] flex items-center justify-center", getLevelColor(level))}>
-                                                                    <span className="text-[8px] text-white/50 font-bold">{format(day,'d')}</span>
+                                                                <div className={cn("w-5 h-5 rounded-[2px] flex items-center justify-center", getLevelColor(level))}>
                                                                 </div>
                                                             </TooltipTrigger>
                                                             <TooltipContent className="p-2">
@@ -199,5 +193,7 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
+
+    
 
     
