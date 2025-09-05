@@ -233,6 +233,7 @@ export interface StreakData {
     lastActivityDate: Date;
     timeSpentToday: number; // in seconds
     todayStreakCompleted: boolean;
+    insight?: string; // AI-generated insight for the day
 }
 
 export interface LeaderboardUser {

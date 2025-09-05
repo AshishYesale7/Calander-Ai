@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { format, startOfWeek, getDay, isSameDay, addDays } from 'date-fns';
 import { generateStreakInsight } from '@/ai/flows/generate-streak-insight-flow';
 import { useApiKey } from '@/hooks/use-api-key';
-import { getLeaderboardData } from '@/services/streakService';
+import { getLeaderboardData, updateStreakData } from '@/services/streakService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const DailyFlameIcon = ({ isComplete }: { isComplete: boolean }) => (
@@ -51,16 +51,12 @@ const FlameIcon = ({ isComplete }: { isComplete: boolean }) => (
 
 export default function DailyStreakCard() {
     const { user } = useAuth();
-    const { streakData, isLoading } = useStreak();
+    const { streakData, setStreakData, isLoading } = useStreak();
     const { apiKey } = useApiKey();
-    const [insight, setInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
 
-    const getInsightCacheKey = () => `streakInsight_${user?.uid}_${format(new Date(), 'yyyy-MM-dd')}`;
-
-    const fetchInsight = useCallback(async () => {
+    const fetchAndSetInsight = useCallback(async () => {
         if (!user || !streakData) return;
-
         setIsInsightLoading(true);
         try {
             const leaderboard = await getLeaderboardData();
@@ -73,50 +69,57 @@ export default function DailyStreakCard() {
                 totalUsers: leaderboard.length,
                 apiKey
             });
-            setInsight(result.insight);
-            // Cache the result for today
-            if (typeof window !== 'undefined') {
-                sessionStorage.setItem(getInsightCacheKey(), result.insight);
-            }
+            
+            // Update insight in both local state and Firestore
+            setStreakData(prev => prev ? { ...prev, insight: result.insight } : null);
+            await updateStreakData(user.uid, { insight: result.insight });
+
         } catch (error) {
             console.error("Failed to fetch streak insight:", error);
-            setInsight("Keep up the great work! Consistency is key."); // Fallback
         } finally {
             setIsInsightLoading(false);
         }
-    }, [user, streakData, apiKey]);
+    }, [user, streakData, apiKey, setStreakData]);
 
+    // Effect to fetch insight on initial load or if it's missing for the day
     useEffect(() => {
-        if (streakData && !isLoading) {
-            // Check session storage first
-            const cachedInsight = (typeof window !== 'undefined') ? sessionStorage.getItem(getInsightCacheKey()) : null;
-            if (cachedInsight) {
-                setInsight(cachedInsight);
-            } else {
-                fetchInsight();
-            }
+        if (streakData && !isLoading && !streakData.insight) {
+            fetchAndSetInsight();
         }
-    }, [streakData, isLoading, fetchInsight]);
+    }, [streakData, isLoading, fetchAndSetInsight]);
+    
+    // Effect to fetch a new insight once the streak is completed for the day
+    useEffect(() => {
+        if (streakData?.todayStreakCompleted) {
+             // Check if we already have an insight that reflects the *new* streak count
+            if (streakData.insight?.includes(`${streakData.currentStreak} day`)) {
+                // The current insight is already up-to-date
+                return;
+            }
+            fetchAndSetInsight();
+        }
+    }, [streakData?.todayStreakCompleted, streakData?.currentStreak, streakData?.insight, fetchAndSetInsight]);
 
 
-    // Memoize the calculation of the current week's days
     const weekDays = useMemo(() => {
         const now = new Date();
-        const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday as start of the week
+        const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
         return Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
     }, []);
 
     const weekDaysWithStatus = useMemo(() => {
         const now = new Date();
         return weekDays.map((day) => {
-            const isCompleted = streakData?.todayStreakCompleted && isSameDay(day, now);
+            const isToday = isSameDay(day, now);
+            const isCompleted = isToday ? streakData?.todayStreakCompleted ?? false : day < now;
             return {
                 dayChar: format(day, 'E').charAt(0),
-                isCompleted: isCompleted,
-                isToday: isSameDay(day, now)
+                isCompleted,
+                isToday,
             };
         });
     }, [weekDays, streakData]);
+
 
     const renderContent = () => {
         if (isLoading) {
@@ -133,7 +136,6 @@ export default function DailyStreakCard() {
 
         return (
             <div className="relative p-6 text-white w-full">
-                {/* Pointer at the top */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
                   border-l-[10px] border-l-transparent
                   border-b-[10px] border-b-amber-600
@@ -146,10 +148,10 @@ export default function DailyStreakCard() {
                             {streakData.currentStreak} day streak
                         </h3>
                         <div className="text-white/80 text-sm mt-1 h-5">
-                          {isInsightLoading ? (
+                          {isInsightLoading && !streakData.insight ? (
                               <LoadingSpinner size="sm" className="text-white/80"/>
                           ) : (
-                              <p className="animate-in fade-in duration-500">{insight}</p>
+                              <p className="animate-in fade-in duration-500">{streakData.insight}</p>
                           )}
                         </div>
                     </div>

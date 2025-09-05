@@ -24,6 +24,16 @@ const GenerateStreakInsightOutputSchema = z.object({
 });
 export type GenerateStreakInsightOutput = z.infer<typeof GenerateStreakInsightOutputSchema>;
 
+// Mock insights to use as a fallback if the AI service fails or is rate-limited.
+const mockInsights = [
+    "Keep up the great work! Consistency is key.",
+    "Another day, another step towards your goals.",
+    "You're building a powerful habit. Keep it going!",
+    "Every day you practice, you get stronger.",
+    "Small steps lead to big results. You're proving it!",
+    "Consistency is what transforms average into excellence.",
+    "Don't stop now, you've got momentum on your side!",
+];
 
 export async function generateStreakInsight(input: GenerateStreakInsightInput): Promise<GenerateStreakInsightOutput> {
 
@@ -62,18 +72,24 @@ export async function generateStreakInsight(input: GenerateStreakInsightInput): 
 
 Now, generate the insight for the provided user data.`;
 
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: GenerateStreakInsightOutputSchema,
-    },
-  });
+  try {
+    const { output } = await generateWithApiKey(input.apiKey, {
+        model: 'googleai/gemini-2.0-flash',
+        prompt: promptText,
+        output: {
+            schema: GenerateStreakInsightOutputSchema,
+        },
+    });
 
-  if (!output || !output.insight) {
-    // Fallback in case of AI error
-    return { insight: "Keep up the great work! Consistency is key." };
+    if (!output || !output.insight) {
+      throw new Error("AI did not return a valid insight.");
+    }
+    
+    return output;
+  } catch (error) {
+    console.warn("AI insight generation failed, using fallback. Error:", error);
+    // Return a random mock insight on any error
+    const randomIndex = Math.floor(Math.random() * mockInsights.length);
+    return { insight: mockInsights[randomIndex] };
   }
-  
-  return output;
 }
