@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
@@ -56,35 +56,47 @@ export default function DailyStreakCard() {
     const [insight, setInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchInsight = async () => {
-            if (!user || !streakData) return;
+    const getInsightCacheKey = () => `streakInsight_${user?.uid}_${format(new Date(), 'yyyy-MM-dd')}`;
 
-            setIsInsightLoading(true);
-            try {
-                const leaderboard = await getLeaderboardData();
-                const userRankData = leaderboard.find(u => u.id === user.uid);
-                
-                const result = await generateStreakInsight({
-                    currentStreak: streakData.currentStreak,
-                    longestStreak: streakData.longestStreak,
-                    rank: userRankData ? leaderboard.indexOf(userRankData) + 1 : undefined,
-                    totalUsers: leaderboard.length,
-                    apiKey
-                });
-                setInsight(result.insight);
-            } catch (error) {
-                console.error("Failed to fetch streak insight:", error);
-                setInsight("Keep up the great work! Consistency is key."); // Fallback
-            } finally {
-                setIsInsightLoading(false);
+    const fetchInsight = useCallback(async () => {
+        if (!user || !streakData) return;
+
+        setIsInsightLoading(true);
+        try {
+            const leaderboard = await getLeaderboardData();
+            const userRankData = leaderboard.find(u => u.id === user.uid);
+            
+            const result = await generateStreakInsight({
+                currentStreak: streakData.currentStreak,
+                longestStreak: streakData.longestStreak,
+                rank: userRankData ? leaderboard.indexOf(userRankData) + 1 : undefined,
+                totalUsers: leaderboard.length,
+                apiKey
+            });
+            setInsight(result.insight);
+            // Cache the result for today
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem(getInsightCacheKey(), result.insight);
             }
-        };
-
-        if (streakData && !isLoading) {
-            fetchInsight();
+        } catch (error) {
+            console.error("Failed to fetch streak insight:", error);
+            setInsight("Keep up the great work! Consistency is key."); // Fallback
+        } finally {
+            setIsInsightLoading(false);
         }
-    }, [user, streakData, apiKey, isLoading]);
+    }, [user, streakData, apiKey]);
+
+    useEffect(() => {
+        if (streakData && !isLoading) {
+            // Check session storage first
+            const cachedInsight = (typeof window !== 'undefined') ? sessionStorage.getItem(getInsightCacheKey()) : null;
+            if (cachedInsight) {
+                setInsight(cachedInsight);
+            } else {
+                fetchInsight();
+            }
+        }
+    }, [streakData, isLoading, fetchInsight]);
 
 
     // Memoize the calculation of the current week's days
@@ -97,16 +109,14 @@ export default function DailyStreakCard() {
     const weekDaysWithStatus = useMemo(() => {
         const now = new Date();
         return weekDays.map((day) => {
-            // A simple mock: for this design, we mark the current day as "completed"
-            // and past days as not completed to show progress through the week.
-            const isCompleted = isSameDay(day, now);
+            const isCompleted = streakData?.todayStreakCompleted && isSameDay(day, now);
             return {
                 dayChar: format(day, 'E').charAt(0),
                 isCompleted: isCompleted,
                 isToday: isSameDay(day, now)
             };
         });
-    }, [weekDays]);
+    }, [weekDays, streakData]);
 
     const renderContent = () => {
         if (isLoading) {
