@@ -57,7 +57,7 @@ export default function DailyStreakCard() {
     const fetchAndSetInsight = useCallback(async () => {
         if (!user || !streakData) return;
 
-        const todayStr = format(new Date(), 'dd-MM-yyyy');
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
         const lastInsightDate = streakData.insight?.date;
         const insightText = streakData.insight?.text;
         
@@ -148,56 +148,54 @@ export default function DailyStreakCard() {
         }
 
         return (
-             <div className="relative p-6 text-white w-full">
-                <div className="relative z-10">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
-                      border-l-[10px] border-l-transparent
-                      border-b-[10px] border-b-amber-600
-                      border-r-[10px] border-r-transparent"
-                    />
-                    
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                            <h3 className="text-2xl font-bold">
-                                {streakData.currentStreak} day streak
-                            </h3>
-                            <div className="text-white/80 text-sm mt-1 h-5">
-                              {isInsightLoading && !streakData.insight?.text ? (
-                                  <LoadingSpinner size="sm" className="text-white/80"/>
-                              ) : (
-                                  <p className="animate-in fade-in duration-500">{streakData.insight?.text}</p>
-                              )}
-                            </div>
+             <div className="relative z-10 p-6 text-white w-full">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
+                  border-l-[10px] border-l-transparent
+                  border-b-[10px] border-b-amber-600
+                  border-r-[10px] border-r-transparent"
+                />
+                
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                        <h3 className="text-2xl font-bold">
+                            {streakData.currentStreak} day streak
+                        </h3>
+                        <div className="text-white/80 text-sm mt-1 h-5">
+                          {isInsightLoading && !streakData.insight?.text ? (
+                              <LoadingSpinner size="sm" className="text-white/80"/>
+                          ) : (
+                              <p className="animate-in fade-in duration-500">{streakData.insight?.text}</p>
+                          )}
                         </div>
                     </div>
+                </div>
 
-                    <div className="mt-6 p-4 bg-black/25 rounded-xl space-y-4">
-                        <div className="flex justify-around">
-                            {weekDaysWithStatus.map(({ dayChar, isCompleted }, index) => (
-                                <div key={index} className="flex flex-col items-center gap-2">
-                                    <span className="text-sm font-semibold text-white/70">{dayChar}</span>
-                                    <div className={cn(
-                                        "h-7 w-7 rounded-full flex items-center justify-center transition-all",
-                                    )}>
-                                        <DailyFlameIcon isComplete={isCompleted} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-2">
-                            <div className="relative h-2 w-full bg-gray-600/50 rounded-full">
-                                <div
-                                    className="absolute top-0 left-0 h-full bg-amber-400 rounded-full transition-all duration-300"
-                                    style={{ width: `${progressPercent}%` }}
-                                >
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-amber-400"></div>
+                <div className="mt-6 p-4 bg-black/25 rounded-xl space-y-4">
+                    <div className="flex justify-around">
+                        {weekDaysWithStatus.map(({ dayChar, isCompleted }, index) => (
+                            <div key={index} className="flex flex-col items-center gap-2">
+                                <span className="text-sm font-semibold text-white/70">{dayChar}</span>
+                                <div className={cn(
+                                    "h-7 w-7 rounded-full flex items-center justify-center transition-all",
+                                )}>
+                                    <DailyFlameIcon isComplete={isCompleted} />
                                 </div>
                             </div>
-                            <p className="text-xs text-center text-amber-200 mt-2 font-mono">
-                                {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
-                            </p>
+                        ))}
+                    </div>
+
+                    <div className="pt-2">
+                        <div className="relative h-2 w-full bg-gray-600/50 rounded-full">
+                            <div
+                                className="absolute top-0 left-0 h-full bg-amber-400 rounded-full transition-all duration-300"
+                                style={{ width: `${progressPercent}%` }}
+                            >
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-amber-400"></div>
+                            </div>
                         </div>
+                        <p className="text-xs text-center text-amber-200 mt-2 font-mono">
+                            {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
+                        </p>
                     </div>
                 </div>
             </div>

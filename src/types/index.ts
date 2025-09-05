@@ -233,7 +233,11 @@ export interface StreakData {
     lastActivityDate: Date;
     timeSpentToday: number; // in seconds
     todayStreakCompleted: boolean;
-    insight?: string; // AI-generated insight for the day
+    insight?: {
+        text: string;
+        date: string; // YYYY-MM-DD format
+        lastUpdatedStreak: number;
+    };
     completedDays: string[]; // Array of 'YYYY-MM-DD' strings
 }
 

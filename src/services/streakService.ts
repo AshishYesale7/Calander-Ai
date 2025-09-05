@@ -37,6 +37,16 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
   if (data.lastActivityDate) {
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
+  
+  // Handle the structured insight object
+  if (data.insight) {
+    dataToSave.insight = {
+        text: data.insight.text,
+        date: data.insight.date,
+        lastUpdatedStreak: data.insight.lastUpdatedStreak
+    };
+  }
+
   // Ensure completedDays is saved if it exists
   if (data.completedDays) {
       dataToSave.completedDays = data.completedDays;
