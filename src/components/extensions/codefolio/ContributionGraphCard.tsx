@@ -5,11 +5,12 @@ import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, subMonths, getDay, isSameDay, startOfDay, endOfMonth } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, subMonths, getDay, isSameDay, startOfDay, endOfMonth, subYears } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 const ContributionGraphCard = () => {
@@ -19,7 +20,8 @@ const ContributionGraphCard = () => {
     
     const { startDate, endDate } = useMemo(() => {
         const today = startOfDay(new Date());
-        const start = startOfWeek(startOfDay(subMonths(today, 3)), { weekStartsOn: 1 }); // Start on Monday
+        // Updated to fetch data for the last 12 months
+        const start = startOfWeek(startOfDay(subYears(today, 1)), { weekStartsOn: 1 }); 
         const end = endOfMonth(today);
         return { startDate: start, endDate: end };
     }, []);
@@ -45,7 +47,7 @@ const ContributionGraphCard = () => {
     
     const { daysInGrid, monthLabels } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
-        const padding = (getDay(startDate) + 6) % 7; // Monday is 0
+        const padding = (getDay(startDate) + 6) % 7;
         
         const gridDays = [...Array(padding).fill(null), ...days];
 
@@ -57,7 +59,7 @@ const ContributionGraphCard = () => {
                 const month = day.getMonth();
                 if (month !== lastMonth) {
                     const colIndex = Math.floor(index / 7);
-                    if (colIndex > 0) { // Only add label if it's not the very first column
+                    if (colIndex >= 0) { 
                         labels.push({
                             name: format(day, 'MMM'),
                             colStart: colIndex + 1,
@@ -111,54 +113,56 @@ const ContributionGraphCard = () => {
                     </div>
                     <div>
                         <CardTitle className="text-lg font-semibold">Contribution Graph</CardTitle>
-                        <CardDescription className="text-sm mt-1">{totalContributions} contributions in the last 4 months</CardDescription>
+                        <CardDescription className="text-sm mt-1">{totalContributions} contributions in the last year</CardDescription>
                     </div>
                 </div>
                 <Badge variant="outline" className="bg-background/80">{currentStreak} Day{currentStreak === 1 ? '' : 's'} streak</Badge>
             </CardHeader>
             <CardContent className="p-0 mt-4">
                 {isLoading ? (
-                    <div className="h-32 flex items-center justify-center"><LoadingSpinner /></div>
+                    <div className="h-36 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
-                    <div className="grid grid-cols-[auto,1fr] gap-x-3">
+                    <div className="flex gap-x-3">
                         <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around mt-[25px]">
                            <span>Mon</span>
                            <span>Wed</span>
                            <span>Fri</span>
                         </div>
-                        <div className="flex-1 overflow-hidden">
-                            <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1">
-                                {monthLabels.map((month) => (
-                                   <div 
-                                       key={month.name} 
-                                       className="text-xs text-muted-foreground"
-                                       style={{ gridColumnStart: month.colStart }}
-                                    >
-                                       {month.name}
-                                   </div>
-                               ))}
-                            </div>
-                            <div className="grid grid-flow-col grid-rows-7 gap-1 w-full">
-                               {daysInGrid.map((day, i) => {
-                                    if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
+                        <ScrollArea className="flex-1 -ml-1">
+                            <div className="relative" style={{ height: '144px' }}>
+                                <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1 absolute top-0 left-0">
+                                    {monthLabels.map((month) => (
+                                       <div 
+                                           key={month.name} 
+                                           className="text-xs text-muted-foreground text-center"
+                                           style={{ gridColumnStart: month.colStart }}
+                                        >
+                                           {month.name}
+                                       </div>
+                                   ))}
+                                </div>
+                                <div className="grid grid-flow-col grid-rows-7 gap-1 w-full absolute bottom-0 left-0">
+                                   {daysInGrid.map((day, i) => {
+                                        if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
 
-                                    const dateString = format(day, 'yyyy-MM-dd');
-                                    const level = contributions.get(dateString) || 0;
-                                    return (
-                                       <Tooltip key={i} delayDuration={100}>
-                                           <TooltipTrigger asChild>
-                                               <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
-                                           </TooltipTrigger>
-                                           <TooltipContent className="p-2">
-                                               <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                               <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                           </TooltipContent>
-                                       </Tooltip>
-                                    )
-                               })}
+                                        const dateString = format(day, 'yyyy-MM-dd');
+                                        const level = contributions.get(dateString) || 0;
+                                        return (
+                                           <Tooltip key={i} delayDuration={100}>
+                                               <TooltipTrigger asChild>
+                                                   <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
+                                               </TooltipTrigger>
+                                               <TooltipContent className="p-2">
+                                                   <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                   <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                               </TooltipContent>
+                                           </Tooltip>
+                                        )
+                                   })}
+                               </div>
                            </div>
-                        </div>
+                        </ScrollArea>
                     </div>
                     </TooltipProvider>
                 )}
@@ -168,4 +172,3 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
-
