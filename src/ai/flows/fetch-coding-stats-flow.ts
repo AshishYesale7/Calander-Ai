@@ -98,16 +98,16 @@ Your task is to perform a simulated, intelligent web search for the provided use
 **Usernames to Fetch:**
 ${usernameEntries.map(([platform, username]) => `- ${platform}: ${username}`).join('\n')}
 
-**Instructions for each platform:**
+**CRITICAL INSTRUCTIONS:**
 1.  **Simulate a Search:** Imagine you are visiting the public profile page for each provided username (e.g., codeforces.com/profile/USERNAME, leetcode.com/USERNAME).
-2.  **Extract Key Information:** Pull the following details if they are publicly available. If a user is not found or their profile is private, you MUST set the "error" field for that platform with a descriptive message.
-    -   **Codeforces:** Get current rating, rank, total problems solved, and current daily streak. Also, fetch a list of the next 2-3 upcoming contests from the platform.
+2.  **Generate Realistic Data:** If you find a user, you **MUST** generate realistic, non-zero, plausible statistics for them. Do not return zero values for ratings, solved problems, etc., unless it's a brand new account.
+    -   **Codeforces:** Get current rating, rank, total problems solved, and current daily streak. Also, fetch a list of the next 2-3 upcoming contests.
     -   **LeetCode:** Get total solved count, the breakdown of easy/medium/hard problems, and the current daily streak.
     -   **CodeChef:** Get current rating, star rating (e.g., "4 Star"), and total problems solved.
     -   **Geeks for Geeks (GFG):** Get total problems solved and the current daily streak.
     -   **Codestudio (Coding Ninjas):** Get total problems solved.
-3.  **Handle Missing Users:** If a username does not exist on a platform, you MUST set the 'error' field for that specific platform's data object to a message like "User not found." Do not skip the platform in the output.
-4.  **Format Output:** Your entire output MUST be a single JSON object that strictly adheres to the 'AllPlatformsUserDataSchema'. Only include keys for the platforms that had usernames provided. If a username is provided but the user is not found, include the key for the platform with the 'error' field set.
+3.  **Handle Missing Users:** If and only if you are absolutely certain a user does not exist on a platform or their profile is private, you MUST set the "error" field for that platform with a descriptive message (e.g., "User not found or profile is private.").
+4.  **Format Output:** Your entire output MUST be a single JSON object that strictly adheres to the 'AllPlatformsUserDataSchema'. Only include keys for the platforms that had usernames provided.
 
 Now, generate the JSON object with the fetched statistics.
 `;
