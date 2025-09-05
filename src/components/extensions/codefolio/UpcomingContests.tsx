@@ -3,9 +3,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, ChefHat, Check } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { ChefHat } from 'lucide-react';
 
 const contests = [
     {
@@ -29,10 +30,18 @@ const contests = [
 ];
 
 export default function UpcomingContests() {
-    const [added, setAdded] = useState<Set<number>>(new Set());
+    const [added, setAdded] = useState<Set<number>>(new Set([1]));
 
     const handleAdd = (id: number) => {
-        setAdded(prev => new Set(prev.add(id)));
+        setAdded(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
     };
     
     return (
@@ -50,17 +59,16 @@ export default function UpcomingContests() {
                                 <Image src={contest.platformIcon} alt={contest.platform} width={16} height={16} className="rounded-full" />
                                 <h4 className="font-semibold truncate">{contest.title}</h4>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{contest.date}</p>
-                            <p className="text-xs text-muted-foreground">{contest.time}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{contest.date} - {contest.time}</p>
                             <div className="flex items-center justify-between mt-2">
                                 <Badge variant="secondary" className="text-xs">{contest.duration}</Badge>
-                                <Button size="sm" className="h-6 px-2 text-xs" variant={isAdded ? "secondary" : "default"} onClick={() => handleAdd(contest.id)}>
+                                <Button size="sm" className="h-6 px-2 text-xs" variant={isAdded ? "default" : "outline"} onClick={() => handleAdd(contest.id)}>
                                     {isAdded ? (
                                         <Check className="h-3 w-3 mr-1" />
                                     ) : (
                                         <ChefHat className="h-3 w-3 mr-1" />
                                     )}
-                                    {isAdded ? 'Added' : 'Add to Calendar'}
+                                    {isAdded ? 'Added' : 'Add'}
                                 </Button>
                             </div>
                         </div>

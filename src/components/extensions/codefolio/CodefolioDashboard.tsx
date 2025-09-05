@@ -20,15 +20,18 @@ export default function CodefolioDashboard() {
           <UpcomingContests />
         </div>
 
-        {/* Middle Column */}
-        <div className="lg:col-span-2 xl:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SolvedProblemsCard />
+        {/* Middle Columns */}
+        <div className="lg:col-span-2 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
+            <div className="md:col-span-2">
+                 <SolvedProblemsCard />
+            </div>
             <DailyStreakCard />
-          </div>
-          <WeeklyTargetCard />
-          <WeeklyActivityChart />
+            <WeeklyTargetCard />
+            <div className="md:col-span-2">
+                 <WeeklyActivityChart />
+            </div>
         </div>
+
 
         {/* Right Column */}
         <div className="lg:col-span-3 xl:col-span-1 space-y-6">
@@ -40,28 +43,29 @@ export default function CodefolioDashboard() {
               { name: "amansaxena", value: "1382", change: "-5", isPositive: false },
             ]}
             chartData={[
-              { name: "Contests", value: 150 },
-              { name: "Problems", value: 450 },
-              { name: "Rating", value: 1382, isRating: true },
+              { name: 'Category A', value: 300, fill: '#facc15' }, // yellow-400
+              { name: 'Category B', value: 200, fill: '#38bdf8' }, // sky-400
+              { name: 'Category C', value: 100, fill: '#ef4444' }, // red-500
             ]}
           />
           <PlatformStatsCard
             platform="LeetCode"
             iconUrl="https://leetcode.com/favicon.ico"
             users={[
-              { name: "amansaxena1", value: "670", change: "+48", isPositive: true },
+              { name: "amansaxenal", value: "670", change: "+48", isPositive: true },
+              { name: "amansaxena", value: "48" },
             ]}
-             chartData={[
-              { name: "Easy", value: 250 },
-              { name: "Medium", value: 320 },
-              { name: "Hard", value: 100 },
+            chartData={[
+              { name: 'Easy', value: 250, fill: '#22c55e' }, // green-500
+              { name: 'Medium', value: 320, fill: '#facc15' }, // yellow-400
+              { name: 'Hard', value: 100, fill: '#ef4444' }, // red-500
             ]}
           />
           <PlatformStatsCard
             platform="CodeStudio"
             iconUrl="https://www.codingninjas.com/codestudio/favicon.ico"
             users={[
-              { name: "codestudio", value: "153", isPositive: true },
+              { name: "codestudio", value: "153" },
             ]}
           />
         </div>

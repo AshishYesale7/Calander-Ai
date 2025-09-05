@@ -39,6 +39,7 @@ export default function WeeklyTargetCard() {
                                             stroke="hsl(var(--accent))"
                                             strokeWidth="3"
                                             strokeDasharray="100, 100"
+                                            strokeLinecap="round"
                                             className="animate-in fade-in duration-500"
                                         />
                                     )}

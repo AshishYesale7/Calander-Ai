@@ -12,7 +12,7 @@ export default function DailyStreakCard() {
 
     return (
         <Card className="frosted-glass bg-card/60">
-            <CardHeader>
+            <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-medium">Daily Streak</CardTitle>
                      <div className="h-8 w-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
