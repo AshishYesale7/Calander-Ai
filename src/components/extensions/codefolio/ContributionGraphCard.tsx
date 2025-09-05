@@ -5,33 +5,32 @@ import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, subMonths, getDay, isSameDay, startOfDay } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, subMonths, getDay, isSameDay, startOfDay, endOfMonth } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const ContributionGraphCard = () => {
     const { user } = useAuth();
     const [activity, setActivity] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const today = new Date();
-    // Go back 4 months from the end of the current month for a full view
-    const fourMonthsAgo = subMonths(today, 3);
-    const startDate = startOfWeek(startOfDay(fourMonthsAgo), { weekStartsOn: 1 }); // Start on Monday
+    const today = startOfDay(new Date());
+    
+    // Go back to the beginning of the month, 3 months ago.
+    const startDate = startOfWeek(startOfDay(subMonths(today, 3)), { weekStartsOn: 1 }); // Start on Monday
+    const endDate = endOfMonth(today);
 
     useEffect(() => {
         if (user) {
             setIsLoading(true);
-            getUserActivity(user.uid, startDate, today)
+            getUserActivity(user.uid, startDate, endDate)
                 .then(setActivity)
                 .catch(err => console.error("Failed to fetch user activity", err))
                 .finally(() => setIsLoading(false));
         }
-    }, [user, startDate]);
-
-    const days = useMemo(() => {
-        return eachDayOfInterval({ start: startDate, end: today });
-    }, [startDate, today]);
+    }, [user, startDate, endDate]);
 
     const contributions = useMemo(() => {
         const map = new Map<string, number>();
@@ -41,40 +40,31 @@ const ContributionGraphCard = () => {
         });
         return map;
     }, [activity]);
-
-    const { grid, monthLabels } = useMemo(() => {
-        const grid: (Date | null)[][] = Array.from({ length: 7 }, () => []);
-        let currentWeek: (Date | null)[] = Array(getDay(days[0]) === 0 ? 6 : getDay(days[0]) - 1).fill(null);
+    
+    const { daysInGrid, monthLabels } = useMemo(() => {
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        const firstDayOfWeek = getDay(startDate); // Monday is 1, Sunday is 0
+        const padding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Number of empty cells before start date
         
-        days.forEach(day => {
-            currentWeek.push(day);
-            if (currentWeek.length === 7) {
-                for(let i=0; i<7; i++) grid[i].push(currentWeek[i]);
-                currentWeek = [];
-            }
-        });
-        
-        while (currentWeek.length > 0 && currentWeek.length < 7) {
-            currentWeek.push(null);
-        }
-        if (currentWeek.length > 0) {
-            for(let i=0; i<7; i++) grid[i].push(currentWeek[i]);
-        }
+        const gridDays = [...Array(padding).fill(null), ...days];
 
         const labels: { name: string, colStart: number }[] = [];
         let lastMonth = -1;
-        let weekIndex = 0;
-        days.forEach(day => {
-            if (getDay(day) === 1) weekIndex++; // New week starts on Monday
-            const month = day.getMonth();
-            if (month !== lastMonth && getDay(day) < 7) { // Only add label at the start of a month
-                labels.push({ name: format(day, 'MMM'), colStart: weekIndex });
-                lastMonth = month;
+        
+        gridDays.forEach((day, index) => {
+            if (day) {
+                const month = day.getMonth();
+                if (month !== lastMonth) {
+                    labels.push({
+                        name: format(day, 'MMM'),
+                        colStart: Math.floor(index / 7) + 1,
+                    });
+                    lastMonth = month;
+                }
             }
         });
-        
-        return { grid, monthLabels: labels };
-    }, [days]);
+        return { daysInGrid: gridDays, monthLabels: labels };
+    }, [startDate, endDate]);
     
     const { currentStreak, totalContributions } = useMemo(() => {
         if (activity.length === 0) return { currentStreak: 0, totalContributions: 0 };
@@ -86,14 +76,15 @@ const ContributionGraphCard = () => {
     
         let streak = 0;
         let currentDate = startOfDay(new Date());
-    
-        if (contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
+        
+        // If there was no activity today, check starting from yesterday for the streak
+        if (!contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
+            currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
+        }
+
+        while (contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
             streak++;
             currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
-            while (contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
-                streak++;
-                currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
-            }
         }
     
         return { currentStreak: streak, totalContributions: total };
@@ -125,36 +116,47 @@ const ContributionGraphCard = () => {
                 {isLoading ? (
                     <div className="h-32 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
-                    <div className="flex flex-col overflow-hidden">
-                        <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] gap-x-px pl-[30px] mb-1">
+                    <TooltipProvider>
+                    <div className="flex flex-col">
+                        <div className="grid grid-flow-col justify-start gap-x-10 mb-1 ml-[30px]">
                            {monthLabels.map((month) => (
                                <div 
                                    key={month.name} 
-                                   className="text-xs text-muted-foreground col-span-4"
+                                   className="text-xs text-muted-foreground"
+                                   style={{ gridColumnStart: month.colStart }}
                                 >
                                    {month.name}
                                </div>
                            ))}
                         </div>
-                         <div className="flex gap-x-2">
-                             <div className="flex flex-col gap-px text-xs text-muted-foreground justify-around">
+                         <div className="flex gap-x-3">
+                             <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around mt-px">
                                 <span>Mon</span>
                                 <span>Wed</span>
                                 <span>Fri</span>
                              </div>
-                             <div className="grid grid-flow-col grid-rows-7 auto-cols-auto gap-px w-full">
-                                {days.map((day, i) => {
+                             <div className="grid grid-flow-col grid-rows-7 gap-1 w-full">
+                                {daysInGrid.map((day, i) => {
+                                     if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
+
                                      const dateString = format(day, 'yyyy-MM-dd');
                                      const level = contributions.get(dateString) || 0;
                                      return (
-                                         <div key={i}>
-                                            <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
-                                         </div>
+                                        <Tooltip key={i} delayDuration={100}>
+                                            <TooltipTrigger asChild>
+                                                <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="p-2">
+                                                <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                      )
                                 })}
                             </div>
                          </div>
                     </div>
+                    </TooltipProvider>
                 )}
             </CardContent>
         </Card>
