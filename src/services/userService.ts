@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
+import type { User } from 'firebase/auth';
 
 type CodingUsernames = {
     codeforces?: string;
@@ -17,6 +18,25 @@ const getUserDocRef = (userId: string) => {
     }
     return doc(db, 'users', userId);
 };
+
+export const createUserProfile = async (user: User): Promise<void> => {
+    const userDocRef = getUserDocRef(user.uid);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (!docSnap.exists()) {
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
+                photoURL: user.photoURL,
+                createdAt: new Date(),
+            });
+        }
+    } catch (error) {
+        console.error("Failed to create user profile in Firestore:", error);
+        // Don't re-throw, as this is a background task.
+    }
+}
 
 export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
@@ -164,13 +184,15 @@ export const updateUserProfile = async (userId: string, profileData: { statusEmo
     }
 };
 
-export const getUserProfile = async (userId: string): Promise<{ statusEmoji?: string, countryCode?: string } | null> => {
+export const getUserProfile = async (userId: string): Promise<{ displayName?: string, photoURL?: string, statusEmoji?: string, countryCode?: string } | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
             return {
+                displayName: data.displayName,
+                photoURL: data.photoURL,
                 statusEmoji: data.statusEmoji,
                 countryCode: data.countryCode,
             };

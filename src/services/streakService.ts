@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import type { StreakData, LeaderboardUser } from '@/types';
 import { collection, doc, getDoc, setDoc, Timestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getUserProfile } from './userService'; // Import the new service
 
 const getStreakDocRef = (userId: string) => {
   if (!db) {
@@ -66,7 +67,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
     }
 
     const streaksCollectionRef = collection(db, 'streaks');
-    const usersCollectionRef = collection(db, 'users');
     
     const q = query(streaksCollectionRef, orderBy('currentStreak', 'desc'), limit(50));
     
@@ -77,22 +77,28 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             const streakData = streakDoc.data();
             const userId = streakDoc.id;
             
-            const userDocRef = doc(usersCollectionRef, userId);
-            const userDoc = await getDoc(userDocRef);
+            // Use the new service to get user profile data
+            const userProfile = await getUserProfile(userId);
             
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
+            if (userProfile) {
                 return {
                     id: userId,
-                    displayName: userData.displayName || 'Anonymous User',
-                    photoURL: userData.photoURL,
+                    displayName: userProfile.displayName || 'Anonymous User',
+                    photoURL: userProfile.photoURL,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
-                    statusEmoji: userData.statusEmoji,
-                    countryCode: userData.countryCode,
+                    statusEmoji: userProfile.statusEmoji,
+                    countryCode: userProfile.countryCode,
                 };
             }
-            return null;
+            // Fallback in case a streak document exists but a user profile doesn't
+            return {
+                id: userId,
+                displayName: 'Anonymous User',
+                photoURL: undefined,
+                currentStreak: streakData.currentStreak || 0,
+                longestStreak: streakData.longestStreak || 0,
+            };
         });
         
         const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];

@@ -28,6 +28,7 @@ import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { createUserProfile } from '@/services/userService';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -77,7 +78,8 @@ export default function SignUpForm() {
     setLoading(true);
     try {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      await createUserProfile(userCredential.user);
       toast({ title: 'Success', description: 'Account created successfully. Welcome!' });
       router.push('/dashboard');
     } catch (error: any) {
@@ -114,6 +116,7 @@ export default function SignUpForm() {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      await createUserProfile(user);
 
       toast({ title: 'Account Created! Connecting Google...', description: 'Please authorize access in the popup window.' });
       const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
@@ -196,7 +199,8 @@ export default function SignUpForm() {
       if (!window.confirmationResult) {
           throw new Error("No confirmation result found. Please send OTP again.");
       }
-      await window.confirmationResult.confirm(otp);
+      const userCredential = await window.confirmationResult.confirm(otp);
+      await createUserProfile(userCredential.user);
       toast({ title: 'Success', description: 'Account created successfully. Welcome!' });
       router.push('/dashboard');
     } catch (error: any) {
