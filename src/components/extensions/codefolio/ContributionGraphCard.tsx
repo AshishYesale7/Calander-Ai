@@ -3,9 +3,9 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getISOWeek, getMonth } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getMonth } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -17,6 +17,7 @@ const ContributionGraphCard = () => {
     const { user } = useAuth();
     const [activity, setActivity] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     // We want to show the last full year of activity up to today.
     const { startDate, endDate } = useMemo(() => {
@@ -105,6 +106,14 @@ const ContributionGraphCard = () => {
         return { columns: cols, monthLabels: labels };
     }, [startDate, endDate]);
     
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            // Scroll to the far right to show the most recent data first
+            scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+        }
+    }, [isLoading, columns]); // Re-run when data loads and columns are calculated
+
+
     const { currentStreak, totalContributions } = useMemo(() => {
         if (activity.length === 0) return { currentStreak: 0, totalContributions: 0 };
     
@@ -156,13 +165,16 @@ const ContributionGraphCard = () => {
                 ) : (
                     <TooltipProvider>
                     <div className="flex gap-x-3">
-                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around pt-8">
+                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around pt-8 shrink-0">
                            <span>Mon</span>
                            <span>Wed</span>
                            <span>Fri</span>
                         </div>
                         <div className="flex-1 overflow-hidden">
-                             <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1" style={{ gridTemplateColumns: `repeat(${columns.length}, 12px)` }}>
+                             <div 
+                                className="grid grid-flow-col gap-x-2.5 pl-px mb-1" 
+                                style={{ gridTemplateColumns: `repeat(${columns.length}, 12px)` }}
+                              >
                                 {monthLabels.map((month) => (
                                     <div 
                                         key={month.key} 
@@ -173,7 +185,7 @@ const ContributionGraphCard = () => {
                                     </div>
                                 ))}
                             </div>
-                            <ScrollArea className="w-full" style={{ ['--scrollbar-size' as any]: '8px' }}>
+                            <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
                                 <div className="grid grid-rows-7 grid-flow-col gap-1 w-max">
                                 {columns.map((week, weekIndex) => (
                                     week.map((day, dayIndex) => {
@@ -183,7 +195,7 @@ const ContributionGraphCard = () => {
                                         return (
                                             <Tooltip key={dateString} delayDuration={100}>
                                                 <TooltipTrigger asChild>
-                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px]", getLevelColor(level))} />
+                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px] border border-black/10", getLevelColor(level))} />
                                                 </TooltipTrigger>
                                                 <TooltipContent className="p-2">
                                                     <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
@@ -194,7 +206,7 @@ const ContributionGraphCard = () => {
                                     })
                                 ))}
                                 </div>
-                            </ScrollArea>
+                            </div>
                         </div>
                     </div>
                     </TooltipProvider>
@@ -205,5 +217,3 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
-
-    
