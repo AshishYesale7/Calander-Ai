@@ -28,7 +28,13 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
 *   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas (technical, soft, and hard skills), an actionable multi-step roadmap, and suggested learning resources.
 *   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels. Items from the AI-generated Career Vision can be added here with a single click.
-*   **Codefolio Ally Extension:** An integrated extension that allows you to connect and visualize your progress across major coding platforms. By simply entering your username, you can track your solved problems, contest ratings, daily streaks, and weekly activity in a dedicated, graphical dashboard.
+*   **Extension Marketplace & Codefolio Ally:** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers and software engineering students:
+    *   **Unified Dashboard:** By simply entering your usernames for Codeforces, LeetCode, and CodeChef, you get a centralized dashboard that visualizes your coding progress.
+    *   **Aggregated Stats:** See your total problems solved across all platforms, your current ratings, and your problem-solving streak.
+    *   **Contribution Graph:** A GitHub-style contribution graph provides a year-long overview of your daily coding activity.
+    *   **Weekly Target Tracker:** A visual, donut-shaped chart tracks your problem-solving progress for each day of the week, helping you build a consistent habit.
+    *   **Contest Integration:** The dashboard automatically fetches upcoming Codeforces contests. You can add any contest directly to your timeline with a single click, ensuring you never miss a competition.
+    *   **Persistent & Synced:** Your installed extensions are saved to your cloud account, providing a consistent experience across all your devices.
 *   **Intelligent Integrations:**
     *   **Google Sync:** Seamlessly syncs with Google Calendar and Google Tasks.
     *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails, summarizes them, and displays them on your dashboard to ensure you don't miss key information. It intelligently filters out OTPs, password resets, and other security-related emails.

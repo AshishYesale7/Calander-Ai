@@ -28,7 +28,13 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
 *   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas (technical, soft, and hard skills), an actionable multi-step roadmap, and suggested learning resources.
 *   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels. Items from the AI-generated Career Vision can be added here with a single click.
-*   **Codefolio Ally Extension:** An integrated extension that allows you to connect and visualize your progress across major coding platforms. By simply entering your username, you can track your solved problems, contest ratings, daily streaks, and weekly activity in a dedicated, graphical dashboard.
+*   **Extension Marketplace & Codefolio Ally:** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers and software engineering students:
+    *   **Unified Dashboard:** By simply entering your usernames for Codeforces, LeetCode, and CodeChef, you get a centralized dashboard that visualizes your coding progress.
+    *   **Aggregated Stats:** See your total problems solved across all platforms, your current ratings, and your problem-solving streak.
+    *   **Contribution Graph:** A GitHub-style contribution graph provides a year-long overview of your daily coding activity.
+    *   **Weekly Target Tracker:** A visual, donut-shaped chart tracks your problem-solving progress for each day of the week, helping you build a consistent habit.
+    *   **Contest Integration:** The dashboard automatically fetches upcoming Codeforces contests. You can add any contest directly to your timeline with a single click, ensuring you never miss a competition.
+    *   **Persistent & Synced:** Your installed extensions are saved to your cloud account, providing a consistent experience across all your devices.
 *   **Intelligent Integrations:**
     *   **Google Sync:** Seamlessly syncs with Google Calendar and Google Tasks.
     *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails, summarizes them, and displays them on your dashboard to ensure you don't miss key information. It intelligently filters out OTPs, password resets, and other security-related emails.
@@ -37,8 +43,10 @@ FutureSight is a web application built with a modern tech stack, designed to be 
     *   A resources page where you can bookmark your own learning materials and also receive AI-generated suggestions based on your unique goals and skills.
 *   **Advanced User Experience:**
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
+    *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
     *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and intelligently falls back to a conversational AI assistant. If a typed query doesn't match a built-in command, the palette prompts the user to "Ask AI anything," allowing for seamless natural language event creation and other interactions.
+    *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
 
 ## 3. Link to Prototype
 
@@ -56,6 +64,7 @@ This project utilizes a suite of modern technologies to deliver a robust, intell
 *   **Firebase:** Serves as the complete backend infrastructure.
     *   **Firebase Authentication:** Provides secure user management (Email, Google, Phone).
     *   **Firestore:** A scalable NoSQL database for all user data.
+    *   **Firebase Cloud Messaging:** Powers the native browser push notifications.
     *   **Firebase App Hosting:** The project is configured for seamless deployment on Firebase.
 *   **Google Workspace APIs:**
     *   **Google Calendar API, Google Tasks API, Gmail API:** To sync a user's digital life into the app.
