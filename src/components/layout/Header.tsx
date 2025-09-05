@@ -35,6 +35,34 @@ const navItems = [
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
+// Custom SVG icon for Extensions
+const ExtensionIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M14 10h.01" />
+      <path d="M10 14h.01" />
+      <path d="M18 18h.01" />
+      <path d="M6 18h.01" />
+      <path d="M6 6h.01" />
+      <path d="M18 6h.01" />
+      <path d="M9 21v-2a4 4 0 0 1 4-4h2" />
+      <path d="M3 9V7a4 4 0 0 1 4-4h2" />
+      <path d="M21 15v2a4 4 0 0 1-4 4h-2" />
+      <path d="M15 3h-2a4 4 0 0 0-4 4v2" />
+    </svg>
+  );
+
+
 interface HeaderProps {
   setIsCustomizeModalOpen: (open: boolean) => void;
   setIsProfileModalOpen: (open: boolean) => void;
@@ -131,7 +159,7 @@ export default function Header({
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild>
               <Link href="/extension">
-                  <Code className="h-5 w-5" />
+                  <ExtensionIcon className="h-5 w-5" />
                   <span className="sr-only">Extensions</span>
               </Link>
           </Button>
