@@ -110,6 +110,9 @@ const allPlugins = [
 
 type Plugin = (typeof allPlugins)[0];
 
+const INSTALLED_PLUGINS_KEY = 'futureSightInstalledPlugins';
+const DEFAULT_PLUGINS = ['VS Code', 'Codefolio Ally', 'Discord'];
+
 interface FullScreenPluginViewProps {
   plugin: Plugin;
   onClose: () => void;
@@ -159,12 +162,43 @@ export default function ExtensionPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set(['VS Code', 'Codefolio Ally', 'Discord']));
+  const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set());
   const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
 
   // New state for Codefolio Ally
   const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
+
+  // Effect to load installed plugins from local storage on mount
+  useEffect(() => {
+    try {
+      const storedPlugins = localStorage.getItem(INSTALLED_PLUGINS_KEY);
+      if (storedPlugins) {
+        setInstalledPluginsSet(new Set(JSON.parse(storedPlugins)));
+      } else {
+        // If nothing is stored, use the default set
+        setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
+      }
+    } catch (error) {
+      console.error("Failed to load plugins from local storage", error);
+      setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
+    }
+  }, []);
+
+  // Effect to save installed plugins to local storage whenever the set changes
+  useEffect(() => {
+    try {
+      // Do not save the initial empty set before it's loaded from storage
+      if (installedPluginsSet.size > 0) {
+        localStorage.setItem(INSTALLED_PLUGINS_KEY, JSON.stringify(Array.from(installedPluginsSet)));
+      } else {
+        // If the set becomes empty (e.g., user uninstalls all), clear storage
+        localStorage.removeItem(INSTALLED_PLUGINS_KEY);
+      }
+    } catch (error) {
+      console.error("Failed to save plugins to local storage", error);
+    }
+  }, [installedPluginsSet]);
 
   useEffect(() => {
     if (user) {
@@ -380,7 +414,7 @@ export default function ExtensionPage() {
         />
       )}
 
-      {activePlugin && (
+      {activePlugin && activePlugin.name !== 'CodefolioLogin' && (
         <FullScreenPluginView
           plugin={activePlugin}
           onClose={() => setActivePlugin(null)}
