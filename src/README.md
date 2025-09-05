@@ -34,6 +34,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Personalized News & Resources:**
     *   A news feed that can be filtered by interests like "AI," "Internships," or "GATE" to keep you updated on relevant topics. Articles can be summarized by the AI.
     *   A resources page where you can bookmark your own learning materials and also receive AI-generated suggestions based on your unique goals and skills.
+*   **Codefolio Ally Extension:** An integrated extension that allows you to connect and visualize your progress across major coding platforms. By simply entering your username, you can track your solved problems, contest ratings, daily streaks, and weekly activity in a dedicated, graphical dashboard.
 *   **Advanced User Experience:**
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
     *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
