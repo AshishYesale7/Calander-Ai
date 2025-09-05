@@ -54,7 +54,7 @@ const LeagueHeader = () => (
 
 
 const StatusPanel = ({ userStatus, onStatusChange }: { userStatus: string | null, onStatusChange: (emoji: string | null) => void }) => (
-    <div className="p-6 rounded-2xl border border-border bg-card/60 w-full max-w-sm sticky top-24">
+    <div className="frosted-glass p-6 w-full max-w-sm sticky top-24">
         <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg">Set your status</h3>
             <Button variant="link" onClick={() => onStatusChange(null)} className="text-accent p-0 h-auto">CLEAR</Button>
@@ -192,4 +192,3 @@ export default function LeaderboardPageV2() {
         </div>
     );
 }
-
