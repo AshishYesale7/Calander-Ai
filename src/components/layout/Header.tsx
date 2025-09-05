@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Bell, Code } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Bell, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -23,6 +23,7 @@ import { useMemo, useState } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { SidebarTrigger } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
+import Image from 'next/image';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -32,35 +33,20 @@ const navItems = [
   { href: '/news', label: 'News', icon: Menu },
   { href: '/resources', label: 'Resources', icon: Menu },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
 // Custom SVG icon for Extensions, updated to look like a puzzle piece.
 const ExtensionIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M14 10h.01" />
-      <path d="M10 14h.01" />
-      <path d="M18 18h.01" />
-      <path d="M6 18h.01" />
-      <path d="M6 6h.01" />
-      <path d="M18 6h.01" />
-      <path d="M9 21v-2a4 4 0 0 1 4-4h2" />
-      <path d="M3 9V7a4 4 0 0 1 4-4h2" />
-      <path d="M21 15v2a4 4 0 0 1-4 4h-2" />
-      <path d="M15 3h-2a4 4 0 0 0-4 4v2" />
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" {...props}>
+        <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+        <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
+        <g id="SVGRepo_iconCarrier">
+            <path d="M7.5 4.5C7.5 3.11929 8.61929 2 10 2C11.3807 2 12.5 3.11929 12.5 4.5V6H13.5C14.8978 6 15.5967 6 16.1481 6.22836C16.8831 6.53284 17.4672 7.11687 17.7716 7.85195C18 8.40326 18 9.10218 18 10.5H19.5C20.8807 10.5 22 11.6193 22 13C22 14.3807 20.8807 15.5 19.5 15.5H18V17.2C18 18.8802 18 19.7202 17.673 20.362C17.3854 20.9265 16.9265 21.3854 16.362 21.673C15.7202 22 14.8802 22 13.2 22H12.5V20.25C12.5 19.0074 11.4926 18 10.25 18C9.00736 18 8 19.0074 8 20.25V22H6.8C5.11984 22 4.27976 22 3.63803 21.673C3.07354 21.3854 2.6146 20.9265 2.32698 20.362C2 19.7202 2 18.8802 2 17.2V15.5H3.5C4.88071 15.5 6 14.3807 6 13C6 11.6193 4.88071 10.5 3.5 10.5H2C2 9.10218 2 8.40326 2.22836 7.85195C2.53284 7.11687 3.11687 6.53284 3.85195 6.22836C4.40326 6 5.10218 6 6.5 6H7.5V4.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+        </g>
     </svg>
-  );
+);
 
 
 interface HeaderProps {
