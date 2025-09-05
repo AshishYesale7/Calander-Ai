@@ -90,3 +90,6 @@ export const allPlugins = [
       description: 'IDE for rapid application development.'
   },
 ];
+
+// Define and export the default plugins separately.
+export const DEFAULT_PLUGINS = ['Codefolio Ally', 'VS Code', 'Figma', 'Chrome'];
