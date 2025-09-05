@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getStreakData, updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { useTimezone } from './use-timezone';
-import { zonedTimeToUtc, toZonedTime, format as formatTz } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime, format as formatTz } from 'date-fns-tz';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
@@ -22,7 +22,7 @@ export const useStreakTracker = () => {
             if (!streakData) {
                 // First-time user, initialize their streak data.
                 const nowInUserTz = toZonedTime(new Date(), timezone);
-                const startOfTodayInUserTz = zonedTimeToUtc(formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone }), timezone);
+                const startOfTodayInUserTz = fromZonedTime(formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone }), timezone);
 
                 streakData = {
                     currentStreak: 0,
