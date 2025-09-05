@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getStreakData, updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { useTimezone } from './use-timezone';
-import { zonedTimeToUtc, utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { zonedTimeToUtc, toZonedTime, format as formatTz } from 'date-fns-tz';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
@@ -21,8 +21,8 @@ export const useStreakTracker = () => {
             let streakData = await getStreakData(userId);
             if (!streakData) {
                 // First-time user, initialize their streak data.
-                const nowInUserTz = utcToZonedTime(new Date(), timezone);
-                const startOfTodayInUserTz = zonedTimeToUtc(formatTz(nowInUserTz, 'yyyy-MM-dd'), timezone);
+                const nowInUserTz = toZonedTime(new Date(), timezone);
+                const startOfTodayInUserTz = zonedTimeToUtc(formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone }), timezone);
 
                 streakData = {
                     currentStreak: 0,
@@ -58,11 +58,11 @@ export const useStreakTracker = () => {
             if (!streakData) return;
             
             // Get the current date and the last activity date IN THE USER'S TIMEZONE
-            const nowInUserTz = utcToZonedTime(nowUtc, timezone);
-            const lastActivityInUserTz = utcToZonedTime(streakData.lastActivityDate, timezone);
+            const nowInUserTz = toZonedTime(nowUtc, timezone);
+            const lastActivityInUserTz = toZonedTime(streakData.lastActivityDate, timezone);
 
-            const todayFormatted = formatTz(nowInUserTz, 'yyyy-MM-dd');
-            const lastDayFormatted = formatTz(lastActivityInUserTz, 'yyyy-MM-dd');
+            const todayFormatted = formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
+            const lastDayFormatted = formatTz(lastActivityInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
 
             let timeToday = streakData.timeSpentToday || 0;
             let streakCompletedToday = streakData.todayStreakCompleted || false;
@@ -85,22 +85,7 @@ export const useStreakTracker = () => {
             if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakCompletedToday) {
                 updatePayload.todayStreakCompleted = true;
                 
-                // --- Streak Increment Logic ---
-                // Get yesterday's date in the user's timezone
-                const yesterdayInUserTz = new Date(nowInUserTz);
-                yesterdayInUserTz.setDate(yesterdayInUserTz.getDate() - 1);
-                const yesterdayFormatted = formatTz(yesterdayInUserTz, 'yyyy-MM-dd');
-                
-                let newStreakCount = streakData.currentStreak || 0;
-
-                // If the last activity was yesterday, we continue the streak.
-                // If it was from before yesterday, the streak is broken and starts again at 1.
-                // If the last activity was today, we don't increment again.
-                if (lastDayFormatted === yesterdayFormatted) {
-                    newStreakCount += 1;
-                } else if (lastDayFormatted !== todayFormatted) {
-                    newStreakCount = 1;
-                }
+                const newStreakCount = (streakData.currentStreak || 0) + 1;
 
                 updatePayload.currentStreak = newStreakCount;
 
