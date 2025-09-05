@@ -46,7 +46,7 @@ const LeetCodeDataSchema = z.object({
     totalSolved: z.number().describe("Total number of problems solved."),
     easy: z.number().describe("Number of easy problems solved."),
     medium: z.number().describe("Number of medium problems solved."),
-    hard: z A.number().describe("Number of hard problems solved."),
+    hard: z.number().describe("Number of hard problems solved."),
     streak: z.number().describe("Current daily problem-solving streak."),
     error: z.string().optional().describe("An error message if the user is not found or data is private."),
 });
