@@ -624,7 +624,8 @@ export default function DashboardPage() {
         <DailyStreakCard />
       </div>
 
-      <ContributionGraphCard />
+      {/* The ContributionGraphCard is temporarily hidden. Do not delete the component or related logic. */}
+      {/* <ContributionGraphCard /> */}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         <div className="xl:col-span-2 space-y-8">
