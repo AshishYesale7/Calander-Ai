@@ -153,6 +153,7 @@ export default function CodefolioDashboard() {
                         users={[
                             { name: userData.leetcode.username, value: `${userData.leetcode.totalSolved} solved`},
                         ]}
+                        totalSolved={userData.leetcode.totalSolved}
                         chartData={[
                             { name: 'Easy', value: userData.leetcode.easy, fill: 'hsl(var(--chart-1))' },
                             { name: 'Medium', value: userData.leetcode.medium, fill: 'hsl(var(--chart-2))' },

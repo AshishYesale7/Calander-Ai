@@ -2,9 +2,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Hand } from "lucide-react";
 import Image from "next/image";
-import { RadialBar, RadialBarChart, PolarAngleAxis, ResponsiveContainer, Cell, Legend, Tooltip } from 'recharts';
+import { cn } from "@/lib/utils";
 
 interface UserStat {
     name: string;
@@ -24,22 +24,54 @@ interface PlatformStatsCardProps {
     iconUrl: string;
     users: UserStat[];
     chartData?: ChartData[];
+    // New props for the improved LeetCode UI
+    totalSolved?: number;
+    beatsPercentage?: number;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border bg-popover/90 p-2 text-sm text-popover-foreground shadow-md backdrop-blur-sm">
-          <p className="font-medium">{`${payload[0].name}: ${payload[0].value}`}</p>
-        </div>
-      );
-    }
-    return null;
-};
+const DifficultyBadge = ({ label, count, colorClass }: { label: string, count: number, colorClass: string }) => (
+    <div className="flex items-center justify-between rounded-lg bg-background/50 px-3 py-1.5">
+        <span className={cn("text-sm font-medium", colorClass)}>{label}</span>
+        <span className="text-sm font-semibold text-foreground">{count}</span>
+    </div>
+);
 
-export default function PlatformStatsCard({ platform, iconUrl, users, chartData }: PlatformStatsCardProps) {
-    const totalForChart = chartData ? chartData.reduce((acc, item) => acc + item.value, 0) : 1;
+
+export default function PlatformStatsCard({ platform, iconUrl, users, chartData, totalSolved, beatsPercentage }: PlatformStatsCardProps) {
     
+    // Specific new UI for LeetCode
+    if (platform === "LeetCode" && chartData && totalSolved !== undefined) {
+        const easy = chartData.find(d => d.name === 'Easy')?.value || 0;
+        const medium = chartData.find(d => d.name === 'Medium')?.value || 0;
+        const hard = chartData.find(d => d.name === 'Hard')?.value || 0;
+
+        return (
+            <Card className="frosted-glass bg-card/60 p-6">
+                 <CardHeader className="p-0">
+                    <CardTitle className="text-muted-foreground font-medium text-base">Total Solved</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 mt-4 space-y-6">
+                    <div className="flex justify-between items-baseline">
+                        <div className="flex items-baseline gap-2">
+                           <p className="text-4xl font-bold text-blue-400">{totalSolved}</p>
+                           <p className="text-2xl font-semibold text-foreground">Problems</p>
+                        </div>
+                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Hand className="h-5 w-5" />
+                            <span>Beats {beatsPercentage || 1}%</span>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                       <DifficultyBadge label="Easy" count={easy} colorClass="text-emerald-400" />
+                       <DifficultyBadge label="Med." count={medium} colorClass="text-yellow-400" />
+                       <DifficultyBadge label="Hard" count={hard} colorClass="text-red-500" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    // Fallback to the original UI for other platforms
     return (
         <Card className="frosted-glass bg-card/60">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -48,62 +80,13 @@ export default function PlatformStatsCard({ platform, iconUrl, users, chartData 
                     <CardTitle className="text-lg font-semibold">{platform}</CardTitle>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col md:flex-row items-center md:items-start gap-4">
-                <div className="flex-1 space-y-2">
-                     {users.map((user, index) => (
-                        <div key={index} className="text-sm">
-                            <span className="text-muted-foreground">{user.name}</span>
-                            <div className="flex items-baseline gap-1">
-                                <p className="text-2xl font-bold">{user.value}</p>
-                                {user.change && (
-                                    <div className="flex items-center text-xs text-muted-foreground">
-                                        {user.isPositive ? (
-                                            <ArrowUpRight className="h-3.5 w-3.5 text-green-400" />
-                                        ) : (
-                                            <ArrowDownRight className="h-3.5 w-3.5 text-red-400" />
-                                        )}
-                                        {user.change}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {chartData && (
-                    <div className="h-28 w-28 flex-shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadialBarChart 
-                                cx="50%" 
-                                cy="50%" 
-                                innerRadius="70%" 
-                                outerRadius="100%" 
-                                barSize={8} 
-                                data={chartData}
-                                startAngle={90}
-                                endAngle={-270}
-                            >
-                                <PolarAngleAxis type="number" domain={[0, totalForChart]} angleAxisId={0} tick={false} />
-                                <RadialBar
-                                    background={{ fill: 'hsla(var(--muted), 0.5)'}}
-                                    dataKey="value"
-                                    cornerRadius={10}
-                                >
-                                     {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} className="stroke-none" />
-                                    ))}
-                                </RadialBar>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend 
-                                    iconSize={8} 
-                                    layout="vertical" 
-                                    verticalAlign="middle" 
-                                    align="right"
-                                    wrapperStyle={{ fontSize: '12px', marginLeft: '10px' }}
-                                />
-                            </RadialBarChart>
-                        </ResponsiveContainer>
+            <CardContent>
+                {users.map((user, index) => (
+                    <div key={index} className="text-2xl font-bold">
+                       {user.value}
+                       <p className="text-xs text-muted-foreground">{user.name}</p>
                     </div>
-                )}
+                ))}
             </CardContent>
         </Card>
     );
