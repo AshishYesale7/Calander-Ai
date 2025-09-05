@@ -11,7 +11,7 @@ import { generateWithApiKey } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // Input Schema: Takes optional usernames for each platform
-export const FetchCodingStatsInputSchema = z.object({
+const FetchCodingStatsInputSchema = z.object({
     codeforces: z.string().optional().describe("Codeforces username"),
     leetcode: z.string().optional().describe("LeetCode username"),
     codechef: z.string().optional().describe("Codechef username"),
@@ -29,7 +29,7 @@ const ContestSchema = z.object({
     startTimeSeconds: z.number().describe("The start time of the contest in Unix seconds."),
     durationSeconds: z.number().describe("The duration of the contest in seconds."),
 });
-export type Contest = z.infer<typeof ContestSchema>;
+type Contest = z.infer<typeof ContestSchema>;
 
 const CodeforcesDataSchema = z.object({
     username: z.string().describe("The user's Codeforces handle."),
