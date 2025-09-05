@@ -53,7 +53,7 @@ const ContributionGraphCard = () => {
             weeks.push(days.slice(i, i + 7));
         }
 
-        const labels: { name: string; weekIndex: number }[] = [];
+        const monthLabels: { name: string; weekIndex: number }[] = [];
         let lastMonth = -1;
         
         weeks.forEach((week, weekIndex) => {
@@ -73,8 +73,8 @@ const ContributionGraphCard = () => {
 
             if (firstDayOfMonth) {
                 const monthName = format(firstDayOfMonth, 'MMM');
-                if(!labels.some(l => l.name === monthName && weekIndex < l.weekIndex + 4)) {
-                     labels.push({
+                if(!monthLabels.some(l => l.name === monthName && weekIndex < l.weekIndex + 4)) {
+                     monthLabels.push({
                         name: monthName,
                         weekIndex: weekIndex,
                     });
@@ -82,7 +82,7 @@ const ContributionGraphCard = () => {
             }
         });
         
-        return { weeks, monthLabels: labels };
+        return { weeks, monthLabels };
     }, [startDate, endDate]);
     
     useEffect(() => {
@@ -197,3 +197,5 @@ const ContributionGraphCard = () => {
 
 export default ContributionGraphCard;
 
+
+    
