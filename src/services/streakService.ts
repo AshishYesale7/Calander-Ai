@@ -63,7 +63,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         const leaderboard: LeaderboardUser[] = [];
         
         for (const streakDoc of streakSnapshot.docs) {
-            const streakData = streakDoc.data() as Omit<StreakData, 'lastActivityDate'>;
+            const streakData = streakDoc.data();
             const userId = streakDoc.id;
             
             const userDocRef = doc(usersCollectionRef, userId);
@@ -75,8 +75,8 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     id: userId,
                     displayName: userData.displayName || 'Anonymous User',
                     photoURL: userData.photoURL,
-                    currentStreak: streakData.currentStreak,
-                    longestStreak: streakData.longestStreak,
+                    currentStreak: streakData.currentStreak || 0,
+                    longestStreak: streakData.longestStreak || 0,
                 });
             }
         }
