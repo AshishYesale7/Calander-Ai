@@ -27,6 +27,7 @@ import NotificationPermissionModal from '@/components/layout/NotificationPermiss
 import { saveUserFCMToken } from '@/services/userService';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
+import { StreakProvider } from '@/context/StreakContext';
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -206,7 +207,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <PluginProvider>
-        <AppContent>{children}</AppContent>
+        <StreakProvider>
+          <AppContent>{children}</AppContent>
+        </StreakProvider>
       </PluginProvider>
     </SidebarProvider>
   )

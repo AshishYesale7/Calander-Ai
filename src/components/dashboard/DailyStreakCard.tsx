@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Flame } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getStreakData, type StreakData } from '@/services/streakService';
+import { useStreak } from '@/context/StreakContext';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -13,33 +13,7 @@ const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
 export default function DailyStreakCard() {
     const { user } = useAuth();
-    const [streakData, setStreakData] = useState<StreakData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-        
-        const fetchStreak = async () => {
-            setIsLoading(true);
-            try {
-                const data = await getStreakData(user.uid);
-                setStreakData(data);
-            } catch (error) {
-                console.error("Failed to fetch streak data", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchStreak();
-        // Set up a poller to refresh streak data periodically
-        const intervalId = setInterval(fetchStreak, 30000); // Refresh every 30 seconds
-
-        return () => clearInterval(intervalId);
-    }, [user]);
+    const { streakData, isLoading } = useStreak();
 
     const progressPercentage = streakData
         ? Math.min(100, (streakData.timeSpentToday / STREAK_GOAL_SECONDS) * 100)

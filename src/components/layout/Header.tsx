@@ -31,7 +31,7 @@ import NotificationPanel from './NotificationPanel';
 import Image from 'next/image';
 import { allPlugins } from '@/data/plugins';
 import { getInstalledPlugins } from '@/services/userService';
-import { getStreakData } from '@/services/streakService';
+import { useStreak } from '@/context/StreakContext';
 import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
 import { usePlugin } from '@/hooks/use-plugin';
@@ -86,12 +86,11 @@ export default function Header({
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const { streakData } = useStreak();
 
   useEffect(() => {
     if (user) {
         getInstalledPlugins(user.uid).then(names => setInstalledPluginNames(new Set(names)));
-        getStreakData(user.uid).then(setStreakData);
     }
   }, [user]);
 
