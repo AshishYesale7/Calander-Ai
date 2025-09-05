@@ -58,23 +58,22 @@ const ContributionGraphCard = () => {
             const dayOfWeek = (getDay(day) + 6) % 7; // Monday is 0
             const month = getMonth(day);
 
-            if (dayOfWeek === 0 && currentWeek.some(d => d !== null)) {
-                // If it's a Monday and the current week is not empty, push it.
-                weeks.push(currentWeek);
-                currentWeek = new Array(7).fill(null);
-            }
-
             if (month !== currentMonth) {
                 currentMonth = month;
-                // If new month starts mid-week, end the previous week
+                // If the new month doesn't start on a Monday, we might need to push the previous partially filled week
                 if (dayOfWeek > 0 && currentWeek.some(d => d !== null)) {
                     weeks.push(currentWeek);
                     currentWeek = new Array(7).fill(null);
                 }
                 monthLabels.push({ name: format(day, 'MMM'), weekIndex: weeks.length });
             }
-
+            
             currentWeek[dayOfWeek] = day;
+
+            if (dayOfWeek === 6) { // It's Sunday, so this week is full
+                weeks.push(currentWeek);
+                currentWeek = new Array(7).fill(null);
+            }
         });
 
         // Push the last week if it has any days
@@ -143,7 +142,7 @@ const ContributionGraphCard = () => {
                 ) : (
                     <TooltipProvider>
                     <div className="flex gap-3">
-                        <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-[2px]">
+                        <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-1">
                            <div className="h-5 flex items-center">Mon</div>
                            <div className="h-5 flex items-center">Tue</div>
                            <div className="h-5 flex items-center">Wed</div>
@@ -167,33 +166,39 @@ const ContributionGraphCard = () => {
                                         ))}
                                     </div>
                                     <div className="grid grid-flow-col auto-cols-min gap-x-1 w-max">
-                                    {weeks.map((week, weekIndex) => (
-                                        <div key={weekIndex} className="grid grid-rows-7 gap-1 w-[20px]">
-                                            {week.map((day, dayIndex) => {
-                                                if (!day) {
-                                                  return <div key={`${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
-                                                }
-                                                const dateString = format(day, 'yyyy-MM-dd');
-                                                const level = contributions.get(dateString) || 0;
-                                                return (
-                                                    <Tooltip key={dateString} delayDuration={100}>
-                                                        <TooltipTrigger asChild>
-                                                            <div className={cn(
-                                                                "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
-                                                                getLevelColor(level)
-                                                            )}>
-                                                                <span className="text-[9px] text-white/50">{format(day, 'd')}</span>
-                                                            </div>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="p-2">
-                                                            <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                            <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                );
-                                            })}
-                                        </div>
-                                    ))}
+                                    {weeks.map((week, weekIndex) => {
+                                        const isMonthEnd = week.some(day => day && isSameDay(day, lastDayOfMonth(day)));
+                                        return (
+                                            <React.Fragment key={weekIndex}>
+                                                <div className="grid grid-rows-7 gap-1 w-[20px]">
+                                                    {week.map((day, dayIndex) => {
+                                                        if (!day) {
+                                                          return <div key={`${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
+                                                        }
+                                                        const dateString = format(day, 'yyyy-MM-dd');
+                                                        const level = contributions.get(dateString) || 0;
+                                                        return (
+                                                            <Tooltip key={dateString} delayDuration={100}>
+                                                                <TooltipTrigger asChild>
+                                                                    <div className={cn(
+                                                                        "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
+                                                                        getLevelColor(level)
+                                                                    )}>
+                                                                        <span className="text-[9px] text-white/50">{format(day, 'd')}</span>
+                                                                    </div>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="p-2">
+                                                                    <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {isMonthEnd && weekIndex < weeks.length - 1 && <div className="w-[1px] h-full bg-border/50 mx-1" />}
+                                            </React.Fragment>
+                                        )
+                                    })}
                                     </div>
                                 </div>
                             </div>
