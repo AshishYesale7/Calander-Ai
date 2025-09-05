@@ -5,7 +5,7 @@ import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getMonth, endOfMonth } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getMonth } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -19,7 +19,7 @@ const ContributionGraphCard = () => {
     
     const { startDate, endDate } = useMemo(() => {
         const today = endOfDay(new Date());
-        const start = startOfWeek(subYears(today, 1), { weekStartsOn: 1 }); 
+        const start = startOfDay(subYears(today, 1));
         return { startDate: start, endDate: today };
     }, []);
 
@@ -42,8 +42,9 @@ const ContributionGraphCard = () => {
         return map;
     }, [activity]);
     
-    const { weeks, monthLabels, monthSeparators } = useMemo(() => {
-        const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const { weeks, monthLabels } = useMemo(() => {
+        const firstDay = startOfWeek(startDate, { weekStartsOn: 1 });
+        const days = eachDayOfInterval({ start: firstDay, end: endDate });
         const weeks: Date[][] = [];
         
         for (let i = 0; i < days.length; i += 7) {
@@ -51,7 +52,6 @@ const ContributionGraphCard = () => {
         }
 
         const monthLabels: { name: string; weekIndex: number }[] = [];
-        const monthSeparators: number[] = [];
         let lastMonth = -1;
         
         weeks.forEach((week, weekIndex) => {
@@ -59,21 +59,12 @@ const ContributionGraphCard = () => {
             const month = getMonth(firstDayOfWeek);
             
             if (month !== lastMonth) {
-                const monthChangesInWeek = week.some(day => getMonth(day) !== lastMonth && lastMonth !== -1);
-                if (weekIndex === 0 || getMonth(week[0]) !== lastMonth) {
-                    lastMonth = month;
-                    const monthName = format(firstDayOfWeek, 'MMM');
-                     if (!monthLabels.find(m => m.weekIndex > weekIndex - 4 && m.name === monthName)) {
-                        monthLabels.push({ name: monthName, weekIndex });
-                    }
-                }
-                if (weekIndex > 0) {
-                    monthSeparators.push(weekIndex);
-                }
+                lastMonth = month;
+                monthLabels.push({ name: format(firstDayOfWeek, 'MMM'), weekIndex });
             }
         });
         
-        return { weeks, monthLabels, monthSeparators };
+        return { weeks, monthLabels };
     }, [startDate, endDate]);
     
     useEffect(() => {
@@ -155,29 +146,23 @@ const ContributionGraphCard = () => {
                                     </div>
                                     <div className="grid grid-flow-col auto-cols-[20px] gap-1 w-max">
                                     {weeks.map((week, weekIndex) => (
-                                        <div key={weekIndex} className="contents">
-                                            <div className="grid grid-rows-7 gap-1">
-                                                {week.map((day, dayIndex) => {
-                                                    if (!day) return <div key={`pad-${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
-                                                    const dateString = format(day, 'yyyy-MM-dd');
-                                                    const level = contributions.get(dateString) || 0;
-                                                    return (
-                                                        <Tooltip key={dateString} delayDuration={100}>
-                                                            <TooltipTrigger asChild>
-                                                                <div className={cn("w-5 h-5 rounded-[2px] flex items-center justify-center", getLevelColor(level))}>
-                                                                </div>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="p-2">
-                                                                <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                                <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    );
-                                                })}
-                                            </div>
-                                             {monthSeparators.includes(weekIndex) && (
-                                                <div className="w-px bg-border/20 mx-1"></div>
-                                            )}
+                                        <div key={weekIndex} className="grid grid-rows-7 gap-1">
+                                            {week.map((day, dayIndex) => {
+                                                const dateString = format(day, 'yyyy-MM-dd');
+                                                const level = contributions.get(dateString) || 0;
+                                                return (
+                                                    <Tooltip key={dateString} delayDuration={100}>
+                                                        <TooltipTrigger asChild>
+                                                            <div className={cn("w-5 h-5 rounded-[2px] flex items-center justify-center", getLevelColor(level))}>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="p-2">
+                                                            <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                            <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                );
+                                            })}
                                         </div>
                                     ))}
                                     </div>
