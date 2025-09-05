@@ -62,10 +62,9 @@ interface FullScreenPluginViewProps {
   plugin: Plugin;
   onClose: () => void;
   onLogout: () => void;
-  userData: AllPlatformsUserData | null;
 }
 
-const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, userData, onLogout }) => {
+const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, onLogout }) => {
   const PluginComponent = plugin.component;
 
   return (
@@ -87,7 +86,7 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
         </div>
       </header>
       <main className="flex-1 overflow-auto">
-        {PluginComponent && userData ? <CodefolioDashboard userData={userData} /> : (
+        {PluginComponent ? <CodefolioDashboard /> : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
@@ -110,7 +109,6 @@ export default function ExtensionPage() {
 
   // New state for Codefolio Ally
   const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
-  const [codefolioUserData, setCodefolioUserData] = useState<AllPlatformsUserData | null>(null);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
 
   useEffect(() => {
@@ -119,11 +117,7 @@ export default function ExtensionPage() {
         getCodingUsernames(user.uid).then(data => {
             const hasUsernames = data && Object.values(data).some(v => v);
             if (hasUsernames) {
-                // If usernames are present, we consider the user "logged in".
-                // The dashboard component will be responsible for fetching the actual stats.
                 setIsCodefolioLoggedIn(true);
-                // Pass null initially, dashboard will fetch its own data
-                setCodefolioUserData(null); 
             } else {
                 setIsCodefolioLoggedIn(false);
             }
@@ -171,7 +165,6 @@ export default function ExtensionPage() {
 
       saveCodingUsernames(user.uid, definedUsernames).then(() => {
           setIsCodefolioLoggedIn(true);
-          setCodefolioUserData(data); // Pass fetched data to the dashboard
           setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
           toast({ title: "Success", description: "Usernames saved and data fetched!" });
       }).catch(err => {
@@ -187,7 +180,6 @@ export default function ExtensionPage() {
         codechef: undefined,
     }).then(() => {
       setIsCodefolioLoggedIn(false);
-      setCodefolioUserData(null);
       setActivePlugin(null);
       toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
     });
@@ -278,11 +270,8 @@ export default function ExtensionPage() {
           plugin={activePlugin} 
           onClose={() => setActivePlugin(null)}
           onLogout={handleCodefolioLogout}
-          userData={codefolioUserData}
         />
       )}
     </div>
   );
 }
-
-    

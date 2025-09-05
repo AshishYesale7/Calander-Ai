@@ -18,13 +18,9 @@ import { fetchCodingStats } from "@/ai/flows/fetch-coding-stats-flow";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 
-interface CodefolioDashboardProps {
-  userData: AllPlatformsUserData | null;
-}
-
-export default function CodefolioDashboard({ userData: initialData }: CodefolioDashboardProps) {
-  const [userData, setUserData] = useState<AllPlatformsUserData | null>(initialData);
-  const [isLoading, setIsLoading] = useState(!initialData);
+export default function CodefolioDashboard() {
+  const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -39,7 +35,6 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
           const stats = await fetchCodingStats({ ...usernames, apiKey });
           setUserData(stats);
         } else {
-          // This case might happen if the component is loaded directly without login flow
           toast({ title: "No usernames found", description: "Please set up your coding platform usernames.", variant: "destructive"});
         }
       } catch (error) {
@@ -49,13 +44,9 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
         setIsLoading(false);
       }
     };
-
-    // If initialData is null, it means we need to fetch it.
-    // This happens when the user is already logged in and revisits the page.
-    if (initialData === null) {
-      fetchData();
-    }
-  }, [user, apiKey, initialData, toast]);
+    
+    fetchData();
+  }, [user, apiKey, toast]);
   
   const totalSolved = Object.values(userData || {}).reduce((acc, platform) => {
     if (platform && platform.totalSolved) {
