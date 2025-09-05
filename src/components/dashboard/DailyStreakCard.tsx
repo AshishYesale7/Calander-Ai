@@ -49,6 +49,8 @@ const FlameIcon = ({ isComplete }: { isComplete: boolean }) => (
     </svg>
 )
 
+const STREAK_GOAL_SECONDS = 300; // 5 minutes
+
 export default function DailyStreakCard() {
     const { user } = useAuth();
     const { streakData, setStreakData, isLoading } = useStreak();
@@ -57,6 +59,12 @@ export default function DailyStreakCard() {
 
     const fetchAndSetInsight = useCallback(async () => {
         if (!user || !streakData) return;
+        
+        // Prevent fetching insight if one already exists for the day
+        if (streakData.insight && streakData.lastActivityDate && isSameDay(new Date(), streakData.lastActivityDate) && !streakData.todayStreakCompleted) {
+            return;
+        }
+
         setIsInsightLoading(true);
         try {
             const leaderboard = await getLeaderboardData();
@@ -70,30 +78,29 @@ export default function DailyStreakCard() {
                 apiKey
             });
             
-            // Update insight in both local state and Firestore
             setStreakData(prev => prev ? { ...prev, insight: result.insight } : null);
             await updateStreakData(user.uid, { insight: result.insight });
 
         } catch (error) {
             console.error("Failed to fetch streak insight:", error);
+            // Fallback is handled inside the flow now
+            const fallbackInsight = "Keep up the great work!";
+            setStreakData(prev => prev ? { ...prev, insight: fallbackInsight } : null);
+            await updateStreakData(user.uid, { insight: fallbackInsight });
         } finally {
             setIsInsightLoading(false);
         }
     }, [user, streakData, apiKey, setStreakData]);
 
-    // Effect to fetch insight on initial load or if it's missing for the day
     useEffect(() => {
         if (streakData && !isLoading && !streakData.insight) {
             fetchAndSetInsight();
         }
     }, [streakData, isLoading, fetchAndSetInsight]);
     
-    // Effect to fetch a new insight once the streak is completed for the day
     useEffect(() => {
         if (streakData?.todayStreakCompleted) {
-             // Check if we already have an insight that reflects the *new* streak count
             if (streakData.insight?.includes(`${streakData.currentStreak} day`)) {
-                // The current insight is already up-to-date
                 return;
             }
             fetchAndSetInsight();
@@ -119,6 +126,17 @@ export default function DailyStreakCard() {
             };
         });
     }, [weekDays, streakData]);
+    
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const progressPercent = useMemo(() => {
+        if (!streakData) return 0;
+        return Math.min(100, (streakData.timeSpentToday / STREAK_GOAL_SECONDS) * 100);
+    }, [streakData]);
 
 
     const renderContent = () => {
@@ -160,7 +178,7 @@ export default function DailyStreakCard() {
                     </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-black/25 rounded-xl">
+                <div className="mt-6 p-4 bg-black/25 rounded-xl space-y-4">
                     <div className="flex justify-around">
                         {weekDaysWithStatus.map(({ dayChar, isCompleted }, index) => (
                             <div key={index} className="flex flex-col items-center gap-2">
@@ -172,6 +190,20 @@ export default function DailyStreakCard() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="pt-2">
+                        <div className="relative h-2 w-full bg-gray-500/50 rounded-full">
+                            <div 
+                                className="absolute h-2 bg-white rounded-full transition-all duration-300"
+                                style={{ width: `${progressPercent}%` }}
+                            >
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-4 w-4 rounded-full bg-white shadow border-2 border-amber-600"></div>
+                            </div>
+                        </div>
+                        <p className="text-center text-xs text-white/70 mt-2">
+                            {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
+                        </p>
                     </div>
                 </div>
             </div>
@@ -186,3 +218,5 @@ export default function DailyStreakCard() {
         </Card>
     );
 }
+
+    
