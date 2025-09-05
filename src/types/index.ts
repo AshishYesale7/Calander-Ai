@@ -4,6 +4,12 @@
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
 
+export interface SocialLinks {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+}
+
 export interface RoutineItem {
   id: string;
   activity: string;
@@ -16,6 +22,8 @@ export interface UserPreferences {
   routine: RoutineItem[];
   countryCode?: string;
   statusEmoji?: string;
+  bio?: string;
+  socials?: SocialLinks;
 }
 
 export type EarlyReminder = 'none' | 'on_day' | '1_day' | '2_days' | '1_week';
@@ -252,4 +260,3 @@ export interface LeaderboardUser {
     statusEmoji?: string;
     countryCode?: string;
 }
-

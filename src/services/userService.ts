@@ -94,13 +94,14 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const saveUserPreferences = async (userId: string, preferences: UserPreferences): Promise<void> => {
+export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     try {
+        // Using Partial<UserPreferences> allows saving only the parts that are being edited.
         await setDoc(userDocRef, { preferences }, { merge: true });
     } catch (error) {
         console.error("Failed to save user preferences to Firestore:", error);
-        throw new Error("Could not save your daily plan preferences.");
+        throw new Error("Could not save your preferences.");
     }
 };
 
@@ -109,17 +110,11 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
     try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists() && docSnap.data().preferences) {
-            // Basic validation to ensure it has the 'routine' property
-            const prefs = docSnap.data().preferences;
-            if (prefs && Array.isArray(prefs.routine) && prefs.routine.length > 0) {
-                 return prefs as UserPreferences;
-            }
+            return docSnap.data().preferences as UserPreferences;
         }
-        // Return null if no preferences are set or routine is empty, indicating setup is needed
         return null;
     } catch (error) {
         console.error("Failed to get user preferences from Firestore:", error);
-        // Propagate error to be handled by the UI
         throw new Error("Could not retrieve your preferences.");
     }
 };
@@ -156,13 +151,10 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // Check if the field exists. If it does, return it (even if it's an empty array).
-            // If it doesn't exist, return null to indicate it's a new user profile in this context.
             if (data.hasOwnProperty('installedPlugins')) {
                 return Array.isArray(data.installedPlugins) ? data.installedPlugins : [];
             }
         }
-        // Return null if the document doesn't exist or the field is missing
         return null;
     } catch (error) {
         console.error("Failed to get installed plugins from Firestore:", error);
@@ -170,9 +162,10 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: { statusEmoji?: string | null, countryCode?: string | null }): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: { displayName?: string, statusEmoji?: string | null, countryCode?: string | null }): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: any = {};
+    if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
     if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
     if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
 
