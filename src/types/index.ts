@@ -234,6 +234,7 @@ export interface StreakData {
     timeSpentToday: number; // in seconds
     todayStreakCompleted: boolean;
     insight?: string; // AI-generated insight for the day
+    completedDays?: string[]; // Array of 'YYYY-MM-DD' strings
 }
 
 export interface LeaderboardUser {

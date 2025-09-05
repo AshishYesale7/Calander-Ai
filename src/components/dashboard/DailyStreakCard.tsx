@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, getDay, isSameDay, addDays } from 'date-fns';
+import { format, startOfWeek, getDay, isSameDay, addDays, toDate } from 'date-fns';
 import { generateStreakInsight } from '@/ai/flows/generate-streak-insight-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import { getLeaderboardData, updateStreakData } from '@/services/streakService';
@@ -60,8 +60,18 @@ export default function DailyStreakCard() {
     const fetchAndSetInsight = useCallback(async () => {
         if (!user || !streakData) return;
         
-        // Prevent fetching insight if one already exists for the day
-        if (streakData.insight && streakData.lastActivityDate && isSameDay(new Date(), streakData.lastActivityDate) && !streakData.todayStreakCompleted) {
+        // Only fetch an insight if one doesn't already exist for the day
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const lastInsightDate = streakData.lastActivityDate ? format(toDate(streakData.lastActivityDate), 'yyyy-MM-dd') : null;
+        
+        // Condition 1: No insight exists
+        // Condition 2: It's a new day
+        // Condition 3: Today's goal was just completed (and the insight is likely for the pre-completed state)
+        const needsNewInsight = !streakData.insight || 
+                                todayStr !== lastInsightDate || 
+                                (streakData.todayStreakCompleted && !streakData.insight?.includes(`${streakData.currentStreak} day`));
+        
+        if (!needsNewInsight) {
             return;
         }
 
@@ -78,37 +88,24 @@ export default function DailyStreakCard() {
                 apiKey
             });
             
-            setStreakData(prev => prev ? { ...prev, insight: result.insight } : null);
+            const updatedData = { ...streakData, insight: result.insight };
+            setStreakData(updatedData);
             await updateStreakData(user.uid, { insight: result.insight });
 
         } catch (error) {
             console.error("Failed to fetch streak insight:", error);
-            // Fallback is handled inside the flow now, but as a double safeguard:
-            const fallbackInsight = "Keep up the great work!";
-            if(streakData && streakData.insight !== fallbackInsight){
-                setStreakData(prev => prev ? { ...prev, insight: fallbackInsight } : null);
-                await updateStreakData(user.uid, { insight: fallbackInsight });
-            }
+            // Fallback is handled inside the flow now
         } finally {
             setIsInsightLoading(false);
         }
     }, [user, streakData, apiKey, setStreakData]);
 
     useEffect(() => {
-        if (streakData && !isLoading && !streakData.insight) {
+        if (streakData && !isLoading) {
             fetchAndSetInsight();
         }
     }, [streakData, isLoading, fetchAndSetInsight]);
     
-    useEffect(() => {
-        if (streakData?.todayStreakCompleted) {
-            if (streakData.insight?.includes(`${streakData.currentStreak} day`)) {
-                return;
-            }
-            fetchAndSetInsight();
-        }
-    }, [streakData?.todayStreakCompleted, streakData?.currentStreak, streakData?.insight, fetchAndSetInsight]);
-
 
     const weekDays = useMemo(() => {
         const now = new Date();
@@ -117,21 +114,19 @@ export default function DailyStreakCard() {
     }, []);
 
     const weekDaysWithStatus = useMemo(() => {
-        const now = new Date();
+        const completedDaysSet = new Set(streakData?.completedDays || []);
         return weekDays.map((day) => {
-            const isToday = isSameDay(day, now);
-            const isCompleted = isToday ? streakData?.todayStreakCompleted ?? false : day < now;
+            const dayStr = format(day, 'yyyy-MM-dd');
             return {
                 dayChar: format(day, 'E').charAt(0),
-                isCompleted,
-                isToday,
+                isCompleted: completedDaysSet.has(dayStr),
             };
         });
     }, [weekDays, streakData]);
     
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
-        const secs = Math.round(seconds % 60); // Use Math.round to fix formatting
+        const secs = Math.round(seconds % 60);
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 

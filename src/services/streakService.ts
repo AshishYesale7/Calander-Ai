@@ -20,6 +20,7 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
       return {
         ...data,
         lastActivityDate: (data.lastActivityDate as Timestamp).toDate(),
+        completedDays: data.completedDays || [],
       } as StreakData;
     }
     return null;
@@ -35,6 +36,10 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
   const dataToSave: any = { ...data };
   if (data.lastActivityDate) {
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
+  }
+  // Ensure completedDays is saved if it exists
+  if (data.completedDays) {
+      dataToSave.completedDays = data.completedDays;
   }
 
   try {
