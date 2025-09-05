@@ -45,8 +45,7 @@ const ContributionGraphCard = () => {
     
     const { daysInGrid, monthLabels } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
-        const dayOfWeek = getDay(startDate);
-        const padding = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0 (Sun) -> 6 padding, 1 (Mon) -> 0 padding, etc.
+        const padding = (getDay(startDate) + 6) % 7; // Monday is 0
         
         const gridDays = [...Array(padding).fill(null), ...days];
 
@@ -57,14 +56,18 @@ const ContributionGraphCard = () => {
             if (day) {
                 const month = day.getMonth();
                 if (month !== lastMonth) {
-                    labels.push({
-                        name: format(day, 'MMM'),
-                        colStart: Math.floor(index / 7) + 1,
-                    });
+                    const colIndex = Math.floor(index / 7);
+                    if (colIndex > 0) { // Only add label if it's not the very first column
+                        labels.push({
+                            name: format(day, 'MMM'),
+                            colStart: colIndex + 1,
+                        });
+                    }
                     lastMonth = month;
                 }
             }
         });
+        
         return { daysInGrid: gridDays, monthLabels: labels };
     }, [startDate, endDate]);
     
@@ -118,44 +121,44 @@ const ContributionGraphCard = () => {
                     <div className="h-32 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
-                    <div className="flex flex-col">
-                        <div className="grid grid-flow-col justify-start gap-x-10 mb-1 ml-[30px]">
-                           {monthLabels.map((month) => (
-                               <div 
-                                   key={month.name} 
-                                   className="text-xs text-muted-foreground"
-                                   style={{ gridColumnStart: month.colStart }}
-                                >
-                                   {month.name}
-                               </div>
-                           ))}
+                    <div className="grid grid-cols-[auto,1fr] gap-x-3">
+                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around mt-[25px]">
+                           <span>Mon</span>
+                           <span>Wed</span>
+                           <span>Fri</span>
                         </div>
-                         <div className="flex gap-x-3">
-                             <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around mt-px">
-                                <span>Mon</span>
-                                <span>Wed</span>
-                                <span>Fri</span>
-                             </div>
-                             <div className="grid grid-flow-col grid-rows-7 gap-1 w-full">
-                                {daysInGrid.map((day, i) => {
-                                     if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
-
-                                     const dateString = format(day, 'yyyy-MM-dd');
-                                     const level = contributions.get(dateString) || 0;
-                                     return (
-                                        <Tooltip key={i} delayDuration={100}>
-                                            <TooltipTrigger asChild>
-                                                <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
-                                            </TooltipTrigger>
-                                            <TooltipContent className="p-2">
-                                                <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                     )
-                                })}
+                        <div className="flex-1 overflow-hidden">
+                            <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1">
+                                {monthLabels.map((month) => (
+                                   <div 
+                                       key={month.name} 
+                                       className="text-xs text-muted-foreground"
+                                       style={{ gridColumnStart: month.colStart }}
+                                    >
+                                       {month.name}
+                                   </div>
+                               ))}
                             </div>
-                         </div>
+                            <div className="grid grid-flow-col grid-rows-7 gap-1 w-full">
+                               {daysInGrid.map((day, i) => {
+                                    if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
+
+                                    const dateString = format(day, 'yyyy-MM-dd');
+                                    const level = contributions.get(dateString) || 0;
+                                    return (
+                                       <Tooltip key={i} delayDuration={100}>
+                                           <TooltipTrigger asChild>
+                                               <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
+                                           </TooltipTrigger>
+                                           <TooltipContent className="p-2">
+                                               <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                               <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                           </TooltipContent>
+                                       </Tooltip>
+                                    )
+                               })}
+                           </div>
+                        </div>
                     </div>
                     </TooltipProvider>
                 )}
@@ -165,3 +168,4 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
+
