@@ -7,7 +7,8 @@ import { StreakContext } from '@/context/StreakContext';
 import { updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { useTimezone } from './use-timezone';
-import { toZonedTime, format as formatTz, differenceInCalendarDays } from 'date-fns-tz';
+import { toZonedTime, format as formatTz } from 'date-fns-tz';
+import { differenceInCalendarDays } from 'date-fns';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
@@ -99,3 +100,4 @@ export const useStreakTracker = () => {
     }, [user, streakData, setStreakData, saveData, timezone]);
 
 };
+
