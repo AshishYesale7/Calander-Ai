@@ -52,10 +52,12 @@ const FullScreenPluginView: React.FC = () => {
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
       <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 ml-2">
-          {activePlugin.logo.startsWith('/') ? (
+          {activePlugin.logo && activePlugin.logo.startsWith('/') ? (
              <Code className="h-7 w-7 text-accent" />
-          ) : (
+          ) : activePlugin.logo ? (
              <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
+          ) : (
+            <Code className="h-7 w-7 text-accent" />
           )}
           <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
