@@ -27,7 +27,7 @@ const ContestSchema = z.object({
     startTimeSeconds: z.number().describe("The start time of the contest in Unix seconds."),
     durationSeconds: z.number().describe("The duration of the contest in seconds."),
 });
-type Contest = z.infer<typeof ContestSchema>;
+export type Contest = z.infer<typeof ContestSchema>;
 
 const CodeforcesDataSchema = z.object({
     username: z.string().describe("The user's Codeforces handle."),
@@ -74,20 +74,19 @@ export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<Al
       return {};
   }
 
-  const promptText = `You are an expert AI assistant that can fetch user statistics from public coding platform profiles.
-Your task is to perform a simulated, intelligent web search for the provided usernames on their respective platforms and return the data in a structured JSON format.
+  const promptText = `You are an expert AI assistant that can generate realistic mock data for public coding platform profiles.
+This is a **simulation**. You do not have live web access. Your task is to generate a **realistic but fictional** data set for the given usernames and return it in a structured JSON format.
 
-**Usernames to Fetch:**
+**Usernames to Generate Data For:**
 ${usernameEntries.map(([platform, username]) => `- ${platform}: ${username}`).join('\n')}
 
 **CRITICAL INSTRUCTIONS:**
-1.  **Simulate a Search:** Imagine you are visiting the public profile page for each provided username (e.g., codeforces.com/profile/USERNAME, leetcode.com/USERNAME).
-2.  **Generate Realistic Data:** If you find a user, you **MUST** generate realistic, non-zero, plausible statistics for them. Do not return zero values for ratings, solved problems, etc., unless it's a brand new account.
-    -   **Codeforces:** Get current rating, rank, total problems solved, and current daily streak. Also, fetch a list of the next 2-3 upcoming contests.
-    -   **LeetCode:** Get total solved count, the breakdown of easy/medium/hard problems, and the current daily streak.
-    -   **CodeChef:** Get current rating, star rating (e.g., "4 Star"), and total problems solved.
-3.  **Handle Missing Users:** If and only if you are absolutely certain a user does not exist on a platform or their profile is private, you MUST set the "error" field for that platform with a descriptive message (e.g., "User not found or profile is private.").
-4.  **Format Output:** Your entire output MUST be a single JSON object that strictly adheres to the 'AllPlatformsUserDataSchema'. Only include keys for the platforms that had usernames provided.
+1.  **Generate Realistic Data:** For each provided username, you **MUST** generate realistic, non-zero, plausible statistics. Do not return zero values for ratings, solved problems, etc., unless it's a brand new account.
+    -   **Codeforces:** Generate a plausible rating (e.g., 1200-2200), a corresponding rank (e.g., 'Pupil', 'Expert'), total problems solved, and a daily streak. Also, create a list of 2-3 fictional upcoming contests.
+    -   **LeetCode:** Generate a total solved count, a breakdown of easy/medium/hard problems that adds up to the total, and a daily streak.
+    -   **CodeChef:** Generate a plausible rating, a star rating (e.g., "4 Star"), and a total problems solved.
+2.  **Handle Missing Users:** If and only if a username seems intentionally invalid (e.g., 'user_does_not_exist_123'), you should return an error. For all normal-looking usernames, you must generate data. Set the "error" field for the specific platform with a descriptive message (e.g., "User not found or profile is private.").
+3.  **Format Output:** Your entire output MUST be a single JSON object that strictly adheres to the 'AllPlatformsUserDataSchema'. Only include keys for the platforms that had usernames provided.
 
 Now, generate the JSON object with the fetched statistics.
 `;
