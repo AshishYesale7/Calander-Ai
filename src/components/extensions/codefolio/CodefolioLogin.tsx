@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
 import { ArrowRight, Loader2, X } from 'lucide-react';
-import { fetchCodingStats, type FetchCodingStatsInput, type AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
+import { fetchCodingStats, type AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 
@@ -84,48 +84,70 @@ export default function CodefolioLogin({ onLoginSuccess, onClose }: CodefolioLog
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-8 w-8" onClick={onClose}><X/></Button>
-        <Card className="w-full max-w-sm frosted-glass">
+        <Card className="w-full max-w-2xl frosted-glass">
             <CardContent className="p-8 text-center">
                 <Image src="/logos/codefolio-logo.svg" alt="Codefolio Ally Logo" width={80} height={80} className="mx-auto mb-4" />
                 <h1 className="text-2xl font-bold font-headline text-primary">Welcome</h1>
                 <p className="text-muted-foreground mb-8">Please enter your usernames to continue.</p>
                 
-                <div className="space-y-4 text-left">
-                    {platforms.map(platform => (
-                        <div key={platform.id}>
-                            <label className="text-sm font-medium flex items-center gap-2 mb-1.5">
-                                <Image src={platform.icon} alt={`${platform.name} logo`} width={20} height={20} className="rounded-full"/>
-                                {platform.name}
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <Input 
-                                    placeholder={`Enter ${platform.name} username`}
-                                    value={usernames[platform.id] || ''}
-                                    onChange={e => handleUsernameChange(platform.id, e.target.value)}
-                                    className="bg-background/50"
-                                />
-                                <Button 
-                                    variant="link" 
-                                    className="p-0 text-accent"
-                                    onClick={() => handleVerify(platform.id)}
-                                    disabled={!!isLoading || !usernames[platform.id]}
-                                >
-                                    {isLoading === platform.id ? <Loader2 className="h-4 w-4 animate-spin"/> : verified[platform.id] ? 'Verified' : 'Verify'}
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="space-y-4 text-left">
+                      {platforms.map(platform => (
+                          <div key={platform.id}>
+                              <label className="text-sm font-medium flex items-center gap-2 mb-1.5">
+                                  <Image src={platform.icon} alt={`${platform.name} logo`} width={20} height={20} className="rounded-full"/>
+                                  {platform.name}
+                              </label>
+                              <div className="flex items-center gap-2">
+                                  <Input 
+                                      placeholder={`Enter ${platform.name} username`}
+                                      value={usernames[platform.id] || ''}
+                                      onChange={e => handleUsernameChange(platform.id, e.target.value)}
+                                      className="bg-background/50 text-black"
+                                  />
+                                  <Button 
+                                      variant="link" 
+                                      className="p-0 text-accent"
+                                      onClick={() => handleVerify(platform.id)}
+                                      disabled={!!isLoading || !usernames[platform.id]}
+                                  >
+                                      {isLoading === platform.id ? <Loader2 className="h-4 w-4 animate-spin"/> : verified[platform.id] ? 'Verified' : 'Verify'}
+                                  </Button>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+
+                  <div className="hidden md:flex items-center justify-center">
+                     <Button 
+                        size="lg" 
+                        className="bg-accent hover:bg-accent/90 text-lg rounded-full w-32 h-32 flex flex-col" 
+                        onClick={handleContinue}
+                        disabled={!!isLoading}
+                    >
+                        {isLoading === 'continue' ? (
+                            <Loader2 className="h-8 w-8 animate-spin"/>
+                        ) : (
+                          <>
+                            <span className="text-base">Continue</span>
+                            <ArrowRight className="mt-1 h-6 w-6"/>
+                          </>
+                        )}
+                    </Button>
+                  </div>
                 </div>
 
-                <Button 
-                    size="lg" 
-                    className="w-full mt-8 bg-accent hover:bg-accent/90 text-lg" 
-                    onClick={handleContinue}
-                    disabled={!!isLoading}
-                >
-                    {isLoading === 'continue' ? <Loader2 className="h-5 w-5 animate-spin"/> : "Continue"}
-                    <ArrowRight className="ml-2 h-5 w-5"/>
-                </Button>
+                <div className="md:hidden mt-8">
+                   <Button 
+                        size="lg" 
+                        className="w-full bg-accent hover:bg-accent/90 text-lg" 
+                        onClick={handleContinue}
+                        disabled={!!isLoading}
+                    >
+                        {isLoading === 'continue' ? <Loader2 className="h-5 w-5 animate-spin"/> : "Continue"}
+                        <ArrowRight className="ml-2 h-5 w-5"/>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     </div>
