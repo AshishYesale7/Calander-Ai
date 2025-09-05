@@ -5,7 +5,7 @@ import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, subMonths, getDay, isSameDay, startOfDay, endOfMonth, subYears } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfMonth, subYears } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -51,7 +51,7 @@ const ContributionGraphCard = () => {
         
         const gridDays = [...Array(padding).fill(null), ...days];
 
-        const labels: { name: string, colStart: number }[] = [];
+        const labels: { key: string; name: string, colStart: number }[] = [];
         let lastMonth = -1;
         
         gridDays.forEach((day, index) => {
@@ -61,6 +61,7 @@ const ContributionGraphCard = () => {
                     const colIndex = Math.floor(index / 7);
                     if (colIndex >= 0) { 
                         labels.push({
+                            key: format(day, 'MMM-yyyy'), // Create a unique key like "Sep-2024"
                             name: format(day, 'MMM'),
                             colStart: colIndex + 1,
                         });
@@ -134,7 +135,7 @@ const ContributionGraphCard = () => {
                                 <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1 absolute top-0 left-0">
                                     {monthLabels.map((month) => (
                                        <div 
-                                           key={month.name} 
+                                           key={month.key} 
                                            className="text-xs text-muted-foreground text-center"
                                            style={{ gridColumnStart: month.colStart }}
                                         >
@@ -172,3 +173,4 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
+
