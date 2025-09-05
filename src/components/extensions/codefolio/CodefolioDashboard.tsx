@@ -13,7 +13,7 @@ import UpcomingContests from "./UpcomingContests";
 export default function CodefolioDashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full w-full">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6">
                 <ContestCalendar />
