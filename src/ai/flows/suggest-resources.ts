@@ -8,7 +8,7 @@
  * - SuggestResourcesOutput - The return type for the suggestResources function.
  */
 
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getCareerGoals } from '@/services/careerGoalsService';
 import { getSkills } from '@/services/skillsService';
@@ -39,28 +39,24 @@ const SuggestResourcesOutputSchema = z.object({
 });
 export type SuggestResourcesOutput = z.infer<typeof SuggestResourcesOutputSchema>;
 
-export async function suggestResources(input: SuggestResourcesInput): Promise<SuggestResourcesOutput> {
-  // Fetch the user's actual data
-  const [careerGoals, skills, timelineEvents] = await Promise.all([
-    getCareerGoals(input.userId),
-    getSkills(input.userId),
-    getTimelineEvents(input.userId)
-  ]);
-
-  const goalsText = careerGoals.map(g => g.title).join(', ');
-  const skillsText = skills.map(s => s.name).join(', ');
-  const eventsText = timelineEvents.map(e => `${e.title} on ${format(e.date, 'PPP')}`).join('; ');
-
-  const promptText = `You are an expert AI career coach for computer science students. Your task is to recommend highly relevant learning resources based on the user's skills and goals.
+const suggestResourcesPrompt = ai.definePrompt({
+    name: 'suggestResourcesPrompt',
+    input: { schema: z.object({
+        skillsText: z.string(),
+        goalsText: z.string(),
+        eventsText: z.string(),
+    }) },
+    output: { schema: SuggestResourcesOutputSchema },
+    prompt: `You are an expert AI career coach for computer science students. Your task is to recommend highly relevant learning resources based on the user's skills and goals.
 
 User's Tracked Skills:
-${skillsText.length > 0 ? skillsText : 'No skills specified.'}
+{{{skillsText}}}
 
 User's Career Goals:
-${goalsText.length > 0 ? goalsText : 'No career goals specified.'}
+{{{goalsText}}}
 
 User's Timeline Events (for context):
-${eventsText.length > 0 ? eventsText : 'No upcoming events.'}
+{{{eventsText}}}
 
 Instructions:
 1.  Analyze the user's skills, goals, and timeline to understand their learning needs.
@@ -68,19 +64,37 @@ Instructions:
 3.  For each resource, provide a title, a direct URL, a concise one-sentence description explaining its relevance, and assign it to a category.
 4.  Ensure the URLs are valid and direct links to the resource, not search pages.
 5.  Format your output strictly according to the provided JSON schema.
-`;
+`
+});
 
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: SuggestResourcesOutputSchema,
-    },
-  });
+const suggestResourcesFlow = ai.defineFlow({
+    name: 'suggestResourcesFlow',
+    inputSchema: SuggestResourcesInputSchema,
+    outputSchema: SuggestResourcesOutputSchema,
+}, async (input) => {
+    const [careerGoals, skills, timelineEvents] = await Promise.all([
+      getCareerGoals(input.userId),
+      getSkills(input.userId),
+      getTimelineEvents(input.userId)
+    ]);
 
-  if (!output) {
-    return { suggestedResources: [] };
-  }
-  
-  return output;
+    const goalsText = careerGoals.map(g => g.title).join(', ');
+    const skillsText = skills.map(s => s.name).join(', ');
+    const eventsText = timelineEvents.map(e => `${e.title} on ${format(e.date, 'PPP')}`).join('; ');
+
+    const { output } = await suggestResourcesPrompt({
+        goalsText: goalsText.length > 0 ? goalsText : 'No career goals specified.',
+        skillsText: skillsText.length > 0 ? skillsText : 'No skills specified.',
+        eventsText: eventsText.length > 0 ? eventsText : 'No upcoming events.',
+    });
+
+    if (!output) {
+      return { suggestedResources: [] };
+    }
+    
+    return output;
+});
+
+export async function suggestResources(input: SuggestResourcesInput): Promise<SuggestResourcesOutput> {
+  return suggestResourcesFlow(input);
 }

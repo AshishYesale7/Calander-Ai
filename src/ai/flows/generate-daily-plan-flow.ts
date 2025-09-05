@@ -8,7 +8,7 @@
  * - GenerateDailyPlanOutput - The return type for the generateDailyPlan function.
  */
 
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getTimelineEvents } from '@/services/timelineService';
 import { getCareerGoals } from '@/services/careerGoalsService';
@@ -44,95 +44,38 @@ const GenerateDailyPlanOutputSchema = z.object({
 });
 export type GenerateDailyPlanOutput = z.infer<typeof GenerateDailyPlanOutputSchema>;
 
-
-// This is the main exported function now.
-export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<GenerateDailyPlanOutput> {
-  // Fetch all necessary data *inside* the function.
-  const [timelineEvents, careerGoals, skills, userPreferences] = await Promise.all([
-      getTimelineEvents(input.userId),
-      getCareerGoals(input.userId),
-      getSkills(input.userId),
-      getUserPreferences(input.userId),
-  ]);
-
-  // Pre-process the data for the prompt
-  const today = new Date(input.currentDate);
-
-  let userSleepSchedule: RoutineItem | undefined;
-  let todaysRoutineBlocks: { title: string; startTime: string; endTime: string }[] = [];
-
-  if (userPreferences) {
-      // Find the user's sleep schedule for today
-      userSleepSchedule = userPreferences.routine.find(item =>
-        item.activity.toLowerCase() === 'sleep' && item.days.includes(today.getDay())
-      );
-    
-      // Filter routine items for today, EXCLUDING sleep
-      todaysRoutineBlocks = userPreferences.routine.filter(item =>
-        item.activity.toLowerCase() !== 'sleep' && item.days.includes(today.getDay())
-      ).map(item => ({
-        title: item.activity,
-        startTime: item.startTime,
-        endTime: item.endTime,
-      }));
-  }
-  
-  // Filter timeline events that occur today
-  const todaysTimelineBlocks = timelineEvents.filter(event => {
-      if (!event.date) return false;
-      const eventDate = event.date instanceof Date ? event.date : new Date(event.date);
-      return isSameDay(eventDate, today);
-  }).map(event => {
-      const eventDate = event.date instanceof Date ? event.date : new Date(event.date);
-      const eventEndDate = event.endDate instanceof Date ? event.endDate : (event.endDate ? new Date(event.endDate) : addHours(eventDate, 1));
-      return {
-          title: event.title,
-          startTime: format(eventDate, 'HH:mm'),
-          endTime: format(eventEndDate, 'HH:mm')
-      }
-  });
-
-  // Combine both into a single list of fixed schedule items (without sleep)
-  const fixedScheduleForToday = [...todaysRoutineBlocks, ...todaysTimelineBlocks];
-
-  // Manually construct the prompt string
-  const currentDateStr = format(today, 'PPPP');
-
-  const sleepScheduleText = userSleepSchedule
-    ? `The user's preferred sleep time is from ${userSleepSchedule.startTime} to ${userSleepSchedule.endTime}.`
-    : 'The user has not set a preferred sleep time; assume a standard 8-hour sleep schedule (e.g., 11 PM to 7 AM).';
-
-  const fixedScheduleText = fixedScheduleForToday.length > 0
-    ? fixedScheduleForToday.map(item => `  - Activity: "${item.title}" from ${item.startTime} to ${item.endTime}`).join('\n')
-    : '- The user has no fixed activities scheduled for today.';
-
-  const careerGoalsText = careerGoals.map(g => ` - ${g.title} (Progress: ${g.progress}%${g.deadline ? `, Deadline: ${format(g.deadline, 'PPP')}` : ''}).`).join('\n');
-  
-  const skillsText = skills.map(s => ` - ${s.name} (Proficiency: ${s.proficiency}).`).join('\n');
-  
-  const timelineEventsText = timelineEvents.map(e => `- Event: "${e.title}" on ${format(e.date, 'PPP')}.`).join('\n');
-
-  const promptText = `You are an expert productivity and career coach AI named 'Calendar.ai'.
+const dailyPlanPrompt = ai.definePrompt({
+    name: 'dailyPlanPrompt',
+    input: { schema: z.object({
+        currentDateStr: z.string(),
+        sleepScheduleText: z.string(),
+        fixedScheduleText: z.string(),
+        careerGoalsText: z.string(),
+        skillsText: z.string(),
+        timelineEventsText: z.string(),
+    }) },
+    output: { schema: GenerateDailyPlanOutputSchema },
+    prompt: `You are an expert productivity and career coach AI named 'Calendar.ai'.
 Your goal is to create a highly personalized, scannable, and motivating daily plan for a user that flows chronologically from their wake-up time.
 
-Today's date is: ${currentDateStr}
+Today's date is: {{{currentDateStr}}}
 
 **1. User's Preferred Sleep Schedule:**
-${sleepScheduleText}
+{{{sleepScheduleText}}}
 
 **2. CRITICAL: User's Fixed Schedule for Today**
 These are the user's fixed, non-negotiable activities and appointments for today (excluding sleep). The times provided are in 24-hour format.
 You MUST include every single one of these items in the final schedule at their specified times.
-${fixedScheduleText}
+{{{fixedScheduleText}}}
 
 **3. User's Long-Term Goals & Vision:**
 - Career Goals:
-${careerGoalsText.length > 0 ? careerGoalsText : 'No career goals set.'}
+{{{careerGoalsText}}}
 - Skills to Develop:
-${skillsText.length > 0 ? skillsText : 'No skills being tracked.'}
+{{{skillsText}}}
 
 **4. All Upcoming Events (for context):**
-${timelineEventsText.length > 0 ? timelineEventsText : 'No upcoming events on the timeline.'}
+{{{timelineEventsText}}}
 
 ---
 **YOUR TASK**
@@ -155,20 +98,101 @@ Analyze all the provided information and generate a complete daily plan. Follow 
 
 4.  **Find a Motivational Quote:** Provide one short, inspiring quote related to productivity or learning.
 
-Your entire output MUST be a single, valid JSON object that adheres to the output schema.`;
-  
-  // Use the generateWithApiKey helper with the constructed prompt string
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: GenerateDailyPlanOutputSchema,
-    },
-  });
+Your entire output MUST be a single, valid JSON object that adheres to the output schema.`
+});
 
-  if (!output) {
-    throw new Error("The AI model did not return a valid daily plan.");
-  }
-  
-  return output;
+const generateDailyPlanFlow = ai.defineFlow({
+    name: 'generateDailyPlanFlow',
+    inputSchema: GenerateDailyPlanInputSchema,
+    outputSchema: GenerateDailyPlanOutputSchema,
+}, async (input) => {
+    // Fetch all necessary data *inside* the function.
+    const [timelineEvents, careerGoals, skills, userPreferences] = await Promise.all([
+        getTimelineEvents(input.userId),
+        getCareerGoals(input.userId),
+        getSkills(input.userId),
+        getUserPreferences(input.userId),
+    ]);
+
+    // Pre-process the data for the prompt
+    const today = new Date(input.currentDate);
+
+    let userSleepSchedule: RoutineItem | undefined;
+    let todaysRoutineBlocks: { title: string; startTime: string; endTime: string }[] = [];
+
+    if (userPreferences) {
+        // Find the user's sleep schedule for today
+        userSleepSchedule = userPreferences.routine.find(item =>
+          item.activity.toLowerCase() === 'sleep' && item.days.includes(today.getDay())
+        );
+      
+        // Filter routine items for today, EXCLUDING sleep
+        todaysRoutineBlocks = userPreferences.routine.filter(item =>
+          item.activity.toLowerCase() !== 'sleep' && item.days.includes(today.getDay())
+        ).map(item => ({
+          title: item.activity,
+          startTime: item.startTime,
+          endTime: item.endTime,
+        }));
+    }
+    
+    // Filter timeline events that occur today
+    const todaysTimelineBlocks = timelineEvents.filter(event => {
+        if (!event.date) return false;
+        const eventDate = event.date instanceof Date ? event.date : new Date(event.date);
+        return isSameDay(eventDate, today);
+    }).map(event => {
+        const eventDate = event.date instanceof Date ? event.date : new Date(event.date);
+        const eventEndDate = event.endDate instanceof Date ? event.endDate : (event.endDate ? new Date(event.endDate) : addHours(eventDate, 1));
+        return {
+            title: event.title,
+            startTime: format(eventDate, 'HH:mm'),
+            endTime: format(eventEndDate, 'HH:mm')
+        }
+    });
+
+    const fixedScheduleForToday = [...todaysRoutineBlocks, ...todaysTimelineBlocks];
+
+    const currentDateStr = format(today, 'PPPP');
+
+    const sleepScheduleText = userSleepSchedule
+      ? `The user's preferred sleep time is from ${userSleepSchedule.startTime} to ${userSleepSchedule.endTime}.`
+      : 'The user has not set a preferred sleep time; assume a standard 8-hour sleep schedule (e.g., 11 PM to 7 AM).';
+
+    const fixedScheduleText = fixedScheduleForToday.length > 0
+      ? fixedScheduleForToday.map(item => `  - Activity: "${item.title}" from ${item.startTime} to ${item.endTime}`).join('\n')
+      : '- The user has no fixed activities scheduled for today.';
+
+    const careerGoalsText = careerGoals.length > 0 
+      ? careerGoals.map(g => ` - ${g.title} (Progress: ${g.progress}%${g.deadline ? `, Deadline: ${format(g.deadline, 'PPP')}` : ''}).`).join('\n')
+      : 'No career goals set.';
+    
+    const skillsText = skills.length > 0
+      ? skills.map(s => ` - ${s.name} (Proficiency: ${s.proficiency}).`).join('\n')
+      : 'No skills being tracked.';
+    
+    const timelineEventsText = timelineEvents.length > 0
+      ? timelineEvents.map(e => `- Event: "${e.title}" on ${format(e.date, 'PPP')}.`).join('\n')
+      : 'No upcoming events on the timeline.';
+    
+    const { output } = await dailyPlanPrompt({
+        currentDateStr,
+        sleepScheduleText,
+        fixedScheduleText,
+        careerGoalsText,
+        skillsText,
+        timelineEventsText
+    });
+
+    if (!output) {
+      throw new Error("The AI model did not return a valid daily plan.");
+    }
+    
+    return output;
+});
+
+
+// This is the main exported function now.
+export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<GenerateDailyPlanOutput> {
+    return generateDailyPlanFlow(input);
 }

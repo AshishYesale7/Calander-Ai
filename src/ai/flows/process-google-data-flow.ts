@@ -8,7 +8,7 @@
  * - ProcessGoogleDataOutput - The return type for the processGoogleData function.
  */
 
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import {z} from 'genkit';
 
 // Schemas for Google API Data
@@ -64,44 +64,26 @@ const ProcessGoogleDataOutputSchema = z.object({
 });
 export type ProcessGoogleDataOutput = z.infer<typeof ProcessGoogleDataOutputSchema>;
 
-export async function processGoogleData(input: ProcessGoogleDataInput): Promise<ProcessGoogleDataOutput> {
-  const currentDate = new Date().toISOString();
-
-  let calendarEventsSection = 'No calendar events provided.';
-  if (input.calendarEvents && input.calendarEvents.length > 0) {
-    calendarEventsSection = input.calendarEvents.map(event => `
-- Event ID: ${event.id}
-  Title: ${event.summary}
-  Description: ${event.description || ''}
-  Starts (ISO 8601): ${event.startDateTime}
-  Ends (ISO 8601): ${event.endDateTime}
-  Link: ${event.htmlLink || ''}
-`).join('');
-  }
-  
-  let googleTasksSection = 'No Google Tasks provided.';
-  if (input.googleTasks && input.googleTasks.length > 0) {
-    googleTasksSection = input.googleTasks.map(task => `
-- Task ID: ${task.id}
-  Title: ${task.title}
-  Notes: ${task.notes || ''}
-  Due Date (ISO 8601): ${task.due || 'Not set'}
-  Link: ${task.link || ''}
-`).join('');
-  }
-
-  const promptText = `You are an expert personal assistant AI. Your task is to analyze a user's Google data (Calendar events, Tasks) to identify important upcoming events, deadlines, and tasks.
+const processGoogleDataPrompt = ai.definePrompt({
+    name: 'processGoogleDataPrompt',
+    input: { schema: z.object({
+        calendarEventsSection: z.string(),
+        googleTasksSection: z.string(),
+        currentDate: z.string(),
+    }) },
+    output: { schema: ProcessGoogleDataOutputSchema },
+    prompt: `You are an expert personal assistant AI. Your task is to analyze a user's Google data (Calendar events, Tasks) to identify important upcoming events, deadlines, and tasks.
 
 Context:
-- Today's date is ${currentDate}.
+- Today's date is {{{currentDate}}}.
 - The user wants to track important items from their Google account.
 
 Provided Data:
 1. Google Calendar Events:
-${calendarEventsSection}
+{{{calendarEventsSection}}}
 
 2. Google Tasks (To-Do list):
-${googleTasksSection}
+{{{googleTasksSection}}}
 
 
 ---
@@ -122,19 +104,52 @@ ${googleTasksSection}
 
 Structure your final output strictly according to the 'ActionableInsightSchema'.
 Generate the list of actionable insights based on all the provided data.
-`;
+`,
+});
 
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: ProcessGoogleDataOutputSchema,
-    },
-  });
+const processGoogleDataFlow = ai.defineFlow({
+    name: 'processGoogleDataFlow',
+    inputSchema: ProcessGoogleDataInputSchema,
+    outputSchema: ProcessGoogleDataOutputSchema,
+}, async (input) => {
+    const currentDate = new Date().toISOString();
 
-  if (!output) {
-    console.warn('AI did not return expected output for processGoogleDataFlow.');
-    return { insights: [] };
-  }
-  return output;
+    let calendarEventsSection = 'No calendar events provided.';
+    if (input.calendarEvents && input.calendarEvents.length > 0) {
+      calendarEventsSection = input.calendarEvents.map(event => `
+- Event ID: ${event.id}
+  Title: ${event.summary}
+  Description: ${event.description || ''}
+  Starts (ISO 8601): ${event.startDateTime}
+  Ends (ISO 8601): ${event.endDateTime}
+  Link: ${event.htmlLink || ''}
+`).join('');
+    }
+    
+    let googleTasksSection = 'No Google Tasks provided.';
+    if (input.googleTasks && input.googleTasks.length > 0) {
+      googleTasksSection = input.googleTasks.map(task => `
+- Task ID: ${task.id}
+  Title: ${task.title}
+  Notes: ${task.notes || ''}
+  Due Date (ISO 8601): ${task.due || 'Not set'}
+  Link: ${task.link || ''}
+`).join('');
+    }
+
+    const { output } = await processGoogleDataPrompt({
+        currentDate,
+        calendarEventsSection,
+        googleTasksSection,
+    });
+
+    if (!output) {
+      console.warn('AI did not return expected output for processGoogleDataFlow.');
+      return { insights: [] };
+    }
+    return output;
+});
+
+export async function processGoogleData(input: ProcessGoogleDataInput): Promise<ProcessGoogleDataOutput> {
+  return processGoogleDataFlow(input);
 }

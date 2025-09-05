@@ -9,7 +9,7 @@
  * - GenerateCareerVisionOutput - The return type for the generateCareerVision function.
  */
 
-import { ai, generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateCareerVisionPayloadSchema = z.object({
@@ -43,7 +43,6 @@ const GenerateCareerVisionOutputSchema = z.object({
     description: z.string().describe("A brief, one-sentence explanation of why this resource is useful for the user's specific goals."),
     category: z.enum(['book', 'course', 'tool', 'article', 'community', 'website', 'other']).describe("The category of the resource.")
   })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools. Ensure the links are specific and deep where possible."),
-  // Updated diagramSuggestion to include chart data
   diagramSuggestion: z.object({
       type: z.enum(['Flowchart', 'Mind Map', 'Timeline', 'Bar Chart']).describe("The type of diagram suggested. You must select 'Bar Chart'."),
       description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path."),
@@ -56,12 +55,14 @@ const GenerateCareerVisionOutputSchema = z.object({
 export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutputSchema>;
 
 
-export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {
-  // Construct the prompt string manually
-  const promptText = `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
+const careerVisionPrompt = ai.definePrompt({
+    name: 'careerVisionPrompt',
+    input: { schema: GenerateCareerVisionPayloadSchema },
+    output: { schema: GenerateCareerVisionOutputSchema },
+    prompt: `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
 
 User's Aspirations:
-${input.aspirations}
+{{{aspirations}}}
 
 Based on this input, generate a complete career plan structured according to the following JSON schema. Be insightful, specific, and motivating in your response.
 
@@ -75,20 +76,23 @@ Instructions:
     -   Your output for 'type' MUST be "Bar Chart".
     -   Your 'description' MUST explain that the bar chart visualizes the estimated timeline for each roadmap step.
     -   **CRUCIAL**: For the 'data' field, you MUST generate an array of objects. Each object must have a 'name' (the title of the roadmap step) and a 'durationMonths' (the average duration of that step converted into a number of months). For example, if a step has a duration of "1-3 months", the value for 'durationMonths' should be 2. If it's "6 weeks", it should be 1.5. If it's "1 year", it should be 12.
-`;
-  
-  // Call the helper with the key and the generate request
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: GenerateCareerVisionOutputSchema,
-    },
-  });
-  
-  if (!output) {
-    throw new Error("The AI model did not return a valid vision statement.");
-  }
-  
-  return output;
+`,
+});
+
+const generateCareerVisionFlow = ai.defineFlow({
+    name: 'generateCareerVisionFlow',
+    inputSchema: GenerateCareerVisionInputSchema,
+    outputSchema: GenerateCareerVisionOutputSchema,
+}, async (input) => {
+    const { output } = await careerVisionPrompt({ aspirations: input.aspirations });
+    
+    if (!output) {
+      throw new Error("The AI model did not return a valid vision statement.");
+    }
+    
+    return output;
+});
+
+export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {
+    return generateCareerVisionFlow(input);
 }

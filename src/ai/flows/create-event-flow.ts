@@ -8,7 +8,7 @@
  * - CreateEventInput - The input type for the function.
  * - CreateEventOutput - The return type for the function.
  */
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // Input schema for the component call
@@ -33,16 +33,18 @@ const CreateEventOutputSchema = z.object({
 });
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
-// Exported function that the UI will call
-export async function createEventFromPrompt(input: CreateEventInput): Promise<CreateEventOutput> {
-  const promptText = `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
+const createEventPrompt = ai.definePrompt({
+    name: 'createEventPrompt',
+    input: { schema: z.object({ prompt: z.string(), timezone: z.string(), currentDate: z.string() }) },
+    output: { schema: CreateEventOutputSchema, format: 'json' },
+    prompt: `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
 
 Current Context:
-- The current date and time is: ${new Date().toISOString()}.
-- The user's timezone is: ${input.timezone || 'UTC'}. Use this timezone for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week at 2pm"). All output ISO 8601 strings should reflect this timezone.
+- The current date and time is: {{{currentDate}}}.
+- The user's timezone is: {{{timezone}}}. Use this timezone for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week at 2pm"). All output ISO 8601 strings should reflect this timezone.
 
 User's Request:
-"${input.prompt}"
+"{{{prompt}}}"
 
 Instructions:
 1.  Analyze the user's request to extract the event's title, start time, end time, and any notes or location.
@@ -70,19 +72,27 @@ Instructions:
     -   **Resulting \`endDate\`:** "2024-07-15T13:30:00.000Z"
     -   **Resulting \`reminder.enabled\`:** false
 
-Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and all the instructions above.`;
+Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and all the instructions above.`,
+});
 
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      format: 'json',
-      schema: CreateEventOutputSchema,
-    },
-  });
+const createEventFromPromptFlow = ai.defineFlow({
+    name: 'createEventFromPromptFlow',
+    inputSchema: CreateEventInputSchema,
+    outputSchema: CreateEventOutputSchema,
+}, async (input) => {
+    const { output } = await createEventPrompt({
+        prompt: input.prompt,
+        timezone: input.timezone || 'UTC',
+        currentDate: new Date().toISOString(),
+    });
 
-  if (!output) {
-    throw new Error("The AI model did not return a valid event structure.");
-  }
-  return output;
+    if (!output) {
+      throw new Error("The AI model did not return a valid event structure.");
+    }
+    return output;
+});
+
+// Exported function that the UI will call
+export async function createEventFromPrompt(input: CreateEventInput): Promise<CreateEventOutput> {
+    return createEventFromPromptFlow(input);
 }

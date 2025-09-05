@@ -9,7 +9,7 @@
  * - TrackDeadlinesOutput - The return type for the function.
  */
 
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TrackDeadlinesInputSchema = z.object({
@@ -37,12 +37,15 @@ const TrackDeadlinesOutputSchema = z.object({
 });
 export type TrackDeadlinesOutput = z.infer<typeof TrackDeadlinesOutputSchema>;
 
-export async function trackDeadlines(input: TrackDeadlinesInput): Promise<TrackDeadlinesOutput> {
-  const promptText = `You are an expert AI research assistant specializing in helping students and professionals track important career opportunities. Your task is to perform a simulated, intelligent web search for the given keyword to find the most recent, relevant, and *upcoming* dates and deadlines.
+const trackDeadlinesPrompt = ai.definePrompt({
+    name: 'trackDeadlinesPrompt',
+    input: { schema: z.object({ keyword: z.string(), currentDate: z.string() }) },
+    output: { schema: TrackDeadlinesOutputSchema },
+    prompt: `You are an expert AI research assistant specializing in helping students and professionals track important career opportunities. Your task is to perform a simulated, intelligent web search for the given keyword to find the most recent, relevant, and *upcoming* dates and deadlines.
 
-Today's date is: ${new Date().toISOString()}.
+Today's date is: {{{currentDate}}}.
 
-User's Keyword: "${input.keyword}"
+User's Keyword: "{{{keyword}}}"
 
 **CRITICAL INSTRUCTIONS:**
 1.  **Analyze the Full Lifecycle & Be Proactive:**
@@ -68,19 +71,26 @@ User's Keyword: "${input.keyword}"
 5.  **Handle No Information:** If you cannot find any verifiable, official, *upcoming* dates for the keyword, you MUST return an empty 'deadlines' array and no summary. Do not invent information.
 
 Now, generate a JSON object that strictly adheres to the output schema based on the user's request and all the instructions above.
-`;
+`
+});
 
-  const { output } = await generateWithApiKey(input.apiKey, {
-    model: 'googleai/gemini-2.0-flash',
-    prompt: promptText,
-    output: {
-      schema: TrackDeadlinesOutputSchema,
-    },
-  });
+const trackDeadlinesFlow = ai.defineFlow({
+    name: 'trackDeadlinesFlow',
+    inputSchema: TrackDeadlinesInputSchema,
+    outputSchema: TrackDeadlinesOutputSchema,
+}, async (input) => {
+    const { output } = await trackDeadlinesPrompt({
+        keyword: input.keyword,
+        currentDate: new Date().toISOString(),
+    });
 
-  if (!output) {
-    return { deadlines: [] };
-  }
-  
-  return output;
+    if (!output) {
+      return { deadlines: [] };
+    }
+    
+    return output;
+});
+
+export async function trackDeadlines(input: TrackDeadlinesInput): Promise<TrackDeadlinesOutput> {
+  return trackDeadlinesFlow(input);
 }

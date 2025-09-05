@@ -7,7 +7,7 @@
  *                           to generate a personalized, encouraging message.
  */
 
-import { generateWithApiKey } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateStreakInsightInputSchema = z.object({
@@ -15,7 +15,7 @@ const GenerateStreakInsightInputSchema = z.object({
   longestStreak: z.number().describe("The user's longest-ever daily streak."),
   rank: z.number().optional().describe("The user's current rank on the leaderboard. Can be null if not ranked."),
   totalUsers: z.number().describe("The total number of users on the leaderboard."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().describe("Optional user-provided Gemini API key. Not used in this flow directly but kept for potential future use and schema consistency."),
 });
 export type GenerateStreakInsightInput = z.infer<typeof GenerateStreakInsightInputSchema>;
 
@@ -35,14 +35,20 @@ const mockInsights = [
     "Don't stop now, you've got momentum on your side!",
 ];
 
-export async function generateStreakInsight(input: GenerateStreakInsightInput): Promise<GenerateStreakInsightOutput> {
-
-  const promptText = `You are a motivating and analytical AI coach. Your goal is to generate a single, short, encouraging sentence for a user based on their daily streak and leaderboard performance.
+const streakInsightPrompt = ai.definePrompt({
+    name: 'streakInsightPrompt',
+    input: {
+        schema: GenerateStreakInsightInputSchema.omit({apiKey: true}), // We don't need apiKey in the prompt itself
+    },
+    output: {
+        schema: GenerateStreakInsightOutputSchema,
+    },
+    prompt: `You are a motivating and analytical AI coach. Your goal is to generate a single, short, encouraging sentence for a user based on their daily streak and leaderboard performance.
 
 **User Data:**
-- Current Streak: ${input.currentStreak} days
-- Longest Streak: ${input.longestStreak} days
-- Leaderboard Rank: ${input.rank ? `${input.rank} / ${input.totalUsers}` : 'Not Ranked'}
+- Current Streak: {{{currentStreak}}} days
+- Longest Streak: {{{longestStreak}}} days
+- Leaderboard Rank: {{#if rank}}{{rank}} / {{totalUsers}}{{else}}Not Ranked{{/if}}
 
 **Instructions:**
 1.  **Acknowledge Milestones:** If the streak hits a specific milestone, make it the focus.
@@ -57,39 +63,38 @@ export async function generateStreakInsight(input: GenerateStreakInsightInput): 
     -   If rank is in the top 25%: "Keeping a streak puts you in the top 25% of all users. Keep climbing!"
     -   If rank is available but not top 25%: "You're on the leaderboard! Keep the streak alive to climb higher."
 3.  **Compare to Longest Streak:** If not a milestone and not highly ranked, compare to their personal best.
-    -   If approaching longest streak: "You're only ${input.longestStreak - input.currentStreak} days away from your personal best!"
+    -   If approaching longest streak: "You're only {{subtract longestStreak currentStreak}} days away from your personal best!"
     -   If just broke longest streak: "New personal record! You've officially set your new longest streak."
 4.  **Default Encouragement:** If none of the above apply (e.g., low streak, low rank), give a simple, encouraging message.
     -   "Each day is a new victory. Keep it up!"
     -   "Consistency is key. Another great day!"
 5.  **Output:** Provide only a single sentence in the 'insight' field.
 
-**Example for a 4-day streak, ranked 52/100:**
-"You're on the leaderboard! Keep the streak alive to climb higher."
+Now, generate the insight for the provided user data.`,
+});
 
-**Example for a 31-day streak:**
-"An entire month of dedication! You're in the top percentile of users for consistency."
-
-Now, generate the insight for the provided user data.`;
-
-  try {
-    const { output } = await generateWithApiKey(input.apiKey, {
-        model: 'googleai/gemini-2.0-flash',
-        prompt: promptText,
-        output: {
-            schema: GenerateStreakInsightOutputSchema,
-        },
-    });
-
-    if (!output || !output.insight) {
-      throw new Error("AI did not return a valid insight.");
+const generateStreakInsightFlow = ai.defineFlow(
+  {
+    name: 'generateStreakInsightFlow',
+    inputSchema: GenerateStreakInsightInputSchema,
+    outputSchema: GenerateStreakInsightOutputSchema,
+  },
+  async (input) => {
+    try {
+        const { output } = await streakInsightPrompt(input);
+        if (!output || !output.insight) {
+            throw new Error("AI did not return a valid insight.");
+        }
+        return output;
+    } catch (error) {
+        console.warn("AI insight generation failed, using fallback. Error:", error);
+        // Return a random mock insight on any error
+        const randomIndex = Math.floor(Math.random() * mockInsights.length);
+        return { insight: mockInsights[randomIndex] };
     }
-    
-    return output;
-  } catch (error) {
-    console.warn("AI insight generation failed, using fallback. Error:", error);
-    // Return a random mock insight on any error
-    const randomIndex = Math.floor(Math.random() * mockInsights.length);
-    return { insight: mockInsights[randomIndex] };
   }
+);
+
+export async function generateStreakInsight(input: GenerateStreakInsightInput): Promise<GenerateStreakInsightOutput> {
+  return generateStreakInsightFlow(input);
 }
