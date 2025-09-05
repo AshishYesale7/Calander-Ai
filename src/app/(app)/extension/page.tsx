@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download, ExternalLink, Code } from 'lucide-react';
+import { Search, Download, ExternalLink, Code, Settings } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
@@ -18,38 +18,38 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
 const allPlugins = [
-  { 
-    name: 'Codefolio Ally', 
+  {
+    name: 'Codefolio Ally',
     logo: '/logos/codefolio-logo.svg',
     component: CodefolioDashboard // This will be conditionally rendered
   },
-  { 
-    name: 'Android Studio', 
+  {
+    name: 'Android Studio',
     logo: 'https://worldvectorlogo.com/logos/android-studio-1.svg',
     description: 'The official IDE for Android app development.'
   },
-  { 
-    name: 'AppCode', 
+  {
+    name: 'AppCode',
     logo: 'https://worldvectorlogo.com/logos/appcode.svg',
     description: 'Smart IDE for iOS/macOS development by JetBrains.'
   },
-  { 
-    name: 'Chrome', 
+  {
+    name: 'Chrome',
     logo: 'https://worldvectorlogo.com/logos/chrome.svg',
     description: 'Google\'s web browser for a fast, secure experience.'
   },
-  { 
-    name: 'Figma', 
+  {
+    name: 'Figma',
     logo: 'https://worldvectorlogo.com/logos/figma-1.svg',
     description: 'The collaborative interface design tool.'
   },
-  { 
-    name: 'VS Code', 
+  {
+    name: 'VS Code',
     logo: 'https://worldvectorlogo.com/logos/visual-studio-code-1.svg',
     description: 'A powerful, lightweight source code editor.'
   },
-  { 
-    name: 'Blender', 
+  {
+    name: 'Blender',
     logo: 'https://worldvectorlogo.com/logos/blender-2.svg',
     description: 'Free and open source 3D creation suite.'
   },
@@ -62,9 +62,10 @@ interface FullScreenPluginViewProps {
   plugin: Plugin;
   onClose: () => void;
   onLogout: () => void;
+  onSettings: () => void;
 }
 
-const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, onLogout }) => {
+const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, onLogout, onSettings }) => {
   const PluginComponent = plugin.component;
 
   return (
@@ -78,7 +79,8 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
           )}
           <h2 className="text-xl font-semibold">{plugin.name}</h2>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>
             <Button variant="ghost" onClick={onLogout}>Logout</Button>
             <Button variant="outline" onClick={onClose}>
                 Close Extension
@@ -133,7 +135,7 @@ export default function ExtensionPage() {
   const handleInstall = (pluginName: string) => {
     setInstalledPlugins((prev) => new Set(prev).add(pluginName));
   };
-  
+
   const handleOpen = (plugin: Plugin) => {
     if (plugin.name === 'Codefolio Ally') {
         if (!isCodefolioLoggedIn) {
@@ -171,7 +173,7 @@ export default function ExtensionPage() {
           toast({ title: "Error", description: `Could not save usernames: ${err.message}`, variant: "destructive" });
       });
   };
-  
+
   const handleCodefolioLogout = () => {
     if (!user) return;
     saveCodingUsernames(user.uid, {
@@ -183,6 +185,10 @@ export default function ExtensionPage() {
       setActivePlugin(null);
       toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
     });
+  };
+  
+  const handleSettings = () => {
+    setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
   };
 
   const filteredPlugins = allPlugins.filter((plugin) =>
@@ -210,14 +216,14 @@ export default function ExtensionPage() {
           />
         </div>
       </div>
-      
+
       <Card className="frosted-glass p-4 md:p-8">
         <CardContent className="p-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
             {filteredPlugins.map((plugin) => {
                 const isInstalled = installedPlugins.has(plugin.name);
                 const isCodefolio = plugin.name === 'Codefolio Ally';
-                
+
                 return (
                     <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
                         <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
@@ -236,7 +242,7 @@ export default function ExtensionPage() {
                         <div className="text-center">
                             <p className="font-medium text-sm text-foreground">{plugin.name}</p>
                             <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
-                            
+
                             {isCheckingLogin && isCodefolio ? (
                                 <Button disabled variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs">
                                     <LoadingSpinner size="sm" />
@@ -257,7 +263,7 @@ export default function ExtensionPage() {
           </div>
         </CardContent>
       </Card>
-      
+
       {activePlugin && activePlugin.name === 'CodefolioLogin' && (
          <CodefolioLogin
           onLoginSuccess={handleCodefolioLogin}
@@ -266,10 +272,11 @@ export default function ExtensionPage() {
       )}
 
       {activePlugin && activePlugin.name === 'Codefolio Ally' && (
-        <FullScreenPluginView 
-          plugin={activePlugin} 
+        <FullScreenPluginView
+          plugin={activePlugin}
           onClose={() => setActivePlugin(null)}
           onLogout={handleCodefolioLogout}
+          onSettings={handleSettings}
         />
       )}
     </div>
