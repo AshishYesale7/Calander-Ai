@@ -10,21 +10,22 @@ interface DailyStreakCardProps {
 }
 
 export default function DailyStreakCard({ currentStreak }: DailyStreakCardProps) {
-    const targetStreak = Math.max(20, Math.ceil((currentStreak + 1) / 10) * 10); // Target is next multiple of 10, or 20
+    // Let's make the target dynamic and reasonable. E.g. next multiple of 5 or 10.
+    const targetStreak = Math.max(10, Math.ceil((currentStreak + 1) / 5) * 5); 
     const progress = (currentStreak / targetStreak) * 100;
 
     return (
-        <Card className="frosted-glass bg-card/60">
-            <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-medium">Daily Streak</CardTitle>
-                     <div className="h-8 w-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                        <Droplet className="h-5 w-5 text-cyan-400" />
-                    </div>
+        <Card className="frosted-glass bg-card/60 p-6">
+            <CardHeader className="p-0 flex flex-row items-start justify-between">
+                <div>
+                    <CardTitle className="text-lg font-semibold">Daily Streak</CardTitle>
+                    <CardDescription className="text-sm mt-1">Solve {targetStreak} problems to hit your next goal!</CardDescription>
                 </div>
-                <CardDescription>Solve 20 Problems</CardDescription>
+                 <div className="h-10 w-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                    <Droplet className="h-6 w-6 text-cyan-400" />
+                </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 mt-4">
                 <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold">{currentStreak}</span>
                     <span className="text-lg text-muted-foreground">of {targetStreak}</span>

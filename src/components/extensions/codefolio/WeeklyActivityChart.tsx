@@ -3,13 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
+// Mock data, in a real app this would be fetched
 const data = [
   { day: 'Mon', solved: 5, fill: 'hsl(var(--chart-2))' },
   { day: 'Tue', solved: 10, fill: 'hsl(var(--chart-1))' },
-  { day: 'Wed', solved: 18, fill: 'hsl(var(--chart-2))' },
-  { day: 'Wed_target', solved: 15, isTarget: true, fill: 'hsl(var(--foreground))' },
+  { day: 'Wed', solved: 18, isTarget: true, fill: 'hsl(var(--foreground))' },
   { day: 'Thu', solved: 14, fill: 'hsl(var(--chart-2))' },
-  { day: 'Thu_target', solved: 5, isTarget: true, fill: 'hsl(var(--foreground))' },
   { day: 'Fri', solved: 3, fill: 'hsl(var(--chart-1))' },
   { day: 'Sat', solved: 9, fill: 'hsl(var(--chart-1))' },
   { day: 'Sun', solved: 20, fill: 'hsl(var(--chart-1))' },
@@ -18,7 +17,11 @@ const data = [
 export default function WeeklyActivityChart() {
   return (
     <Card className="frosted-glass bg-card/60">
-      <CardContent className="p-4">
+        <CardHeader>
+            <CardTitle className="text-lg font-semibold">Weekly Activity</CardTitle>
+            <CardDescription>Problems solved per day</CardDescription>
+        </CardHeader>
+      <CardContent className="p-4 pt-0">
         <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 5, right: 0, left: -20, bottom: -5 }}>
@@ -37,7 +40,7 @@ export default function WeeklyActivityChart() {
                     />
                     <Bar dataKey="solved" radius={[4, 4, 0, 0]} barSize={12}>
                        {data.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.isTarget ? entry.fill : entry.fill} opacity={entry.isTarget ? 0.5 : 1} />
+                           <Cell key={`cell-${index}`} fill={entry.isTarget ? entry.fill : entry.fill} opacity={entry.isTarget ? 0.3 : 1} />
                        ))}
                     </Bar>
                 </BarChart>

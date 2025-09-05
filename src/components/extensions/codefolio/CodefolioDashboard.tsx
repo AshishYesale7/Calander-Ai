@@ -2,11 +2,9 @@
 'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar, Droplet, Star, TrendingUp, Trophy } from "lucide-react";
-import ContestCalendar from "./ContestCalendar";
 import SolvedProblemsCard from "./SolvedProblemsCard";
 import DailyStreakCard from "./DailyStreakCard";
 import WeeklyTargetCard from "./WeeklyTargetCard";
-import WeeklyActivityChart from "./WeeklyActivityChart";
 import PlatformStatsCard from "./PlatformStatsCard";
 import UpcomingContests from "./UpcomingContests";
 import type { AllPlatformsUserData, Contest } from "@/ai/flows/fetch-coding-stats-flow";
@@ -20,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { TimelineEvent } from "@/types";
 import { saveTimelineEvent } from "@/services/timelineService";
 import { useTimezone } from "@/hooks/use-timezone";
+import Image from "next/image";
 
 export default function CodefolioDashboard() {
   const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
@@ -125,28 +124,27 @@ export default function CodefolioDashboard() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full w-full">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* Left Column */}
-            <div className="lg:col-span-1 space-y-6">
-                {userData.codeforces && !userData.codeforces.error && (
-                    <>
-                        <ContestCalendar contests={userData.codeforces?.contests} />
-                        <UpcomingContests contests={userData.codeforces?.contests} onAddContest={handleAddContestToTimeline} />
-                    </>
+        <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold font-headline">Welcome, coding wizard</h1>
+                    <p className="text-muted-foreground">Your journey awaits.</p>
+                </div>
+                <Image src="https://placehold.co/100x60/png?text=Illustration" width={100} height={60} alt="Coding illustration" data-ai-hint="people programming" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SolvedProblemsCard totalSolved={totalSolved} />
+                <DailyStreakCard currentStreak={longestStreak} />
+                <div className="md:col-span-2">
+                    <WeeklyTargetCard />
+                </div>
+                 {userData.codeforces && !userData.codeforces.error && (
+                    <div className="md:col-span-2">
+                         <UpcomingContests contests={userData.codeforces?.contests} onAddContest={handleAddContestToTimeline} />
+                    </div>
                 )}
-            </div>
-
-            {/* Center Column */}
-            <div className="lg:col-span-1 space-y-6">
-                 <SolvedProblemsCard totalSolved={totalSolved} />
-                 <DailyStreakCard currentStreak={longestStreak} />
-                 <WeeklyTargetCard />
-            </div>
-
-            {/* Right Column */}
-            <div className="lg:col-span-1 space-y-6">
-                <WeeklyActivityChart />
-                {userData.codeforces && !userData.codeforces.error && (
+                 {userData.codeforces && !userData.codeforces.error && (
                     <PlatformStatsCard
                         platform="Codeforces"
                         iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-code-forces-3628695-3030187.png"
