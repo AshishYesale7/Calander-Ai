@@ -9,8 +9,6 @@ type CodingUsernames = {
     codeforces?: string;
     leetcode?: string;
     codechef?: string;
-    geeksforgeeks?: string;
-    codestudio?: string;
 }
 
 const getUserDocRef = (userId: string) => {

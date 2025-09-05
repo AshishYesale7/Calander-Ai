@@ -14,8 +14,6 @@ const platforms = [
   { id: 'codeforces', name: 'Codeforces', icon: 'https://cdn.iconscout.com/icon/free/png-256/free-code-forces-3628695-3030187.png' },
   { id: 'leetcode', name: 'Leetcode', icon: 'https://cdn.iconscout.com/icon/free/png-256/free-leetcode-3628885-3030128.png' },
   { id: 'codechef', name: 'Codechef', icon: 'https://cdn.iconscout.com/icon/free/png-256/free-codechef-3628876-3030119.png' },
-  { id: 'geeksforgeeks', name: 'Geeks for Geeks', icon: 'https://img.icons8.com/color/48/geeksforgeeks.png' },
-  { id: 'codestudio', name: 'Codestudio', icon: 'https://img.icons8.com/color/48/coding-ninjas.png' },
 ] as const;
 
 type PlatformId = typeof platforms[number]['id'];

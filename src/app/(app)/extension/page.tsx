@@ -161,8 +161,6 @@ export default function ExtensionPage() {
           codeforces: data.codeforces?.username,
           leetcode: data.leetcode?.username,
           codechef: data.codechef?.username,
-          geeksforgeeks: data.geeksforgeeks?.username,
-          codestudio: data.codestudio?.username,
       };
 
       // Filter out any undefined usernames before saving

@@ -122,15 +122,6 @@ export default function CodefolioDashboard({ userData: initialData }: CodefolioD
                         ]}
                     />
                 )}
-                 {userData.geeksforgeeks && !userData.geeksforgeeks.error && (
-                     <PlatformStatsCard
-                        platform="Geeks for Geeks"
-                        iconUrl="https://img.icons8.com/color/48/geeksforgeeks.png"
-                        users={[
-                            { name: userData.geeksforgeeks.username, value: `${userData.geeksforgeeks.totalSolved} solved` },
-                        ]}
-                    />
-                 )}
             </div>
         </div>
     </div>

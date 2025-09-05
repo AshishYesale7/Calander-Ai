@@ -15,8 +15,6 @@ const FetchCodingStatsInputSchema = z.object({
     codeforces: z.string().optional().describe("Codeforces username"),
     leetcode: z.string().optional().describe("LeetCode username"),
     codechef: z.string().optional().describe("Codechef username"),
-    geeksforgeeks: z.string().optional().describe("Geeks for Geeks username"),
-    codestudio: z.string().optional().describe("Coding Ninjas Studio username"),
     apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
 });
 export type FetchCodingStatsInput = z.infer<typeof FetchCodingStatsInputSchema>;
@@ -59,27 +57,11 @@ const CodeChefDataSchema = z.object({
     error: z.string().optional().describe("An error message if the user is not found or data is private."),
 });
 
-const GeeksForGeeksDataSchema = z.object({
-    username: z.string().describe("The user's Geeks for Geeks username."),
-    totalSolved: z.number().describe("Total problems solved."),
-    streak: z.number().describe("Current daily problem-solving streak."),
-    error: z.string().optional().describe("An error message if the user is not found or data is private."),
-});
-
-const CodeStudioDataSchema = z.object({
-    username: z.string().describe("The user's Coding Ninjas Studio username."),
-    totalSolved: z.number().describe("Total problems solved."),
-    error: z.string().optional().describe("An error message if the user is not found or data is private."),
-});
-
-
 // Combined Output Schema
 const AllPlatformsUserDataSchema = z.object({
     codeforces: CodeforcesDataSchema.optional(),
     leetcode: LeetCodeDataSchema.optional(),
     codechef: CodeChefDataSchema.optional(),
-    geeksforgeeks: GeeksForGeeksDataSchema.optional(),
-    codestudio: CodeStudioDataSchema.optional(),
 });
 export type AllPlatformsUserData = z.infer<typeof AllPlatformsUserDataSchema>;
 
@@ -104,8 +86,6 @@ ${usernameEntries.map(([platform, username]) => `- ${platform}: ${username}`).jo
     -   **Codeforces:** Get current rating, rank, total problems solved, and current daily streak. Also, fetch a list of the next 2-3 upcoming contests.
     -   **LeetCode:** Get total solved count, the breakdown of easy/medium/hard problems, and the current daily streak.
     -   **CodeChef:** Get current rating, star rating (e.g., "4 Star"), and total problems solved.
-    -   **Geeks for Geeks (GFG):** Get total problems solved and the current daily streak.
-    -   **Codestudio (Coding Ninjas):** Get total problems solved.
 3.  **Handle Missing Users:** If and only if you are absolutely certain a user does not exist on a platform or their profile is private, you MUST set the "error" field for that platform with a descriptive message (e.g., "User not found or profile is private.").
 4.  **Format Output:** Your entire output MUST be a single JSON object that strictly adheres to the 'AllPlatformsUserDataSchema'. Only include keys for the platforms that had usernames provided.
 
