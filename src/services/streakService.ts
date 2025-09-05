@@ -38,7 +38,6 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
   }
 
   try {
-    // Using merge: true ensures we only update the provided fields
     await setDoc(streakDocRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Failed to update streak data in Firestore:", error);
@@ -54,15 +53,12 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
     const streaksCollectionRef = collection(db, 'streaks');
     const usersCollectionRef = collection(db, 'users');
     
-    // Query streaks collection, order by currentStreak descending, and limit to top 50
     const q = query(streaksCollectionRef, orderBy('currentStreak', 'desc'), limit(50));
     
     try {
         const streakSnapshot = await getDocs(q);
         
-        const leaderboard: LeaderboardUser[] = [];
-        
-        for (const streakDoc of streakSnapshot.docs) {
+        const leaderboardPromises = streakSnapshot.docs.map(async (streakDoc) => {
             const streakData = streakDoc.data();
             const userId = streakDoc.id;
             
@@ -71,19 +67,22 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                leaderboard.push({
+                return {
                     id: userId,
                     displayName: userData.displayName || 'Anonymous User',
                     photoURL: userData.photoURL,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
-                });
+                };
             }
-        }
+            return null;
+        });
+        
+        const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];
         
         return leaderboard;
     } catch (error) {
         console.error("Failed to get leaderboard data from Firestore:", error);
-        throw new Error("Could not retrieve leaderboard data.");
+        return []; // Return empty array on error
     }
 };

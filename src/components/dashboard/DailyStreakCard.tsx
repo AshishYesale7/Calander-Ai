@@ -8,6 +8,10 @@ import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, getDay, isSameDay, addDays } from 'date-fns';
+import { generateStreakInsight } from '@/ai/flows/generate-streak-insight-flow';
+import { useApiKey } from '@/hooks/use-api-key';
+import { getLeaderboardData } from '@/services/streakService';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const FlameIcon = ({ isComplete }: { isComplete: boolean }) => (
     <svg width="48" height="48" viewBox="0 0 512 512" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg">
@@ -38,6 +42,40 @@ const FlameIcon = ({ isComplete }: { isComplete: boolean }) => (
 export default function DailyStreakCard() {
     const { user } = useAuth();
     const { streakData, isLoading } = useStreak();
+    const { apiKey } = useApiKey();
+    const [insight, setInsight] = useState<string | null>(null);
+    const [isInsightLoading, setIsInsightLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchInsight = async () => {
+            if (!user || !streakData) return;
+
+            setIsInsightLoading(true);
+            try {
+                const leaderboard = await getLeaderboardData();
+                const userRankData = leaderboard.find(u => u.id === user.uid);
+                
+                const result = await generateStreakInsight({
+                    currentStreak: streakData.currentStreak,
+                    longestStreak: streakData.longestStreak,
+                    rank: userRankData ? leaderboard.indexOf(userRankData) + 1 : undefined,
+                    totalUsers: leaderboard.length,
+                    apiKey
+                });
+                setInsight(result.insight);
+            } catch (error) {
+                console.error("Failed to fetch streak insight:", error);
+                setInsight("Keep up the great work! Consistency is key."); // Fallback
+            } finally {
+                setIsInsightLoading(false);
+            }
+        };
+
+        if (streakData && !isLoading) {
+            fetchInsight();
+        }
+    }, [user, streakData, apiKey, isLoading]);
+
 
     // Memoize the calculation of the current week's days
     const weekDays = useMemo(() => {
@@ -47,14 +85,11 @@ export default function DailyStreakCard() {
     }, []);
 
     const weekDaysWithStatus = useMemo(() => {
-        // Mock data for which days are complete. In a real app, this would come from user's activity log.
-        const completedDays = [0, 2, 4]; // Example: Sun, Tue, Thu
-        
         const now = new Date();
-        const currentDayIndex = getDay(now); // Sunday is 0
-
-        return weekDays.map((day, index) => {
-            const isCompleted = isSameDay(day, now); // The current day is always marked as complete for this design
+        return weekDays.map((day) => {
+            // A simple mock: for this design, we mark the current day as "completed"
+            // and past days as not completed to show progress through the week.
+            const isCompleted = isSameDay(day, now);
             return {
                 dayChar: format(day, 'E').charAt(0),
                 isCompleted: isCompleted,
@@ -66,14 +101,14 @@ export default function DailyStreakCard() {
     const renderContent = () => {
         if (isLoading) {
             return (
-                <div className="flex justify-center items-center h-full">
+                <div className="flex justify-center items-center h-full p-6">
                     <Skeleton className="h-48 w-full" />
                 </div>
             )
         }
         
         if (!streakData) {
-             return <p className="text-center text-white/70">Start a session to track your streak!</p>;
+             return <p className="text-center text-white/70 p-6">Start a session to track your streak!</p>;
         }
 
         return (
@@ -90,9 +125,13 @@ export default function DailyStreakCard() {
                         <h3 className="text-2xl font-bold">
                             {streakData.currentStreak} day streak
                         </h3>
-                        <p className="text-white/80 text-sm mt-1">
-                            You extended your streak before 51.9% of all learners yesterday!
-                        </p>
+                        <div className="text-white/80 text-sm mt-1 h-5">
+                          {isInsightLoading ? (
+                              <LoadingSpinner size="sm" className="text-white/80"/>
+                          ) : (
+                              <p className="animate-in fade-in duration-500">{insight}</p>
+                          )}
+                        </div>
                     </div>
                     <div className="flex-shrink-0">
                         <FlameIcon isComplete={streakData.todayStreakCompleted} />
