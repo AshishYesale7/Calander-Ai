@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Download, ExternalLink, Code, Settings, CheckCircle, Trash2 } from 'lucide-react';
@@ -11,7 +11,7 @@ import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashb
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
 import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
 import { useAuth } from '@/context/AuthContext';
-import { getCodingUsernames, saveCodingUsernames } from '@/services/userService';
+import { getCodingUsernames, saveCodingUsernames, getInstalledPlugins, saveInstalledPlugins } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
@@ -110,7 +110,6 @@ const allPlugins = [
 
 type Plugin = (typeof allPlugins)[0];
 
-const INSTALLED_PLUGINS_KEY = 'futureSightInstalledPlugins';
 const DEFAULT_PLUGINS = ['VS Code', 'Codefolio Ally', 'Discord'];
 
 interface FullScreenPluginViewProps {
@@ -169,36 +168,47 @@ export default function ExtensionPage() {
   const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
 
-  // Effect to load installed plugins from local storage on mount
+  // Fetch installed plugins from Firestore on mount
   useEffect(() => {
-    try {
-      const storedPlugins = localStorage.getItem(INSTALLED_PLUGINS_KEY);
-      if (storedPlugins) {
-        setInstalledPluginsSet(new Set(JSON.parse(storedPlugins)));
-      } else {
-        // If nothing is stored, use the default set
+    if (user) {
+      getInstalledPlugins(user.uid).then(plugins => {
+        if (plugins.length > 0) {
+          setInstalledPluginsSet(new Set(plugins));
+        } else {
+          // If user has no saved plugins, set the defaults
+          setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
+          // And save these defaults to their profile
+          saveInstalledPlugins(user.uid, DEFAULT_PLUGINS);
+        }
+      }).catch(err => {
+        console.error("Failed to load plugins from Firestore", err);
+        toast({ title: "Error", description: "Could not load your installed plugins.", variant: "destructive"});
+        // Fallback to defaults on error
         setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
-      }
-    } catch (error) {
-      console.error("Failed to load plugins from local storage", error);
-      setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
+      });
     }
-  }, []);
+  }, [user, toast]);
+  
+  const updateInstalledPlugins = useCallback((newSet: Set<string>) => {
+      setInstalledPluginsSet(newSet);
+      if (user) {
+          saveInstalledPlugins(user.uid, Array.from(newSet)).catch(err => {
+              toast({ title: "Sync Error", description: "Could not save your plugin changes to the cloud.", variant: "destructive" });
+          });
+      }
+  }, [user, toast]);
 
-  // Effect to save installed plugins to local storage whenever the set changes
-  useEffect(() => {
-    try {
-      // Do not save the initial empty set before it's loaded from storage
-      if (installedPluginsSet.size > 0) {
-        localStorage.setItem(INSTALLED_PLUGINS_KEY, JSON.stringify(Array.from(installedPluginsSet)));
-      } else {
-        // If the set becomes empty (e.g., user uninstalls all), clear storage
-        localStorage.removeItem(INSTALLED_PLUGINS_KEY);
-      }
-    } catch (error) {
-      console.error("Failed to save plugins to local storage", error);
-    }
-  }, [installedPluginsSet]);
+  const handleInstall = (pluginName: string) => {
+    const newSet = new Set(installedPluginsSet);
+    newSet.add(pluginName);
+    updateInstalledPlugins(newSet);
+  };
+  
+  const handleUninstall = (pluginName: string) => {
+    const newSet = new Set(installedPluginsSet);
+    newSet.delete(pluginName);
+    updateInstalledPlugins(newSet);
+  };
 
   useEffect(() => {
     if (user) {
@@ -218,18 +228,6 @@ export default function ExtensionPage() {
         setIsCheckingLogin(false);
     }
   }, [user]);
-
-  const handleInstall = (pluginName: string) => {
-    setInstalledPluginsSet((prev) => new Set(prev).add(pluginName));
-  };
-  
-  const handleUninstall = (pluginName: string) => {
-      setInstalledPluginsSet((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(pluginName);
-          return newSet;
-      });
-  };
 
   const handleOpen = (plugin: Plugin) => {
     if (plugin.name === 'Codefolio Ally') {

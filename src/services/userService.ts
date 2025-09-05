@@ -118,3 +118,28 @@ export const saveUserFCMToken = async (userId: string, token: string): Promise<v
         throw new Error("Could not save notification token.");
     }
 };
+
+// New functions for managing installed plugins
+export const saveInstalledPlugins = async (userId: string, pluginNames: string[]): Promise<void> => {
+    const userDocRef = getUserDocRef(userId);
+    try {
+        await setDoc(userDocRef, { installedPlugins: pluginNames }, { merge: true });
+    } catch (error) {
+        console.error("Failed to save installed plugins to Firestore:", error);
+        throw new Error("Could not save your installed plugins.");
+    }
+};
+
+export const getInstalledPlugins = async (userId: string): Promise<string[]> => {
+    const userDocRef = getUserDocRef(userId);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists() && Array.isArray(docSnap.data().installedPlugins)) {
+            return docSnap.data().installedPlugins;
+        }
+        return [];
+    } catch (error) {
+        console.error("Failed to get installed plugins from Firestore:", error);
+        throw new Error("Could not retrieve your installed plugins.");
+    }
+};
