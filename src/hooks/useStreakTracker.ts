@@ -19,19 +19,43 @@ export const useStreakTracker = () => {
     const handleInitialStreakLogic = useCallback(async (userId: string) => {
         try {
             let streakData = await getStreakData(userId);
+            const nowInUserTz = toZonedTime(new Date(), timezone);
+            const startOfTodayInUserTz = fromZonedTime(formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone }), timezone);
+
             if (!streakData) {
                 // First-time user, initialize their streak data.
-                const nowInUserTz = toZonedTime(new Date(), timezone);
-                const startOfTodayInUserTz = fromZonedTime(formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone }), timezone);
-
                 streakData = {
                     currentStreak: 0,
                     longestStreak: 0,
-                    lastActivityDate: startOfTodayInUserTz, // Start with today
+                    lastActivityDate: startOfTodayInUserTz,
                     timeSpentToday: 0,
                     todayStreakCompleted: false,
                 };
                 await updateStreakData(userId, streakData);
+                return; // Exit after initializing
+            }
+
+            // --- Timezone-Aware Daily Reset Logic ---
+            const lastActivityInUserTz = toZonedTime(streakData.lastActivityDate, timezone);
+            const todayFormatted = formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
+            const lastDayFormatted = formatTz(lastActivityInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
+
+            // If the last recorded activity was not today, we need to perform daily reset checks.
+            if (todayFormatted !== lastDayFormatted) {
+                const yesterdayInUserTz = new Date(nowInUserTz.setDate(nowInUserTz.getDate() - 1));
+                const yesterdayFormatted = formatTz(yesterdayInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
+
+                const updatePayload: Partial<StreakData> = {
+                    timeSpentToday: 0,
+                    todayStreakCompleted: false,
+                };
+                
+                // If the last activity was NOT yesterday, the streak is broken.
+                if (lastDayFormatted !== yesterdayFormatted) {
+                    updatePayload.currentStreak = 0;
+                }
+                
+                await updateStreakData(userId, updatePayload);
             }
         } catch (error) {
             console.error("Error in initial streak setup:", error);
@@ -46,7 +70,7 @@ export const useStreakTracker = () => {
 
         timerRef.current = setInterval(async () => {
             if (document.hidden) {
-                lastUpdateRef.current = new Date(); // Keep updating to track time away accurately
+                lastUpdateRef.current = new Date();
                 return;
             }
 
@@ -57,27 +81,13 @@ export const useStreakTracker = () => {
             const streakData = await getStreakData(user.uid);
             if (!streakData) return;
             
-            const nowInUserTz = toZonedTime(nowUtc, timezone);
-            const lastActivityInUserTz = toZonedTime(streakData.lastActivityDate, timezone);
-
-            const todayFormatted = formatTz(nowInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
-            const lastDayFormatted = formatTz(lastActivityInUserTz, 'yyyy-MM-dd', { timeZone: timezone });
-
-            let timeToday = streakData.timeSpentToday || 0;
-            let streakCompletedToday = streakData.todayStreakCompleted || false;
-            let currentStreak = streakData.currentStreak || 0;
-
-            // --- Daily Reset Logic (Timezone-Aware) ---
-            if (todayFormatted !== lastDayFormatted) {
-                // If the last activity was NOT yesterday, the streak is broken.
-                const yesterdayFormatted = formatTz(new Date(nowInUserTz.setDate(nowInUserTz.getDate() - 1)), 'yyyy-MM-dd', { timeZone: timezone });
-                if (lastDayFormatted !== yesterdayFormatted) {
-                    currentStreak = 0;
-                }
-                
-                // Reset daily progress regardless of streak status.
-                timeToday = 0;
-                streakCompletedToday = false;
+            const timeToday = streakData.timeSpentToday || 0;
+            const streakCompletedToday = streakData.todayStreakCompleted || false;
+            
+            // If streak is already done for today, just update the activity time and exit.
+            if(streakCompletedToday) {
+                await updateStreakData(user.uid, { lastActivityDate: nowUtc });
+                return;
             }
 
             const newTimeSpent = timeToday + elapsedSeconds;
@@ -85,17 +95,16 @@ export const useStreakTracker = () => {
             const updatePayload: Partial<StreakData> = {
                 timeSpentToday: newTimeSpent,
                 lastActivityDate: nowUtc,
-                todayStreakCompleted: streakCompletedToday,
-                currentStreak: currentStreak,
             };
 
             // If the goal is met AND it hasn't been marked as complete for today yet
             if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakCompletedToday) {
                 updatePayload.todayStreakCompleted = true;
-                updatePayload.currentStreak = currentStreak + 1;
+                const newStreak = (streakData.currentStreak || 0) + 1;
+                updatePayload.currentStreak = newStreak;
                 
-                if (updatePayload.currentStreak > (streakData.longestStreak || 0)) {
-                    updatePayload.longestStreak = updatePayload.currentStreak;
+                if (newStreak > (streakData.longestStreak || 0)) {
+                    updatePayload.longestStreak = newStreak;
                 }
             }
             
