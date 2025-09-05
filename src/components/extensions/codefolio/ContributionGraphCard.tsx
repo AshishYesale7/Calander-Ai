@@ -45,8 +45,8 @@ const ContributionGraphCard = () => {
     
     const { daysInGrid, monthLabels } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
-        const firstDayOfWeek = getDay(startDate); // Monday is 1, Sunday is 0
-        const padding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Number of empty cells before start date
+        const dayOfWeek = getDay(startDate);
+        const padding = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0 (Sun) -> 6 padding, 1 (Mon) -> 0 padding, etc.
         
         const gridDays = [...Array(padding).fill(null), ...days];
 
@@ -96,7 +96,7 @@ const ContributionGraphCard = () => {
         if (level === 3) return 'bg-cyan-500/70';
         if (level === 2) return 'bg-cyan-500/50';
         if (level === 1) return 'bg-cyan-500/30';
-        return 'bg-muted/30';
+        return 'bg-muted/30 border border-white/5';
     };
 
     return (
