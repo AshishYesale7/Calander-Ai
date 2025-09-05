@@ -238,7 +238,7 @@ export interface StreakData {
         date: string; // YYYY-MM-DD format
         lastUpdatedStreak: number;
     };
-    completedDays: string[]; // Array of 'YYYY-MM-DD' strings
+    completedDays: string[]; // Array of 'dd-MM-yyyy' strings
 }
 
 export interface LeaderboardUser {

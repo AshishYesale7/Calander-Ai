@@ -9,6 +9,7 @@ import type { StreakData } from '@/types';
 import { useTimezone } from './use-timezone';
 import { toZonedTime } from 'date-fns-tz';
 import { differenceInCalendarDays, format } from 'date-fns';
+import { logUserActivity } from '@/services/activityLogService';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
@@ -96,13 +97,13 @@ export const useStreakTracker = () => {
         
         timerRef.current = setInterval(() => {
             setStreakData(prevData => {
-                if (!prevData || prevData.todayStreakCompleted) {
+                if (!prevData || prevData.todayStreakCompleted || !user) {
                     if (timerRef.current) clearInterval(timerRef.current);
                     return prevData;
                 }
 
                 const newTimeSpent = (prevData.timeSpentToday || 0) + 1;
-                const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
+                const todayStr = format(toZonedTime(new Date(), timezone), 'dd-MM-yyyy');
 
                 if (newTimeSpent >= STREAK_GOAL_SECONDS) {
                     const completedDaysSet = new Set(prevData.completedDays || []);
@@ -122,6 +123,12 @@ export const useStreakTracker = () => {
                         lastActivityDate: new Date(),
                         completedDays: Array.from(completedDaysSet),
                     };
+
+                    // Log the completion activity only once
+                    if (!wasAlreadyCompletedToday) {
+                        logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
+                    }
+                    
                     saveData(updatedData);
                     if (timerRef.current) clearInterval(timerRef.current);
                     return updatedData;
@@ -130,7 +137,7 @@ export const useStreakTracker = () => {
                 }
             });
         }, 1000);
-    }, [setStreakData, saveData, timezone]);
+    }, [setStreakData, saveData, timezone, user]);
 
     const stopTimer = useCallback(() => {
         if (timerRef.current) {

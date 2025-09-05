@@ -32,6 +32,7 @@ import { saveAs } from 'file-saver';
 import TrashPanel from '@/components/timeline/TrashPanel';
 import { useTimezone } from '@/hooks/use-timezone';
 import DailyStreakCard from '@/components/dashboard/DailyStreakCard';
+import ContributionGraphCard from '@/components/extensions/codefolio/ContributionGraphCard';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -622,6 +623,8 @@ export default function DashboardPage() {
         <TodaysPlanCard />
         <DailyStreakCard />
       </div>
+
+      <ContributionGraphCard />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         <div className="xl:col-span-2 space-y-8">
