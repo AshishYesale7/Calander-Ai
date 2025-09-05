@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download, ExternalLink, Code, Settings, CheckCircle } from 'lucide-react';
+import { Search, Download, ExternalLink, Code, Settings, CheckCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getCodingUsernames, saveCodingUsernames } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { cn } from '@/lib/utils';
 
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
@@ -118,6 +119,7 @@ interface FullScreenPluginViewProps {
 
 const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, onLogout, onSettings }) => {
   const PluginComponent = plugin.component;
+  const isCodefolio = plugin.name === 'Codefolio Ally';
 
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
@@ -131,8 +133,8 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
           <h2 className="text-xl font-semibold">{plugin.name}</h2>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>
-            <Button variant="ghost" onClick={onLogout}>Logout</Button>
+            {isCodefolio && <Button variant="ghost" onClick={onSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
+            {isCodefolio && <Button variant="ghost" onClick={onLogout}>Logout</Button>}
             <Button variant="outline" onClick={onClose}>
                 Close Extension
             </Button>
@@ -141,9 +143,9 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
       <main className="flex-1 overflow-auto">
         {PluginComponent ? <CodefolioDashboard /> : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
-                <p className="text-muted-foreground mt-2">This area would contain the full-screen UI for the extension.</p>
+              <div className="text-center p-8">
+                <h1 className="text-4xl font-bold font-headline text-primary">This is the {plugin.name} Extension</h1>
+                <p className="text-muted-foreground mt-2 max-w-md mx-auto">This area is a placeholder to demonstrate where the full-screen user interface for the '{plugin.name}' extension would be displayed.</p>
               </div>
             </div>
         )}
@@ -185,6 +187,14 @@ export default function ExtensionPage() {
 
   const handleInstall = (pluginName: string) => {
     setInstalledPluginsSet((prev) => new Set(prev).add(pluginName));
+  };
+  
+  const handleUninstall = (pluginName: string) => {
+      setInstalledPluginsSet((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(pluginName);
+          return newSet;
+      });
   };
 
   const handleOpen = (plugin: Plugin) => {
@@ -283,9 +293,14 @@ export default function ExtensionPage() {
                         <LoadingSpinner size="sm" />
                     </Button>
                 ) : isInstalled ? (
-                    <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
-                        <ExternalLink className="h-3 w-3 mr-1.5"/> Open
-                    </Button>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                        <Button variant="outline" size="sm" className="h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
+                            <ExternalLink className="h-3 w-3 mr-1.5"/> Open
+                        </Button>
+                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleUninstall(plugin.name)}>
+                            <Trash2 className="h-3 w-3"/>
+                        </Button>
+                    </div>
                 ) : (
                     <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
                         <Download className="h-3 w-3 mr-1.5"/> Install
@@ -365,7 +380,7 @@ export default function ExtensionPage() {
         />
       )}
 
-      {activePlugin && activePlugin.name === 'Codefolio Ally' && (
+      {activePlugin && (
         <FullScreenPluginView
           plugin={activePlugin}
           onClose={() => setActivePlugin(null)}
