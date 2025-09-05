@@ -65,61 +65,136 @@ const AllPlatformsUserDataSchema = z.object({
 export type AllPlatformsUserData = z.infer<typeof AllPlatformsUserDataSchema>;
 
 
-// This function is now a placeholder. It returns an empty object,
-// and is ready for real API calls to be implemented.
+// --- Helper Functions for Real-Time Data Fetching ---
+
+async function fetchCodeforcesData(username: string): Promise<z.infer<typeof CodeforcesDataSchema>> {
+  try {
+    const userInfoResponse = await fetch(`https://codeforces.com/api/user.info?handles=${username}`);
+    const userInfoData = await userInfoResponse.json();
+
+    if (userInfoData.status !== 'OK') {
+      throw new Error(`Codeforces: ${userInfoData.comment}`);
+    }
+
+    const userStatusResponse = await fetch(`https://codeforces.com/api/user.status?handle=${username}&from=1&count=1000`);
+    const userStatusData = await userStatusResponse.json();
+    
+    let totalSolved = 0;
+    if (userStatusData.status === 'OK') {
+        const uniqueSolved = new Set(userStatusData.result.filter((s: any) => s.verdict === 'OK').map((s: any) => s.problem.name));
+        totalSolved = uniqueSolved.size;
+    }
+    
+    // The official Codeforces API does not provide streak data directly. It must be calculated manually, which is complex.
+    // We will return a placeholder value for the streak.
+    const streak = 0;
+
+    const contestsResponse = await fetch('https://codeforces.com/api/contest.list?gym=false');
+    const contestsData = await contestsResponse.json();
+    const upcomingContests = contestsData.result
+      .filter((c: any) => c.phase === 'BEFORE')
+      .slice(0, 5)
+      .map((c:any) => ({
+          id: c.id,
+          name: c.name,
+          startTimeSeconds: c.startTimeSeconds,
+          durationSeconds: c.durationSeconds,
+      }));
+
+    return {
+      username: userInfoData.result[0].handle,
+      rating: userInfoData.result[0].rating || 0,
+      rank: userInfoData.result[0].rank || 'Unrated',
+      totalSolved,
+      streak,
+      contests: upcomingContests,
+    };
+  } catch (error: any) {
+    return { username, rating: 0, rank: 'N/A', totalSolved: 0, streak: 0, error: error.message };
+  }
+}
+
+async function fetchLeetCodeData(username: string): Promise<z.infer<typeof LeetCodeDataSchema>> {
+  try {
+    const query = `
+      query getUserProfile($username: String!) {
+        allQuestionsCount { difficulty count }
+        matchedUser(username: $username) {
+          username
+          submitStats: submitStatsGlobal {
+            acSubmissionNum { difficulty count }
+          }
+        }
+      }
+    `;
+    const response = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { username } }),
+    });
+
+    const data = await response.json();
+    if (data.errors) {
+      throw new Error('User not found on LeetCode.');
+    }
+
+    const stats = data.data.matchedUser.submitStats.acSubmissionNum;
+    const totalSolved = stats.find((s: any) => s.difficulty === 'All')?.count || 0;
+    const easy = stats.find((s: any) => s.difficulty === 'Easy')?.count || 0;
+    const medium = stats.find((s: any) => s.difficulty === 'Medium')?.count || 0;
+    const hard = stats.find((s: any) => s.difficulty === 'Hard')?.count || 0;
+    
+    // LeetCode API does not directly provide streak. Returning placeholder.
+    const streak = 0;
+
+    return { username, totalSolved, easy, medium, hard, streak };
+  } catch (error: any) {
+    return { username, totalSolved: 0, easy: 0, medium: 0, hard: 0, streak: 0, error: error.message };
+  }
+}
+
+async function fetchCodeChefData(username: string): Promise<z.infer<typeof CodeChefDataSchema>> {
+  try {
+    // Using a reliable third-party proxy as the official API requires OAuth
+    const response = await fetch(`https://lazarus-api.onrender.com/codechef/${username}`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `User not found on CodeChef.`);
+    }
+    const data = await response.json();
+
+    return {
+      username: data.profile.username || username,
+      rating: data.currentRating || 0,
+      stars: data.stars || '0',
+      totalSolved: data.problemsSolved || 0,
+    };
+  } catch (error: any) {
+    return { username, rating: 0, stars: '0', totalSolved: 0, error: error.message };
+  }
+}
+
+// This is the main exported function that combines the results.
 export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<AllPlatformsUserData> {
   const { codeforces, leetcode, codechef } = input;
   const result: AllPlatformsUserData = {};
+
+  const promises = [];
+  if (codeforces) promises.push(fetchCodeforcesData(codeforces));
+  if (leetcode) promises.push(fetchLeetCodeData(leetcode));
+  if (codechef) promises.push(fetchCodeChefData(codechef));
+
+  const results = await Promise.all(promises);
   
-  // DEVELOPER NOTE:
-  // To implement real-time data fetching, you will need to replace the placeholder
-  // data below with actual API calls to the respective platforms.
-  // This will likely involve using `fetch()` and handling API keys if required.
-
-  // --- Example for Codeforces ---
-  if (codeforces) {
-    // 1. Find the official Codeforces API documentation.
-    // 2. Make a `fetch` call to the appropriate endpoint, e.g., `https://codeforces.com/api/user.info?handles=${codeforces}`
-    // 3. Parse the JSON response.
-    // 4. Map the response data to the `CodeforcesDataSchema` structure.
-    // 5. Handle potential errors (e.g., user not found, API rate limits).
-    result.codeforces = {
-      username: codeforces,
-      rating: 0,
-      rank: 'N/A',
-      totalSolved: 0,
-      streak: 0,
-      error: 'Real-time data fetching is not yet implemented.',
-    };
-  }
-
-  // --- Example for LeetCode ---
-  if (leetcode) {
-    // LeetCode has a GraphQL API that you may need to call.
-    // Research how to query the LeetCode API for user stats.
-    result.leetcode = {
-      username: leetcode,
-      totalSolved: 0,
-      easy: 0,
-      medium: 0,
-      hard: 0,
-      streak: 0,
-      error: 'Real-time data fetching is not yet implemented.',
-    };
-  }
-
-  // --- Example for CodeChef ---
-  if (codechef) {
-    // CodeChef may require OAuth or an API key.
-    // Check their developer documentation for how to access user data.
-    result.codechef = {
-      username: codechef,
-      rating: 0,
-      stars: '0',
-      totalSolved: 0,
-      error: 'Real-time data fetching is not yet implemented.',
-    };
-  }
+  results.forEach(platformResult => {
+      if (platformResult.hasOwnProperty('contests')) {
+          result.codeforces = platformResult as z.infer<typeof CodeforcesDataSchema>;
+      } else if (platformResult.hasOwnProperty('easy')) {
+          result.leetcode = platformResult as z.infer<typeof LeetCodeDataSchema>;
+      } else if (platformResult.hasOwnProperty('stars')) {
+          result.codechef = platformResult as z.infer<typeof CodeChefDataSchema>;
+      }
+  });
 
   return result;
 }
