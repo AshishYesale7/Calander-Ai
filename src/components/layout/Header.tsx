@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -32,6 +32,7 @@ import Image from 'next/image';
 import { allPlugins } from '@/data/plugins';
 import { getInstalledPlugins } from '@/services/userService';
 import { Code } from 'lucide-react';
+import { usePlugin } from '@/hooks/use-plugin';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -77,7 +78,9 @@ export default function Header({
 }: HeaderProps) {
   const { user, subscription } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { setActivePlugin } = usePlugin();
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -121,6 +124,17 @@ export default function Header({
     hoverTimeoutRef.current = setTimeout(() => {
         setIsPopoverOpen(false);
     }, 200); // 200ms delay
+  };
+
+  const handlePluginClick = (plugin: (typeof allPlugins)[0]) => {
+      setIsPopoverOpen(false);
+      if (pathname !== '/extension') {
+          router.push('/extension');
+          // Give the router a moment to navigate before opening the plugin
+          setTimeout(() => setActivePlugin(plugin), 100);
+      } else {
+          setActivePlugin(plugin);
+      }
   };
 
   return (
@@ -179,11 +193,9 @@ export default function Header({
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
                 <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href="/extension">
-                            <ExtensionIcon className="h-5 w-5" />
-                            <span className="sr-only">Extensions</span>
-                        </Link>
+                    <Button variant="ghost" size="icon">
+                        <ExtensionIcon className="h-5 w-5" />
+                        <span className="sr-only">Extensions</span>
                     </Button>
                 </div>
               </PopoverTrigger>
@@ -193,14 +205,18 @@ export default function Header({
                     <div className="space-y-2">
                         {installedPlugins.length > 0 ? (
                            installedPlugins.map(plugin => (
-                               <div key={plugin.name} className="flex items-center gap-2 text-sm">
+                               <button 
+                                   key={plugin.name}
+                                   onClick={() => handlePluginClick(plugin)}
+                                   className="w-full flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted"
+                                >
                                    {plugin.logo.startsWith('/') ? (
                                         <Code className="h-5 w-5 text-accent" />
                                     ) : (
                                         <Image src={plugin.logo} alt={`${plugin.name} logo`} width={20} height={20} />
                                     )}
                                    <span>{plugin.name}</span>
-                               </div>
+                               </button>
                            ))
                         ) : (
                             <p className="text-sm text-muted-foreground">No plugins installed.</p>

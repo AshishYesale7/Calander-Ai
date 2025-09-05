@@ -16,50 +16,59 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
 import { allPlugins } from '@/data/plugins';
+import { usePlugin } from '@/hooks/use-plugin';
 
 type Plugin = (typeof allPlugins)[0];
 
-const DEFAULT_PLUGINS = ['VS Code', 'Codefolio Ally', 'Discord'];
+const FullScreenPluginView: React.FC = () => {
+  const { activePlugin, setActivePlugin, closePlugin } = usePlugin();
+  
+  // These handlers are now specific to the Codefolio plugin's needs
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-interface FullScreenPluginViewProps {
-  plugin: Plugin;
-  onClose: () => void;
-  onLogout: () => void;
-  onSettings: () => void;
-}
+  const handleCodefolioLogout = () => {
+    if (!user) return;
+    saveCodingUsernames(user.uid, {
+        codeforces: undefined,
+        leetcode: undefined,
+        codechef: undefined,
+    }).then(() => {
+      // Logic inside usePlugin hook will handle login status check
+      closePlugin();
+      toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
+    });
+  };
 
-const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, onLogout, onSettings }) => {
-  const PluginComponent = plugin.component;
-  const isCodefolio = plugin.name === 'Codefolio Ally';
+  const handleSettings = () => {
+    // This will open the login/settings view
+    setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
+  };
+  
+  if (!activePlugin || !activePlugin.component) return null;
+  const isCodefolio = activePlugin.name === 'Codefolio Ally';
 
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
       <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 ml-2">
-          {plugin.logo.startsWith('/') ? (
+          {activePlugin.logo.startsWith('/') ? (
              <Code className="h-7 w-7 text-accent" />
           ) : (
-             <Image src={plugin.logo} alt={`${plugin.name} logo`} width={28} height={28} />
+             <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
           )}
-          <h2 className="text-xl font-semibold">{plugin.name}</h2>
+          <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
         <div className="flex items-center gap-2">
-            {isCodefolio && <Button variant="ghost" onClick={onSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
-            {isCodefolio && <Button variant="ghost" onClick={onLogout}>Logout</Button>}
-            <Button variant="outline" onClick={onClose}>
+            {isCodefolio && <Button variant="ghost" onClick={handleSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
+            {isCodefolio && <Button variant="ghost" onClick={handleCodefolioLogout}>Logout</Button>}
+            <Button variant="outline" onClick={closePlugin}>
                 Close Extension
             </Button>
         </div>
       </header>
       <main className="flex-1 overflow-auto">
-        {PluginComponent ? <CodefolioDashboard /> : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center p-8">
-                <h1 className="text-4xl font-bold font-headline text-primary">This is the {plugin.name} Extension</h1>
-                <p className="text-muted-foreground mt-2 max-w-md mx-auto">This area is a placeholder to demonstrate where the full-screen user interface for the '{plugin.name}' extension would be displayed.</p>
-              </div>
-            </div>
-        )}
+        <CodefolioDashboard />
       </main>
     </div>
   );
@@ -71,11 +80,14 @@ export default function ExtensionPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set());
-  const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
-
-  // New state for Codefolio Ally
-  const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
-  const [isCheckingLogin, setIsCheckingLogin] = useState(true);
+  
+  const { 
+    activePlugin, 
+    setActivePlugin,
+    isCodefolioLoggedIn,
+    isCheckingLogin,
+    handleCodefolioLogin,
+  } = usePlugin();
 
   // Fetch installed plugins from Firestore on mount
   useEffect(() => {
@@ -119,80 +131,11 @@ export default function ExtensionPage() {
     newSet.delete(pluginName);
     updateInstalledPlugins(newSet);
   };
-
-  useEffect(() => {
-    if (user) {
-        setIsCheckingLogin(true);
-        getCodingUsernames(user.uid).then(data => {
-            const hasUsernames = data && Object.values(data).some(v => v);
-            if (hasUsernames) {
-                setIsCodefolioLoggedIn(true);
-            } else {
-                setIsCodefolioLoggedIn(false);
-            }
-        }).catch(err => {
-            console.error("Failed to check login status:", err);
-            setIsCodefolioLoggedIn(false);
-        }).finally(() => setIsCheckingLogin(false));
-    } else {
-        setIsCheckingLogin(false);
-    }
-  }, [user]);
-
-  const handleOpen = (plugin: Plugin) => {
-    if (plugin.name === 'Codefolio Ally') {
-        if (!isCodefolioLoggedIn) {
-            // Show login screen if not logged in
-            setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
-        } else {
-            setActivePlugin(plugin);
-        }
-    } else {
-        setActivePlugin(plugin);
-    }
-  };
-
-  const handleCodefolioLogin = (data: AllPlatformsUserData) => {
-      if (!user) {
-        toast({ title: "Error", description: "You must be signed in to save usernames.", variant: "destructive" });
-        return;
-      }
-      const usernamesToSave = {
-          codeforces: data.codeforces?.username,
-          leetcode: data.leetcode?.username,
-          codechef: data.codechef?.username,
-      };
-
-      // Filter out any undefined usernames before saving
-      const definedUsernames = Object.fromEntries(
-        Object.entries(usernamesToSave).filter(([, value]) => value !== undefined && value !== null)
-      );
-
-      saveCodingUsernames(user.uid, definedUsernames).then(() => {
-          setIsCodefolioLoggedIn(true);
-          setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
-          toast({ title: "Success", description: "Usernames saved and data fetched!" });
-      }).catch(err => {
-          toast({ title: "Error", description: `Could not save usernames: ${err.message}`, variant: "destructive" });
-      });
-  };
-
-  const handleCodefolioLogout = () => {
-    if (!user) return;
-    saveCodingUsernames(user.uid, {
-        codeforces: undefined,
-        leetcode: undefined,
-        codechef: undefined,
-    }).then(() => {
-      setIsCodefolioLoggedIn(false);
-      setActivePlugin(null);
-      toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
-    });
-  };
   
-  const handleSettings = () => {
-    setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
+  const handleOpen = (plugin: Plugin) => {
+    setActivePlugin(plugin);
   };
+
 
   const { installedList, marketplaceList } = useMemo(() => {
     const installed = allPlugins.filter(plugin => 
@@ -314,21 +257,18 @@ export default function ExtensionPage() {
           )}
         </CardContent>
       </Card>
-
-      {activePlugin && activePlugin.name === 'CodefolioLogin' && (
+      
+      {/* The login modal is now controlled by the context */}
+      {activePlugin?.name === 'CodefolioLogin' && (
          <CodefolioLogin
           onLoginSuccess={handleCodefolioLogin}
           onClose={() => setActivePlugin(null)}
         />
       )}
 
-      {activePlugin && activePlugin.name !== 'CodefolioLogin' && (
-        <FullScreenPluginView
-          plugin={activePlugin}
-          onClose={() => setActivePlugin(null)}
-          onLogout={handleCodefolioLogout}
-          onSettings={handleSettings}
-        />
+      {/* The fullscreen view is also controlled by the context */}
+      {activePlugin && plugin.component && (
+        <FullScreenPluginView />
       )}
     </div>
   );

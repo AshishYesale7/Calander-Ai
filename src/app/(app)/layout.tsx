@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { saveUserFCMToken } from '@/services/userService';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
+import { PluginProvider } from '@/context/PluginContext';
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -201,10 +202,12 @@ function AppContent({ children }: { children: ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  // We wrap the content in the provider so that `useSidebar` can be used within AppContent
+  // We wrap the content in the providers so they can be used within AppContent
   return (
     <SidebarProvider>
-      <AppContent>{children}</AppContent>
+      <PluginProvider>
+        <AppContent>{children}</AppContent>
+      </PluginProvider>
     </SidebarProvider>
   )
 }
