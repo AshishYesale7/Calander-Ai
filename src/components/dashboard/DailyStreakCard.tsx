@@ -13,7 +13,7 @@ import { getLeaderboardData, updateStreakData } from '@/services/streakService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const TrophyFlameIcon = ({ isComplete, className }: { isComplete: boolean, className?: string }) => (
-    <svg height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xmlSpace="preserve" fill="#000000" className={className}>
+    <svg height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xmlSpace="preserve" className={className}>
         <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
         <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
         <g id="SVGRepo_iconCarrier">
@@ -148,12 +148,7 @@ export default function DailyStreakCard() {
         }
 
         return (
-             <div className="relative p-6 text-white w-full overflow-hidden">
-                <TrophyFlameIcon 
-                    isComplete={streakData.todayStreakCompleted} 
-                    className="absolute top-2 right-2 h-24 w-24 opacity-30 transform -rotate-12"
-                />
-
+             <div className="relative p-6 text-white w-full">
                 <div className="relative z-10">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
                       border-l-[10px] border-l-transparent
@@ -210,12 +205,18 @@ export default function DailyStreakCard() {
     }
 
     return (
-        <Card className="bg-amber-600 border-amber-700 shadow-lg">
-            <CardContent className="p-0">
-                {renderContent()}
-            </CardContent>
-        </Card>
+        <div className="relative">
+            <Card className="bg-amber-600 border-amber-700 shadow-lg overflow-hidden">
+                <CardContent className="p-0">
+                    {renderContent()}
+                </CardContent>
+            </Card>
+            {streakData && (
+                <TrophyFlameIcon 
+                    isComplete={streakData.todayStreakCompleted} 
+                    className="absolute -top-4 -right-4 h-24 w-24 opacity-80 transform -rotate-12 z-20"
+                />
+            )}
+        </div>
     );
 }
-
-    
