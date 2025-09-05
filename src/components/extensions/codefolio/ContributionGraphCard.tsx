@@ -82,7 +82,7 @@ const ContributionGraphCard = () => {
             }
         });
         
-        return { weeks, monthLabels };
+        return { weeks, monthLabels: labels };
     }, [startDate, endDate]);
     
     useEffect(() => {
@@ -196,3 +196,4 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
+
