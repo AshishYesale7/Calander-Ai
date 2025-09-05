@@ -24,6 +24,7 @@ import EditGoalModal from '@/components/career-goals/EditGoalModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { getCareerGoals, saveCareerGoal, deleteCareerGoal } from '@/services/careerGoalsService';
+import { logUserActivity } from '@/services/activityLogService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const CAREER_GOALS_STORAGE_KEY = 'futureSightCareerGoals';
@@ -140,6 +141,15 @@ export default function CareerGoalsPage() {
               deadline: goalToSave.deadline ? goalToSave.deadline.toISOString() : null,
             };
             await saveCareerGoal(user.uid, payload);
+
+            // If goal is completed, log the activity
+            if (goalToSave.progress === 100) {
+              const previousGoal = originalGoals.find(g => g.id === goalToSave.id);
+              if (!previousGoal || previousGoal.progress < 100) {
+                await logUserActivity(user.uid, 'goal_completed', { title: goalToSave.title });
+              }
+            }
+
         } catch (error) {
             console.error("Failed to save goal to Firestore", error);
             // DO NOT REVERT UI. The changes are saved locally.

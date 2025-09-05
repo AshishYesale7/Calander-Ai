@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import EventOverviewPanel from './EventOverviewPanel';
 import { Checkbox } from '../ui/checkbox';
+import { logUserActivity } from '@/services/activityLogService';
+import { useAuth } from '@/context/AuthContext';
+
 
 const HOUR_HEIGHT_PX = 60;
 const MIN_EVENT_COLUMN_WIDTH_PX = 90;
@@ -220,6 +223,7 @@ interface DayTimetableViewProps {
 }
 
 export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -277,7 +281,11 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   
   const handleCheckboxChange = (event: TimelineEvent, checked: boolean) => {
     if (onEventStatusChange) {
-      onEventStatusChange(event.id, checked ? 'completed' : 'missed');
+      const newStatus = checked ? 'completed' : 'missed';
+      if (newStatus === 'completed' && user) {
+        logUserActivity(user.uid, 'task_completed', { title: event.title });
+      }
+      onEventStatusChange(event.id, newStatus);
     }
   };
 

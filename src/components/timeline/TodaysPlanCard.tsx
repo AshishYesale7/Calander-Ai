@@ -22,6 +22,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { TodaysPlanContent } from './TodaysPlanContent';
 import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay, differenceInDays } from 'date-fns';
 import EditRoutineModal from './EditRoutineModal';
+import { logUserActivity } from '@/services/activityLogService';
 
 export default function TodaysPlanCard() {
   const { user } = useAuth();
@@ -119,6 +120,11 @@ export default function TodaysPlanCard() {
     );
     const updatedPlan = { ...plan, schedule: updatedSchedule };
     setPlan(updatedPlan);
+
+    // Log activity if an item is completed
+    if (newStatus === 'completed') {
+      logUserActivity(user.uid, 'task_completed', { title: updatedPlan.schedule[itemIndex].activity });
+    }
 
     const dateStr = format(displayDate, 'yyyy-MM-dd');
     saveDailyPlan(user.uid, dateStr, updatedPlan)

@@ -1,7 +1,6 @@
 
 'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calendar, Droplet, Star, TrendingUp, Trophy } from "lucide-react";
 import SolvedProblemsCard from "./SolvedProblemsCard";
 import WeeklyTargetCard from "./WeeklyTargetCard";
 import PlatformStatsCard from "./PlatformStatsCard";
@@ -36,8 +35,6 @@ export default function CodefolioDashboard() {
         if (usernames && Object.values(usernames).some(u => u)) {
           const stats = await fetchCodingStats({ ...usernames, apiKey });
           setUserData(stats);
-        } else {
-          toast({ title: "No usernames found", description: "Please set up your coding platform usernames.", variant: "destructive"});
         }
       } catch (error) {
         console.error("Failed to fetch coding stats", error);
@@ -56,8 +53,6 @@ export default function CodefolioDashboard() {
     }
     return acc;
   }, 0);
-
-  const longestStreak = Math.max(0, ...Object.values(userData || {}).map(p => (p && !p.error ? p.streak : 0) || 0));
 
   const handleAddContestToTimeline = async (contest: Contest) => {
     if (!user) {
@@ -137,9 +132,9 @@ export default function CodefolioDashboard() {
                 <div className="md:col-span-2">
                     <WeeklyTargetCard />
                 </div>
-                 {userData.codeforces && !userData.codeforces.error && (
+                 {userData.codeforces && !userData.codeforces.error && userData.codeforces.contests && userData.codeforces.contests.length > 0 && (
                     <div className="md:col-span-2">
-                         <UpcomingContests contests={userData.codeforces?.contests} onAddContest={handleAddContestToTimeline} />
+                         <UpcomingContests contests={userData.codeforces.contests} onAddContest={handleAddContestToTimeline} />
                     </div>
                 )}
                  {userData.codeforces && !userData.codeforces.error && (

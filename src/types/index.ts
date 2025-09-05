@@ -216,3 +216,13 @@ export interface PlatformStats {
     problemsSolved: number;
     contests: number;
 }
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  type: 'goal_completed' | 'task_completed';
+  timestamp: Date;
+  details: {
+    title: string;
+  }
+}
