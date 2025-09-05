@@ -42,45 +42,54 @@ const ContributionGraphCard = () => {
         return map;
     }, [activity]);
     
-    const { dayGrid, monthLabels } = useMemo(() => {
-        const firstDay = startOfWeek(startDate, { weekStartsOn: 1 });
-        const allDays = eachDayOfInterval({ start: firstDay, end: endDate });
-
-        const dayGrid: (Date | null)[][] = [];
+    const { weeks, monthLabels } = useMemo(() => {
+        const weeks: (Date | null)[][] = [];
         const monthLabels: { name: string; weekIndex: number }[] = [];
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
         
-        let currentMonth = -1;
-        let weekIndex = 0;
+        if (days.length === 0) {
+            return { weeks: [], monthLabels: [] };
+        }
 
-        allDays.forEach((day) => {
+        let currentWeek: (Date | null)[] = new Array(7).fill(null);
+        let currentMonth = -1;
+
+        days.forEach((day) => {
             const dayOfWeek = (getDay(day) + 6) % 7; // Monday is 0
             const month = getMonth(day);
 
-            if (dayOfWeek === 0) {
-                dayGrid.push(new Array(7).fill(null));
-                if(dayGrid.length > 1) weekIndex++;
+            if (dayOfWeek === 0 && currentWeek.some(d => d !== null)) {
+                // If it's a Monday and the current week is not empty, push it.
+                weeks.push(currentWeek);
+                currentWeek = new Array(7).fill(null);
             }
-            
+
             if (month !== currentMonth) {
                 currentMonth = month;
-                monthLabels.push({ name: format(day, 'MMM'), weekIndex: dayGrid.length -1 });
+                // If new month starts mid-week, end the previous week
+                if (dayOfWeek > 0 && currentWeek.some(d => d !== null)) {
+                    weeks.push(currentWeek);
+                    currentWeek = new Array(7).fill(null);
+                }
+                monthLabels.push({ name: format(day, 'MMM'), weekIndex: weeks.length });
             }
-            
-            if (!dayGrid[dayGrid.length -1]) {
-                 dayGrid[dayGrid.length -1] = new Array(7).fill(null);
-            }
-            dayGrid[dayGrid.length - 1][dayOfWeek] = day;
+
+            currentWeek[dayOfWeek] = day;
         });
 
-        return { dayGrid, monthLabels };
+        // Push the last week if it has any days
+        if (currentWeek.some(d => d !== null)) {
+            weeks.push(currentWeek);
+        }
 
+        return { weeks, monthLabels };
     }, [startDate, endDate]);
     
     useEffect(() => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
         }
-    }, [isLoading, dayGrid]);
+    }, [isLoading, weeks]);
 
 
     const { currentStreak, totalContributions } = useMemo(() => {
@@ -133,15 +142,15 @@ const ContributionGraphCard = () => {
                     <div className="h-48 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
-                    <div className="flex gap-2">
-                        <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7">
-                           <div className="h-5">Mon</div>
-                           <div className="h-5">Tue</div>
-                           <div className="h-5">Wed</div>
-                           <div className="h-5">Thu</div>
-                           <div className="h-5">Fri</div>
-                           <div className="h-5">Sat</div>
-                           <div className="h-5">Sun</div>
+                    <div className="flex gap-3">
+                        <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-[2px]">
+                           <div className="h-5 flex items-center">Mon</div>
+                           <div className="h-5 flex items-center">Tue</div>
+                           <div className="h-5 flex items-center">Wed</div>
+                           <div className="h-5 flex items-center">Thu</div>
+                           <div className="h-5 flex items-center">Fri</div>
+                           <div className="h-5 flex items-center">Sat</div>
+                           <div className="h-5 flex items-center">Sun</div>
                         </div>
                         <div className="w-full overflow-hidden">
                              <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
@@ -158,39 +167,33 @@ const ContributionGraphCard = () => {
                                         ))}
                                     </div>
                                     <div className="grid grid-flow-col auto-cols-min gap-x-1 w-max">
-                                    {dayGrid.map((week, weekIndex) => {
-                                        const isMonthEnd = week.some(day => day && isSameDay(day, lastDayOfMonth(day)));
-                                        return (
-                                            <React.Fragment key={weekIndex}>
-                                                <div className="grid grid-rows-7 gap-1 w-[20px]">
-                                                    {week.map((day, dayIndex) => {
-                                                        if (!day) {
-                                                          return <div key={`${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
-                                                        }
-                                                        const dateString = format(day, 'yyyy-MM-dd');
-                                                        const level = contributions.get(dateString) || 0;
-                                                        return (
-                                                            <Tooltip key={dateString} delayDuration={100}>
-                                                                <TooltipTrigger asChild>
-                                                                    <div className={cn(
-                                                                        "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
-                                                                        getLevelColor(level)
-                                                                    )}>
-                                                                        <span className="text-[9px] text-white/50">{format(day, 'd')}</span>
-                                                                    </div>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="p-2">
-                                                                    <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {isMonthEnd && <div className="w-[1px] h-full bg-border/50 mx-1" />}
-                                            </React.Fragment>
-                                        )
-                                    })}
+                                    {weeks.map((week, weekIndex) => (
+                                        <div key={weekIndex} className="grid grid-rows-7 gap-1 w-[20px]">
+                                            {week.map((day, dayIndex) => {
+                                                if (!day) {
+                                                  return <div key={`${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
+                                                }
+                                                const dateString = format(day, 'yyyy-MM-dd');
+                                                const level = contributions.get(dateString) || 0;
+                                                return (
+                                                    <Tooltip key={dateString} delayDuration={100}>
+                                                        <TooltipTrigger asChild>
+                                                            <div className={cn(
+                                                                "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
+                                                                getLevelColor(level)
+                                                            )}>
+                                                                <span className="text-[9px] text-white/50">{format(day, 'd')}</span>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="p-2">
+                                                            <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                            <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                );
+                                            })}
+                                        </div>
+                                    ))}
                                     </div>
                                 </div>
                             </div>
