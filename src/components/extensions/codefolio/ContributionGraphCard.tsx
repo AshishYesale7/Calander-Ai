@@ -5,7 +5,7 @@ import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfMonth, subYears } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getISOWeek, getMonth } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -18,12 +18,11 @@ const ContributionGraphCard = () => {
     const [activity, setActivity] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
+    // We want to show the last full year of activity up to today.
     const { startDate, endDate } = useMemo(() => {
-        const today = startOfDay(new Date());
-        // Updated to fetch data for the last 12 months
-        const start = startOfWeek(startOfDay(subYears(today, 1)), { weekStartsOn: 1 }); 
-        const end = endOfMonth(today);
-        return { startDate: start, endDate: end };
+        const today = endOfDay(new Date());
+        const start = startOfWeek(subYears(today, 1), { weekStartsOn: 1 }); // Start on a Monday
+        return { startDate: start, endDate: today };
     }, []);
 
     useEffect(() => {
@@ -45,33 +44,65 @@ const ContributionGraphCard = () => {
         return map;
     }, [activity]);
     
-    const { daysInGrid, monthLabels } = useMemo(() => {
+    const { columns, monthLabels } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
-        const padding = (getDay(startDate) + 6) % 7;
+        const cols: Date[][] = [];
         
-        const gridDays = [...Array(padding).fill(null), ...days];
+        if (days.length > 0) {
+            let week: Date[] = Array(7).fill(null);
+            // Adjust for the first week if it doesn't start on Monday (day 1)
+            const firstDayIndex = (getDay(days[0]) + 6) % 7; // Monday is 0
+            for(let i = 0; i < firstDayIndex; i++) {
+                week[i] = null as any;
+            }
+
+            days.forEach(day => {
+                const dayIndex = (getDay(day) + 6) % 7; // Monday is 0
+                week[dayIndex] = day;
+                if (dayIndex === 6) { // Sunday, end of the week
+                    cols.push(week);
+                    week = Array(7).fill(null);
+                }
+            });
+            // Push the last, possibly incomplete week
+            if (week.some(d => d !== null)) {
+                cols.push(week);
+            }
+        }
 
         const labels: { key: string; name: string, colStart: number }[] = [];
         let lastMonth = -1;
         
-        gridDays.forEach((day, index) => {
-            if (day) {
-                const month = day.getMonth();
+        cols.forEach((week, colIndex) => {
+            const firstDayOfMonth = week.find(day => day && day.getDate() === 1);
+            if (firstDayOfMonth) {
+                const month = getMonth(firstDayOfMonth);
                 if (month !== lastMonth) {
-                    const colIndex = Math.floor(index / 7);
-                    if (colIndex >= 0) { 
-                        labels.push({
-                            key: format(day, 'MMM-yyyy'), // Create a unique key like "Sep-2024"
-                            name: format(day, 'MMM'),
+                     labels.push({
+                        key: format(firstDayOfMonth, 'MMM-yyyy'),
+                        name: format(firstDayOfMonth, 'MMM'),
+                        colStart: colIndex + 1,
+                    });
+                    lastMonth = month;
+                }
+            } else {
+                 // Fallback for months starting mid-week
+                const firstValidDay = week.find(d => d);
+                if(firstValidDay) {
+                    const month = getMonth(firstValidDay);
+                    if (month !== lastMonth && !labels.some(l => l.name === format(firstValidDay, 'MMM'))) {
+                         labels.push({
+                            key: format(firstValidDay, 'MMM-yyyy'),
+                            name: format(firstValidDay, 'MMM'),
                             colStart: colIndex + 1,
                         });
+                        lastMonth = month;
                     }
-                    lastMonth = month;
                 }
             }
         });
         
-        return { daysInGrid: gridDays, monthLabels: labels };
+        return { columns: cols, monthLabels: labels };
     }, [startDate, endDate]);
     
     const { currentStreak, totalContributions } = useMemo(() => {
@@ -125,45 +156,46 @@ const ContributionGraphCard = () => {
                 ) : (
                     <TooltipProvider>
                     <div className="flex gap-x-3">
-                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around mt-[25px]">
+                        <div className="flex flex-col gap-[9px] text-xs text-muted-foreground justify-around pt-8">
                            <span>Mon</span>
                            <span>Wed</span>
                            <span>Fri</span>
                         </div>
-                        <ScrollArea className="flex-1 -ml-1">
-                            <div className="relative" style={{ height: '144px' }}>
-                                <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1 absolute top-0 left-0">
-                                    {monthLabels.map((month) => (
-                                       <div 
-                                           key={month.key} 
-                                           className="text-xs text-muted-foreground text-center"
-                                           style={{ gridColumnStart: month.colStart }}
-                                        >
-                                           {month.name}
-                                       </div>
-                                   ))}
-                                </div>
-                                <div className="grid grid-flow-col grid-rows-7 gap-1 w-full absolute bottom-0 left-0">
-                                   {daysInGrid.map((day, i) => {
-                                        if (!day) return <div key={`pad-${i}`} className="w-full aspect-square" />
-
+                        <div className="flex-1 overflow-hidden">
+                             <div className="grid grid-flow-col gap-x-2.5 pl-px mb-1" style={{ gridTemplateColumns: `repeat(${columns.length}, 12px)` }}>
+                                {monthLabels.map((month) => (
+                                    <div 
+                                        key={month.key} 
+                                        className="text-xs text-muted-foreground text-left"
+                                        style={{ gridColumnStart: month.colStart }}
+                                    >
+                                        {month.name}
+                                    </div>
+                                ))}
+                            </div>
+                            <ScrollArea className="w-full" style={{ ['--scrollbar-size' as any]: '8px' }}>
+                                <div className="grid grid-rows-7 grid-flow-col gap-1 w-max">
+                                {columns.map((week, weekIndex) => (
+                                    week.map((day, dayIndex) => {
+                                        if (!day) return <div key={`pad-${weekIndex}-${dayIndex}`} className="w-2.5 h-2.5" />;
                                         const dateString = format(day, 'yyyy-MM-dd');
                                         const level = contributions.get(dateString) || 0;
                                         return (
-                                           <Tooltip key={i} delayDuration={100}>
-                                               <TooltipTrigger asChild>
-                                                   <div className={cn("w-full aspect-square rounded-[2px]", getLevelColor(level))} />
-                                               </TooltipTrigger>
-                                               <TooltipContent className="p-2">
-                                                   <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                   <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                               </TooltipContent>
-                                           </Tooltip>
-                                        )
-                                   })}
-                               </div>
-                           </div>
-                        </ScrollArea>
+                                            <Tooltip key={dateString} delayDuration={100}>
+                                                <TooltipTrigger asChild>
+                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px]", getLevelColor(level))} />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="p-2">
+                                                    <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        );
+                                    })
+                                ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
                     </div>
                     </TooltipProvider>
                 )}
@@ -174,3 +206,4 @@ const ContributionGraphCard = () => {
 
 export default ContributionGraphCard;
 
+    
