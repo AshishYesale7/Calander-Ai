@@ -2,8 +2,16 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
 import type { UserPreferences } from '@/types';
+
+type CodingUsernames = {
+    codeforces?: string;
+    leetcode?: string;
+    codechef?: string;
+    geeksforgeeks?: string;
+    codestudio?: string;
+}
 
 const getUserDocRef = (userId: string) => {
     if (!db) {
@@ -11,6 +19,31 @@ const getUserDocRef = (userId: string) => {
     }
     return doc(db, 'users', userId);
 };
+
+export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
+    const userDocRef = getUserDocRef(userId);
+    try {
+        await setDoc(userDocRef, { codingUsernames: usernames }, { merge: true });
+    } catch (error) {
+        console.error("Failed to save coding usernames to Firestore:", error);
+        throw new Error("Could not save coding usernames.");
+    }
+};
+
+export const getCodingUsernames = async (userId: string): Promise<CodingUsernames | null> => {
+    const userDocRef = getUserDocRef(userId);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists() && docSnap.data().codingUsernames) {
+            return docSnap.data().codingUsernames as CodingUsernames;
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to get coding usernames from Firestore:", error);
+        throw new Error("Could not retrieve coding usernames.");
+    }
+};
+
 
 export const saveUserGeminiApiKey = async (userId: string, apiKey: string | null): Promise<void> => {
     const userDocRef = getUserDocRef(userId);

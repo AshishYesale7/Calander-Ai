@@ -1,20 +1,21 @@
 
 'use client';
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import type { Contest } from "@/ai/flows/fetch-coding-stats-flow";
+import { startOfDay } from 'date-fns';
 
-export default function ContestCalendar() {
+interface ContestCalendarProps {
+    contests?: Contest[];
+}
+
+export default function ContestCalendar({ contests = [] }: ContestCalendarProps) {
     const [date, setDate] = useState<Date | undefined>(new Date());
     
-    // In a real app, this would come from an API
-    const contestDays = [
-        new Date(2024, 8, 11), // Sep 11
-        new Date(2024, 8, 12), // Sep 12
-        new Date(2024, 8, 18),
-        new Date(2024, 8, 20),
-        new Date(2024, 8, 21),
-    ];
+    const contestDays = useMemo(() => {
+        return contests.map(c => startOfDay(new Date(c.startTimeSeconds * 1000)));
+    }, [contests]);
 
     return (
         <Card className="frosted-glass bg-card/60">
@@ -24,7 +25,6 @@ export default function ContestCalendar() {
                     selected={date}
                     onSelect={setDate}
                     className="w-full"
-                    month={new Date(2024, 8, 1)} // September 2024
                     classNames={{
                         head_cell: "w-full text-muted-foreground rounded-md text-xs font-normal",
                         cell: "w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
@@ -44,11 +44,12 @@ export default function ContestCalendar() {
                     }}
                     components={{
                         DayContent: ({ date, ...props }) => {
-                            const hasContest = contestDays.some(d => d.getDate() === date.getDate() && d.getMonth() === date.getMonth());
-                            const contestCount = contestDays.filter(d => d.getDate() === date.getDate() && d.getMonth() === date.getMonth()).length;
+                            const dayStart = startOfDay(date).getTime();
+                            const contestCount = contestDays.filter(d => d.getTime() === dayStart).length;
+                            
                             return (
                                 <div className="relative w-full h-full flex items-center justify-center">
-                                    {props.activeModifiers.contests ? (
+                                    {contestCount > 0 ? (
                                         <div className="relative">
                                             {date.getDate()}
                                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">

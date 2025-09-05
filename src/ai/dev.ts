@@ -15,3 +15,4 @@ import '@/ai/flows/create-event-flow.ts';
 import '@/ai/flows/conversational-event-flow.ts';
 import '@/ai/flows/track-deadlines-flow.ts';
 import '@/ai/flows/send-notification-flow.ts';
+import '@/ai/flows/fetch-coding-stats-flow.ts';

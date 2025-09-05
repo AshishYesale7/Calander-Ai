@@ -27,6 +27,7 @@ interface PlatformStatsCardProps {
 }
 
 export default function PlatformStatsCard({ platform, iconUrl, users, chartData }: PlatformStatsCardProps) {
+    const totalForChart = chartData ? chartData.reduce((acc, item) => acc + item.value, 0) : 1;
     
     return (
         <Card className="frosted-glass bg-card/60">
@@ -50,7 +51,7 @@ export default function PlatformStatsCard({ platform, iconUrl, users, chartData 
                                 startAngle={90}
                                 endAngle={-270}
                             >
-                                <PolarAngleAxis type="number" domain={[0, 500]} angleAxisId={0} tick={false} />
+                                <PolarAngleAxis type="number" domain={[0, totalForChart]} angleAxisId={0} tick={false} />
                                 <RadialBar
                                     background={{ fill: 'hsla(var(--muted), 0.5)'}}
                                     dataKey="value"

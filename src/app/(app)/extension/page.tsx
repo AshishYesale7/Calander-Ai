@@ -1,13 +1,18 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Download, ExternalLink, Code } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
+import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
+import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
+import { useAuth } from '@/context/AuthContext';
+import { getCodingUsernames, saveCodingUsernames } from '@/services/userService';
+import { useToast } from '@/hooks/use-toast';
 
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
@@ -15,8 +20,7 @@ const allPlugins = [
   { 
     name: 'Codefolio Ally', 
     logo: '/logos/codefolio-logo.svg',
-    description: 'Track your coding progress across platforms.',
-    component: CodefolioDashboard
+    component: CodefolioDashboard // This will be conditionally rendered
   },
   { 
     name: 'Android Studio', 
@@ -48,56 +52,6 @@ const allPlugins = [
     logo: 'https://worldvectorlogo.com/logos/blender-2.svg',
     description: 'Free and open source 3D creation suite.'
   },
-  { 
-    name: 'Azure Data Studio', 
-    logo: 'https://worldvectorlogo.com/logos/azure-data-studio.svg',
-    description: 'Cross-platform database tool for data professionals.'
-  },
-  { 
-    name: 'Brave', 
-    logo: 'https://worldvectorlogo.com/logos/brave-3.svg',
-    description: 'A privacy-focused browser that blocks ads and trackers.'
-  },
-  { 
-    name: 'Canva', 
-    logo: 'https://worldvectorlogo.com/logos/canva.svg',
-    description: 'Online design platform for creating visual content.'
-  },
-  { 
-    name: 'CLion', 
-    logo: 'https://worldvectorlogo.com/logos/clion.svg',
-    description: 'A cross-platform IDE for C and C++ by JetBrains.'
-  },
-  { 
-    name: 'Discord', 
-    logo: 'https://worldvectorlogo.com/logos/discord-6.svg',
-    description: 'All-in-one voice and text chat for gamers.'
-  },
-  { 
-    name: 'Eclipse', 
-    logo: 'https://worldvectorlogo.com/logos/eclipse-1.svg',
-    description: 'An IDE for Java and other programming languages.'
-  },
-  { 
-    name: 'DataGrip', 
-    logo: 'https://worldvectorlogo.com/logos/datagrip.svg',
-    description: 'The cross-platform IDE for databases & SQL.'
-  },
-  { 
-    name: 'DataSpell', 
-    logo: 'https://worldvectorlogo.com/logos/dataspell.svg',
-    description: 'The IDE for professional data scientists.'
-  },
-  { 
-    name: 'DBeaver', 
-    logo: 'https://worldvectorlogo.com/logos/dbeaver.svg',
-    description: 'Free multi-platform universal database tool.'
-  },
-  { 
-    name: 'Delphi', 
-    logo: 'https://worldvectorlogo.com/logos/delphi-2.svg',
-    description: 'IDE for rapid application development.'
-  },
 ];
 // --- End Mock Data ---
 
@@ -106,9 +60,11 @@ type Plugin = (typeof allPlugins)[0];
 interface FullScreenPluginViewProps {
   plugin: Plugin;
   onClose: () => void;
+  onLogout: () => void;
+  userData: AllPlatformsUserData | null;
 }
 
-const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose }) => {
+const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose, userData, onLogout }) => {
   const PluginComponent = plugin.component;
 
   return (
@@ -122,12 +78,15 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
           )}
           <h2 className="text-xl font-semibold">{plugin.name}</h2>
         </div>
-        <Button variant="outline" onClick={onClose}>
-          Close Extension
-        </Button>
+        <div>
+            <Button variant="ghost" onClick={onLogout}>Logout</Button>
+            <Button variant="outline" onClick={onClose}>
+                Close Extension
+            </Button>
+        </div>
       </header>
       <main className="flex-1 overflow-auto">
-        {PluginComponent ? <PluginComponent /> : (
+        {PluginComponent && userData ? <CodefolioDashboard userData={userData} /> : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
@@ -142,21 +101,89 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
 
 
 export default function ExtensionPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(['VS Code', 'Codefolio Ally']));
   const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
 
-  const filteredPlugins = allPlugins.filter((plugin) =>
-    plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
+  // New state for Codefolio Ally
+  const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
+  const [codefolioUserData, setCodefolioUserData] = useState<AllPlatformsUserData | null>(null);
+  const [isCheckingLogin, setIsCheckingLogin] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+        setIsCheckingLogin(true);
+        getCodingUsernames(user.uid).then(data => {
+            if (data && Object.values(data).some(v => v)) {
+                // If any username is present, consider logged in
+                setIsCodefolioLoggedIn(true);
+                // For now, we'll just set a placeholder. The dashboard will fetch the data.
+                setCodefolioUserData({} as AllPlatformsUserData); 
+            } else {
+                setIsCodefolioLoggedIn(false);
+            }
+        }).finally(() => setIsCheckingLogin(false));
+    }
+  }, [user]);
+
   const handleInstall = (pluginName: string) => {
     setInstalledPlugins((prev) => new Set(prev).add(pluginName));
   };
   
   const handleOpen = (plugin: Plugin) => {
-    setActivePlugin(plugin);
+    if (plugin.name === 'Codefolio Ally') {
+        if (!isCodefolioLoggedIn) {
+            // Show login screen if not logged in
+            setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
+        } else {
+            setActivePlugin(plugin);
+        }
+    } else {
+        setActivePlugin(plugin);
+    }
   };
+
+  const handleCodefolioLogin = (data: AllPlatformsUserData) => {
+      if (!user) {
+        toast({ title: "Error", description: "You must be signed in to save usernames.", variant: "destructive" });
+        return;
+      }
+      const usernames = {
+          codeforces: data.codeforces?.username,
+          leetcode: data.leetcode?.username,
+          codechef: data.codechef?.username,
+          geeksforgeeks: data.geeksforgeeks?.username,
+          codestudio: data.codestudio?.username,
+      };
+      saveCodingUsernames(user.uid, usernames).then(() => {
+          setIsCodefolioLoggedIn(true);
+          setCodefolioUserData(data);
+          setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
+          toast({ title: "Success", description: "Usernames saved and data fetched!" });
+      }).catch(err => {
+          toast({ title: "Error", description: `Could not save usernames: ${err.message}`, variant: "destructive" });
+      });
+  };
+  
+  const handleCodefolioLogout = () => {
+    if (!user) return;
+    saveCodingUsernames(user.uid, {}).then(() => {
+      setIsCodefolioLoggedIn(false);
+      setCodefolioUserData(null);
+      setActivePlugin(null);
+      toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
+    });
+  };
+
+  if (isCheckingLogin) {
+      // Potentially show a loading spinner for the whole page or Codefolio Ally card
+  }
+
+  const filteredPlugins = allPlugins.filter((plugin) =>
+    plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-12">
@@ -220,10 +247,19 @@ export default function ExtensionPage() {
         </CardContent>
       </Card>
       
-      {activePlugin && (
+      {activePlugin && activePlugin.name === 'CodefolioLogin' && (
+         <CodefolioLogin
+          onLoginSuccess={handleCodefolioLogin}
+          onClose={() => setActivePlugin(null)}
+        />
+      )}
+
+      {activePlugin && activePlugin.name === 'Codefolio Ally' && (
         <FullScreenPluginView 
           plugin={activePlugin} 
-          onClose={() => setActivePlugin(null)} 
+          onClose={() => setActivePlugin(null)}
+          onLogout={handleCodefolioLogout}
+          userData={codefolioUserData}
         />
       )}
     </div>
