@@ -12,47 +12,58 @@ import UpcomingContests from "./UpcomingContests";
 
 export default function CodefolioDashboard() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full w-full flex justify-center">
-        <div className="w-full max-w-md space-y-6">
-            <ContestCalendar />
-            <UpcomingContests />
-            <SolvedProblemsCard />
-            <DailyStreakCard />
-            <WeeklyTargetCard />
-            <WeeklyActivityChart />
-            <PlatformStatsCard
-                platform="Codeforces"
-                iconUrl="https://codeforces.org/s/0/favicon.ico"
-                users={[
-                { name: "tourist", value: "3828", change: "+12", isPositive: true },
-                { name: "amansaxena", value: "1382", change: "-5", isPositive: false },
-                ]}
-                chartData={[
-                { name: 'Category A', value: 300, fill: '#facc15' }, // yellow-400
-                { name: 'Category B', value: 200, fill: '#38bdf8' }, // sky-400
-                { name: 'Category C', value: 100, fill: '#ef4444' }, // red-500
-                ]}
-            />
-            <PlatformStatsCard
-                platform="LeetCode"
-                iconUrl="https://leetcode.com/favicon.ico"
-                users={[
-                { name: "amansaxenal", value: "670", change: "+48", isPositive: true },
-                { name: "amansaxena", value: "48" },
-                ]}
-                chartData={[
-                { name: 'Easy', value: 250, fill: '#22c55e' }, // green-500
-                { name: 'Medium', value: 320, fill: '#facc15' }, // yellow-400
-                { name: 'Hard', value: 100, fill: '#ef4444' }, // red-500
-                ]}
-            />
-            <PlatformStatsCard
-                platform="CodeStudio"
-                iconUrl="https://www.codingninjas.com/codestudio/favicon.ico"
-                users={[
-                { name: "codestudio", value: "153" },
-                ]}
-            />
+    <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full w-full">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column */}
+            <div className="lg:col-span-1 space-y-6">
+                <ContestCalendar />
+                <UpcomingContests />
+            </div>
+
+            {/* Center Column */}
+            <div className="lg:col-span-1 space-y-6">
+                 <SolvedProblemsCard />
+                 <DailyStreakCard />
+                 <WeeklyTargetCard />
+            </div>
+
+            {/* Right Column */}
+            <div className="lg:col-span-1 space-y-6">
+                <WeeklyActivityChart />
+                <PlatformStatsCard
+                    platform="Codeforces"
+                    iconUrl="https://codeforces.org/s/0/favicon.ico"
+                    users={[
+                    { name: "tourist", value: "3828", change: "+12", isPositive: true },
+                    { name: "amansaxena", value: "1382", change: "-5", isPositive: false },
+                    ]}
+                    chartData={[
+                    { name: 'Category A', value: 300, fill: '#facc15' }, // yellow-400
+                    { name: 'Category B', value: 200, fill: '#38bdf8' }, // sky-400
+                    { name: 'Category C', value: 100, fill: '#ef4444' }, // red-500
+                    ]}
+                />
+                <PlatformStatsCard
+                    platform="LeetCode"
+                    iconUrl="https://leetcode.com/favicon.ico"
+                    users={[
+                    { name: "amansaxenal", value: "670", change: "+48", isPositive: true },
+                    { name: "amansaxena", value: "48" },
+                    ]}
+                    chartData={[
+                    { name: 'Easy', value: 250, fill: '#22c55e' }, // green-500
+                    { name: 'Medium', value: 320, fill: '#facc15' }, // yellow-400
+                    { name: 'Hard', value: 100, fill: '#ef4444' }, // red-500
+                    ]}
+                />
+                <PlatformStatsCard
+                    platform="CodeStudio"
+                    iconUrl="https://www.codingninjas.com/codestudio/favicon.ico"
+                    users={[
+                    { name: "codestudio", value: "153" },
+                    ]}
+                />
+            </div>
         </div>
     </div>
   );
