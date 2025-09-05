@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useContext } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { StreakContext } from '@/context/StreakContext';
 import { updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
@@ -16,7 +16,6 @@ export const useStreakTracker = () => {
     const { user } = useAuth();
     const streakContext = useContext(StreakContext);
 
-    // This hook should not run if the context is not yet available.
     if (!streakContext) {
         return; 
     }
