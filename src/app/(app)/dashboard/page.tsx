@@ -31,6 +31,7 @@ import NextMonthHighlightsCard from '@/components/timeline/NextMonthHighlightsCa
 import { saveAs } from 'file-saver';
 import TrashPanel from '@/components/timeline/TrashPanel';
 import { useTimezone } from '@/hooks/use-timezone';
+import DailyStreakCard from '@/components/dashboard/DailyStreakCard';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -386,7 +387,7 @@ export default function DashboardPage() {
     return activeEvents.filter(event =>
         event.date instanceof Date && !isNaN(event.date.valueOf()) &&
         isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
-    ).sort((a,b) => a.date.getTime() - b.date.getTime());
+    ).sort((a,b) => a.date.getTime() - a.date.getTime());
   }, [activeEvents, selectedDateForDayView]);
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent) => {
@@ -617,7 +618,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <TodaysPlanCard />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <TodaysPlanCard />
+        <DailyStreakCard />
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         <div className="xl:col-span-2 space-y-8">

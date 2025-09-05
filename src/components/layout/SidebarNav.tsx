@@ -25,6 +25,7 @@ import {
   Clock,
   LayoutGrid,
   Code,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -53,6 +54,7 @@ const navItems = [
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 

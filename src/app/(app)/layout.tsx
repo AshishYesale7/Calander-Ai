@@ -25,10 +25,12 @@ import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { saveUserFCMToken } from '@/services/userService';
+import { useStreakTracker } from '@/hooks/useStreakTracker';
 
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
+  useStreakTracker(); // Initialize the streak tracker
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();

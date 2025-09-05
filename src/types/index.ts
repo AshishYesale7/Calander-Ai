@@ -226,3 +226,20 @@ export interface ActivityLog {
     title: string;
   }
 }
+
+export interface StreakData {
+    currentStreak: number;
+    longestStreak: number;
+    lastActivityDate: Date;
+    timeSpentToday: number; // in seconds
+    todayStreakCompleted: boolean;
+}
+
+export interface LeaderboardUser {
+    id: string;
+    displayName: string;
+    photoURL?: string;
+    currentStreak: number;
+    longestStreak: number;
+    prevRank?: number;
+}
