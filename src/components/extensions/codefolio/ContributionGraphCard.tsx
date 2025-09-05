@@ -50,23 +50,15 @@ const ContributionGraphCard = () => {
         const cols: Date[][] = [];
         
         if (days.length > 0) {
-            let week: Date[] = Array(7).fill(null);
-            // Adjust for the first week if it doesn't start on Monday (day 1)
-            const firstDayIndex = (getDay(days[0]) + 6) % 7; // Monday is 0
-            for(let i = 0; i < firstDayIndex; i++) {
-                week[i] = null as any;
-            }
-
+            let week: Date[] = [];
             days.forEach(day => {
-                const dayIndex = (getDay(day) + 6) % 7; // Monday is 0
-                week[dayIndex] = day;
-                if (dayIndex === 6) { // Sunday, end of the week
+                week.push(day);
+                if (getDay(day) === 0) { // Sunday, end of the week based on date-fns
                     cols.push(week);
-                    week = Array(7).fill(null);
+                    week = [];
                 }
             });
-            // Push the last, possibly incomplete week
-            if (week.some(d => d !== null)) {
+            if (week.length > 0) {
                 cols.push(week);
             }
         }
@@ -75,26 +67,15 @@ const ContributionGraphCard = () => {
         let lastMonth = -1;
         
         cols.forEach((week, colIndex) => {
-            const firstDayOfMonth = week.find(day => day && day.getDate() === 1);
-            if (firstDayOfMonth) {
-                const month = getMonth(firstDayOfMonth);
+            const firstValidDay = week.find(d => d);
+            if (firstValidDay) {
+                const month = getMonth(firstValidDay);
                 if (month !== lastMonth) {
-                     labels.push({
-                        key: format(firstDayOfMonth, 'MMM-yyyy'),
-                        name: format(firstDayOfMonth, 'MMM'),
-                        colStart: colIndex + 1,
-                    });
-                    lastMonth = month;
-                }
-            } else {
-                 // Fallback for months starting mid-week
-                const firstValidDay = week.find(d => d);
-                if(firstValidDay) {
-                    const month = getMonth(firstValidDay);
-                    if (month !== lastMonth && !labels.some(l => l.name === format(firstValidDay, 'MMM'))) {
+                    const monthName = format(firstValidDay, 'MMM');
+                    if(!labels.some(l => l.name === monthName && l.colStart > colIndex - 4)) {
                          labels.push({
-                            key: format(firstValidDay, 'MMM-yyyy'),
-                            name: format(firstValidDay, 'MMM'),
+                            key: `${monthName}-${colIndex}`,
+                            name: monthName,
                             colStart: colIndex + 1,
                         });
                         lastMonth = month;
@@ -142,7 +123,7 @@ const ContributionGraphCard = () => {
         if (level === 3) return 'bg-cyan-500/70';
         if (level === 2) return 'bg-cyan-500/50';
         if (level === 1) return 'bg-cyan-500/30';
-        return 'bg-muted/30 border border-white/5';
+        return 'bg-muted/30 border border-black/10';
     };
 
     return (
@@ -177,7 +158,7 @@ const ContributionGraphCard = () => {
                               >
                                 {monthLabels.map((month) => (
                                     <div 
-                                        key={month.key} 
+                                        key={month.key}
                                         className="text-xs text-muted-foreground text-left"
                                         style={{ gridColumnStart: month.colStart }}
                                     >
@@ -195,7 +176,7 @@ const ContributionGraphCard = () => {
                                         return (
                                             <Tooltip key={dateString} delayDuration={100}>
                                                 <TooltipTrigger asChild>
-                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px] border border-black/10", getLevelColor(level))} />
+                                                    <div className={cn("w-2.5 h-2.5 rounded-[1px]", getLevelColor(level))} />
                                                 </TooltipTrigger>
                                                 <TooltipContent className="p-2">
                                                     <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
@@ -217,3 +198,5 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
+
+    
