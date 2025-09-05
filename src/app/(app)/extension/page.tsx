@@ -13,6 +13,7 @@ import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
 import { useAuth } from '@/context/AuthContext';
 import { getCodingUsernames, saveCodingUsernames } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
@@ -116,15 +117,21 @@ export default function ExtensionPage() {
     if (user) {
         setIsCheckingLogin(true);
         getCodingUsernames(user.uid).then(data => {
-            if (data && Object.values(data).some(v => v)) {
-                // If any username is present, consider logged in
+            const hasUsernames = data && Object.values(data).some(v => v);
+            if (hasUsernames) {
+                // If usernames are present, we consider the user "logged in".
+                // The dashboard component will be responsible for fetching the actual stats.
                 setIsCodefolioLoggedIn(true);
-                // For now, we'll just set a placeholder. The dashboard will fetch the data.
                 setCodefolioUserData({} as AllPlatformsUserData); 
             } else {
                 setIsCodefolioLoggedIn(false);
             }
+        }).catch(err => {
+            console.error("Failed to check login status:", err);
+            setIsCodefolioLoggedIn(false);
         }).finally(() => setIsCheckingLogin(false));
+    } else {
+        setIsCheckingLogin(false);
     }
   }, [user]);
 
@@ -150,14 +157,20 @@ export default function ExtensionPage() {
         toast({ title: "Error", description: "You must be signed in to save usernames.", variant: "destructive" });
         return;
       }
-      const usernames = {
+      const usernamesToSave = {
           codeforces: data.codeforces?.username,
           leetcode: data.leetcode?.username,
           codechef: data.codechef?.username,
           geeksforgeeks: data.geeksforgeeks?.username,
           codestudio: data.codestudio?.username,
       };
-      saveCodingUsernames(user.uid, usernames).then(() => {
+
+      // Filter out any undefined usernames before saving
+      const definedUsernames = Object.fromEntries(
+        Object.entries(usernamesToSave).filter(([, value]) => value !== undefined)
+      );
+
+      saveCodingUsernames(user.uid, definedUsernames).then(() => {
           setIsCodefolioLoggedIn(true);
           setCodefolioUserData(data);
           setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
@@ -176,10 +189,6 @@ export default function ExtensionPage() {
       toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
     });
   };
-
-  if (isCheckingLogin) {
-      // Potentially show a loading spinner for the whole page or Codefolio Ally card
-  }
 
   const filteredPlugins = allPlugins.filter((plugin) =>
     plugin.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -212,6 +221,8 @@ export default function ExtensionPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
             {filteredPlugins.map((plugin) => {
                 const isInstalled = installedPlugins.has(plugin.name);
+                const isCodefolio = plugin.name === 'Codefolio Ally';
+                
                 return (
                     <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
                         <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
@@ -230,7 +241,12 @@ export default function ExtensionPage() {
                         <div className="text-center">
                             <p className="font-medium text-sm text-foreground">{plugin.name}</p>
                             <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
-                            {isInstalled ? (
+                            
+                            {isCheckingLogin && isCodefolio ? (
+                                <Button disabled variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs">
+                                    <LoadingSpinner size="sm" />
+                                </Button>
+                            ) : isInstalled ? (
                                 <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
                                     <ExternalLink className="h-3 w-3 mr-1.5"/> Open
                                 </Button>
@@ -265,3 +281,5 @@ export default function ExtensionPage() {
     </div>
   );
 }
+
+    
