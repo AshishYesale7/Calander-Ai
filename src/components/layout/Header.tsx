@@ -35,7 +35,7 @@ const navItems = [
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
-// Custom SVG icon for Extensions
+// Custom SVG icon for Extensions, updated to look like a puzzle piece.
 const ExtensionIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
