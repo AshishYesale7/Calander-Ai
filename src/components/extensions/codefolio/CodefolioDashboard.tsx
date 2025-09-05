@@ -13,15 +13,16 @@ import UpcomingContests from "./UpcomingContests";
 export default function CodefolioDashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full">
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr,2fr,1fr] gap-6">
+
         {/* Left Column */}
-        <div className="lg:col-span-1 xl:col-span-1 space-y-6">
+        <div className="space-y-6">
           <ContestCalendar />
           <UpcomingContests />
         </div>
 
-        {/* Middle Columns */}
-        <div className="lg:col-span-2 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
+        {/* Middle Column */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
             <div className="md:col-span-2">
                  <SolvedProblemsCard />
             </div>
@@ -34,7 +35,7 @@ export default function CodefolioDashboard() {
 
 
         {/* Right Column */}
-        <div className="lg:col-span-3 xl:col-span-1 space-y-6">
+        <div className="space-y-6">
           <PlatformStatsCard
             platform="Codeforces"
             iconUrl="https://codeforces.org/s/0/favicon.ico"

@@ -18,7 +18,7 @@ export default function SolvedProblemsCard() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="text-6xl font-bold">2386</div>
+                <div className="text-5xl sm:text-6xl font-bold">2386</div>
             </CardContent>
         </Card>
     );

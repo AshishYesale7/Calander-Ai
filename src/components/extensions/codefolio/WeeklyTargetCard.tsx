@@ -24,7 +24,7 @@ export default function WeeklyTargetCard() {
                 <div className="flex justify-between items-center">
                     {weekDays.map((day, index) => (
                         <div key={index} className="flex flex-col items-center gap-2">
-                           <div className="relative h-10 w-10">
+                           <div className="relative h-8 w-8 sm:h-10 sm:w-10">
                                 <svg className="h-full w-full" viewBox="0 0 36 36">
                                     <path
                                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"

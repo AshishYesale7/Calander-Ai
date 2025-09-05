@@ -3,10 +3,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Check } from "lucide-react";
+import { ChevronRight, Check, ChefHat } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { ChefHat } from 'lucide-react';
 
 const contests = [
     {
