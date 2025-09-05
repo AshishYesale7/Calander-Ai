@@ -83,10 +83,12 @@ export default function DailyStreakCard() {
 
         } catch (error) {
             console.error("Failed to fetch streak insight:", error);
-            // Fallback is handled inside the flow now
+            // Fallback is handled inside the flow now, but as a double safeguard:
             const fallbackInsight = "Keep up the great work!";
-            setStreakData(prev => prev ? { ...prev, insight: fallbackInsight } : null);
-            await updateStreakData(user.uid, { insight: fallbackInsight });
+            if(streakData && streakData.insight !== fallbackInsight){
+                setStreakData(prev => prev ? { ...prev, insight: fallbackInsight } : null);
+                await updateStreakData(user.uid, { insight: fallbackInsight });
+            }
         } finally {
             setIsInsightLoading(false);
         }
@@ -129,8 +131,8 @@ export default function DailyStreakCard() {
     
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
+        const secs = Math.round(seconds % 60); // Use Math.round to fix formatting
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
     const progressPercent = useMemo(() => {
@@ -174,7 +176,7 @@ export default function DailyStreakCard() {
                         </div>
                     </div>
                     <div className="flex-shrink-0">
-                        <FlameIcon isComplete={streakData.todayStreakCompleted} />
+                         <FlameIcon isComplete={streakData.todayStreakCompleted} />
                     </div>
                 </div>
 
@@ -218,5 +220,3 @@ export default function DailyStreakCard() {
         </Card>
     );
 }
-
-    
