@@ -24,7 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useTheme } from '@/hooks/use-theme';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { SidebarTrigger } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
@@ -79,6 +79,8 @@ export default function Header({
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -108,6 +110,19 @@ export default function Header({
     }
   };
   
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsPopoverOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+        setIsPopoverOpen(false);
+    }, 200); // 200ms delay
+  };
+
   return (
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md">
@@ -161,16 +176,18 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-2">
-          <Popover>
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/extension">
-                        <ExtensionIcon className="h-5 w-5" />
-                        <span className="sr-only">Extensions</span>
-                    </Link>
-                </Button>
+                <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/extension">
+                            <ExtensionIcon className="h-5 w-5" />
+                            <span className="sr-only">Extensions</span>
+                        </Link>
+                    </Button>
+                </div>
               </PopoverTrigger>
-              <PopoverContent className="w-64 frosted-glass">
+              <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-64 frosted-glass">
                 <div className="space-y-4">
                     <h4 className="font-medium leading-none">Installed Plugins</h4>
                     <div className="space-y-2">
