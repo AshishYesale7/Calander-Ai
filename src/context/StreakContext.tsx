@@ -4,7 +4,7 @@
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { getStreakData, updateStreakData } from '@/services/streakService';
+import { getStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { usePathname } from 'next/navigation';
 
@@ -23,39 +23,28 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
 
-  // This effect fetches the initial data or creates it for a new user
+  // This effect fetches the initial data. It no longer creates it.
   useEffect(() => {
-    const initializeStreak = async () => {
+    const fetchStreakData = async () => {
         if (user && pathname !== '/subscription') {
             setIsLoading(true);
             try {
-                let data = await getStreakData(user.uid);
-                if (!data) {
-                    // First time user, create a new streak record
-                    const newStreakData: StreakData = {
-                        currentStreak: 0,
-                        longestStreak: 0,
-                        lastActivityDate: new Date(),
-                        timeSpentToday: 0,
-                        todayStreakCompleted: false,
-                    };
-                    await updateStreakData(user.uid, newStreakData);
-                    data = newStreakData;
-                }
-                setStreakData(data);
+                const data = await getStreakData(user.uid);
+                setStreakData(data); // This will be null if user is new
             } catch (error) {
-                console.error("Error initializing streak data:", error);
+                console.error("Error fetching streak data:", error);
                 setStreakData(null);
             } finally {
                 setIsLoading(false);
             }
         } else {
+            // No user or on subscription page, so not loading and no data.
             setIsLoading(false);
             setStreakData(null);
         }
     };
 
-    initializeStreak();
+    fetchStreakData();
   }, [user, pathname]);
   
 

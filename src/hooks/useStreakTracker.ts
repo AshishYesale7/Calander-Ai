@@ -4,7 +4,7 @@
 import { useEffect, useRef, useCallback, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { StreakContext } from '@/context/StreakContext';
-import { updateStreakData, getStreakData } from '@/services/streakService';
+import { updateStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
 import { useTimezone } from './use-timezone';
 import { toZonedTime } from 'date-fns-tz';
@@ -18,13 +18,14 @@ export const useStreakTracker = () => {
     const { timezone } = useTimezone();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Ensure streakContext is defined before destructuring
     if (!streakContext) {
+        // This can happen briefly on first load, so we just return.
+        // The hook will re-run once the context is available.
         return; 
     }
-    const { streakData, setStreakData, setIsLoading } = streakContext;
+    const { streakData, setStreakData, isLoading } = streakContext;
     
-    const saveData = useCallback(async (data: StreakData) => {
+    const saveData = useCallback(async (data: Partial<StreakData>) => {
         if (!user) return;
         try {
             await updateStreakData(user.uid, data);
@@ -33,51 +34,61 @@ export const useStreakTracker = () => {
         }
     }, [user]);
 
-    // Effect to initialize streak data for a new user or check the streak on load
+    // Effect to initialize streak data for a new user, ONLY if it's not loading and data is null.
     useEffect(() => {
-        const initializeStreak = async () => {
-            if (!user) return;
-
-            setIsLoading(true);
-            let data = await getStreakData(user.uid);
-            
-            if (!data) {
-                // First time user, create a new streak record
-                data = {
+        const initializeStreakForNewUser = async () => {
+            if (user && !isLoading && streakData === null) {
+                console.log("Initializing streak data for a new user...");
+                const newStreakData: StreakData = {
                     currentStreak: 0,
                     longestStreak: 0,
                     lastActivityDate: new Date(),
                     timeSpentToday: 0,
                     todayStreakCompleted: false,
-                    completedDays: [], // Initialize empty array
+                    completedDays: [],
                 };
-                await saveData(data);
+                await saveData(newStreakData);
+                setStreakData(newStreakData);
             }
-
-            const nowInUserTz = toZonedTime(new Date(), timezone);
-            const lastActivityInUserTz = toZonedTime(data.lastActivityDate, timezone);
-            const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
-
-            let needsUpdate = false;
-            if (daysDifference > 0) {
-                 data.timeSpentToday = 0;
-                 data.todayStreakCompleted = false;
-                 needsUpdate = true;
-            }
-             if (daysDifference > 1) {
-                 data.currentStreak = 0;
-                 needsUpdate = true;
-            }
-             if (needsUpdate) {
-                data.lastActivityDate = new Date();
-                await saveData(data);
-            }
-
-            setStreakData(data);
-            setIsLoading(false);
         };
-        initializeStreak();
-    }, [user, setStreakData, setIsLoading, saveData, timezone]);
+        initializeStreakForNewUser();
+    }, [user, isLoading, streakData, saveData, setStreakData]);
+    
+    // Effect to check and reset streak on new day
+    useEffect(() => {
+        if (!streakData || !user) return;
+
+        const nowInUserTz = toZonedTime(new Date(), timezone);
+        const lastActivityInUserTz = toZonedTime(streakData.lastActivityDate, timezone);
+        const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
+        
+        let needsUpdate = false;
+        let updatedData = { ...streakData };
+
+        if (daysDifference > 0) {
+            // Reset daily progress if it's a new day
+            if (updatedData.timeSpentToday > 0 || updatedData.todayStreakCompleted) {
+                updatedData.timeSpentToday = 0;
+                updatedData.todayStreakCompleted = false;
+                needsUpdate = true;
+            }
+        }
+        
+        if (daysDifference > 1) {
+            // Reset streak if more than one day has passed
+            if (updatedData.currentStreak > 0) {
+                updatedData.currentStreak = 0;
+                needsUpdate = true;
+            }
+        }
+        
+        if (needsUpdate) {
+            updatedData.lastActivityDate = new Date();
+            setStreakData(updatedData);
+            saveData(updatedData);
+        }
+
+    }, [user, streakData, setStreakData, saveData, timezone]);
 
 
     const startTimer = useCallback(() => {
@@ -95,14 +106,19 @@ export const useStreakTracker = () => {
 
                 if (newTimeSpent >= STREAK_GOAL_SECONDS) {
                     const completedDaysSet = new Set(prevData.completedDays || []);
+                    const wasAlreadyCompletedToday = completedDaysSet.has(todayStr);
                     completedDaysSet.add(todayStr);
+
+                    const newStreak = wasAlreadyCompletedToday 
+                        ? prevData.currentStreak 
+                        : (prevData.currentStreak || 0) + 1;
 
                     const updatedData: StreakData = {
                         ...prevData,
                         timeSpentToday: newTimeSpent,
                         todayStreakCompleted: true,
-                        currentStreak: (prevData.currentStreak || 0) + 1,
-                        longestStreak: Math.max((prevData.currentStreak || 0) + 1, prevData.longestStreak || 0),
+                        currentStreak: newStreak,
+                        longestStreak: Math.max(newStreak, prevData.longestStreak || 0),
                         lastActivityDate: new Date(),
                         completedDays: Array.from(completedDaysSet),
                     };
@@ -122,16 +138,20 @@ export const useStreakTracker = () => {
             timerRef.current = null;
         }
         // Save final time when timer stops
-        if(streakData && streakData.timeSpentToday > 0) {
+        if(streakData && streakData.timeSpentToday > 0 && !streakData.todayStreakCompleted) {
             saveData({ timeSpentToday: streakData.timeSpentToday });
         }
     }, [streakData, saveData]);
 
     // Effect for handling page visibility to pause/resume the timer
     useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!user || !streakData || streakData.todayStreakCompleted) return;
+        if (!user || !streakData || streakData.todayStreakCompleted) {
+            // If timer is running but shouldn't be, clear it
+            if(timerRef.current) stopTimer();
+            return;
+        }
 
+        const handleVisibilityChange = () => {
             if (document.hidden) {
                 stopTimer();
             } else {
@@ -139,10 +159,7 @@ export const useStreakTracker = () => {
             }
         };
 
-        // Start timer if page is visible and goal isn't met
-        if (user && streakData && !streakData.todayStreakCompleted) {
-            startTimer();
-        }
+        startTimer();
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
