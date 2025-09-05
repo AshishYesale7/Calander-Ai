@@ -149,3 +149,35 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
         throw new Error("Could not retrieve your installed plugins.");
     }
 };
+
+export const updateUserProfile = async (userId: string, profileData: { statusEmoji?: string | null, countryCode?: string | null }): Promise<void> => {
+    const userDocRef = getUserDocRef(userId);
+    const dataToUpdate: any = {};
+    if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
+    if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
+
+    try {
+        await setDoc(userDocRef, dataToUpdate, { merge: true });
+    } catch (error) {
+        console.error("Failed to update user profile in Firestore:", error);
+        throw new Error("Could not update user profile.");
+    }
+};
+
+export const getUserProfile = async (userId: string): Promise<{ statusEmoji?: string, countryCode?: string } | null> => {
+    const userDocRef = getUserDocRef(userId);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                statusEmoji: data.statusEmoji,
+                countryCode: data.countryCode,
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to get user profile from Firestore:", error);
+        throw new Error("Could not retrieve user profile.");
+    }
+};

@@ -14,6 +14,8 @@ export interface RoutineItem {
 
 export interface UserPreferences {
   routine: RoutineItem[];
+  countryCode?: string;
+  statusEmoji?: string;
 }
 
 export type EarlyReminder = 'none' | 'on_day' | '1_day' | '2_days' | '1_week';
@@ -238,7 +240,7 @@ export interface StreakData {
         date: string; // YYYY-MM-DD format
         lastUpdatedStreak: number;
     };
-    completedDays: string[]; // Array of 'dd-MM-yyyy' strings
+    completedDays: string[]; // Array of 'yyyy-MM-dd' strings
 }
 
 export interface LeaderboardUser {
@@ -247,5 +249,7 @@ export interface LeaderboardUser {
     photoURL?: string;
     currentStreak: number;
     longestStreak: number;
-    prevRank?: number;
+    statusEmoji?: string;
+    countryCode?: string;
 }
+

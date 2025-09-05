@@ -88,6 +88,8 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     photoURL: userData.photoURL,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
+                    statusEmoji: userData.statusEmoji,
+                    countryCode: userData.countryCode,
                 };
             }
             return null;

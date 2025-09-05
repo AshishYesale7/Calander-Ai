@@ -3,149 +3,193 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getLeaderboardData, type LeaderboardUser } from '@/services/streakService';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getUserProfile, updateUserProfile } from '@/services/userService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Flame, Award, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Shield, ShieldCheck, ArrowUp, ThumbsUp, Medal, Trophy, Star, Crown } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import CountryFlag from '@/components/leaderboard/CountryFlag';
+
+const statusEmojis = [
+  '😎', '🎉', '💪', '👀', '🍿', '🔥', '💯', '💩', '🏆', '🥗', '🐱‍👓', '👋'
+];
+
+const LEAGUE_PROMOTION_COUNT = 15;
 
 const getRankColor = (rank: number) => {
-    if (rank === 1) return 'text-amber-400';
-    if (rank === 2) return 'text-slate-400';
-    if (rank === 3) return 'text-amber-600';
-    return 'text-muted-foreground';
+  if (rank <= LEAGUE_PROMOTION_COUNT) return 'text-green-400';
+  return 'text-muted-foreground';
 };
 
 const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Award className="h-5 w-5 text-amber-400" />;
-    if (rank === 2) return <Award className="h-5 w-5 text-slate-400" />;
-    if (rank === 3) return <Award className="h-5 w-5 text-amber-600" />;
-    return <span className={cn("font-semibold w-5 text-center", getRankColor(rank))}>{rank}</span>;
+  if (rank === 1) return <Trophy className="h-5 w-5 text-amber-400" />;
+  if (rank === 2) return <Medal className="h-5 w-5 text-slate-400" />;
+  if (rank === 3) return <Star className="h-5 w-5 text-amber-600" />;
+  return <span className={cn("font-semibold w-5 text-center", getRankColor(rank))}>{rank}</span>;
 }
 
+const LeagueHeader = () => (
+    <div className="flex flex-col items-center gap-4">
+        <div className="flex items-center gap-4">
+            <div className="relative">
+                <Shield className="h-20 w-20 text-amber-600/50" strokeWidth={1} />
+                <Crown className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-amber-500" />
+            </div>
+            <div className="h-16 w-16 rounded-full bg-muted/30 border-2 border-dashed border-muted-foreground/50 flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+             <div className="h-16 w-16 rounded-full bg-muted/30 border-2 border-dashed border-muted-foreground/50 flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+        </div>
+        <div className="text-center">
+            <h1 className="text-3xl font-bold font-headline text-primary">Bronze League</h1>
+            <p className="text-muted-foreground mt-1">Top {LEAGUE_PROMOTION_COUNT} advance to the next league</p>
+            <p className="font-bold text-yellow-400 mt-2">1 day</p>
+        </div>
+    </div>
+);
 
-export default function LeaderboardPage() {
+
+const StatusPanel = ({ userStatus, onStatusChange }: { userStatus: string | null, onStatusChange: (emoji: string | null) => void }) => (
+    <div className="p-6 rounded-2xl border border-border bg-card/60 w-full max-w-sm sticky top-24">
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Set your status</h3>
+            <Button variant="link" onClick={() => onStatusChange(null)} className="text-accent p-0 h-auto">CLEAR</Button>
+        </div>
+        <div className="relative flex items-center justify-center h-24 w-24 mx-auto mb-4 rounded-full border-2 border-dashed border-muted-foreground/50">
+            {userStatus ? (
+                <span className="text-5xl">{userStatus}</span>
+            ) : (
+                <span className="text-5xl text-muted-foreground/50">?</span>
+            )}
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+            {statusEmojis.map(emoji => (
+                <Button key={emoji} variant="outline" className="h-12 w-full text-2xl" onClick={() => onStatusChange(emoji)}>
+                    {emoji}
+                </Button>
+            ))}
+        </div>
+    </div>
+);
+
+
+export default function LeaderboardPageV2() {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+    const [userProfile, setUserProfile] = useState<{ statusEmoji?: string | null, countryCode?: string | null } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
+    const fetchAllData = async () => {
+        if (!user) return;
         setIsLoading(true);
-        getLeaderboardData()
-            .then(data => {
-                // Add a previousRank for demo purposes. In a real app, you'd store this.
-                const dataWithPrevRank = data.map((u, i) => ({ ...u, prevRank: i + Math.floor(Math.random() * 3) - 1 }));
-                setLeaderboard(dataWithPrevRank);
-            })
-            .catch(err => console.error("Failed to fetch leaderboard data:", err))
-            .finally(() => setIsLoading(false));
-    }, []);
+        try {
+            const [leaderboardData, profileData] = await Promise.all([
+                getLeaderboardData(),
+                getUserProfile(user.uid)
+            ]);
+            setLeaderboard(leaderboardData);
+            setUserProfile(profileData);
+        } catch (err) {
+            console.error("Failed to fetch leaderboard or profile data:", err);
+            toast({ title: "Error", description: "Could not load leaderboard data.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        fetchAllData();
+    }, [user, toast]);
 
-    const userRank = useMemo(() => {
+    const handleStatusChange = async (emoji: string | null) => {
+        if (!user) return;
+        const originalProfile = userProfile;
+        setUserProfile(prev => ({...prev, statusEmoji: emoji})); // Optimistic update
+        try {
+            await updateUserProfile(user.uid, { statusEmoji: emoji });
+            // Refetch leaderboard to show updated status for current user
+            const leaderboardData = await getLeaderboardData();
+            setLeaderboard(leaderboardData);
+        } catch (err) {
+            setUserProfile(originalProfile); // Revert on fail
+            toast({ title: "Error", description: "Could not update your status.", variant: "destructive" });
+        }
+    }
+    
+    const userRankInfo = useMemo(() => {
         if (!user) return null;
         const index = leaderboard.findIndex(u => u.id === user.uid);
         return index !== -1 ? { ...leaderboard[index], rank: index + 1 } : null;
     }, [leaderboard, user]);
 
+    const renderUserRow = (u: LeaderboardUser, rank: number) => {
+        const isCurrentUser = user && u.id === user.id;
+        return (
+            <div
+                key={u.id}
+                className={cn(
+                    "flex items-center gap-4 p-2 rounded-lg",
+                    isCurrentUser && "bg-muted"
+                )}
+            >
+                <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
+                    {rank}
+                </div>
+                <div className="relative">
+                    <Avatar className="h-11 w-11">
+                        <AvatarImage src={u.photoURL || ''} alt={u.displayName || 'User'} />
+                        <AvatarFallback>{u.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    {u.countryCode && <CountryFlag countryCode={u.countryCode} className="absolute -top-1 -right-1" />}
+                    {u.statusEmoji && (
+                        <span className="absolute -bottom-1 -right-1 text-lg bg-card p-0.5 rounded-full leading-none">{u.statusEmoji}</span>
+                    )}
+                </div>
+                <p className="font-semibold text-foreground flex-1">{u.displayName || `User ${u.id.substring(0, 5)}`}</p>
+                <p className="text-sm font-bold text-yellow-400">{u.currentStreak} XP</p>
+            </div>
+        );
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-full">
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
+    
     return (
-        <div className="space-y-8">
-            <div className="text-center">
-                <h1 className="font-headline text-4xl font-bold text-primary">Leaderboard</h1>
-                <p className="text-foreground/80 mt-2">See who's building the most consistent habits.</p>
+        <div className="flex flex-col lg:flex-row items-start gap-8 max-w-6xl mx-auto">
+            {/* Left Column: Leaderboard */}
+            <div className="w-full lg:flex-1 space-y-8">
+                <LeagueHeader />
+
+                <div className="space-y-2">
+                    {leaderboard.slice(0, LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, index + 1))}
+                </div>
+
+                <div className="flex items-center gap-4 text-green-400 font-bold my-4">
+                    <ArrowUp className="h-5 w-5" />
+                    <span className="text-sm">PROMOTION ZONE</span>
+                    <div className="flex-1 h-px bg-green-400/30"></div>
+                </div>
+
+                <div className="space-y-2">
+                    {leaderboard.slice(LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, LEAGUE_PROMOTION_COUNT + index + 1))}
+                </div>
             </div>
 
-            {userRank && (
-                <Card className="frosted-glass border-2 border-accent shadow-accent/20 shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl text-accent">Your Ranking</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                               <div className="text-2xl font-bold w-8 text-center">{getRankIcon(userRank.rank)}</div>
-                                <Avatar className="h-12 w-12">
-                                    <AvatarImage src={userRank.photoURL || ''} alt={userRank.displayName || 'You'} />
-                                    <AvatarFallback>{userRank.displayName?.charAt(0) || 'Y'}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold text-lg">{userRank.displayName || 'You'}</p>
-                                    <p className="text-sm text-muted-foreground">Longest Streak: {userRank.longestStreak} days</p>
-                                </div>
-                            </div>
-                             <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                                <Flame className="h-7 w-7 text-orange-400" />
-                                {userRank.currentStreak}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <Card className="frosted-glass">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl text-primary">Top Performers</CardTitle>
-                    <CardDescription>Users with the longest active streaks.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                        <div className="flex justify-center items-center h-64">
-                            <LoadingSpinner />
-                        </div>
-                    ) : (
-                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-16">Rank</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead className="text-right">Current Streak</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {leaderboard.map((u, index) => {
-                                    const rank = index + 1;
-                                    
-                                    return (
-                                        <TableRow key={u.id} className={cn(user && u.id === user.uid && "bg-accent/10")}>
-                                            <TableCell className="font-bold text-lg w-16">
-                                                <div className="flex items-center justify-center h-full">
-                                                    {getRankIcon(rank)}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-10 w-10">
-                                                        <AvatarImage src={u.photoURL || ''} alt={u.displayName || 'User'}/>
-                                                        <AvatarFallback>{u.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <p className="font-medium">{u.displayName || `User ${u.id.substring(0,5)}`}</p>
-                                                        <p className="text-xs text-muted-foreground">Longest: {u.longestStreak} days</p>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2 text-lg font-bold text-primary">
-                                                    <Flame className="h-5 w-5 text-orange-400" />
-                                                    {u.currentStreak}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
+            {/* Right Column: Status Panel */}
+            <div className="w-full lg:w-80">
+                <StatusPanel userStatus={userProfile?.statusEmoji || null} onStatusChange={handleStatusChange} />
+            </div>
         </div>
     );
 }
+
