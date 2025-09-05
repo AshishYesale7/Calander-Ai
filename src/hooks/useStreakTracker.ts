@@ -36,17 +36,13 @@ export const useStreakTracker = () => {
             const lastActivityDay = startOfDay(streakData.lastActivityDate);
 
             // If the last activity was NOT today or yesterday, the streak is broken.
+            // This logic is crucial for when a user returns after a long time.
             if (!isSameDay(lastActivityDay, today) && !isSameDay(lastActivityDay, subDays(today, 1))) {
                 await updateStreakData(userId, { currentStreak: 0, timeSpentToday: 0, todayStreakCompleted: false });
             }
-            // If the last activity was yesterday, we need to reset today's progress.
-            else if (isSameDay(lastActivityDay, subDays(today, 1))) {
-                 await updateStreakData(userId, { timeSpentToday: 0, todayStreakCompleted: false });
-            }
-
 
         } catch (error) {
-            console.error("Error in streak logic:", error);
+            console.error("Error in initial streak logic:", error);
         }
     }, []);
 
@@ -56,8 +52,8 @@ export const useStreakTracker = () => {
         lastUpdateRef.current = new Date();
 
         timerRef.current = setInterval(async () => {
-            if (document.hidden) { // Don't track time if the tab is not active
-                lastUpdateRef.current = new Date(); // Reset timer when tab becomes active again
+            if (document.hidden) {
+                lastUpdateRef.current = new Date();
                 return;
             }
 
@@ -67,16 +63,28 @@ export const useStreakTracker = () => {
 
             const streakData = await getStreakData(user.uid);
             if (!streakData) return;
-            
-            const newTimeSpent = (streakData.timeSpentToday || 0) + elapsedSeconds;
+
+            const today = startOfDay(now);
+            const lastActivityDay = startOfDay(streakData.lastActivityDate);
+            let timeToday = streakData.timeSpentToday || 0;
+            let streakCompletedToday = streakData.todayStreakCompleted || false;
+
+            // *** CRUCIAL FIX: DAILY RESET LOGIC ***
+            // If the last recorded activity was from a previous day, reset today's progress.
+            if (!isSameDay(lastActivityDay, today)) {
+                timeToday = 0;
+                streakCompletedToday = false;
+            }
+
+            const newTimeSpent = timeToday + elapsedSeconds;
 
             const updatePayload: Partial<StreakData> = {
                 timeSpentToday: newTimeSpent,
                 lastActivityDate: now,
             };
 
-            // Check if streak goal is met for the first time today
-            if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakData.todayStreakCompleted) {
+            // If the goal is met AND it hasn't been marked as complete for today yet
+            if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakCompletedToday) {
                 updatePayload.todayStreakCompleted = true;
                 
                 // Simplified Streak Increment Logic
@@ -101,13 +109,14 @@ export const useStreakTracker = () => {
 
     useEffect(() => {
         if (user) {
+            // This runs once on mount to handle cases like a broken streak after days of inactivity.
             handleStreakLogic(user.uid);
+            // This starts the continuous tracking.
             startTracking();
         } else {
             stopTracking();
         }
         
-        // Cleanup on unmount
         return () => stopTracking();
     }, [user, handleStreakLogic, startTracking, stopTracking]);
 };
