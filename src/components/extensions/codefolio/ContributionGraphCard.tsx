@@ -16,11 +16,13 @@ const ContributionGraphCard = () => {
     const { user } = useAuth();
     const [activity, setActivity] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const today = startOfDay(new Date());
     
-    // Go back to the beginning of the month, 3 months ago.
-    const startDate = startOfWeek(startOfDay(subMonths(today, 3)), { weekStartsOn: 1 }); // Start on Monday
-    const endDate = endOfMonth(today);
+    const { startDate, endDate } = useMemo(() => {
+        const today = startOfDay(new Date());
+        const start = startOfWeek(startOfDay(subMonths(today, 3)), { weekStartsOn: 1 }); // Start on Monday
+        const end = endOfMonth(today);
+        return { startDate: start, endDate: end };
+    }, []);
 
     useEffect(() => {
         if (user) {
@@ -77,7 +79,6 @@ const ContributionGraphCard = () => {
         let streak = 0;
         let currentDate = startOfDay(new Date());
         
-        // If there was no activity today, check starting from yesterday for the streak
         if (!contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
             currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
         }
