@@ -44,45 +44,38 @@ const ContributionGraphCard = () => {
         return map;
     }, [activity]);
     
-    const { weeks, monthLabels } = useMemo(() => {
+    const { weeks, monthLabels, monthBoundaries } = useMemo(() => {
         const days = eachDayOfInterval({ start: startDate, end: endDate });
         const weeks: Date[][] = [];
         
-        // Group days into weeks, starting on Monday
         for (let i = 0; i < days.length; i += 7) {
             weeks.push(days.slice(i, i + 7));
         }
 
         const monthLabels: { name: string; weekIndex: number }[] = [];
+        const monthBoundaries = new Set<number>();
         let lastMonth = -1;
         
         weeks.forEach((week, weekIndex) => {
-            const firstDayOfMonth = week.find(day => {
+            for (const day of week) {
                 const month = getMonth(day);
-                if (month !== lastMonth && getDay(day) >= 1 && getDay(day) <= 3) {
-                     // Only add label if month changes near start of week
+                 if (month !== lastMonth) {
                     lastMonth = month;
-                    return true;
-                }
-                 if(day.getDate() === 1) {
-                    lastMonth = getMonth(day);
-                    return true;
-                }
-                return false;
-            });
-
-            if (firstDayOfMonth) {
-                const monthName = format(firstDayOfMonth, 'MMM');
-                if(!monthLabels.some(l => l.name === monthName && weekIndex < l.weekIndex + 4)) {
-                     monthLabels.push({
-                        name: monthName,
-                        weekIndex: weekIndex,
-                    });
+                    const monthName = format(day, 'MMM');
+                    // Add a new label only if it's not already the last one added
+                    if (!monthLabels.some(l => l.name === monthName && weekIndex < l.weekIndex + 4)) {
+                         monthLabels.push({ name: monthName, weekIndex });
+                    }
+                    // Mark the boundary before this week starts a new month
+                    if (weekIndex > 0) {
+                        monthBoundaries.add(weekIndex - 1);
+                    }
+                    break; // Move to the next week once the month change is detected
                 }
             }
         });
         
-        return { weeks, monthLabels };
+        return { weeks, monthLabels, monthBoundaries };
     }, [startDate, endDate]);
     
     useEffect(() => {
@@ -164,23 +157,28 @@ const ContributionGraphCard = () => {
                                     </div>
                                     <div className="grid grid-flow-col auto-cols-[12px] gap-1 w-max">
                                     {weeks.map((week, weekIndex) => (
-                                        <div key={weekIndex} className="grid grid-rows-7 gap-1">
-                                            {week.map((day) => {
-                                                if (!day) return <div key={`pad-${weekIndex}`} className="w-3 h-3" />;
-                                                const dateString = format(day, 'yyyy-MM-dd');
-                                                const level = contributions.get(dateString) || 0;
-                                                return (
-                                                    <Tooltip key={dateString} delayDuration={100}>
-                                                        <TooltipTrigger asChild>
-                                                            <div className={cn("w-3 h-3 rounded-[2px]", getLevelColor(level))} />
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="p-2">
-                                                            <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                            <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                );
-                                            })}
+                                        <div key={weekIndex} className="contents">
+                                            <div className="grid grid-rows-7 gap-1">
+                                                {week.map((day) => {
+                                                    if (!day) return <div key={`pad-${weekIndex}`} className="w-3 h-3" />;
+                                                    const dateString = format(day, 'yyyy-MM-dd');
+                                                    const level = contributions.get(dateString) || 0;
+                                                    return (
+                                                        <Tooltip key={dateString} delayDuration={100}>
+                                                            <TooltipTrigger asChild>
+                                                                <div className={cn("w-3 h-3 rounded-[2px]", getLevelColor(level))} />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="p-2">
+                                                                <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                                <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    );
+                                                })}
+                                            </div>
+                                            {monthBoundaries.has(weekIndex) && (
+                                                <div className="w-px bg-border/50 mx-1"></div>
+                                            )}
                                         </div>
                                     ))}
                                     </div>
@@ -196,6 +194,3 @@ const ContributionGraphCard = () => {
 };
 
 export default ContributionGraphCard;
-
-
-    
