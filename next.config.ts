@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         hostname: 'img.freepik.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'worldvectorlogo.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
