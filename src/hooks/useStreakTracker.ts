@@ -103,7 +103,7 @@ export const useStreakTracker = () => {
                 }
 
                 const newTimeSpent = (prevData.timeSpentToday || 0) + 1;
-                const todayStr = format(toZonedTime(new Date(), timezone), 'dd-MM-yyyy');
+                const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
 
                 if (newTimeSpent >= STREAK_GOAL_SECONDS) {
                     const completedDaysSet = new Set(prevData.completedDays || []);

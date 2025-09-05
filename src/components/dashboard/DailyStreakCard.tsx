@@ -116,7 +116,7 @@ export default function DailyStreakCard() {
     const weekDaysWithStatus = useMemo(() => {
         const completedDaysSet = new Set(streakData?.completedDays || []);
         return weekDays.map((day) => {
-            const dayStr = format(day, 'dd-MM-yyyy');
+            const dayStr = format(day, 'yyyy-MM-dd');
             return {
                 dayChar: format(day, 'E').charAt(0),
                 isCompleted: completedDaysSet.has(dayStr),
@@ -220,4 +220,3 @@ export default function DailyStreakCard() {
         </div>
     );
 }
-
