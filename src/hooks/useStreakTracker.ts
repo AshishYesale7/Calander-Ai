@@ -32,12 +32,18 @@ export const useStreakTracker = () => {
                 await updateStreakData(userId, streakData);
             }
 
-            const lastActivity = startOfDay(streakData.lastActivityDate);
+            const lastActivityDay = startOfDay(streakData.lastActivityDate);
 
-            // Reset streak if user missed a day
-            if (!isSameDay(lastActivity, today) && !isSameDay(lastActivity, subDays(today, 1))) {
-                await updateStreakData(userId, { currentStreak: 0, todayStreakCompleted: false, timeSpentToday: 0 });
+            // If the last activity was NOT today or yesterday, the streak is broken.
+            if (!isSameDay(lastActivityDay, today) && !isSameDay(lastActivityDay, subDays(today, 1))) {
+                await updateStreakData(userId, { currentStreak: 0 });
             }
+
+            // If the last activity was yesterday, today's streak is not yet completed. Reset the daily tracker.
+            if (isSameDay(lastActivityDay, subDays(today, 1))) {
+                 await updateStreakData(userId, { todayStreakCompleted: false, timeSpentToday: 0 });
+            }
+
 
         } catch (error) {
             console.error("Error in streak logic:", error);
@@ -73,18 +79,25 @@ export const useStreakTracker = () => {
             if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakData.todayStreakCompleted) {
                 updatePayload.todayStreakCompleted = true;
                 
-                const lastActivity = startOfDay(streakData.lastActivityDate);
+                const lastActivityDay = startOfDay(streakData.lastActivityDate);
                 const today = startOfDay(now);
 
-                if (isSameDay(lastActivity, subDays(today, 1))) {
-                    // Continue streak
-                    updatePayload.currentStreak = (streakData.currentStreak || 0) + 1;
-                } else if (!isSameDay(lastActivity, today)) {
-                    // Start a new streak
-                    updatePayload.currentStreak = 1;
-                }
+                let newStreakCount;
 
-                if (updatePayload.currentStreak && updatePayload.currentStreak > (streakData.longestStreak || 0)) {
+                if (isSameDay(lastActivityDay, subDays(today, 1))) {
+                    // It was yesterday, so continue the streak.
+                    newStreakCount = (streakData.currentStreak || 0) + 1;
+                } else if (!isSameDay(lastActivityDay, today)) {
+                    // It was before yesterday, so start a new streak.
+                    newStreakCount = 1;
+                } else {
+                    // It's the same day, so the streak count doesn't change yet.
+                    newStreakCount = streakData.currentStreak || 1;
+                }
+                
+                updatePayload.currentStreak = newStreakCount;
+
+                if (updatePayload.currentStreak > (streakData.longestStreak || 0)) {
                     updatePayload.longestStreak = updatePayload.currentStreak;
                 }
             }
