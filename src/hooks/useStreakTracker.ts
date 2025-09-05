@@ -57,7 +57,6 @@ export const useStreakTracker = () => {
             const streakData = await getStreakData(user.uid);
             if (!streakData) return;
             
-            // Get the current date and the last activity date IN THE USER'S TIMEZONE
             const nowInUserTz = toZonedTime(nowUtc, timezone);
             const lastActivityInUserTz = toZonedTime(streakData.lastActivityDate, timezone);
 
@@ -66,9 +65,17 @@ export const useStreakTracker = () => {
 
             let timeToday = streakData.timeSpentToday || 0;
             let streakCompletedToday = streakData.todayStreakCompleted || false;
+            let currentStreak = streakData.currentStreak || 0;
 
             // --- Daily Reset Logic (Timezone-Aware) ---
             if (todayFormatted !== lastDayFormatted) {
+                // If the last activity was NOT yesterday, the streak is broken.
+                const yesterdayFormatted = formatTz(new Date(nowInUserTz.setDate(nowInUserTz.getDate() - 1)), 'yyyy-MM-dd', { timeZone: timezone });
+                if (lastDayFormatted !== yesterdayFormatted) {
+                    currentStreak = 0;
+                }
+                
+                // Reset daily progress regardless of streak status.
                 timeToday = 0;
                 streakCompletedToday = false;
             }
@@ -79,16 +86,14 @@ export const useStreakTracker = () => {
                 timeSpentToday: newTimeSpent,
                 lastActivityDate: nowUtc,
                 todayStreakCompleted: streakCompletedToday,
+                currentStreak: currentStreak,
             };
 
             // If the goal is met AND it hasn't been marked as complete for today yet
             if (newTimeSpent >= STREAK_GOAL_SECONDS && !streakCompletedToday) {
                 updatePayload.todayStreakCompleted = true;
+                updatePayload.currentStreak = currentStreak + 1;
                 
-                const newStreakCount = (streakData.currentStreak || 0) + 1;
-
-                updatePayload.currentStreak = newStreakCount;
-
                 if (updatePayload.currentStreak > (streakData.longestStreak || 0)) {
                     updatePayload.longestStreak = updatePayload.currentStreak;
                 }
