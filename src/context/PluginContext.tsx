@@ -19,6 +19,7 @@ interface PluginContextType {
   isCodefolioLoggedIn: boolean;
   isCheckingLogin: boolean;
   handleCodefolioLogin: (data: AllPlatformsUserData) => void;
+  isLoginViewActive: boolean; // New state to explicitly control login view
 }
 
 export const PluginContext = createContext<PluginContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
   const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
+  const [isLoginViewActive, setIsLoginViewActive] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -58,12 +60,15 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
       if (isCheckingLogin) return; // Don't do anything while checking
       if (isCodefolioLoggedIn) {
         setActivePlugin(plugin);
+        setIsLoginViewActive(false);
       } else {
         // Show login component if not logged in
-        setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
+        setActivePlugin(null); // No active plugin, but show the login view
+        setIsLoginViewActive(true);
       }
     } else {
       setActivePlugin(plugin);
+      setIsLoginViewActive(false);
     }
   }, [isCodefolioLoggedIn, isCheckingLogin]);
 
@@ -83,6 +88,7 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
 
     saveCodingUsernames(user.uid, definedUsernames).then(() => {
       setIsCodefolioLoggedIn(true);
+      setIsLoginViewActive(false);
       setActivePlugin(allPlugins.find(p => p.name === 'Codefolio Ally')!);
       toast({ title: "Success", description: "Usernames saved and data fetched!" });
     }).catch(err => {
@@ -92,6 +98,7 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
 
   const closePlugin = useCallback(() => {
     setActivePlugin(null);
+    setIsLoginViewActive(false);
     checkLoginStatus(); // Re-check login status when a plugin is closed
   }, [checkLoginStatus]);
 
@@ -102,7 +109,8 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
         closePlugin,
         isCodefolioLoggedIn,
         isCheckingLogin,
-        handleCodefolioLogin
+        handleCodefolioLogin,
+        isLoginViewActive
     }}>
       {children}
     </PluginContext.Provider>

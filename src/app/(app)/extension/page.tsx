@@ -42,10 +42,10 @@ const FullScreenPluginView: React.FC = () => {
 
   const handleSettings = () => {
     // This will open the login/settings view
-    setActivePlugin({ name: 'CodefolioLogin', component: CodefolioLogin } as any);
+    setActivePlugin({ name: 'Codefolio Ally' } as any);
   };
   
-  if (!activePlugin || !activePlugin.component) return null;
+  if (!activePlugin) return null;
   const isCodefolio = activePlugin.name === 'Codefolio Ally';
 
   return (
@@ -70,7 +70,7 @@ const FullScreenPluginView: React.FC = () => {
         </div>
       </header>
       <main className="flex-1 overflow-auto">
-        <CodefolioDashboard />
+        {activePlugin.component && <CodefolioDashboard />}
       </main>
     </div>
   );
@@ -86,9 +86,10 @@ export default function ExtensionPage() {
   const { 
     activePlugin, 
     setActivePlugin,
-    isCodefolioLoggedIn,
     isCheckingLogin,
     handleCodefolioLogin,
+    isLoginViewActive,
+    closePlugin
   } = usePlugin();
 
   // Fetch installed plugins from Firestore on mount
@@ -261,15 +262,15 @@ export default function ExtensionPage() {
       </Card>
       
       {/* The login modal is now controlled by the context */}
-      {activePlugin?.name === 'CodefolioLogin' && (
+      {isLoginViewActive && (
          <CodefolioLogin
           onLoginSuccess={handleCodefolioLogin}
-          onClose={() => setActivePlugin(null)}
+          onClose={closePlugin}
         />
       )}
 
       {/* The fullscreen view is also controlled by the context */}
-      {activePlugin && activePlugin.component && (
+      {activePlugin && (
         <FullScreenPluginView />
       )}
     </div>
