@@ -142,15 +142,6 @@ const ContributionGraphCard = () => {
                 ) : (
                     <TooltipProvider>
                     <div className="flex gap-3">
-                        <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-1">
-                           <div className="h-5 flex items-center">Mon</div>
-                           <div className="h-5 flex items-center">Tue</div>
-                           <div className="h-5 flex items-center">Wed</div>
-                           <div className="h-5 flex items-center">Thu</div>
-                           <div className="h-5 flex items-center">Fri</div>
-                           <div className="h-5 flex items-center">Sat</div>
-                           <div className="h-5 flex items-center">Sun</div>
-                        </div>
                         <div className="w-full overflow-hidden">
                              <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
                                 <div className="relative">
@@ -202,6 +193,15 @@ const ContributionGraphCard = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                         <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-1">
+                           <div className="h-5 flex items-center">Mon</div>
+                           <div className="h-5 flex items-center">Tue</div>
+                           <div className="h-5 flex items-center">Wed</div>
+                           <div className="h-5 flex items-center">Thu</div>
+                           <div className="h-5 flex items-center">Fri</div>
+                           <div className="h-5 flex items-center">Sat</div>
+                           <div className="h-5 flex items-center">Sun</div>
                         </div>
                     </div>
                     </TooltipProvider>
