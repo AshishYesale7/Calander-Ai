@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Download, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
+import { Card, CardContent } from '@/components/ui/card';
 
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
@@ -162,37 +163,41 @@ export default function ExtensionPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
-        {filteredPlugins.map((plugin) => {
-            const isInstalled = installedPlugins.has(plugin.name);
-            return (
-                 <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
-                    <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40">
-                         <Image
-                            src={plugin.logo}
-                            alt={`${plugin.name} logo`}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-contain"
-                          />
+      <Card className="frosted-glass p-4 md:p-8">
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+            {filteredPlugins.map((plugin) => {
+                const isInstalled = installedPlugins.has(plugin.name);
+                return (
+                    <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
+                        <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40">
+                            <Image
+                                src={plugin.logo}
+                                alt={`${plugin.name} logo`}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-medium text-sm text-foreground">{plugin.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
+                            {isInstalled ? (
+                                <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
+                                    <ExternalLink className="h-3 w-3 mr-1.5"/> Open
+                                </Button>
+                            ) : (
+                                <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
+                                    <Download className="h-3 w-3 mr-1.5"/> Install
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                    <div className="text-center">
-                        <p className="font-medium text-sm text-foreground">{plugin.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
-                        {isInstalled ? (
-                             <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
-                                <ExternalLink className="h-3 w-3 mr-1.5"/> Open
-                            </Button>
-                        ) : (
-                             <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
-                                <Download className="h-3 w-3 mr-1.5"/> Install
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            )
-        })}
-      </div>
+                )
+            })}
+          </div>
+        </CardContent>
+      </Card>
       
       {activePlugin && (
         <FullScreenPluginView 
