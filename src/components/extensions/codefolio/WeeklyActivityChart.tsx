@@ -4,15 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
 const data = [
-  { day: 'Mon', solved: 5, target: 8, fill: '#facc15' }, // yellow-400
-  { day: 'Tue', solved: 10, target: 8, fill: '#38bdf8' }, // sky-400
-  { day: 'Wed', solved: 18, target: 15, fill: '#facc15' },
-  { day: 'Wed_target', solved: 15, target: 15, fill: '#38bdf8', isTarget: true},
-  { day: 'Thu', solved: 14, target: 14, fill: '#facc15' },
-  { day: 'Thu_target', solved: 5, target: 14, fill: '#38bdf8', isTarget: true},
-  { day: 'Fri', solved: 3, target: 10, fill: '#38bdf8' },
-  { day: 'Sat', solved: 9, target: 8, fill: '#38bdf8' },
-  { day: 'Sun', solved: 20, target: 12, fill: '#38bdf8' },
+  { day: 'Mon', solved: 5, fill: 'hsl(var(--chart-2))' },
+  { day: 'Tue', solved: 10, fill: 'hsl(var(--chart-1))' },
+  { day: 'Wed', solved: 18, fill: 'hsl(var(--chart-2))' },
+  { day: 'Wed_target', solved: 15, isTarget: true, fill: 'hsl(var(--foreground))' },
+  { day: 'Thu', solved: 14, fill: 'hsl(var(--chart-2))' },
+  { day: 'Thu_target', solved: 5, isTarget: true, fill: 'hsl(var(--foreground))' },
+  { day: 'Fri', solved: 3, fill: 'hsl(var(--chart-1))' },
+  { day: 'Sat', solved: 9, fill: 'hsl(var(--chart-1))' },
+  { day: 'Sun', solved: 20, fill: 'hsl(var(--chart-1))' },
 ];
 
 export default function WeeklyActivityChart() {
@@ -37,7 +37,7 @@ export default function WeeklyActivityChart() {
                     />
                     <Bar dataKey="solved" radius={[4, 4, 0, 0]} barSize={12}>
                        {data.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.isTarget ? 'hsl(var(--primary-foreground) / 0.2)' : entry.fill} />
+                           <Cell key={`cell-${index}`} fill={entry.isTarget ? entry.fill : entry.fill} opacity={entry.isTarget ? 0.5 : 1} />
                        ))}
                     </Bar>
                 </BarChart>

@@ -15,6 +15,7 @@ export default function SolvedProblemsCard({ totalSolved }: SolvedProblemsCardPr
             <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div>
                     <CardTitle className="text-lg font-medium">Problems Solved</CardTitle>
+                    <Badge variant="outline" className="mt-1 bg-green-500/20 text-green-300 border-green-500/50">0 Solved today</Badge>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                     <Trophy className="h-6 w-6 text-yellow-400" />

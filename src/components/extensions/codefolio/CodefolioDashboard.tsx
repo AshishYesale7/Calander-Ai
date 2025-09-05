@@ -112,9 +112,9 @@ export default function CodefolioDashboard() {
                             { name: userData.leetcode.username, value: `${userData.leetcode.totalSolved} solved`},
                         ]}
                         chartData={[
-                            { name: 'Easy', value: userData.leetcode.easy, fill: '#22c55e' },
-                            { name: 'Medium', value: userData.leetcode.medium, fill: '#facc15' },
-                            { name: 'Hard', value: userData.leetcode.hard, fill: '#ef4444' },
+                            { name: 'Easy', value: userData.leetcode.easy, fill: 'hsl(var(--chart-1))' },
+                            { name: 'Medium', value: userData.leetcode.medium, fill: 'hsl(var(--chart-2))' },
+                            { name: 'Hard', value: userData.leetcode.hard, fill: 'hsl(var(--chart-3))' },
                         ]}
                     />
                 )}

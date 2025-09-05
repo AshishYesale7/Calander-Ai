@@ -53,7 +53,7 @@ export default function UpcomingContests({ contests = [] }: UpcomingContestsProp
                                 <h4 className="font-semibold truncate">{contest.name}</h4>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                Starts in {formatDistanceToNowStrict(contestDate, { addSuffix: true })}
+                                {format(contestDate, 'dd MMM yyyy - hh:mm a')}
                             </p>
                             <div className="flex items-center justify-between mt-2">
                                 <Badge variant="secondary" className="text-xs">
