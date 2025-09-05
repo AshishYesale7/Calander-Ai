@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "../ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 const ContributionGraphCard = () => {
