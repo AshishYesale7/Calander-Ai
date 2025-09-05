@@ -49,13 +49,13 @@ export default function CodefolioDashboard() {
   }, [user, apiKey, toast]);
   
   const totalSolved = Object.values(userData || {}).reduce((acc, platform) => {
-    if (platform && platform.totalSolved) {
+    if (platform && platform.totalSolved && !platform.error) {
         return acc + platform.totalSolved;
     }
     return acc;
   }, 0);
 
-  const longestStreak = Math.max(0, ...Object.values(userData || {}).map(p => p?.streak || 0));
+  const longestStreak = Math.max(0, ...Object.values(userData || {}).map(p => (p && !p.error ? p.streak : 0) || 0));
 
   if (isLoading) {
     return (
@@ -68,8 +68,8 @@ export default function CodefolioDashboard() {
     )
   }
   
-  if (!userData) {
-      return <div className="text-center p-8">No coding data found. Please set up your usernames.</div>;
+  if (!userData || Object.keys(userData).length === 0) {
+      return <div className="text-center p-8">No coding data found. Please set up your usernames in Settings.</div>;
   }
 
   return (
@@ -77,8 +77,12 @@ export default function CodefolioDashboard() {
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6">
-                <ContestCalendar contests={userData.codeforces?.contests} />
-                <UpcomingContests contests={userData.codeforces?.contests} />
+                {userData.codeforces && !userData.codeforces.error && (
+                    <>
+                        <ContestCalendar contests={userData.codeforces?.contests} />
+                        <UpcomingContests contests={userData.codeforces?.contests} />
+                    </>
+                )}
             </div>
 
             {/* Center Column */}
