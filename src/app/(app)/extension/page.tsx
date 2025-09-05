@@ -81,13 +81,14 @@ export default function ExtensionPage() {
   useEffect(() => {
     if (user) {
       getInstalledPlugins(user.uid).then(plugins => {
-        if (plugins.length > 0) {
+        if (plugins !== null) { // If it's not null, a record exists (even if empty)
           setInstalledPluginsSet(new Set(plugins));
         } else {
-          // If user has no saved plugins, set the defaults
-          setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
-          // And save these defaults to their profile
-          saveInstalledPlugins(user.uid, DEFAULT_PLUGINS);
+          // If user has no saved plugins record at all (is a new user), set the defaults
+          const defaultSet = new Set(DEFAULT_PLUGINS);
+          setInstalledPluginsSet(defaultSet);
+          // And save these defaults to their new profile
+          saveInstalledPlugins(user.uid, Array.from(defaultSet));
         }
       }).catch(err => {
         console.error("Failed to load plugins from Firestore", err);

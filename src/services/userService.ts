@@ -130,14 +130,20 @@ export const saveInstalledPlugins = async (userId: string, pluginNames: string[]
     }
 };
 
-export const getInstalledPlugins = async (userId: string): Promise<string[]> => {
+export const getInstalledPlugins = async (userId: string): Promise<string[] | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists() && Array.isArray(docSnap.data().installedPlugins)) {
-            return docSnap.data().installedPlugins;
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Check if the field exists. If it does, return it (even if it's an empty array).
+            // If it doesn't exist, return null to indicate it's a new user profile in this context.
+            if (data.hasOwnProperty('installedPlugins')) {
+                return Array.isArray(data.installedPlugins) ? data.installedPlugins : [];
+            }
         }
-        return [];
+        // Return null if the document doesn't exist or the field is missing
+        return null;
     } catch (error) {
         console.error("Failed to get installed plugins from Firestore:", error);
         throw new Error("Could not retrieve your installed plugins.");
