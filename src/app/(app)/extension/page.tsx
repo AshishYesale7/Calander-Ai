@@ -10,22 +10,86 @@ import Image from 'next/image';
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
 const allPlugins = [
-  { name: 'Android Studio', logo: '/logos/android-studio.svg' },
-  { name: 'AppCode', logo: '/logos/appcode.svg' },
-  { name: 'Chrome', logo: '/logos/chrome.svg' },
-  { name: 'Figma', logo: '/logos/figma.svg' },
-  { name: 'VS Code', logo: '/logos/vscode.svg' },
-  { name: 'Blender', logo: '/logos/blender.svg' },
-  { name: 'Azure Data Studio', logo: '/logos/azure-data-studio.svg' },
-  { name: 'Brave', logo: '/logos/brave.svg' },
-  { name: 'Canva', logo: '/logos/canva.svg' },
-  { name: 'CLion', logo: '/logos/clion.svg' },
-  { name: 'Discord', logo: '/logos/discord.svg' },
-  { name: 'Eclipse', logo: '/logos/eclipse.svg' },
-  { name: 'DataGrip', logo: '/logos/datagrip.svg' },
-  { name: 'DataSpell', logo: '/logos/dataspell.svg' },
-  { name: 'DBeaver', logo: '/logos/dbeaver.svg' },
-  { name: 'Delphi', logo: '/logos/delphi.svg' },
+  { 
+    name: 'Android Studio', 
+    logo: '/logos/android-studio.svg',
+    description: 'The official IDE for Android app development.'
+  },
+  { 
+    name: 'AppCode', 
+    logo: '/logos/appcode.svg',
+    description: 'Smart IDE for iOS/macOS development by JetBrains.'
+  },
+  { 
+    name: 'Chrome', 
+    logo: '/logos/chrome.svg',
+    description: 'Google\'s web browser for a fast, secure experience.'
+  },
+  { 
+    name: 'Figma', 
+    logo: '/logos/figma.svg',
+    description: 'The collaborative interface design tool.'
+  },
+  { 
+    name: 'VS Code', 
+    logo: '/logos/vscode.svg',
+    description: 'A powerful, lightweight source code editor.'
+  },
+  { 
+    name: 'Blender', 
+    logo: '/logos/blender.svg',
+    description: 'Free and open source 3D creation suite.'
+  },
+  { 
+    name: 'Azure Data Studio', 
+    logo: '/logos/azure-data-studio.svg',
+    description: 'Cross-platform database tool for data professionals.'
+  },
+  { 
+    name: 'Brave', 
+    logo: '/logos/brave.svg',
+    description: 'A privacy-focused browser that blocks ads and trackers.'
+  },
+  { 
+    name: 'Canva', 
+    logo: '/logos/canva.svg',
+    description: 'Online design platform for creating visual content.'
+  },
+  { 
+    name: 'CLion', 
+    logo: '/logos/clion.svg',
+    description: 'A cross-platform IDE for C and C++ by JetBrains.'
+  },
+  { 
+    name: 'Discord', 
+    logo: '/logos/discord.svg',
+    description: 'All-in-one voice and text chat for gamers.'
+  },
+  { 
+    name: 'Eclipse', 
+    logo: '/logos/eclipse.svg',
+    description: 'An IDE for Java and other programming languages.'
+  },
+  { 
+    name: 'DataGrip', 
+    logo: '/logos/datagrip.svg',
+    description: 'The cross-platform IDE for databases & SQL.'
+  },
+  { 
+    name: 'DataSpell', 
+    logo: '/logos/dataspell.svg',
+    description: 'The IDE for professional data scientists.'
+  },
+  { 
+    name: 'DBeaver', 
+    logo: '/logos/dbeaver.svg',
+    description: 'Free multi-platform universal database tool.'
+  },
+  { 
+    name: 'Delphi', 
+    logo: '/logos/delphi.svg',
+    description: 'IDE for rapid application development.'
+  },
 ];
 // --- End Mock Data ---
 
@@ -114,6 +178,7 @@ export default function ExtensionPage() {
                     </div>
                     <div className="text-center">
                         <p className="font-medium text-sm text-foreground">{plugin.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1 h-8 line-clamp-2">{plugin.description}</p>
                         {isInstalled ? (
                              <Button variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={() => handleOpen(plugin)}>
                                 <ExternalLink className="h-3 w-3 mr-1.5"/> Open
@@ -138,3 +203,4 @@ export default function ExtensionPage() {
     </div>
   );
 }
+
