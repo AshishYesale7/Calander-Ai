@@ -387,7 +387,7 @@ export default function DashboardPage() {
     return activeEvents.filter(event =>
         event.date instanceof Date && !isNaN(event.date.valueOf()) &&
         isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
-    ).sort((a,b) => a.date.getTime() - a.date.getTime());
+    ).sort((a,b) => a.date.getTime() - b.date.getTime());
   }, [activeEvents, selectedDateForDayView]);
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent) => {
@@ -618,7 +618,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <TodaysPlanCard />
         <DailyStreakCard />
       </div>
