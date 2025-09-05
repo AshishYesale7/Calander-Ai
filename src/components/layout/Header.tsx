@@ -32,7 +32,6 @@ const navItems = [
   { href: '/news', label: 'News', icon: Menu },
   { href: '/resources', label: 'Resources', icon: Menu },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
-  { href: '/extension', label: 'Extension', icon: Code },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
@@ -130,6 +129,12 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild>
+              <Link href="/extension">
+                  <Code className="h-5 w-5" />
+                  <span className="sr-only">Extensions</span>
+              </Link>
+          </Button>
           <NotificationPanel />
           <DropdownMenu>
               <DropdownMenuTrigger asChild>

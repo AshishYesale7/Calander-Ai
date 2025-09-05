@@ -53,7 +53,6 @@ const navItems = [
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
-  { href: '/extension', label: 'Extension', icon: Code },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
