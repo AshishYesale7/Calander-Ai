@@ -3,7 +3,7 @@
 import { db } from '@/lib/firebase';
 import type { StreakData, LeaderboardUser } from '@/types';
 import { collection, doc, getDoc, setDoc, Timestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { getUserProfile } from './userService'; // Import the new service
+import { getUserProfile } from './userService';
 
 const getStreakDocRef = (userId: string) => {
   if (!db) {

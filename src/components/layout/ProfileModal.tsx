@@ -17,7 +17,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Edit, Github, Linkedin, Twitter, Save, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getUserPreferences, saveUserPreferences } from '@/services/userService';
+import { getUserProfile, updateUserProfile } from '@/services/userService';
 import type { UserPreferences } from '@/types';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
@@ -36,9 +36,8 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [preferences, setPreferences] = useState<Partial<UserPreferences>>({});
   
-  // Local state for editing form fields
+  // State for form fields
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
@@ -55,27 +54,21 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
   useEffect(() => {
     if (user && isOpen) {
       setIsLoading(true);
-      getUserPreferences(user.uid).then(prefs => {
-        if (prefs) {
-            setPreferences(prefs);
-            setBio(prefs.bio || '');
-            setGithubUrl(prefs.socials?.github || '');
-            setLinkedinUrl(prefs.socials?.linkedin || '');
-            setTwitterUrl(prefs.socials?.twitter || '');
+      getUserProfile(user.uid).then(profile => {
+        if (profile) {
+            setDisplayName(profile.displayName || user.displayName || '');
+            setBio(profile.bio || '');
+            setGithubUrl(profile.socials?.github || '');
+            setLinkedinUrl(profile.socials?.linkedin || '');
+            setTwitterUrl(profile.socials?.twitter || '');
+        } else {
+             setDisplayName(user.displayName || '');
         }
       }).finally(() => setIsLoading(false));
     }
   }, [user, isOpen]);
 
   const handleEditToggle = () => {
-    if (!isEditing) {
-        // Entering edit mode, populate form with current data
-        setDisplayName(user?.displayName || '');
-        setBio(preferences.bio || '');
-        setGithubUrl(preferences.socials?.github || '');
-        setLinkedinUrl(preferences.socials?.linkedin || '');
-        setTwitterUrl(preferences.socials?.twitter || '');
-    }
     setIsEditing(!isEditing);
   };
   
@@ -83,21 +76,16 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
     if (!user) return;
     setIsLoading(true);
 
-    const newPreferences: UserPreferences = {
-        ...preferences,
-        bio,
-        socials: {
-            github: githubUrl,
-            linkedin: linkedinUrl,
-            twitter: twitterUrl,
-        }
-    };
-    
     try {
-        // We only save preferences here. DisplayName and PhotoURL are managed via Firebase Auth.
-        // In a real app, you'd have a separate `updateProfile` call for those.
-        await saveUserPreferences(user.uid, newPreferences);
-        setPreferences(newPreferences);
+        await updateUserProfile(user.uid, {
+            displayName: displayName,
+            bio: bio,
+            socials: {
+                github: githubUrl,
+                linkedin: linkedinUrl,
+                twitter: twitterUrl
+            }
+        });
         toast({ title: 'Success', description: 'Your profile has been updated.' });
         setIsEditing(false);
     } catch (error) {
@@ -134,7 +122,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                  <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
                     <AvatarFallback className="text-3xl">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                        {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex gap-2">
@@ -152,13 +140,13 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
             <div className="mt-4">
                 {isEditing ? (
                     <Input
-                        className="text-2xl font-bold !bg-transparent !border-0 !border-b-2 !rounded-none !p-1 !h-auto"
+                        className="text-2xl font-bold !bg-transparent !border-0 !border-b-2 !rounded-none !p-1 !h-auto focus-visible:ring-0"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         placeholder="Your Name"
                     />
                 ) : (
-                    <h2 className="text-2xl font-bold text-primary">{user?.displayName || "Anonymous User"}</h2>
+                    <h2 className="text-2xl font-bold text-primary">{displayName || "Anonymous User"}</h2>
                 )}
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
@@ -173,7 +161,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                         className="mt-1"
                     />
                 ) : (
-                    <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">{preferences.bio || 'No bio yet. Click "Edit Profile" to add one.'}</p>
+                    <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">{bio || 'No bio yet. Click "Edit Profile" to add one.'}</p>
                 )}
             </div>
 
@@ -203,13 +191,13 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                 ) : (
                     <div className="flex space-x-3">
                         <Button variant="outline" size="icon" asChild>
-                            <a href={preferences.socials?.github || '#'} target="_blank" rel="noopener noreferrer" className={!preferences.socials?.github ? 'pointer-events-none opacity-50' : ''}><Github className="h-5 w-5"/></a>
+                            <a href={githubUrl || '#'} target="_blank" rel="noopener noreferrer" className={!githubUrl ? 'pointer-events-none opacity-50' : ''}><Github className="h-5 w-5"/></a>
                         </Button>
                         <Button variant="outline" size="icon" asChild>
-                            <a href={preferences.socials?.linkedin || '#'} target="_blank" rel="noopener noreferrer" className={!preferences.socials?.linkedin ? 'pointer-events-none opacity-50' : ''}><Linkedin className="h-5 w-5"/></a>
+                            <a href={linkedinUrl || '#'} target="_blank" rel="noopener noreferrer" className={!linkedinUrl ? 'pointer-events-none opacity-50' : ''}><Linkedin className="h-5 w-5"/></a>
                         </Button>
                         <Button variant="outline" size="icon" asChild>
-                            <a href={preferences.socials?.twitter || '#'} target="_blank" rel="noopener noreferrer" className={!preferences.socials?.twitter ? 'pointer-events-none opacity-50' : ''}><Twitter className="h-5 w-5"/></a>
+                            <a href={twitterUrl || '#'} target="_blank" rel="noopener noreferrer" className={!twitterUrl ? 'pointer-events-none opacity-50' : ''}><Twitter className="h-5 w-5"/></a>
                         </Button>
                     </div>
                 )}

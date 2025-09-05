@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField } from 'firebase/firestore';
-import type { UserPreferences } from '@/types';
+import type { UserPreferences, SocialLinks } from '@/types';
 import type { User } from 'firebase/auth';
 
 type CodingUsernames = {
@@ -94,28 +94,43 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; photoURL: string; bio: string; socials: SocialLinks }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
+    const dataToUpdate: any = {};
+    if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
+    if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
+    if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
+    if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
+
     try {
-        // Using Partial<UserPreferences> allows saving only the parts that are being edited.
-        await setDoc(userDocRef, { preferences }, { merge: true });
+        await setDoc(userDocRef, dataToUpdate, { merge: true });
     } catch (error) {
-        console.error("Failed to save user preferences to Firestore:", error);
-        throw new Error("Could not save your preferences.");
+        console.error("Failed to update user profile in Firestore:", error);
+        throw new Error("Could not update user profile.");
     }
 };
 
-export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
+
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string, photoURL: string }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists() && docSnap.data().preferences) {
-            return docSnap.data().preferences as UserPreferences;
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                displayName: data.displayName,
+                photoURL: data.photoURL,
+                bio: data.bio,
+                socials: data.socials,
+                statusEmoji: data.statusEmoji,
+                countryCode: data.countryCode,
+                routine: data.routine || [],
+            };
         }
         return null;
     } catch (error) {
-        console.error("Failed to get user preferences from Firestore:", error);
-        throw new Error("Could not retrieve your preferences.");
+        console.error("Failed to get user profile from Firestore:", error);
+        throw new Error("Could not retrieve user profile.");
     }
 };
 
@@ -162,37 +177,28 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: { displayName?: string, statusEmoji?: string | null, countryCode?: string | null }): Promise<void> => {
+// Deprecated in favor of the more comprehensive updateUserProfile
+export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
-    const dataToUpdate: any = {};
-    if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
-    if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
-    if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
-
     try {
-        await setDoc(userDocRef, dataToUpdate, { merge: true });
+        await setDoc(userDocRef, { preferences }, { merge: true });
     } catch (error) {
-        console.error("Failed to update user profile in Firestore:", error);
-        throw new Error("Could not update user profile.");
+        console.error("Failed to save user preferences to Firestore:", error);
+        throw new Error("Could not save your preferences.");
     }
 };
 
-export const getUserProfile = async (userId: string): Promise<{ displayName?: string, photoURL?: string, statusEmoji?: string, countryCode?: string } | null> => {
+// Deprecated in favor of the more comprehensive getUserProfile
+export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            return {
-                displayName: data.displayName,
-                photoURL: data.photoURL,
-                statusEmoji: data.statusEmoji,
-                countryCode: data.countryCode,
-            };
+        if (docSnap.exists() && docSnap.data().preferences) {
+            return docSnap.data().preferences as UserPreferences;
         }
         return null;
     } catch (error) {
-        console.error("Failed to get user profile from Firestore:", error);
-        throw new Error("Could not retrieve user profile.");
+        console.error("Failed to get user preferences from Firestore:", error);
+        throw new Error("Could not retrieve your preferences.");
     }
 };
