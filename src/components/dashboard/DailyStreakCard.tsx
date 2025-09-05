@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
-import { eachDayOfWeek, format, startOfWeek, getDay, isSameDay } from 'date-fns';
+import { format, startOfWeek, getDay, isSameDay, addDays } from 'date-fns';
 
 const FlameIcon = () => (
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -24,12 +24,8 @@ export default function DailyStreakCard() {
     // Memoize the calculation of the current week's days
     const weekDays = useMemo(() => {
         const now = new Date();
-        // Assuming the week starts on Sunday (index 0)
-        const weekStart = startOfWeek(now, { weekStartsOn: 0 });
-        return eachDayOfWeek({ weekStartsOn: 0 }).map((day, index) => {
-            // Re-map so Sunday is at the start (index 0)
-            return startOfWeek(now, { weekStartsOn: index});
-        });
+        const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday as start of the week
+        return Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
     }, []);
 
     const weekDaysWithStatus = useMemo(() => {
@@ -112,4 +108,3 @@ export default function DailyStreakCard() {
         </Card>
     );
 }
-
