@@ -4,13 +4,20 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download, ExternalLink } from 'lucide-react';
+import { Search, Download, ExternalLink, Code } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
+import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
 
 // --- Mock Data ---
 // In a real application, this would come from a database or API.
 const allPlugins = [
+  { 
+    name: 'Codefolio Ally', 
+    logo: '/logos/codefolio-logo.svg',
+    description: 'Track your coding progress across platforms.',
+    component: CodefolioDashboard
+  },
   { 
     name: 'Android Studio', 
     logo: 'https://worldvectorlogo.com/logos/android-studio-1.svg',
@@ -102,22 +109,32 @@ interface FullScreenPluginViewProps {
 }
 
 const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onClose }) => {
+  const PluginComponent = plugin.component;
+
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col animate-in fade-in duration-300">
-      <header className="p-4 border-b border-border/30 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <Image src={plugin.logo} alt={`${plugin.name} logo`} width={32} height={32} />
+    <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
+      <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3 ml-2">
+          {plugin.logo.startsWith('/') ? (
+             <Code className="h-7 w-7 text-accent" />
+          ) : (
+             <Image src={plugin.logo} alt={`${plugin.name} logo`} width={28} height={28} />
+          )}
           <h2 className="text-xl font-semibold">{plugin.name}</h2>
         </div>
         <Button variant="outline" onClick={onClose}>
           Close Extension
         </Button>
       </header>
-      <main className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
-          <p className="text-muted-foreground mt-2">This area would contain the full-screen UI for the extension.</p>
-        </div>
+      <main className="flex-1 overflow-auto">
+        {PluginComponent ? <PluginComponent /> : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold">This is the {plugin.name} Extension</h1>
+                <p className="text-muted-foreground mt-2">This area would contain the full-screen UI for the extension.</p>
+              </div>
+            </div>
+        )}
       </main>
     </div>
   );
@@ -126,7 +143,7 @@ const FullScreenPluginView: React.FC<FullScreenPluginViewProps> = ({ plugin, onC
 
 export default function ExtensionPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(['VS Code']));
+  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(['VS Code', 'Codefolio Ally']));
   const [activePlugin, setActivePlugin] = useState<Plugin | null>(null);
 
   const filteredPlugins = allPlugins.filter((plugin) =>
@@ -170,14 +187,18 @@ export default function ExtensionPage() {
                 const isInstalled = installedPlugins.has(plugin.name);
                 return (
                     <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
-                        <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40">
-                            <Image
-                                src={plugin.logo}
-                                alt={`${plugin.name} logo`}
-                                width={80}
-                                height={80}
-                                className="w-full h-full object-contain"
-                            />
+                        <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
+                           {plugin.logo.startsWith('/') ? (
+                             <Code className="h-12 w-12 text-accent" />
+                            ) : (
+                                <Image
+                                    src={plugin.logo}
+                                    alt={`${plugin.name} logo`}
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full object-contain"
+                                />
+                            )}
                         </div>
                         <div className="text-center">
                             <p className="font-medium text-sm text-foreground">{plugin.name}</p>
