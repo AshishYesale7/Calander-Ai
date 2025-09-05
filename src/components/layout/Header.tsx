@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -31,6 +31,8 @@ import NotificationPanel from './NotificationPanel';
 import Image from 'next/image';
 import { allPlugins } from '@/data/plugins';
 import { getInstalledPlugins } from '@/services/userService';
+import { getStreakData } from '@/services/streakService';
+import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
 import { usePlugin } from '@/hooks/use-plugin';
 
@@ -84,10 +86,12 @@ export default function Header({
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
 
   useEffect(() => {
     if (user) {
         getInstalledPlugins(user.uid).then(names => setInstalledPluginNames(new Set(names)));
+        getStreakData(user.uid).then(setStreakData);
     }
   }, [user]);
 
@@ -189,7 +193,17 @@ export default function Header({
             </Sheet>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {streakData && (
+             <Button variant="ghost" size="sm" asChild className="h-8">
+               <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
+                  <Flame className="h-5 w-5" />
+                  <span className="font-bold text-sm">{streakData.currentStreak}</span>
+                  <span className="sr-only">day streak</span>
+               </Link>
+            </Button>
+          )}
+
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
                 <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
@@ -210,10 +224,10 @@ export default function Header({
                                    onClick={() => handlePluginClick(plugin)}
                                    className="w-full flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted"
                                 >
-                                   {plugin.logo.startsWith('/') ? (
-                                        <Code className="h-5 w-5 text-accent" />
-                                    ) : (
+                                   {plugin.logo && plugin.logo.startsWith('https://worldvectorlogo.com') ? (
                                         <Image src={plugin.logo} alt={`${plugin.name} logo`} width={20} height={20} />
+                                    ) : (
+                                        <Code className="h-5 w-5 text-accent" />
                                     )}
                                    <span>{plugin.name}</span>
                                </button>
