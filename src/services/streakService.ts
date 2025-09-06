@@ -29,8 +29,21 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
         insight: data.insight || undefined,
         completedDays: data.completedDays || [],
       };
+    } else {
+      // If the document does not exist, this is a new user for streak tracking.
+      // Create and save a new default streak record for them.
+      const newStreakData: StreakData = {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActivityDate: new Date(),
+          timeSpentToday: 0,
+          timeSpentTotal: 0,
+          todayStreakCompleted: false,
+          completedDays: [],
+      };
+      await updateStreakData(userId, newStreakData); // Save the new record
+      return newStreakData; // Return the newly created data
     }
-    return null; // Return null if the document doesn't exist
   } catch (error) {
     console.error("Failed to get streak data from Firestore:", error);
     throw new Error("Could not retrieve streak data.");
@@ -48,11 +61,7 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
   
-  // The rest of the fields can be merged directly.
-  // Firestore's setDoc with { merge: true } handles undefined fields by ignoring them.
-
   try {
-    // Using { merge: true } is crucial to prevent overwriting fields not included in the update.
     await setDoc(streakDocRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Failed to update streak data in Firestore:", error);
@@ -79,7 +88,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             
             const userProfile = await getUserProfile(userId);
             
-            // Use timeSpentTotal for the leaderboard display
             const timeSpentForRank = (streakData.timeSpentTotal || 0) + (streakData.timeSpentToday || 0);
             
             if (userProfile) {
@@ -108,7 +116,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         
         const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];
         
-        // Final sort on the combined data just in case
         return leaderboard.sort((a,b) => b.timeSpentTotal - a.timeSpentTotal);
 
     } catch (error) {

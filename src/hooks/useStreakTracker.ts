@@ -20,44 +20,19 @@ export const useStreakTracker = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     if (!streakContext) {
-        // This can happen if the hook is used outside the provider, which shouldn't happen
-        // in the app's structure but is a safe guard.
         return;
     }
-    const { streakData, setStreakData, isLoading } = streakContext;
+    const { streakData, setStreakData } = streakContext;
 
     const saveData = useCallback(async (dataToSave: Partial<StreakData>) => {
         if (!user) return;
         try {
-            // This function now only writes to Firestore.
             await updateStreakData(user.uid, dataToSave);
         } catch (error) {
             console.error("Failed to save streak data:", error);
         }
     }, [user]);
 
-    // Effect to initialize data for a new user, if it doesn't exist in Firestore.
-    useEffect(() => {
-        const initializeStreakForNewUser = async () => {
-            // Only run if auth is done, we have a user, and their data is null (meaning they are new)
-            if (user && !isLoading && streakData === null) {
-                const newStreakData: StreakData = {
-                    currentStreak: 0,
-                    longestStreak: 0,
-                    lastActivityDate: new Date(),
-                    timeSpentToday: 0,
-                    timeSpentTotal: 0,
-                    todayStreakCompleted: false,
-                    completedDays: [],
-                };
-                // Save the new record to Firestore and update the local state.
-                await saveData(newStreakData);
-                setStreakData(newStreakData);
-            }
-        };
-        initializeStreakForNewUser();
-    }, [user, isLoading, streakData, saveData, setStreakData]);
-    
     // Effect for handling the daily rollover logic.
     useEffect(() => {
         if (!streakData || !user) return;
@@ -67,15 +42,11 @@ export const useStreakTracker = () => {
         const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
         
         if (daysDifference > 0) {
-            // Add yesterday's time to total before resetting.
-            const newTotalTime = (streakData.timeSpentTotal || 0) + streakData.timeSpentToday;
-            
             const updatedData: StreakData = { 
                 ...streakData,
-                timeSpentToday: 0, // Reset for the new day
-                timeSpentTotal: newTotalTime, // Update total XP
+                timeSpentToday: 0,
+                timeSpentTotal: (streakData.timeSpentTotal || 0) + streakData.timeSpentToday,
                 todayStreakCompleted: false,
-                // Reset streak if user missed a day
                 currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, 
                 lastActivityDate: new Date(),
             };
@@ -89,7 +60,6 @@ export const useStreakTracker = () => {
     useEffect(() => {
         if (streakData?.todayStreakCompleted && user) {
             const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
-            // Check if this goal completion has already been logged for today
             if (streakData.completedDays?.includes(todayStr)) {
                  logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
             }
@@ -117,7 +87,6 @@ export const useStreakTracker = () => {
                     
                     const wasGoalCompletedToday = prevData.todayStreakCompleted;
 
-                    // Check if the goal has just been completed.
                     if (newTimeSpentToday >= STREAK_GOAL_SECONDS && !wasGoalCompletedToday) {
                       const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
                       const completedDaysSet = new Set(prevData.completedDays || []);
@@ -136,7 +105,7 @@ export const useStreakTracker = () => {
 
                     return { ...prevData, ...dataToUpdate };
                 });
-            }, 1000); // Ticks every second
+            }, 1000);
         };
 
         const stopTimerAndSave = () => {
@@ -144,9 +113,7 @@ export const useStreakTracker = () => {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
-            // Save the latest progress to Firestore when the user becomes inactive.
             if(streakData) {
-                // Ensure we save all relevant fields, not just time.
                 const { insight, ...dataToSave } = streakData;
                 saveData(dataToSave);
             }
@@ -160,7 +127,6 @@ export const useStreakTracker = () => {
             }
         };
         
-        // The timer should only run if there is a user and data has been loaded.
         if (user && streakData) {
             startTimer();
             document.addEventListener('visibilitychange', handleVisibilityChange);
