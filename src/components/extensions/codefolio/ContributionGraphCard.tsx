@@ -123,29 +123,29 @@ const ContributionGraphCard = () => {
     };
 
     return (
-        <Card className="frosted-glass bg-card/60 p-6">
+        <Card className="frosted-glass bg-card/60 p-4 border-0 shadow-none">
             <CardHeader className="p-0 flex flex-row items-start justify-between">
                 <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
                         <Droplet className="h-6 w-6 text-cyan-400" />
                     </div>
                     <div>
-                        <CardTitle className="text-lg font-semibold">Contribution Graph</CardTitle>
-                        <CardDescription className="text-sm mt-1">{totalContributions} contributions in the last year</CardDescription>
+                        <CardTitle className="text-md font-semibold">Contribution Graph</CardTitle>
+                        <CardDescription className="text-xs mt-1">{totalContributions} contributions in the last year</CardDescription>
                     </div>
                 </div>
                 <Badge variant="outline" className="bg-background/80">{currentStreak} Day{currentStreak === 1 ? '' : 's'} streak</Badge>
             </CardHeader>
             <CardContent className="p-0 mt-4">
                 {isLoading ? (
-                    <div className="h-48 flex items-center justify-center"><LoadingSpinner /></div>
+                    <div className="h-36 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                         <div className="w-full overflow-hidden">
                              <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
                                 <div className="relative">
-                                     <div className="grid grid-flow-col auto-cols-[20px] gap-x-1 mb-1 h-6">
+                                     <div className="grid grid-flow-col auto-cols-[16px] gap-x-1 mb-1 h-5">
                                         {monthLabels.map((month) => (
                                             <div 
                                                 key={`${month.name}-${month.weekIndex}`}
@@ -158,13 +158,12 @@ const ContributionGraphCard = () => {
                                     </div>
                                     <div className="grid grid-flow-col auto-cols-min gap-x-1 w-max">
                                     {weeks.map((week, weekIndex) => {
-                                        const isMonthEnd = week.some(day => day && isSameDay(day, lastDayOfMonth(day)));
                                         return (
                                             <React.Fragment key={weekIndex}>
-                                                <div className="grid grid-rows-7 gap-1 w-[20px]">
+                                                <div className="grid grid-rows-7 gap-1 w-4">
                                                     {week.map((day, dayIndex) => {
                                                         if (!day) {
-                                                          return <div key={`${weekIndex}-${dayIndex}`} className="w-5 h-5" />;
+                                                          return <div key={`${weekIndex}-${dayIndex}`} className="w-4 h-4" />;
                                                         }
                                                         const dateString = format(day, 'yyyy-MM-dd');
                                                         const level = contributions.get(dateString) || 0;
@@ -172,7 +171,7 @@ const ContributionGraphCard = () => {
                                                             <Tooltip key={dateString} delayDuration={100}>
                                                                 <TooltipTrigger asChild>
                                                                     <div className={cn(
-                                                                        "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
+                                                                        "w-4 h-4 rounded-[2px] flex items-center justify-center border border-white/10", 
                                                                         getLevelColor(level)
                                                                     )}>
                                                                         
@@ -186,7 +185,6 @@ const ContributionGraphCard = () => {
                                                         );
                                                     })}
                                                 </div>
-                                                {isMonthEnd && weekIndex < weeks.length - 1 && <div className="w-[1px] h-full bg-border/50 mx-1" />}
                                             </React.Fragment>
                                         )
                                     })}
@@ -194,14 +192,14 @@ const ContributionGraphCard = () => {
                                 </div>
                             </div>
                         </div>
-                         <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-7 gap-1">
-                           <div className="h-5 flex items-center">Mon</div>
-                           <div className="h-5 flex items-center">Tue</div>
-                           <div className="h-5 flex items-center">Wed</div>
-                           <div className="h-5 flex items-center">Thu</div>
-                           <div className="h-5 flex items-center">Fri</div>
-                           <div className="h-5 flex items-center">Sat</div>
-                           <div className="h-5 flex items-center">Sun</div>
+                         <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-6 gap-0.5">
+                           <div className="h-4 flex items-center">Mon</div>
+                           <div className="h-4 flex items-center">Tue</div>
+                           <div className="h-4 flex items-center">Wed</div>
+                           <div className="h-4 flex items-center">Thu</div>
+                           <div className="h-4 flex items-center">Fri</div>
+                           <div className="h-4 flex items-center">Sat</div>
+                           <div className="h-4 flex items-center">Sun</div>
                         </div>
                     </div>
                     </TooltipProvider>

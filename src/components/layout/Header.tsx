@@ -37,6 +37,7 @@ import { Code } from 'lucide-react';
 import { usePlugin } from '@/hooks/use-plugin';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, addDays, toDate } from 'date-fns';
+import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -254,14 +255,16 @@ export default function Header({
                         </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-80 frosted-glass" sideOffset={10}>
-                    <div className="p-2 text-foreground w-full">
-                        <h3 className="text-lg font-bold text-primary">
-                            Daily Goal
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                           {streakData.insight?.text || "Keep your streak alive!"}
-                        </p>
+                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-[450px] frosted-glass p-0" sideOffset={10}>
+                    <div className="p-4 text-foreground w-full space-y-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-primary">
+                                Daily Goal
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                               {streakData.insight?.text || "Keep your streak alive!"}
+                            </p>
+                        </div>
 
                         <div className="mt-4 p-4 bg-background/25 rounded-xl space-y-4">
                             <div className="flex justify-around">
@@ -287,6 +290,9 @@ export default function Header({
                                     {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
                                 </p>
                             </div>
+                        </div>
+                        <div className="-mx-1">
+                            <ContributionGraphCard />
                         </div>
                     </div>
                 </PopoverContent>
@@ -354,7 +360,7 @@ export default function Header({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 frosted-glass">
-                <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                  <DropdownMenuItem onClick={() => setIsCustomizeModalOpen(true)}>
                   <Palette className="mr-2 h-4 w-4" />
