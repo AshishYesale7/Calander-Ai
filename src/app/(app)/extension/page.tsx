@@ -67,10 +67,10 @@ const FullScreenPluginView: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
             {isCodefolio && <Button variant="ghost" onClick={handleSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
-            {isCodefolio && <Button variant="ghost" onClick={handleCodefolioLogout}>Logout</Button>}
             <Button variant="outline" onClick={closePlugin}>
                 Close Extension
             </Button>
+            {isCodefolio && <Button variant="ghost" onClick={handleCodefolioLogout}>Logout</Button>}
         </div>
       </header>
       <main className="flex-1 overflow-auto">
