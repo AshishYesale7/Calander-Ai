@@ -26,11 +26,12 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
   // This effect fetches the initial data. It no longer creates it.
   useEffect(() => {
     const fetchStreakData = async () => {
-        if (user && pathname !== '/subscription') {
+        // Only fetch if we have a user. The tracker hook will handle creation.
+        if (user) {
             setIsLoading(true);
             try {
                 const data = await getStreakData(user.uid);
-                setStreakData(data); // This will be null if user is new
+                setStreakData(data); // This will be null if user is new, which is intended.
             } catch (error) {
                 console.error("Error fetching streak data:", error);
                 setStreakData(null);
@@ -38,14 +39,14 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
                 setIsLoading(false);
             }
         } else {
-            // No user or on subscription page, so not loading and no data.
+            // No user, so not loading and no data.
             setIsLoading(false);
             setStreakData(null);
         }
     };
 
     fetchStreakData();
-  }, [user, pathname]);
+  }, [user]);
   
 
   return (

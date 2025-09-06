@@ -43,6 +43,7 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
   // Create a mutable copy to avoid modifying the original object
   const dataToSave: { [key: string]: any } = { ...data };
   
+  // Convert any Date objects to Firestore Timestamps before saving
   if (data.lastActivityDate) {
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
@@ -100,6 +101,8 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                 currentStreak: streakData.currentStreak || 0,
                 longestStreak: streakData.longestStreak || 0,
                 timeSpentTotal: timeSpentForRank,
+                statusEmoji: undefined,
+                countryCode: undefined,
             };
         });
         

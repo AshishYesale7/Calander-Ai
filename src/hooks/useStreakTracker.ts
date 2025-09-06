@@ -20,6 +20,8 @@ export const useStreakTracker = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     if (!streakContext) {
+        // This can happen if the hook is used outside the provider, which shouldn't happen
+        // in the app's structure but is a safe guard.
         return;
     }
     const { streakData, setStreakData, isLoading } = streakContext;
@@ -37,6 +39,7 @@ export const useStreakTracker = () => {
     // Effect to initialize data for a new user, if it doesn't exist in Firestore.
     useEffect(() => {
         const initializeStreakForNewUser = async () => {
+            // Only run if auth is done, we have a user, and their data is null (meaning they are new)
             if (user && !isLoading && streakData === null) {
                 const newStreakData: StreakData = {
                     currentStreak: 0,
@@ -47,6 +50,7 @@ export const useStreakTracker = () => {
                     todayStreakCompleted: false,
                     completedDays: [],
                 };
+                // Save the new record to Firestore and update the local state.
                 await saveData(newStreakData);
                 setStreakData(newStreakData);
             }
@@ -82,7 +86,6 @@ export const useStreakTracker = () => {
     }, [user, streakData, setStreakData, saveData, timezone]);
 
     // Effect for logging activity when daily goal is completed.
-    // It runs only when `todayStreakCompleted` changes to true.
     useEffect(() => {
         if (streakData?.todayStreakCompleted && user) {
             const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
@@ -143,11 +146,9 @@ export const useStreakTracker = () => {
             }
             // Save the latest progress to Firestore when the user becomes inactive.
             if(streakData) {
-                saveData({ 
-                    timeSpentToday: streakData.timeSpentToday, 
-                    timeSpentTotal: streakData.timeSpentTotal, 
-                    lastActivityDate: streakData.lastActivityDate 
-                });
+                // Ensure we save all relevant fields, not just time.
+                const { insight, ...dataToSave } = streakData;
+                saveData(dataToSave);
             }
         };
 
