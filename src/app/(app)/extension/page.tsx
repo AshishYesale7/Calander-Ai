@@ -49,27 +49,22 @@ const FullScreenPluginView: React.FC = () => {
 
   // The component to render is now dynamic
   const PluginComponent = activePlugin.component;
+  const LogoComponent = activePlugin.logo;
 
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
       <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 ml-2">
-          {typeof activePlugin.logo === 'string' ? (
-              activePlugin.logo.startsWith('/') ? (
-                  <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
-              ) : (
-                  <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
-              )
+          {typeof LogoComponent === 'string' ? (
+            <Image src={LogoComponent} alt={`${activePlugin.name} logo`} width={28} height={28} />
           ) : (
-              <activePlugin.logo />
+            typeof LogoComponent === 'function' && <LogoComponent />
           )}
           <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
         <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={closePlugin}>Close Extension</Button>
             {isCodefolio && <Button variant="ghost" onClick={handleSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
-            <Button variant="outline" onClick={closePlugin}>
-                Close Extension
-            </Button>
             {isCodefolio && <Button variant="ghost" onClick={handleCodefolioLogout}>Logout</Button>}
         </div>
       </header>
@@ -174,7 +169,7 @@ export default function ExtensionPage() {
                         className="w-full h-full object-contain"
                     />
                 ) : (
-                    <LogoComponent />
+                    LogoComponent && <LogoComponent />
                 )}
             </div>
             <div className="text-center">
