@@ -103,13 +103,15 @@ export default function SidebarNav({
   };
   
   const filteredNavItems = useMemo(() => {
-    if (isSubscribed) {
-      return navItems;
+    // Hide Extensions tab from everyone
+    let items = navItems.filter(item => item.href !== '/extension');
+    if (!isSubscribed) {
+      // Further filter for non-subscribed users
+      items = items.filter(item => 
+        item.href !== '/extension'
+      );
     }
-    // For non-subscribed users, show a limited set of pages
-    return navItems.filter(item => 
-      item.href !== '/extension'
-    );
+    return items;
   }, [isSubscribed]);
 
   return (
