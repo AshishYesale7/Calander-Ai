@@ -100,7 +100,8 @@ export default function Header({
   const { theme, toggleTheme } = useTheme();
   const { setActivePlugin } = usePlugin();
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isStreakPopoverOpen, setIsStreakPopoverOpen] = useState(false);
+  const [isExtensionsPopoverOpen, setIsExtensionsPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { streakData } = useStreak();
 
@@ -132,24 +133,25 @@ export default function Header({
     }
   };
   
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (popover: 'streak' | 'extensions') => {
     if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
     }
-    setIsPopoverOpen(true);
+    if (popover === 'streak') setIsStreakPopoverOpen(true);
+    if (popover === 'extensions') setIsExtensionsPopoverOpen(true);
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (popover: 'streak' | 'extensions') => {
     hoverTimeoutRef.current = setTimeout(() => {
-        setIsPopoverOpen(false);
+        if (popover === 'streak') setIsStreakPopoverOpen(false);
+        if (popover === 'extensions') setIsExtensionsPopoverOpen(false);
     }, 200); // 200ms delay
   };
 
   const handlePluginClick = (plugin: (typeof allPlugins)[0]) => {
-      setIsPopoverOpen(false);
+      setIsExtensionsPopoverOpen(false);
       if (pathname !== '/extension') {
           router.push('/extension');
-          // Give the router a moment to navigate before opening the plugin
           setTimeout(() => setActivePlugin(plugin), 100);
       } else {
           setActivePlugin(plugin);
@@ -240,9 +242,9 @@ export default function Header({
         <div className="flex items-center gap-1 sm:gap-2">
           
           {streakData && isSubscribed && (
-              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+              <Popover open={isStreakPopoverOpen} onOpenChange={setIsStreakPopoverOpen}>
                 <PopoverTrigger asChild>
-                    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    <div onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')}>
                         <Button asChild variant="ghost" size="sm" className="h-8">
                             <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
                                 <Flame className="h-5 w-5" />
@@ -252,7 +254,7 @@ export default function Header({
                         </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-80 frosted-glass" sideOffset={10}>
+                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-80 frosted-glass" sideOffset={10}>
                     <div className="p-2 text-foreground w-full">
                         <h3 className="text-lg font-bold text-primary">
                             Daily Goal
@@ -293,16 +295,16 @@ export default function Header({
 
           {isSubscribed && (
             <>
-              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+              <Popover open={isExtensionsPopoverOpen} onOpenChange={setIsExtensionsPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    <div onMouseEnter={() => handleMouseEnter('extensions')} onMouseLeave={() => handleMouseLeave('extensions')}>
                         <Button variant="ghost" size="icon">
                             <ExtensionIcon className="h-5 w-5" />
                             <span className="sr-only">Extensions</span>
                         </Button>
                     </div>
                   </PopoverTrigger>
-                  <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-64 frosted-glass">
+                  <PopoverContent onMouseEnter={() => handleMouseEnter('extensions')} onMouseLeave={() => handleMouseLeave('extensions')} className="w-64 frosted-glass">
                     <div className="space-y-4">
                         <h4 className="font-medium leading-none">Installed Plugins</h4>
                         <div className="space-y-2">
