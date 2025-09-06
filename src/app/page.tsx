@@ -75,7 +75,7 @@ const PricingCard = ({ title, price, currencySymbol, period, features, popular =
             </ul>
         </CardContent>
         <CardFooter className="p-0 mt-8">
-            <Button asChild size="lg" className={cn("w-full text-lg", popular ? "bg-accent hover:bg-accent/90" : "bg-primary/80 hover:bg-primary")}>
+            <Button asChild size="lg" className={cn("w-full text-lg", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
                 <Link href="/auth/signup">Get Started</Link>
             </Button>
         </CardFooter>
