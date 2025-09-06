@@ -242,6 +242,7 @@ export interface StreakData {
     longestStreak: number;
     lastActivityDate: Date;
     timeSpentToday: number; // in seconds
+    timeSpentTotal: number; // in seconds, cumulative XP
     todayStreakCompleted: boolean;
     insight?: {
         text: string;
@@ -257,6 +258,7 @@ export interface LeaderboardUser {
     photoURL?: string;
     currentStreak: number;
     longestStreak: number;
+    timeSpentTotal: number; // XP for leaderboard
     statusEmoji?: string;
     countryCode?: string;
 }

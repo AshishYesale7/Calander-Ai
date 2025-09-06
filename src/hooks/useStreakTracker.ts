@@ -42,6 +42,7 @@ export const useStreakTracker = () => {
                     longestStreak: 0,
                     lastActivityDate: new Date(),
                     timeSpentToday: 0,
+                    timeSpentTotal: 0, // Initialize new XP counter
                     todayStreakCompleted: false,
                     completedDays: [],
                 };
@@ -52,6 +53,7 @@ export const useStreakTracker = () => {
         initializeStreakForNewUser();
     }, [user, isLoading, streakData, saveData, setStreakData]);
     
+    // This effect handles the daily rollover logic
     useEffect(() => {
         if (!streakData || !user) return;
 
@@ -59,23 +61,19 @@ export const useStreakTracker = () => {
         const lastActivityInUserTz = toZonedTime(new Date(streakData.lastActivityDate), timezone);
         const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
         
-        let needsUpdate = false;
-        let updatedData = { ...streakData };
-
         if (daysDifference > 0) {
-            // It's a new day. Reset daily progress regardless of previous values.
-            updatedData.timeSpentToday = 0;
-            updatedData.todayStreakCompleted = false;
-            needsUpdate = true;
+            // It's a new day
+            const newTotalTime = (streakData.timeSpentTotal || 0) + streakData.timeSpentToday;
             
-            if (daysDifference > 1) {
-                // More than a day has passed, so the streak is broken.
-                updatedData.currentStreak = 0;
-            }
-        }
-        
-        if (needsUpdate) {
-            updatedData.lastActivityDate = new Date();
+            const updatedData = { 
+                ...streakData,
+                timeSpentToday: 0, // Reset for the new day
+                timeSpentTotal: newTotalTime, // Accumulate XP
+                todayStreakCompleted: false,
+                currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, // Reset streak if more than 1 day passed
+                lastActivityDate: new Date(),
+            };
+            
             setStreakData(updatedData);
             saveData(updatedData);
         }
@@ -122,7 +120,10 @@ export const useStreakTracker = () => {
                     saveData(updatedData);
                     return updatedData;
                 } else {
-                     return { ...prevData, timeSpentToday: newTimeSpent };
+                    const updatedData = { ...prevData, timeSpentToday: newTimeSpent, lastActivityDate: new Date() };
+                    // We only save the time progress periodically, not every second, to reduce Firestore writes.
+                    // A good strategy is to save on visibility change (implemented below).
+                    return updatedData;
                 }
             });
         }, 1000);
@@ -133,6 +134,7 @@ export const useStreakTracker = () => {
             clearInterval(timerRef.current);
             timerRef.current = null;
         }
+        // Save the latest progress when the timer stops
         if(streakData && streakData.timeSpentToday > 0) {
             saveData({ timeSpentToday: streakData.timeSpentToday, lastActivityDate: new Date() });
         }

@@ -127,6 +127,16 @@ export default function LeaderboardPageV2() {
         return index !== -1 ? { ...leaderboard[index], rank: index + 1 } : null;
     }, [leaderboard, user]);
 
+    const formatXP = (xpInSeconds: number): string => {
+        const hours = Math.floor(xpInSeconds / 3600);
+        if (hours > 0) {
+            return `${hours} hr`;
+        }
+        const minutes = Math.floor((xpInSeconds % 3600) / 60);
+        return `${minutes} min`;
+    };
+
+
     const renderUserRow = (u: LeaderboardUser, rank: number) => {
         const isCurrentUser = user && u.id === user.id;
         return (
@@ -151,7 +161,7 @@ export default function LeaderboardPageV2() {
                     )}
                 </div>
                 <p className="font-semibold text-foreground flex-1">{u.displayName || `User ${u.id.substring(0, 5)}`}</p>
-                <p className="text-sm font-bold text-yellow-400">{u.currentStreak} XP</p>
+                <p className="text-sm font-bold text-yellow-400">{formatXP(u.timeSpentTotal)} XP</p>
             </div>
         );
     };

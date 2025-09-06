@@ -22,6 +22,7 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
         ...data,
         lastActivityDate: (data.lastActivityDate as Timestamp).toDate(),
         completedDays: data.completedDays || [],
+        timeSpentTotal: data.timeSpentTotal || 0, // Ensure default value
       } as StreakData;
     }
     return null;
@@ -39,7 +40,6 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
   
-  // Handle the structured insight object
   if (data.insight) {
     dataToSave.insight = {
         text: data.insight.text,
@@ -48,9 +48,12 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
     };
   }
 
-  // Ensure completedDays is saved if it exists
   if (data.completedDays) {
       dataToSave.completedDays = data.completedDays;
+  }
+  
+  if (data.timeSpentTotal !== undefined) {
+      dataToSave.timeSpentTotal = data.timeSpentTotal;
   }
 
   try {
@@ -68,7 +71,8 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
 
     const streaksCollectionRef = collection(db, 'streaks');
     
-    const q = query(streaksCollectionRef, orderBy('currentStreak', 'desc'), limit(50));
+    // Now order by the new total time field for XP
+    const q = query(streaksCollectionRef, orderBy('timeSpentTotal', 'desc'), limit(50));
     
     try {
         const streakSnapshot = await getDocs(q);
@@ -77,7 +81,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             const streakData = streakDoc.data();
             const userId = streakDoc.id;
             
-            // Use the new service to get user profile data
             const userProfile = await getUserProfile(userId);
             
             if (userProfile) {
@@ -87,17 +90,18 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     photoURL: userProfile.photoURL,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
+                    timeSpentTotal: streakData.timeSpentTotal || 0, // Add XP to leaderboard data
                     statusEmoji: userProfile.statusEmoji,
                     countryCode: userProfile.countryCode,
                 };
             }
-            // Fallback in case a streak document exists but a user profile doesn't
             return {
                 id: userId,
                 displayName: 'Anonymous User',
                 photoURL: undefined,
                 currentStreak: streakData.currentStreak || 0,
                 longestStreak: streakData.longestStreak || 0,
+                timeSpentTotal: streakData.timeSpentTotal || 0,
             };
         });
         
@@ -106,6 +110,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         return leaderboard;
     } catch (error) {
         console.error("Failed to get leaderboard data from Firestore:", error);
-        return []; // Return empty array on error
+        return [];
     }
 };
