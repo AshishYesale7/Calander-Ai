@@ -240,17 +240,19 @@ export default function Header({
         <div className="flex items-center gap-1 sm:gap-2">
           
           {streakData && isSubscribed && (
-              <Popover>
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8">
-                        <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
-                            <Flame className="h-5 w-5" />
-                            <span className="font-bold text-sm">{streakData.currentStreak}</span>
-                            <span className="sr-only">day streak</span>
-                        </Link>
-                    </Button>
+                    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                        <Button asChild variant="ghost" size="sm" className="h-8">
+                            <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
+                                <Flame className="h-5 w-5" />
+                                <span className="font-bold text-sm">{streakData.currentStreak}</span>
+                                <span className="sr-only">day streak</span>
+                            </Link>
+                        </Button>
+                    </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 frosted-glass" sideOffset={10}>
+                <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-80 frosted-glass" sideOffset={10}>
                     <div className="p-2 text-foreground w-full">
                         <h3 className="text-lg font-bold text-primary">
                             Daily Goal
