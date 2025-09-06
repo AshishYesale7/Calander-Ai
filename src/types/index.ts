@@ -97,6 +97,7 @@ export interface ResourceLink {
   isAiRecommended?: boolean;
 }
 
+// This interface is now only used for the AI flow output, not for displaying
 export interface TodaysPlan {
   schedule: { time: string; activity: string }[];
   microGoals: string[];
@@ -241,15 +242,15 @@ export interface StreakData {
     currentStreak: number;
     longestStreak: number;
     lastActivityDate: Date;
-    timeSpentToday: number; // in seconds
-    timeSpentTotal: number; // in seconds, cumulative XP
+    timeSpentToday: number;
+    timeSpentTotal: number; // Cumulative XP
     todayStreakCompleted: boolean;
     insight?: {
         text: string;
-        date: string; // YYYY-MM-DD format
+        date: string; // YYYY-MM-DD
         lastUpdatedStreak: number;
     };
-    completedDays: string[]; // Array of 'yyyy-MM-dd' strings
+    completedDays: string[]; // Array of "YYYY-MM-DD"
 }
 
 export interface LeaderboardUser {

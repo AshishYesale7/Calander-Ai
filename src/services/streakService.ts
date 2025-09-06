@@ -18,14 +18,19 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
     const docSnap = await getDoc(streakDocRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
+      // Ensure all fields are correctly typed, providing defaults for new fields
       return {
-        ...data,
-        lastActivityDate: (data.lastActivityDate as Timestamp).toDate(),
-        completedDays: data.completedDays || [],
+        currentStreak: data.currentStreak || 0,
+        longestStreak: data.longestStreak || 0,
+        lastActivityDate: data.lastActivityDate ? (data.lastActivityDate as Timestamp).toDate() : new Date(),
+        timeSpentToday: data.timeSpentToday || 0,
         timeSpentTotal: data.timeSpentTotal || 0,
-      } as StreakData;
+        todayStreakCompleted: data.todayStreakCompleted || false,
+        insight: data.insight || undefined,
+        completedDays: data.completedDays || [],
+      };
     }
-    return null;
+    return null; // Return null if the document doesn't exist
   } catch (error) {
     console.error("Failed to get streak data from Firestore:", error);
     throw new Error("Could not retrieve streak data.");
@@ -35,28 +40,18 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
 export const updateStreakData = async (userId: string, data: Partial<StreakData>): Promise<void> => {
   const streakDocRef = getStreakDocRef(userId);
   
-  const dataToSave: any = { ...data };
+  // Create a mutable copy to avoid modifying the original object
+  const dataToSave: { [key: string]: any } = { ...data };
+  
   if (data.lastActivityDate) {
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
   
-  if (data.insight) {
-    dataToSave.insight = {
-        text: data.insight.text,
-        date: data.insight.date,
-        lastUpdatedStreak: data.insight.lastUpdatedStreak
-    };
-  }
-
-  if (data.completedDays) {
-      dataToSave.completedDays = data.completedDays;
-  }
-  
-  if (data.timeSpentTotal !== undefined) {
-      dataToSave.timeSpentTotal = data.timeSpentTotal;
-  }
+  // The rest of the fields can be merged directly.
+  // Firestore's setDoc with { merge: true } handles undefined fields by ignoring them.
 
   try {
+    // Using { merge: true } is crucial to prevent overwriting fields not included in the update.
     await setDoc(streakDocRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Failed to update streak data in Firestore:", error);
@@ -78,7 +73,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         const streakSnapshot = await getDocs(q);
         
         const leaderboardPromises = streakSnapshot.docs.map(async (streakDoc) => {
-            const streakData = streakDoc.data();
+            const streakData = streakDoc.data() as Partial<StreakData>;
             const userId = streakDoc.id;
             
             const userProfile = await getUserProfile(userId);
