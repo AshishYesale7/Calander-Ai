@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback, useContext, useState } from 'react';
+import { useEffect, useRef, useCallback, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { StreakContext } from '@/context/StreakContext';
 import { updateStreakData } from '@/services/streakService';
@@ -12,31 +12,29 @@ import { differenceInCalendarDays, format } from 'date-fns';
 import { logUserActivity } from '@/services/activityLogService';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
-const SAVE_INTERVAL_SECONDS = 60; // Save progress every 60 seconds
 
 export const useStreakTracker = () => {
     const { user } = useAuth();
     const streakContext = useContext(StreakContext);
     const { timezone } = useTimezone();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const [lastSavedTime, setLastSavedTime] = useState(0);
 
-    // This prevents a crash if the context is not available (e.g., during subscription page)
     if (!streakContext) {
-        return; 
+        return;
     }
     const { streakData, setStreakData, isLoading } = streakContext;
-    
+
     const saveData = useCallback(async (dataToSave: Partial<StreakData>) => {
         if (!user) return;
         try {
+            // This function now only writes to Firestore.
             await updateStreakData(user.uid, dataToSave);
         } catch (error) {
             console.error("Failed to save streak data:", error);
         }
     }, [user]);
 
-    // Effect to initialize data for a new user
+    // Effect to initialize data for a new user, if it doesn't exist in Firestore.
     useEffect(() => {
         const initializeStreakForNewUser = async () => {
             if (user && !isLoading && streakData === null) {
@@ -56,7 +54,7 @@ export const useStreakTracker = () => {
         initializeStreakForNewUser();
     }, [user, isLoading, streakData, saveData, setStreakData]);
     
-    // This effect handles the daily rollover logic
+    // Effect for handling the daily rollover logic.
     useEffect(() => {
         if (!streakData || !user) return;
 
@@ -65,13 +63,15 @@ export const useStreakTracker = () => {
         const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
         
         if (daysDifference > 0) {
+            // Add yesterday's time to total before resetting.
             const newTotalTime = (streakData.timeSpentTotal || 0) + streakData.timeSpentToday;
             
             const updatedData: StreakData = { 
                 ...streakData,
-                timeSpentToday: 0,
-                timeSpentTotal: newTotalTime,
+                timeSpentToday: 0, // Reset for the new day
+                timeSpentTotal: newTotalTime, // Update total XP
                 todayStreakCompleted: false,
+                // Reset streak if user missed a day
                 currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, 
                 lastActivityDate: new Date(),
             };
@@ -79,25 +79,22 @@ export const useStreakTracker = () => {
             setStreakData(updatedData);
             saveData(updatedData);
         }
-
     }, [user, streakData, setStreakData, saveData, timezone]);
 
-    // This effect logs activity when the daily goal is completed
+    // Effect for logging activity when daily goal is completed.
+    // It runs only when `todayStreakCompleted` changes to true.
     useEffect(() => {
         if (streakData?.todayStreakCompleted && user) {
-            // Check if we have already logged for this completion to avoid duplicates
             const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
-            if (streakData.completedDays.includes(todayStr)) {
+            // Check if this goal completion has already been logged for today
+            if (streakData.completedDays?.includes(todayStr)) {
                  logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
             }
         }
     }, [streakData?.todayStreakCompleted, streakData?.completedDays, user, timezone]);
 
-
-    // This effect is the main timer that runs when the user is active
+    // Main timer effect for tracking active engagement.
     useEffect(() => {
-        let lastSaveTime = Date.now();
-
         const startTimer = () => {
             if (timerRef.current) clearInterval(timerRef.current);
             
@@ -117,6 +114,7 @@ export const useStreakTracker = () => {
                     
                     const wasGoalCompletedToday = prevData.todayStreakCompleted;
 
+                    // Check if the goal has just been completed.
                     if (newTimeSpentToday >= STREAK_GOAL_SECONDS && !wasGoalCompletedToday) {
                       const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
                       const completedDaysSet = new Set(prevData.completedDays || []);
@@ -132,23 +130,18 @@ export const useStreakTracker = () => {
                          completedDays: Array.from(completedDaysSet),
                       };
                     }
-                    
-                    const now = Date.now();
-                    if (now - lastSaveTime > SAVE_INTERVAL_SECONDS * 1000) {
-                        saveData({ ...dataToUpdate, timeSpentTotal: prevData.timeSpentTotal }); 
-                        lastSaveTime = now;
-                    }
 
                     return { ...prevData, ...dataToUpdate };
                 });
-            }, 1000);
+            }, 1000); // Ticks every second
         };
 
-        const stopTimer = () => {
+        const stopTimerAndSave = () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
+            // Save the latest progress to Firestore when the user becomes inactive.
             if(streakData) {
                 saveData({ 
                     timeSpentToday: streakData.timeSpentToday, 
@@ -160,19 +153,20 @@ export const useStreakTracker = () => {
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                stopTimer();
+                stopTimerAndSave();
             } else {
                startTimer();
             }
         };
-
+        
+        // The timer should only run if there is a user and data has been loaded.
         if (user && streakData) {
             startTimer();
             document.addEventListener('visibilitychange', handleVisibilityChange);
         }
         
         return () => {
-            stopTimer(); 
+            stopTimerAndSave(); 
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [user, streakData, saveData, setStreakData, timezone]);
