@@ -89,10 +89,18 @@ export default {
             height: '0',
           },
         },
+        'aura-glow': {
+          '0%': { backgroundPosition: '0 100%' },
+          '100%': { backgroundPosition: '0 300%' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'aura-glow': 'aura-glow 5s infinite linear',
+      },
+      mixBlendMode: {
+          'plus-lighter': 'plus-lighter',
       },
     },
   },

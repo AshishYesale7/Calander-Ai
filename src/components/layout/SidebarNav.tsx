@@ -54,6 +54,7 @@ const navItems = [
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
+  { href: '/extension', label: 'Extensions', icon: LayoutGrid },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
@@ -78,7 +79,7 @@ export default function SidebarNav({
   isFullScreen,
 }: SidebarNavProps) {
   const pathname = usePathname();
-  const { user, subscription } = useAuth();
+  const { user, subscription, isSubscribed } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
@@ -101,6 +102,16 @@ export default function SidebarNav({
     }
   };
   
+  const filteredNavItems = useMemo(() => {
+    if (isSubscribed) {
+      return navItems;
+    }
+    // For non-subscribed users, show a limited set of pages
+    return navItems.filter(item => 
+      item.href !== '/extension'
+    );
+  }, [isSubscribed]);
+
   return (
     <Sidebar collapsible="icon" className="hidden md:flex md:flex-col">
         <div className="flex h-16 items-center border-b border-sidebar-border px-4">
@@ -117,7 +128,7 @@ export default function SidebarNav({
           </Link>
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-2">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <Link
               key={item.label}
               href={item.href}

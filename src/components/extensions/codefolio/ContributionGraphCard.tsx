@@ -175,7 +175,7 @@ const ContributionGraphCard = () => {
                                                                         "w-5 h-5 rounded-[2px] flex items-center justify-center border border-white/10", 
                                                                         getLevelColor(level)
                                                                     )}>
-                                                                        <span className="text-[9px] text-white/50">{format(day, 'd')}</span>
+                                                                        
                                                                     </div>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent className="p-2">

@@ -15,6 +15,13 @@ export default function SignInPage() {
         className="-z-10"
         data-ai-hint="mountains sky"
       />
+      <Image
+        src="https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2018/pt_BR/a6708b7ae3dbc0b25463f9c8e259a513d2c4c7e6/assets/img/global/level-bg-top.jpg"
+        alt="Overlay"
+        layout="fill"
+        objectFit="cover"
+        className="-z-10 opacity-50"
+      />
       <div className="w-full max-w-sm mx-auto md:mx-0 md:ml-12 lg:ml-24">
         <SignInForm />
       </div>

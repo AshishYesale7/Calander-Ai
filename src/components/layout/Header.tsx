@@ -78,7 +78,7 @@ export default function Header({
   handleToggleFullScreen,
   isFullScreen,
 }: HeaderProps) {
-  const { user, subscription } = useAuth();
+  const { user, subscription, isSubscribed } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -193,56 +193,65 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
-          {streakData && (
-             <Button variant="ghost" size="sm" asChild className="h-8">
-               <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
-                  <Flame className="h-5 w-5" />
-                  <span className="font-bold text-sm">{streakData.currentStreak}</span>
-                  <span className="sr-only">day streak</span>
-               </Link>
-            </Button>
+          
+          {streakData && isSubscribed && (
+              <Button variant="ghost" size="sm" asChild className="h-8">
+                <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
+                    <Flame className="h-5 w-5" />
+                    <span className="font-bold text-sm">{streakData.currentStreak}</span>
+                    <span className="sr-only">day streak</span>
+                </Link>
+              </Button>
           )}
 
-          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-              <PopoverTrigger asChild>
-                <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-                    <Button variant="ghost" size="icon">
-                        <ExtensionIcon className="h-5 w-5" />
-                        <span className="sr-only">Extensions</span>
-                    </Button>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-64 frosted-glass">
-                <div className="space-y-4">
-                    <h4 className="font-medium leading-none">Installed Plugins</h4>
-                    <div className="space-y-2">
-                        {installedPlugins.length > 0 ? (
-                           installedPlugins.map(plugin => (
-                               <button 
-                                   key={plugin.name}
-                                   onClick={() => handlePluginClick(plugin)}
-                                   className="w-full flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted"
-                                >
-                                   {plugin.logo && plugin.logo.startsWith('https://worldvectorlogo.com') ? (
-                                        <Image src={plugin.logo} alt={`${plugin.name} logo`} width={20} height={20} />
-                                    ) : (
-                                        <Code className="h-5 w-5 text-accent" />
-                                    )}
-                                   <span>{plugin.name}</span>
-                               </button>
-                           ))
-                        ) : (
-                            <p className="text-sm text-muted-foreground">No plugins installed.</p>
-                        )}
+          {isSubscribed && (
+            <>
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                        <Button variant="ghost" size="icon">
+                            <ExtensionIcon className="h-5 w-5" />
+                            <span className="sr-only">Extensions</span>
+                        </Button>
                     </div>
-                     <Button variant="outline" className="w-full" asChild>
-                        <Link href="/extension">Manage Plugins</Link>
-                    </Button>
-                </div>
-              </PopoverContent>
-          </Popover>
-          
-          <NotificationPanel />
+                  </PopoverTrigger>
+                  <PopoverContent onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="w-64 frosted-glass">
+                    <div className="space-y-4">
+                        <h4 className="font-medium leading-none">Installed Plugins</h4>
+                        <div className="space-y-2">
+                            {installedPlugins.length > 0 ? (
+                               installedPlugins.map(plugin => {
+                                  const LogoComponent = plugin.logo;
+                                  return (
+                                     <button 
+                                         key={plugin.name}
+                                         onClick={() => handlePluginClick(plugin)}
+                                         className="w-full flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted"
+                                      >
+                                         {typeof LogoComponent === 'string' ? (
+                                              <Image src={LogoComponent} alt={`${plugin.name} logo`} width={20} height={20} />
+                                          ) : (
+                                              <LogoComponent className="h-5 w-5" />
+                                          )}
+                                         <span>{plugin.name}</span>
+                                     </button>
+                                  )
+                               })
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No plugins installed.</p>
+                            )}
+                        </div>
+                         <Button variant="outline" className="w-full" asChild>
+                            <Link href="/extension">Manage Plugins</Link>
+                        </Button>
+                    </div>
+                  </PopoverContent>
+              </Popover>
+              
+              <NotificationPanel />
+            </>
+          )}
+
           <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">

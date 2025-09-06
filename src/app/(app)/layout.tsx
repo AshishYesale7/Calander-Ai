@@ -24,7 +24,6 @@ import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
-import { saveUserFCMToken } from '@/services/userService';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
@@ -52,7 +51,7 @@ function AppContent({ children }: { children: ReactNode }) {
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
-      } else if (!isSubscribed && pathname !== '/subscription') {
+      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard') {
         router.push('/subscription');
       }
     }
@@ -136,7 +135,7 @@ function AppContent({ children }: { children: ReactNode }) {
   
   const { isMobile, state: sidebarState } = useSidebar();
 
-  if (loading || !user || (!isSubscribed && pathname !== '/subscription')) {
+  if (loading || !user || (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard')) {
     return (
       <div className="flex h-screen w-full items-center justify-center preloader-background">
         <Preloader />

@@ -5,13 +5,16 @@ import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin } from 'lucide-react';
+import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin, LayoutGrid, Flame, Apple } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LandingHeader } from '@/components/layout/LandingHeader';
 import StarryBackground from '@/components/landing/StarryBackground';
 import { Badge } from '@/components/ui/badge';
 import CursorArrow from '@/components/landing/CursorArrow';
 import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
+import FeatureShowcase from '@/components/landing/FeatureShowcase';
+import GravityWellBackground from '@/components/landing/GravityWellBackground';
+
 
 // Define a structure for currency data
 interface Currency {
@@ -79,14 +82,32 @@ const PricingCard = ({ title, price, currencySymbol, period, features, popular =
     </Card>
 );
 
+const AndroidIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M4 14V12C4 8.68629 6.68629 6 10 6H14C17.3137 6 20 8.68629 20 12V14M4 14H20M4 14H5M20 14H19M15 9.5C15 9.22386 14.7761 9 14.5 9C14.2239 9 14 9.22386 14 9.5V10.5C14 10.7761 14.2239 11 14.5 11C14.7761 11 15 10.7761 15 10.5V9.5ZM10 9.5C10 9.22386 9.77614 9 9.5 9C9.22386 9 9 9.22386 9 9.5V10.5C9 10.7761 9.22386 11 9.5 11C9.77614 11 10 10.7761 10 10.5V9.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4.5 14L3 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M19.5 14L21 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const GooglePlayIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M4.68359 2.0332L14.6146 11.9642L4.68359 21.8951C4.30571 22.273 3.67324 22.273 3.29536 21.8951C2.91748 21.5173 2.91748 20.8848 3.29536 20.5069L10.8385 12.9638C11.2163 12.586 11.2163 11.9535 10.8385 11.5756L3.29536 4.03243C2.91748 3.65455 2.91748 3.02208 3.29536 2.6442C3.67324 2.26632 4.30571 2.26632 4.68359 2.0332Z" fill="#00E5FF"/>
+        <path d="M19.5298 10.579L5.43896 2.0332L15.3699 11.9642L19.5298 14.1205C20.3544 13.7082 20.3544 12.4414 19.5298 12.0292L19.5298 10.579Z" fill="#FFC107"/>
+        <path d="M19.5298 14.1205L15.3699 11.9642L5.43896 21.8951L19.5298 13.3494C20.3544 12.9372 20.3544 11.6704 19.5298 11.2581L19.5298 14.1205Z" fill="#FF3D00"/>
+        <path d="M4.68359 2.0332L5.43896 2.0332L19.5298 10.579V13.3494C20.3544 12.9372 20.3544 11.6704 19.5298 11.2581L4.68359 2.0332Z" fill="#4CAF50"/>
+    </svg>
+);
+
+
 export default function LandingPage() {
     const ctaButtonRef = useRef<HTMLAnchorElement>(null);
     const [currency, setCurrency] = useState<Currency>(SUPPORTED_CURRENCIES[0]);
     const [isCurrencyLoading, setIsCurrencyLoading] = useState(true);
 
     useEffect(() => {
+        setIsCurrencyLoading(true);
         const fetchCurrency = async () => {
-            setIsCurrencyLoading(true);
             try {
                 const response = await fetch('https://ip-api.com/json/?fields=currency');
                 if (!response.ok) throw new Error('Failed to fetch geo-location');
@@ -123,18 +144,11 @@ export default function LandingPage() {
 
             <main>
                 {/* Hero Section */}
-                <section className="gravity-background relative h-screen flex items-center justify-center text-center p-4 overflow-hidden">
+                <section className="relative h-screen flex items-center justify-center text-center p-4 overflow-hidden">
                     <StarryBackground layer="small" />
                     <StarryBackground layer="medium" />
                     <StarryBackground layer="large" />
                     <div className="absolute inset-0 bg-black/30"></div>
-
-                    <div className="gravity-horizon">
-                         <div className="glow"></div>
-                    </div>
-                    <div className="earth">
-                         <div className="earth-shine"></div>
-                    </div>
 
                     <div className="relative z-10 max-w-4xl">
                         <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Your Calendar, Reimagined.</h1>
@@ -147,14 +161,55 @@ export default function LandingPage() {
                     </div>
                 </section>
                 
-                {/* Wrapper for sections with shared background */}
                 <div 
                     className="relative bg-cover bg-center bg-fixed"
                     style={{backgroundImage: "url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2018/pt_BR/a6708b7ae3dbc0b25463f9c8e259a513d2c4c7e6/assets/img/global/level-bg-top.jpg')"}}
                     data-ai-hint="fantasy landscape"
                 >
-                    <div className="absolute inset-0 bg-black/60"></div> {/* Dark overlay for readability */}
+                    <div className="absolute inset-0 bg-black/30"></div>
 
+                    <section className="relative py-24 md:py-40">
+                        <GravityWellBackground />
+                        <div className="relative z-10 container mx-auto px-4 text-center">
+                             <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Download our app</h2>
+                             <p className="mt-4 text-lg text-gray-200 max-w-2xl mx-auto">
+                                Get the full Calendar.ai experience on your mobile device. Stay organized on the go.
+                             </p>
+                            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
+                                     <div className="flex flex-col items-center gap-4">
+                                         <Apple className="h-16 w-16 text-white"/>
+                                         <div className="flex items-center gap-4">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black"><p className="text-xl font-bold">A</p></div>
+                                            <p className="text-lg font-semibold text-white">iOS</p>
+                                         </div>
+                                     </div>
+                                     <div className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500">
+                                        <div className="px-8 py-2 bg-gray-900 rounded-sm">
+                                             <span className="text-white">Coming Soon...</span>
+                                        </div>
+                                     </div>
+                                 </div>
+                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
+                                     <div className="flex flex-col items-center gap-4">
+                                         <AndroidIcon className="h-16 w-16 text-green-400" />
+                                         <div className="flex items-center gap-3">
+                                             <GooglePlayIcon className="h-8 w-8"/>
+                                             <span className="text-2xl font-semibold text-white">android</span>
+                                         </div>
+                                     </div>
+                                      <a href="#" className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500 hover:opacity-90 transition-opacity">
+                                        <div className="px-6 py-2 bg-gray-900 rounded-sm">
+                                             <span className="text-white font-medium">Download For Android</span>
+                                        </div>
+                                     </a>
+                                 </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <FeatureShowcase />
+                    
                     {/* Features Section */}
                     <section id="features" className="py-20 md:py-32 relative z-10">
                         <div className="container mx-auto px-4">

@@ -5,7 +5,7 @@ Welcome to FutureSight, an intelligent planning application designed to help amb
 
 ## 1. The Problem: Overcoming Student Overwhelm
 
-For college students and early-career individuals, the path forward is often a chaotic mix of academic deadlines, skill development, exam preparation, and long-term career aspirations. Juggling these competing priorities is a significant challenge. Key problems include:
+For college students and an early-career individuals, the path forward is often a chaotic mix of academic deadlines, skill development, exam preparation, and long-term career aspirations. Juggling these competing priorities is a significant challenge. Key problems include:
 
 *   **Information Overload:** Students are bombarded with information about exams (like GATE, GRE, CAT), internship opportunities, new technologies, and necessary skills (DSA, AI, WebDev), making it difficult to know what to focus on.
 *   **Time Management Deficit:** Traditional calendars are passive. They show you *what* you have to do, but they don't help you figure out *how* to get it all done. Students struggle to balance classes, studying, projects, and personal growth, often leading to burnout or missed opportunities.
@@ -28,6 +28,9 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
 *   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas (technical, soft, and hard skills), an actionable multi-step roadmap, and suggested learning resources.
 *   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels. Items from the AI-generated Career Vision can be added here with a single click.
+*   **Gamified Motivation & Leaderboard:**
+    *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal. It’s not just about logging in; it’s about active engagement to keep your flame alive.
+    *   **Competitive Leaderboard:** See how you stack up against other ambitious users. The leaderboard ranks users based on their total time spent and engagement (XP), not just their streak, promoting consistent effort over time.
 *   **Extension Marketplace :** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers and software engineering students:
     *   **Unified Dashboard:** By simply entering your usernames for Codeforces, LeetCode, and CodeChef, you get a centralized dashboard that visualizes your coding progress.
     *   **Aggregated Stats:** See your total problems solved across all platforms, your current ratings, and your problem-solving streak.
@@ -47,6 +50,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
     *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and intelligently falls back to a conversational AI assistant. If a typed query doesn't match a built-in command, the palette prompts the user to "Ask AI anything," allowing for seamless natural language event creation and other interactions.
     *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
+    *   **Mobile App Download Section:** The landing page features a dedicated section with a dynamic "gravity well" animation, prompting users to download the mobile applications for iOS and Android.
 
 ## 3. Link to Prototype
 

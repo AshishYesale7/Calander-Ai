@@ -79,6 +79,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
     try {
         await updateUserProfile(user.uid, {
             displayName: displayName,
+            photoURL: user.photoURL,
             bio: bio,
             socials: {
                 github: githubUrl,

@@ -22,7 +22,7 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
         ...data,
         lastActivityDate: (data.lastActivityDate as Timestamp).toDate(),
         completedDays: data.completedDays || [],
-        timeSpentTotal: data.timeSpentTotal || 0, // Ensure default value
+        timeSpentTotal: data.timeSpentTotal || 0,
       } as StreakData;
     }
     return null;
@@ -71,7 +71,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
 
     const streaksCollectionRef = collection(db, 'streaks');
     
-    // Now order by the new total time field for XP
+    // The leaderboard is now ranked by the cumulative 'timeSpentTotal'
     const q = query(streaksCollectionRef, orderBy('timeSpentTotal', 'desc'), limit(50));
     
     try {
@@ -83,6 +83,9 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             
             const userProfile = await getUserProfile(userId);
             
+            // Use timeSpentTotal for the leaderboard display
+            const timeSpentForRank = (streakData.timeSpentTotal || 0) + (streakData.timeSpentToday || 0);
+            
             if (userProfile) {
                 return {
                     id: userId,
@@ -90,7 +93,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     photoURL: userProfile.photoURL,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
-                    timeSpentTotal: streakData.timeSpentTotal || 0, // Add XP to leaderboard data
+                    timeSpentTotal: timeSpentForRank,
                     statusEmoji: userProfile.statusEmoji,
                     countryCode: userProfile.countryCode,
                 };
@@ -101,13 +104,15 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                 photoURL: undefined,
                 currentStreak: streakData.currentStreak || 0,
                 longestStreak: streakData.longestStreak || 0,
-                timeSpentTotal: streakData.timeSpentTotal || 0,
+                timeSpentTotal: timeSpentForRank,
             };
         });
         
         const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];
         
-        return leaderboard;
+        // Final sort on the combined data just in case
+        return leaderboard.sort((a,b) => b.timeSpentTotal - a.timeSpentTotal);
+
     } catch (error) {
         console.error("Failed to get leaderboard data from Firestore:", error);
         return [];

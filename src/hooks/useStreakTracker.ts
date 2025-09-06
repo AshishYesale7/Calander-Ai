@@ -12,6 +12,7 @@ import { differenceInCalendarDays, format } from 'date-fns';
 import { logUserActivity } from '@/services/activityLogService';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
+const SAVE_INTERVAL_SECONDS = 60; // Save progress every 60 seconds
 
 export const useStreakTracker = () => {
     const { user } = useAuth();
@@ -19,10 +20,11 @@ export const useStreakTracker = () => {
     const { timezone } = useTimezone();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // This prevents a crash if the context is not available (e.g., during subscription page)
     if (!streakContext) {
         return; 
     }
-    const { streakData, setStreakData, isLoading } = streakContext;
+    const { streakData, setStreakData, isLoading, setIsLoading } = streakContext;
     
     const saveData = useCallback(async (data: Partial<StreakData>) => {
         if (!user) return;
@@ -33,16 +35,16 @@ export const useStreakTracker = () => {
         }
     }, [user]);
 
+    // Effect to initialize data for a new user
     useEffect(() => {
         const initializeStreakForNewUser = async () => {
             if (user && !isLoading && streakData === null) {
-                console.log("Initializing streak data for a new user...");
                 const newStreakData: StreakData = {
                     currentStreak: 0,
                     longestStreak: 0,
                     lastActivityDate: new Date(),
                     timeSpentToday: 0,
-                    timeSpentTotal: 0, // Initialize new XP counter
+                    timeSpentTotal: 0,
                     todayStreakCompleted: false,
                     completedDays: [],
                 };
@@ -62,15 +64,15 @@ export const useStreakTracker = () => {
         const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
         
         if (daysDifference > 0) {
-            // It's a new day
+            // It's a new day. Add yesterday's work to total before resetting.
             const newTotalTime = (streakData.timeSpentTotal || 0) + streakData.timeSpentToday;
             
-            const updatedData = { 
+            const updatedData: StreakData = { 
                 ...streakData,
-                timeSpentToday: 0, // Reset for the new day
-                timeSpentTotal: newTotalTime, // Accumulate XP
-                todayStreakCompleted: false,
-                currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, // Reset streak if more than 1 day passed
+                timeSpentToday: 0, // Reset daily timer
+                timeSpentTotal: newTotalTime,
+                todayStreakCompleted: false, // Reset daily goal completion
+                currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, 
                 lastActivityDate: new Date(),
             };
             
@@ -81,89 +83,112 @@ export const useStreakTracker = () => {
     }, [user, streakData, setStreakData, saveData, timezone]);
 
 
-    const startTimer = useCallback(() => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        
-        timerRef.current = setInterval(() => {
-            setStreakData(prevData => {
-                if (!prevData || prevData.todayStreakCompleted || !user) {
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    return prevData;
-                }
+    // This effect is the main timer that runs when the user is active
+    useEffect(() => {
+        let lastSaveTime = Date.now();
 
-                const newTimeSpent = (prevData.timeSpentToday || 0) + 1;
-                const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
+        const startTimer = () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            
+            timerRef.current = setInterval(() => {
+                setStreakData(prevData => {
+                    if (!prevData || !user) {
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        return prevData;
+                    }
 
-                if (newTimeSpent >= STREAK_GOAL_SECONDS && !prevData.todayStreakCompleted) {
-                    const completedDaysSet = new Set(prevData.completedDays || []);
-                    const wasAlreadyCompletedToday = completedDaysSet.has(todayStr);
-                    completedDaysSet.add(todayStr);
-
-                    const newStreak = wasAlreadyCompletedToday 
-                        ? prevData.currentStreak 
-                        : (prevData.currentStreak || 0) + 1;
-
-                    const updatedData: StreakData = {
-                        ...prevData,
-                        timeSpentToday: newTimeSpent,
-                        todayStreakCompleted: true,
-                        currentStreak: newStreak,
-                        longestStreak: Math.max(newStreak, prevData.longestStreak || 0),
-                        lastActivityDate: new Date(),
-                        completedDays: Array.from(completedDaysSet),
+                    // Increment the daily timer
+                    const newTimeSpentToday = (prevData.timeSpentToday || 0) + 1;
+                    
+                    let dataToUpdate: Partial<StreakData> = {
+                        timeSpentToday: newTimeSpentToday,
+                        lastActivityDate: new Date()
                     };
 
-                    if (!wasAlreadyCompletedToday) {
-                        logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
+                    // Check if the streak goal is met for the first time today
+                    if (newTimeSpentToday >= STREAK_GOAL_SECONDS && !prevData.todayStreakCompleted) {
+                        const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
+                        const completedDaysSet = new Set(prevData.completedDays || []);
+                        
+                        // Only increment streak if this is a new day being completed
+                        const newStreak = !completedDaysSet.has(todayStr) 
+                            ? (prevData.currentStreak || 0) + 1
+                            : (prevData.currentStreak || 0);
+
+                        completedDaysSet.add(todayStr);
+
+                        dataToUpdate = {
+                           ...dataToUpdate,
+                           todayStreakCompleted: true,
+                           currentStreak: newStreak,
+                           longestStreak: Math.max(newStreak, prevData.longestStreak || 0),
+                           completedDays: Array.from(completedDaysSet),
+                        };
                     }
                     
-                    saveData(updatedData);
-                    return updatedData;
-                } else {
-                    const updatedData = { ...prevData, timeSpentToday: newTimeSpent, lastActivityDate: new Date() };
-                    // We only save the time progress periodically, not every second, to reduce Firestore writes.
-                    // A good strategy is to save on visibility change (implemented below).
-                    return updatedData;
-                }
-            });
-        }, 1000);
-    }, [setStreakData, saveData, timezone, user]);
+                    const now = Date.now();
+                    if (now - lastSaveTime > SAVE_INTERVAL_SECONDS * 1000) {
+                        saveData(dataToUpdate);
+                        lastSaveTime = now;
+                    }
 
-    const stopTimer = useCallback(() => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-        // Save the latest progress when the timer stops
-        if(streakData && streakData.timeSpentToday > 0) {
-            saveData({ timeSpentToday: streakData.timeSpentToday, lastActivityDate: new Date() });
-        }
-    }, [streakData, saveData]);
+                    return { ...prevData, ...dataToUpdate };
+                });
+            }, 1000);
+        };
 
-    useEffect(() => {
-        if (!user || !streakData) {
-            if(timerRef.current) stopTimer();
-            return;
-        }
+        const stopTimer = () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            if(streakData) {
+                saveData({ timeSpentToday: streakData.timeSpentToday, lastActivityDate: streakData.lastActivityDate });
+            }
+        };
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 stopTimer();
             } else {
-                if (!streakData.todayStreakCompleted) {
-                   startTimer();
-                }
+               startTimer();
             }
         };
 
-        if (!streakData.todayStreakCompleted) {
+        if (user && streakData) {
             startTimer();
+            document.addEventListener('visibilitychange', handleVisibilityChange);
         }
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
         return () => {
             stopTimer(); 
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [user, streakData, startTimer, stopTimer]);
+    }, [user, streakData, saveData, setStreakData, timezone]);
+
+    // This effect runs *after* the state has been updated to log the activity
+    useEffect(() => {
+        if (!user || !streakData?.todayStreakCompleted) {
+            return;
+        }
+
+        // To prevent this from running every time the component re-renders,
+        // we can check if the log for today has already been made.
+        const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
+        
+        // This condition is tricky. We only want to log when a streak is *just* completed.
+        // A better way might be to check if the time spent today just crossed the threshold.
+        const justCompleted = streakData.timeSpentToday >= STREAK_GOAL_SECONDS && streakData.timeSpentToday < (STREAK_GOAL_SECONDS + SAVE_INTERVAL_SECONDS);
+        
+        if (justCompleted) {
+            const completedDays = streakData.completedDays || [];
+            // Check if today is in the list, but maybe we just added it.
+            // A more reliable way is to check the count. If it's the first time today, the length will be 1 after adding.
+            const todayCompletions = completedDays.filter(d => d === todayStr).length;
+
+            if(todayCompletions === 1) {
+                 logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
+            }
+        }
+    }, [streakData, user, timezone]);
 };

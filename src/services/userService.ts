@@ -94,13 +94,17 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; photoURL: string; bio: string; socials: SocialLinks }>): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; photoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
-    const dataToUpdate: any = {};
+    const dataToUpdate: { [key: string]: any } = {};
+
     if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
     if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
     if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
     if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
+    if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
+    if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
+
 
     try {
         await setDoc(userDocRef, dataToUpdate, { merge: true });

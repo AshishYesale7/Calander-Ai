@@ -1,5 +1,8 @@
 
+'use client';
 import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
+import BookshelfDashboard from '@/components/extensions/bookshelf/BookshelfDashboard';
+import { BookShelfLogo } from '@/components/logo/BookShelfLogo';
 
 // In a real application, this would come from a database or API.
 export const allPlugins = [
@@ -8,6 +11,12 @@ export const allPlugins = [
     logo: '/logos/codefolio-logo.svg',
     description: 'Track your coding progress across platforms.',
     component: CodefolioDashboard
+  },
+  {
+    name: 'Book Shelf',
+    logo: BookShelfLogo,
+    description: 'Organize and track your reading list.',
+    component: BookshelfDashboard,
   },
   {
     name: 'Android Studio',
@@ -92,4 +101,4 @@ export const allPlugins = [
 ];
 
 // Define and export the default plugins separately.
-export const DEFAULT_PLUGINS = ['Codefolio Ally', 'VS Code', 'Figma', 'Chrome'];
+export const DEFAULT_PLUGINS = ['Codefolio Ally', 'Book Shelf', 'VS Code', 'Figma', 'Chrome'];

@@ -155,13 +155,15 @@ body {
 
 /* IMPORTANT: The grain overlay is only applied to cards within the <main> content area.
    This prevents the sidebar's layout from breaking. */
-[data-glass-effect="grainyFrosted"] main .frosted-glass {
+[data-glass-effect="grainyFrosted"] main .frosted-glass,
+[data-glass-effect="grainyFrosted"] section .frosted-glass {
   position: relative;
   z-index: 0;
 }
 
 /* This ::before pseudo-element contains the grain texture. */
-[data-glass-effect="grainyFrosted"] main .frosted-glass::before {
+[data-glass-effect="grainyFrosted"] main .frosted-glass::before,
+[data-glass-effect="grainyFrosted"] section .frosted-glass::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -277,89 +279,83 @@ body {
   animation: animStar-large 50s linear infinite;
 }
 
-/* New "Gravity" hero styles based on Codepen reference */
-.gravity-background {
-  background: radial-gradient(ellipse at bottom, #0C1116 0%, #090a0f 100%);
+/* NEW: Gravity Well Background Effect (Updated with Reference Code) */
+.gravity-well-container {
+    @apply relative w-full h-full flex items-center justify-center overflow-hidden;
+    background: #000;
+    perspective: 1000px;
 }
-
-.gravity-horizon {
+.gravity-well-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.gravity-well-container::before {
   position: absolute;
+  top: 50%;
   left: 50%;
-  bottom: -20%;
-  transform: translateX(-50%);
-  width: 160%;
-  height: 70%;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.gravity-horizon > div {
-  position: absolute;
-  border-radius: 100%;
-}
-
-.gravity-horizon-glow-1 {
-  width: 100%;
-  height: 100%;
-  background: #038bff;
-  -webkit-filter: blur(30px);
-  filter: blur(30px);
-  opacity: 0.8;
-}
-
-.gravity-horizon-glow-2 {
-  width: 81.25%;
-  height: 70%;
-  background: #51AFFF;
-  -webkit-filter: blur(30px);
-  filter: blur(30px);
-  opacity: 0.6;
-  left: 9.375%;
-}
-
-.gravity-horizon-glow-3 {
-  width: 32%;
-  height: 20%;
-  background: #B0DAFF;
-  -webkit-filter: blur(30px);
-  filter: blur(30px);
-  opacity: 0.5;
-  left: 34%;
-}
-
-/* Deep space outer glow */
-.gravity-horizon-glow-4 {
-  width: 100%;
-  height: 100%;
-  background: #215496;
-  -webkit-filter: blur(200px);
-  filter: blur(200px);
-  opacity: 0.7;
-  top: -10%;
-}
-
-.gravity-earth {
-  position: absolute;
-  left: 50%;
-  bottom: -50%;
-  transform: translateX(-50%);
-  width: 200%;
-  height: 100%;
-  background: black;
-  border-radius: 100%;
   z-index: 2;
+  display: block;
+  width: 150%;
+  height: 140%;
+  background: radial-gradient(ellipse at 50% 55%, transparent 10%, black 50%);
+  transform: translate3d(-50%, -50%, 0);
+  content: "";
+  pointer-events: none;
+}
+.gravity-well-container::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 75%, #a900ff 20%, transparent 75%);
+  mix-blend-mode: overlay;
+  transform: translate3d(-50%, -50%, 0);
+  content: "";
   pointer-events: none;
 }
 
-/* Reflective shine effect */
-.gravity-earth-shine {
-  content: "";
+@keyframes aura-glow {
+  0% {
+    background-position: 0 100%;
+  }
+  100% {
+    background-position: 0 300%;
+  }
+}
+
+.aura {
   position: absolute;
+  top: -71.5%;
+  left: 50%;
+  z-index: 3;
+  width: 30%;
+  height: 140%;
+  background: linear-gradient(20deg, #00f8f1, #ffbd1e20 16.5%, #fe848f 33%, #fe848f20 49.5%, #00f8f1 66%, #00f8f160 85.5%, #ffbd1e 100%) 0 100%/100% 200%;
+  border-radius: 0 0 100% 100%;
+  filter: blur(50px);
+  mix-blend-mode: plus-lighter;
+  opacity: 0.75;
+  transform: translate3d(-50%, 0, 0);
+  animation: aura-glow 5s infinite linear;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
   width: 100%;
   height: 100%;
-  border-radius: 100%;
-  box-shadow: inset 0px 20px 80px 30px rgba(60, 105, 138, 0.85);
+  background: repeating-linear-gradient(transparent, transparent 1px, white 1px, white 2px);
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  pointer-events: none;
 }
+
 
 /* New Landing Page Glassmorphic Header with Spotlight Effect */
 .landing-header-glassy {
@@ -435,4 +431,23 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--accent) / 0.8);
+}
+
+/* Added for Feature Showcase */
+.mask-gradient-lr {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+}
+
+@keyframes scroll-vertical {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-50%);
+    }
+}
+
+.animate-scroll-vertical {
+    animation: scroll-vertical 20s linear infinite;
 }

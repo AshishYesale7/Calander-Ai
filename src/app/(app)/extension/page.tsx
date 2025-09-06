@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Search, Download, ExternalLink, Code, Settings, CheckCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import CodefolioDashboard from '@/components/extensions/codefolio/CodefolioDashboard';
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
 import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
 import { useAuth } from '@/context/AuthContext';
@@ -48,16 +47,21 @@ const FullScreenPluginView: React.FC = () => {
   if (!activePlugin) return null;
   const isCodefolio = activePlugin.name === 'Codefolio Ally';
 
+  // The component to render is now dynamic
+  const PluginComponent = activePlugin.component;
+
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
       <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 ml-2">
-          {activePlugin.logo && activePlugin.logo.startsWith('/') ? (
-             <Code className="h-7 w-7 text-accent" />
-          ) : activePlugin.logo ? (
-             <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
+          {typeof activePlugin.logo === 'string' ? (
+              activePlugin.logo.startsWith('/') ? (
+                  <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
+              ) : (
+                  <Image src={activePlugin.logo} alt={`${activePlugin.name} logo`} width={28} height={28} />
+              )
           ) : (
-            <Code className="h-7 w-7 text-accent" />
+              <activePlugin.logo />
           )}
           <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
@@ -70,7 +74,7 @@ const FullScreenPluginView: React.FC = () => {
         </div>
       </header>
       <main className="flex-1 overflow-auto">
-        {activePlugin.component && <CodefolioDashboard />}
+        {PluginComponent && <PluginComponent />}
       </main>
     </div>
   );
@@ -156,20 +160,21 @@ export default function ExtensionPage() {
   const PluginCardItem = ({ plugin }: { plugin: Plugin }) => {
     const isInstalled = installedPluginsSet.has(plugin.name);
     const isCodefolio = plugin.name === 'Codefolio Ally';
+    const LogoComponent = plugin.logo;
 
     return (
         <div key={plugin.name} className="group flex flex-col items-center gap-3 text-center">
             <div className="relative w-24 h-24 rounded-2xl bg-card p-4 border border-border/30 shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-accent/20 group-hover:shadow-lg group-hover:border-accent/40 flex items-center justify-center">
-                {plugin.logo.startsWith('/') ? (
-                    <Code className="h-12 w-12 text-accent" />
-                ) : (
+                {typeof LogoComponent === 'string' ? (
                     <Image
-                        src={plugin.logo}
+                        src={LogoComponent}
                         alt={`${plugin.name} logo`}
                         width={80}
                         height={80}
                         className="w-full h-full object-contain"
                     />
+                ) : (
+                    <LogoComponent />
                 )}
             </div>
             <div className="text-center">

@@ -56,10 +56,6 @@ export default function PlatformStatsCard({ platform, iconUrl, users, chartData,
                            <p className="text-4xl font-bold text-blue-400">{totalSolved}</p>
                            <p className="text-2xl font-semibold text-foreground">Problems</p>
                         </div>
-                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Hand className="h-5 w-5" />
-                            <span>Beats {beatsPercentage || 1}%</span>
-                        </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                        <DifficultyBadge label="Easy" count={easy} colorClass="text-emerald-400" />
