@@ -35,6 +35,8 @@ import { useStreak } from '@/context/StreakContext';
 import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
 import { usePlugin } from '@/hooks/use-plugin';
+import { cn } from '@/lib/utils';
+import { format, startOfWeek, addDays, toDate } from 'date-fns';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -58,6 +60,20 @@ const ExtensionIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const DailyFlameIcon = ({ isComplete }: { isComplete: boolean }) => (
+    <svg height="28px" width="28px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388.219 388.219" xmlSpace="preserve">
+        <g style={{ filter: isComplete ? 'none' : 'grayscale(80%) opacity(60%)' }}>
+            <path style={{fill: '#FF793B'}} d="M160.109,182.619c0.8,6.8-6,11.6-12,8c-22-12.8-32.8-36.4-47.2-56.8c-23.2,36.8-40.8,72.4-40.8,110.4 c0,77.2,54.8,136,132,136s136-58.8,136-136c0-96.8-101.2-113.6-100-236C187.309,37.019,148.909,101.419,160.109,182.619z"></path>
+            <path style={{fill: '#C6490F'}} d="M192.109,388.219c-81.2,0-140-60.4-140-144c0-42,20.4-80,42-114.8c1.6-2.4,4-3.6,6.4-3.6 c2.8,0,5.2,1.2,6.8,3.2c3.6,4.8,6.8,10,10,15.2c10,15.6,19.6,30.4,34.8,39.2l0,0c-11.6-82.8,27.6-151.2,71.2-182 c2.4-1.6,5.6-2,8.4-0.4c2.8,1.2,4.4,4,4.4,7.2c-0.8,62,26.4,96,52.4,128.4c23.6,29.2,47.6,59.2,47.6,107.6 C336.109,326.219,274.109,388.219,192.109,388.219z M101.309,148.619c-18,29.6-33.2,61.6-33.2,95.6c0,74,52,128,124,128 c72.8,0,128-55.2,128-128c0-42.8-20.4-68-44-97.6c-24.4-30.4-51.6-64.4-55.6-122c-34.4,31.2-62,88.4-52.4,156.8l0,0 c0.8,6.4-2,12.4-7.2,15.6c-5.2,3.2-11.6,3.2-16.8,0c-18.4-10.8-29.2-28-40-44.4C102.909,151.419,102.109,150.219,101.309,148.619z"></path>
+            <path style={{fill: '#FF793B'}} d="M278.109,304.219c14-21.6,22-47.6,22-76"></path>
+            <path style={{fill: '#C6490F'}} d="M278.109,312.219c-1.6,0-3.2-0.4-4.4-1.2c-3.6-2.4-4.8-7.2-2.4-11.2c13.6-20.8,20.8-45.6,20.8-71.6 c0-4.4,3.6-8,8-8s8,3.6,8,8c0,29.2-8,56.8-23.2,80.4C283.309,311.019,280.909,312.219,278.109,312.219z"></path>
+            <path style={{fill: '#FF793B'}} d="M253.709,332.219c2.8-2.4,6-5.2,8.4-8"></path>
+            <path style={{fill: '#C6490F'}} d="M253.709,340.219c-2.4,0-4.4-0.8-6-2.8c-2.8-3.2-2.4-8.4,0.8-11.2c2.4-2.4,5.6-4.8,7.6-7.2 c2.8-3.2,8-3.6,11.2-0.8c3.2,2.8,3.6,8,0.8,11.2c-2.8,3.2-6.4,6.4-9.2,8.8C257.309,339.419,255.709,340.219,253.709,340.219z"></path>
+        </g>
+    </svg>
+);
+
+const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
 interface HeaderProps {
   setIsCustomizeModalOpen: (open: boolean) => void;
@@ -140,6 +156,35 @@ export default function Header({
       }
   };
 
+  const weekDays = useMemo(() => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
+    return Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+  }, []);
+
+  const weekDaysWithStatus = useMemo(() => {
+      if (!streakData) return weekDays.map(day => ({ dayChar: format(day, 'E').charAt(0), isCompleted: false }));
+      const completedDaysSet = new Set(streakData.completedDays || []);
+      return weekDays.map((day) => {
+          const dayStr = format(day, 'yyyy-MM-dd');
+          return {
+              dayChar: format(day, 'E').charAt(0),
+              isCompleted: completedDaysSet.has(dayStr),
+          };
+      });
+  }, [weekDays, streakData]);
+
+  const progressPercent = useMemo(() => {
+      if (!streakData) return 0;
+      return Math.min(100, (streakData.timeSpentToday / STREAK_GOAL_SECONDS) * 100);
+  }, [streakData]);
+
+  const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   return (
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md">
@@ -195,13 +240,53 @@ export default function Header({
         <div className="flex items-center gap-1 sm:gap-2">
           
           {streakData && isSubscribed && (
-              <Button variant="ghost" size="sm" asChild className="h-8">
-                <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
-                    <Flame className="h-5 w-5" />
-                    <span className="font-bold text-sm">{streakData.currentStreak}</span>
-                    <span className="sr-only">day streak</span>
-                </Link>
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8">
+                        <Link href="/leaderboard" className="flex items-center gap-1 text-orange-400">
+                            <Flame className="h-5 w-5" />
+                            <span className="font-bold text-sm">{streakData.currentStreak}</span>
+                            <span className="sr-only">day streak</span>
+                        </Link>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 frosted-glass" sideOffset={10}>
+                    <div className="p-2 text-foreground w-full">
+                        <h3 className="text-lg font-bold text-primary">
+                            Daily Goal
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                           {streakData.insight?.text || "Keep your streak alive!"}
+                        </p>
+
+                        <div className="mt-4 p-4 bg-background/25 rounded-xl space-y-4">
+                            <div className="flex justify-around">
+                                {weekDaysWithStatus.map(({ dayChar, isCompleted }, index) => (
+                                    <div key={index} className="flex flex-col items-center gap-2">
+                                        <span className="text-xs font-semibold text-muted-foreground">{dayChar}</span>
+                                        <div className="h-7 w-7 rounded-full flex items-center justify-center transition-all">
+                                            <DailyFlameIcon isComplete={isCompleted} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pt-2">
+                                <div className="relative h-2 w-full bg-muted/50 rounded-full">
+                                    <div
+                                        className="absolute top-0 left-0 h-full bg-amber-400 rounded-full transition-all duration-300"
+                                        style={{ width: `${progressPercent}%` }}
+                                    >
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-amber-400"></div>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-center text-amber-300 mt-2 font-mono">
+                                    {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </PopoverContent>
+              </Popover>
           )}
 
           {isSubscribed && (
