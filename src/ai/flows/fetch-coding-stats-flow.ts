@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod';
+import { format, startOfDay } from 'date-fns';
 
 // Input Schema: Takes optional usernames for each platform
 const FetchCodingStatsInputSchema = z.object({
@@ -36,6 +37,8 @@ const CodeforcesDataSchema = z.object({
     streak: z.number().describe("Current daily problem-solving streak."),
     contests: z.array(ContestSchema).optional().describe("A list of upcoming contests."),
     error: z.string().optional().describe("An error message if the user is not found or data is private."),
+    // New field for contribution data
+    contributionData: z.record(z.number()).optional().describe("A record of contributions per day, in 'yyyy-MM-dd' format."),
 });
 
 const LeetCodeDataSchema = z.object({
@@ -80,14 +83,25 @@ async function fetchCodeforcesData(username: string): Promise<z.infer<typeof Cod
     const userStatusData = await userStatusResponse.json();
     
     let totalSolved = 0;
+    const contributionData: Record<string, number> = {};
+
     if (userStatusData.status === 'OK') {
-        const uniqueSolved = new Set(userStatusData.result.filter((s: any) => s.verdict === 'OK').map((s: any) => s.problem.name));
-        totalSolved = uniqueSolved.size;
+        const uniqueSolvedProblems = new Set<string>();
+        const submissions = userStatusData.result;
+
+        submissions.forEach((sub: any) => {
+            if (sub.verdict === 'OK') {
+                const problemId = `${sub.problem.contestId}-${sub.problem.index}`;
+                uniqueSolvedProblems.add(problemId);
+                
+                const submissionDate = format(startOfDay(new Date(sub.creationTimeSeconds * 1000)), 'yyyy-MM-dd');
+                contributionData[submissionDate] = (contributionData[submissionDate] || 0) + 1;
+            }
+        });
+        totalSolved = uniqueSolvedProblems.size;
     }
     
-    // The official Codeforces API does not provide streak data directly. It must be calculated manually, which is complex.
-    // We will return a placeholder value for the streak.
-    const streak = 0;
+    const streak = 0; // Placeholder
 
     const contestsResponse = await fetch('https://codeforces.com/api/contest.list?gym=false');
     const contestsData = await contestsResponse.json();
@@ -108,6 +122,7 @@ async function fetchCodeforcesData(username: string): Promise<z.infer<typeof Cod
       totalSolved,
       streak,
       contests: upcomingContests,
+      contributionData,
     };
   } catch (error: any) {
     return { username, rating: 0, rank: 'N/A', totalSolved: 0, streak: 0, error: error.message };

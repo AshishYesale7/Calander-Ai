@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { TimelineEvent } from "@/types";
 import { saveTimelineEvent } from "@/services/timelineService";
 import { useTimezone } from "@/hooks/use-timezone";
-import ContributionGraphCard from "./ContributionGraphCard";
+import CodefolioContributionGraph from "./CodefolioContributionGraph";
 
 export default function CodefolioDashboard() {
   const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
@@ -57,7 +57,7 @@ export default function CodefolioDashboard() {
   const handleAddContestToTimeline = async (contest: Contest) => {
     if (!user) {
         toast({ title: "Not Signed In", description: "You must be signed in to add events.", variant: "destructive"});
-        return;
+        return false;
     }
 
     const startTime = new Date(contest.startTimeSeconds * 1000);
@@ -128,7 +128,7 @@ export default function CodefolioDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SolvedProblemsCard totalSolved={totalSolved} />
-                <ContributionGraphCard />
+                <CodefolioContributionGraph contributions={userData.codeforces?.contributionData} />
                 <div className="md:col-span-2">
                     <WeeklyTargetCard />
                 </div>
