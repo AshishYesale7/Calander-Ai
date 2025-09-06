@@ -73,24 +73,26 @@ export type AllPlatformsUserData = z.infer<typeof AllPlatformsUserDataSchema>;
 async function fetchCodeforcesData(username: string): Promise<z.infer<typeof CodeforcesDataSchema>> {
   try {
     const userInfoResponse = await fetch(`https://codeforces.com/api/user.info?handles=${username}`);
+    if (!userInfoResponse.ok) throw new Error(`Codeforces API returned status: ${userInfoResponse.status}`);
     const userInfoData = await userInfoResponse.json();
 
-    if (userInfoData.status !== 'OK') {
-      throw new Error(`Codeforces: ${userInfoData.comment}`);
+    if (userInfoData.status !== 'OK' || !userInfoData.result || userInfoData.result.length === 0) {
+      throw new Error(userInfoData.comment || 'User not found on Codeforces.');
     }
 
     const userStatusResponse = await fetch(`https://codeforces.com/api/user.status?handle=${username}&from=1&count=1000`);
+    if (!userStatusResponse.ok) throw new Error(`Codeforces user status API returned status: ${userStatusResponse.status}`);
     const userStatusData = await userStatusResponse.json();
     
     let totalSolved = 0;
     const contributionData: Record<string, number> = {};
 
-    if (userStatusData.status === 'OK') {
+    if (userStatusData.status === 'OK' && userStatusData.result) {
         const uniqueSolvedProblems = new Set<string>();
         const submissions = userStatusData.result;
 
         submissions.forEach((sub: any) => {
-            if (sub.verdict === 'OK') {
+            if (sub.verdict === 'OK' && sub.problem) {
                 const problemId = `${sub.problem.contestId}-${sub.problem.index}`;
                 uniqueSolvedProblems.add(problemId);
                 
@@ -105,7 +107,7 @@ async function fetchCodeforcesData(username: string): Promise<z.infer<typeof Cod
 
     const contestsResponse = await fetch('https://codeforces.com/api/contest.list?gym=false');
     const contestsData = await contestsResponse.json();
-    const upcomingContests = contestsData.result
+    const upcomingContests = (contestsData.result || [])
       .filter((c: any) => c.phase === 'BEFORE')
       .slice(0, 5)
       .map((c:any) => ({
@@ -125,6 +127,7 @@ async function fetchCodeforcesData(username: string): Promise<z.infer<typeof Cod
       contributionData,
     };
   } catch (error: any) {
+    console.error(`Failed to fetch Codeforces data for ${username}:`, error);
     return { username, rating: 0, rank: 'N/A', totalSolved: 0, streak: 0, error: error.message };
   }
 }
@@ -149,7 +152,7 @@ async function fetchLeetCodeData(username: string): Promise<z.infer<typeof LeetC
     });
 
     const data = await response.json();
-    if (data.errors) {
+    if (data.errors || !data.data.matchedUser) {
       throw new Error('User not found on LeetCode.');
     }
 
