@@ -19,7 +19,8 @@ interface PluginContextType {
   isCodefolioLoggedIn: boolean;
   isCheckingLogin: boolean;
   handleCodefolioLogin: (data: AllPlatformsUserData) => void;
-  isLoginViewActive: boolean; // New state to explicitly control login view
+  isLoginViewActive: boolean; // Explicitly control login view
+  openLoginView: () => void; // New function to open the login view on demand
 }
 
 export const PluginContext = createContext<PluginContextType | undefined>(undefined);
@@ -54,23 +55,26 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     checkLoginStatus();
   }, [checkLoginStatus]);
+  
+  const openLoginView = useCallback(() => {
+    setActivePlugin(null);
+    setIsLoginViewActive(true);
+  }, []);
 
   const handleOpenPlugin = useCallback((plugin: Plugin | null) => {
     if (plugin?.name === 'Codefolio Ally') {
-      if (isCheckingLogin) return; // Don't do anything while checking
+      if (isCheckingLogin) return; 
       if (isCodefolioLoggedIn) {
         setActivePlugin(plugin);
         setIsLoginViewActive(false);
       } else {
-        // Show login component if not logged in
-        setActivePlugin(null); // No active plugin, but show the login view
-        setIsLoginViewActive(true);
+        openLoginView();
       }
     } else {
       setActivePlugin(plugin);
       setIsLoginViewActive(false);
     }
-  }, [isCodefolioLoggedIn, isCheckingLogin]);
+  }, [isCodefolioLoggedIn, isCheckingLogin, openLoginView]);
 
   const handleCodefolioLogin = useCallback((data: AllPlatformsUserData) => {
     if (!user) {
@@ -99,7 +103,7 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   const closePlugin = useCallback(() => {
     setActivePlugin(null);
     setIsLoginViewActive(false);
-    checkLoginStatus(); // Re-check login status when a plugin is closed
+    checkLoginStatus(); 
   }, [checkLoginStatus]);
 
   return (
@@ -110,7 +114,8 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
         isCodefolioLoggedIn,
         isCheckingLogin,
         handleCodefolioLogin,
-        isLoginViewActive
+        isLoginViewActive,
+        openLoginView,
     }}>
       {children}
     </PluginContext.Provider>

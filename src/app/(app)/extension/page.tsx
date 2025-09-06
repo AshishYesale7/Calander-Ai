@@ -20,9 +20,8 @@ import { usePlugin } from '@/hooks/use-plugin';
 type Plugin = (typeof allPlugins)[0];
 
 const FullScreenPluginView: React.FC = () => {
-  const { activePlugin, setActivePlugin, closePlugin } = usePlugin();
+  const { activePlugin, setActivePlugin, closePlugin, openLoginView } = usePlugin();
   
-  // These handlers are now specific to the Codefolio plugin's needs
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -33,21 +32,20 @@ const FullScreenPluginView: React.FC = () => {
         leetcode: undefined,
         codechef: undefined,
     }).then(() => {
-      // Logic inside usePlugin hook will handle login status check
       closePlugin();
       toast({ title: "Logged Out", description: "Your coding platform usernames have been cleared." });
     });
   };
 
   const handleSettings = () => {
-    // This will open the login/settings view
-    setActivePlugin({ name: 'Codefolio Ally' } as any);
+    // This now correctly closes the current view and opens the login/settings modal
+    closePlugin();
+    openLoginView();
   };
   
   if (!activePlugin) return null;
   const isCodefolio = activePlugin.name === 'Codefolio Ally';
 
-  // The component to render is now dynamic
   const PluginComponent = activePlugin.component;
   const LogoComponent = activePlugin.logo;
 
@@ -63,9 +61,9 @@ const FullScreenPluginView: React.FC = () => {
           <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={closePlugin}>Close Extension</Button>
             {isCodefolio && <Button variant="ghost" onClick={handleSettings}><Settings className="mr-2 h-4 w-4"/>Settings</Button>}
             {isCodefolio && <Button variant="ghost" onClick={handleCodefolioLogout}>Logout</Button>}
+            <Button variant="outline" onClick={closePlugin}>Close Extension</Button>
         </div>
       </header>
       <main className="flex-1 overflow-auto">
