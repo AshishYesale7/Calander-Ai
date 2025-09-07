@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks } from '@/types';
 import type { User } from 'firebase/auth';
 
@@ -156,6 +156,52 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
         throw new Error("Could not retrieve user profile.");
     }
 };
+
+export type PublicUserProfile = {
+    uid: string;
+    displayName: string;
+    username: string;
+    photoURL: string | null;
+    bio: string;
+    socials: SocialLinks | null;
+    statusEmoji: string | null;
+    countryCode: string | null;
+}
+
+export const getUserByUsername = async (username: string): Promise<PublicUserProfile | null> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where("username", "==", username), limit(1));
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return null;
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+
+        // Return only the public-safe data
+        return {
+            uid: userDoc.id,
+            displayName: userData.displayName || 'Anonymous User',
+            username: userData.username,
+            photoURL: userData.photoURL || null,
+            bio: userData.bio || '',
+            socials: userData.socials || null,
+            statusEmoji: userData.statusEmoji || null,
+            countryCode: userData.countryCode || null,
+        };
+
+    } catch (error) {
+        console.error("Error getting user by username:", error);
+        throw new Error("Could not retrieve user profile.");
+    }
+};
+
 
 export const saveUserFCMToken = async (userId: string, token: string): Promise<void> => {
     if (!db) {
