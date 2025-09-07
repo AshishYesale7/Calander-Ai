@@ -4,7 +4,7 @@
 import type { ReactNode} from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { getUserProfile } from '@/services/userService';
+import { getUserProfile, updateUserProfile } from '@/services/userService';
 
 type Theme = 'light' | 'dark';
 type CustomTheme = Record<string, string>;
@@ -145,12 +145,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const setBackgroundImage = useCallback((url: string | null) => {
     setBackgroundImageState(url);
     setBackgroundColorState(null);
-  }, []);
+    if (user) {
+        updateUserProfile(user.uid, { coverPhotoURL: url }).catch(err => console.error("Failed to sync background to profile", err));
+    }
+  }, [user]);
   
   const setBackgroundColor = useCallback((color: string | null) => {
     setBackgroundColorState(color);
     setBackgroundImageState(null);
-  }, []);
+     if (user) {
+        updateUserProfile(user.uid, { coverPhotoURL: null }).catch(err => console.error("Failed to sync background to profile", err));
+    }
+  }, [user]);
   
   const setCustomTheme = useCallback((theme: CustomTheme | null) => {
     setCustomThemeState(theme);
@@ -170,7 +176,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setCustomThemeState(null);
     setGlassEffectState('frosted');
     setGlassEffectSettingsState(DEFAULT_GLASS_EFFECT_SETTINGS);
-  }, []);
+    if (user) {
+        updateUserProfile(user.uid, { coverPhotoURL: DEFAULT_BACKGROUND_IMAGE }).catch(err => console.error("Failed to reset profile background", err));
+    }
+  }, [user]);
 
   return (
     <ThemeContext.Provider value={{ 
