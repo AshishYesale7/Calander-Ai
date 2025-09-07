@@ -26,11 +26,16 @@ export const createUserProfile = async (user: User): Promise<void> => {
     try {
         const docSnap = await getDoc(userDocRef);
         if (!docSnap.exists()) {
+            const displayName = user.displayName || user.email?.split('@')[0] || 'Anonymous User';
+            const username = user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`;
+            
             const defaultProfile = {
                 uid: user.uid,
                 email: user.email,
-                displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
-                username: user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`,
+                displayName: displayName,
+                username: username,
+                // Create a searchable index for case-insensitive search
+                searchableIndex: Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()])),
                 photoURL: user.photoURL || null,
                 coverPhotoURL: null,
                 createdAt: new Date(),
@@ -116,15 +121,32 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
 export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; coverPhotoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
+    
+    let needsIndexUpdate = false;
 
-    if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
-    if(profileData.username !== undefined) dataToUpdate['username'] = profileData.username;
+    if(profileData.displayName !== undefined) {
+        dataToUpdate['displayName'] = profileData.displayName;
+        needsIndexUpdate = true;
+    }
+    if(profileData.username !== undefined) {
+        dataToUpdate['username'] = profileData.username;
+        needsIndexUpdate = true;
+    }
     if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
     if(profileData.coverPhotoURL !== undefined) dataToUpdate['coverPhotoURL'] = profileData.coverPhotoURL;
     if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
     if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
     if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
     if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
+
+    // If username or displayName changed, update the searchable index
+    if (needsIndexUpdate) {
+        const docSnap = await getDoc(userDocRef);
+        const currentData = docSnap.data();
+        const displayName = profileData.displayName ?? currentData?.displayName;
+        const username = profileData.username ?? currentData?.username;
+        dataToUpdate['searchableIndex'] = Array.from(new Set([displayName?.toLowerCase(), username?.toLowerCase()]));
+    }
 
 
     try {
@@ -168,11 +190,16 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
                 needsUpdate = true;
             }
 
-            if(needsUpdate) {
+            if (needsUpdate) {
+                 // Also ensure searchableIndex is created/updated during lazy migration
+                const displayName = data.displayName || 'Anonymous User';
+                dataToUpdate['searchableIndex'] = Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()]));
+                
                 updateDoc(userDocRef, dataToUpdate).catch(err => {
                     console.error(`Failed to lazy-migrate profile for user ${userId}:`, err);
                 });
             }
+
 
             return {
                 uid: userId,
@@ -252,50 +279,38 @@ export type SearchedUser = {
   email: string;
 };
 
-// New function to search for users
+// New function to search for users using the searchableIndex
 export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> => {
   if (!db) throw new Error("Firestore is not initialized.");
-  if (!searchQuery) return [];
+  const cleanedQuery = searchQuery.toLowerCase().trim();
+  if (!cleanedQuery) return [];
 
   const usersCollection = collection(db, 'users');
-  const lowerCaseQuery = searchQuery.toLowerCase();
-  
-  // This query is for an exact match on the lowercase version of the username.
-  // For a true case-insensitive prefix search, you'd need a dedicated lowercase field.
-  // This is a good starting point.
-  const usernameQuery = query(usersCollection, where('username', '>=', lowerCaseQuery), where('username', '<=', lowerCaseQuery + '\uf8ff'), limit(5));
-  
-  // A second query for display name, also case-sensitive.
-  // To make this truly case-insensitive, you'd need another field in your DB, e.g., `displayName_lowercase`
-  const displayNameQuery = query(usersCollection, where('displayName', '>=', searchQuery), where('displayName', '<=', searchQuery + '\uf8ff'), limit(5));
+  const q = query(
+    usersCollection,
+    where('searchableIndex', 'array-contains', cleanedQuery),
+    limit(10)
+  );
 
   try {
-    const [usernameSnap, displayNameSnap] = await Promise.all([
-      getDocs(usernameQuery),
-      getDocs(displayNameQuery)
-    ]);
+    const querySnapshot = await getDocs(q);
     
-    const usersMap = new Map<string, SearchedUser>();
+    const users = querySnapshot.docs.map((doc: any) => {
+        const data = doc.data();
+        return {
+            uid: doc.id,
+            displayName: data.displayName || 'Anonymous',
+            username: data.username || '',
+            email: data.email || '',
+            photoURL: data.photoURL || null,
+        }
+    });
 
-    const processSnapshot = (snapshot: any) => {
-        snapshot.docs.forEach((doc: any) => {
-            const data = doc.data();
-            if (!usersMap.has(doc.id)) {
-                usersMap.set(doc.id, {
-                    uid: doc.id,
-                    displayName: data.displayName || 'Anonymous',
-                    username: data.username || '',
-                    email: data.email || '',
-                    photoURL: data.photoURL || null,
-                });
-            }
-        });
-    };
-    
-    processSnapshot(usernameSnap);
-    processSnapshot(displayNameSnap);
-    
-    return Array.from(usersMap.values());
+    // Client-side filter for prefix matching, since 'array-contains' is an exact match.
+    return users.filter(user => 
+        user.displayName.toLowerCase().startsWith(cleanedQuery) || 
+        user.username.toLowerCase().startsWith(cleanedQuery)
+    );
 
   } catch (error) {
     console.error("Error searching for users:", error);

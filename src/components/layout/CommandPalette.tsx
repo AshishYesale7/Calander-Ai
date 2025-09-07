@@ -104,7 +104,7 @@ export function CommandPalette({
   useEffect(() => {
     if (isUserSearchMode) {
       const searchQuery = search.substring(1);
-      if (searchQuery.length > 0) { // Changed from > 1 to > 0
+      if (searchQuery.length > 0) {
         setIsSearchingUsers(true);
         const debounceTimer = setTimeout(() => {
           searchUsers(searchQuery).then(results => {
