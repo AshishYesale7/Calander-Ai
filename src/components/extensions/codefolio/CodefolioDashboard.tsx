@@ -125,58 +125,62 @@ export default function CodefolioDashboard() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-background text-foreground min-h-full w-full">
-        <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold font-headline">Welcome, coding wizard</h1>
-                    <p className="text-sm text-muted-foreground">Your journey awaits.</p>
-                </div>
+        <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold font-headline">Welcome, Coder</h1>
+                <p className="text-sm text-muted-foreground">Here is a snapshot of your coding journey.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SolvedProblemsCard totalSolved={totalSolved} />
-                <CodefolioContributionGraph contributions={userData.codeforces?.contributionData} />
-                <div className="md:col-span-2">
-                    <WeeklyTargetCard />
-                </div>
-                 {userData.codeforces && !userData.codeforces.error && userData.codeforces.contests && userData.codeforces.contests.length > 0 && (
-                    <div className="md:col-span-2">
-                         <UpcomingContests contests={userData.codeforces.contests} onAddContest={handleAddContestToTimeline} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left Column */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <SolvedProblemsCard totalSolved={totalSolved} />
+                        <WeeklyTargetCard />
                     </div>
-                )}
-                 {userData.codeforces && !userData.codeforces.error && (
-                    <PlatformStatsCard
-                        platform="Codeforces"
-                        iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-code-forces-3628695-3030187.png"
-                        users={[
-                            { name: userData.codeforces.username, value: `${userData.codeforces.rating}` },
-                        ]}
-                    />
-                )}
-                 {userData.leetcode && !userData.leetcode.error && (
-                    <PlatformStatsCard
-                        platform="LeetCode"
-                        iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-leetcode-3628885-3030128.png"
-                        users={[
-                            { name: userData.leetcode.username, value: `${userData.leetcode.totalSolved} solved`},
-                        ]}
-                        totalSolved={userData.leetcode.totalSolved}
-                        chartData={[
-                            { name: 'Easy', value: userData.leetcode.easy, fill: 'hsl(var(--chart-1))' },
-                            { name: 'Medium', value: userData.leetcode.medium, fill: 'hsl(var(--chart-2))' },
-                            { name: 'Hard', value: userData.leetcode.hard, fill: 'hsl(var(--chart-3))' },
-                        ]}
-                    />
-                )}
-                 {userData.codechef && !userData.codechef.error && (
-                    <PlatformStatsCard
-                        platform="CodeChef"
-                        iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-codechef-3628876-3030119.png"
-                        users={[
-                            { name: userData.codechef.username, value: `${userData.codechef.rating}` },
-                        ]}
-                    />
-                )}
+                    <CodefolioContributionGraph contributions={userData.codeforces?.contributionData} />
+                    {userData.codeforces && !userData.codeforces.error && userData.codeforces.contests && userData.codeforces.contests.length > 0 && (
+                        <UpcomingContests contests={userData.codeforces.contests} onAddContest={handleAddContestToTimeline} />
+                    )}
+                </div>
+
+                {/* Right Column */}
+                <div className="lg:col-span-1 space-y-6">
+                    {userData.codeforces && !userData.codeforces.error && (
+                        <PlatformStatsCard
+                            platform="Codeforces"
+                            iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-code-forces-3628695-3030187.png"
+                            users={[
+                                { name: userData.codeforces.username, value: `${userData.codeforces.rating} Rating` },
+                            ]}
+                        />
+                    )}
+                    {userData.leetcode && !userData.leetcode.error && (
+                        <PlatformStatsCard
+                            platform="LeetCode"
+                            iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-leetcode-3628885-3030128.png"
+                            users={[
+                                { name: userData.leetcode.username, value: `${userData.leetcode.totalSolved} solved`},
+                            ]}
+                            totalSolved={userData.leetcode.totalSolved}
+                            chartData={[
+                                { name: 'Easy', value: userData.leetcode.easy, fill: 'hsl(var(--chart-1))' },
+                                { name: 'Medium', value: userData.leetcode.medium, fill: 'hsl(var(--chart-2))' },
+                                { name: 'Hard', value: userData.leetcode.hard, fill: 'hsl(var(--chart-3))' },
+                            ]}
+                        />
+                    )}
+                    {userData.codechef && !userData.codechef.error && (
+                        <PlatformStatsCard
+                            platform="CodeChef"
+                            iconUrl="https://cdn.iconscout.com/icon/free/png-256/free-codechef-3628876-3030119.png"
+                            users={[
+                                { name: userData.codechef.username, value: `${userData.codechef.rating} Rating` },
+                            ]}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     </div>
