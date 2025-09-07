@@ -30,7 +30,9 @@ import {
   PlusCircle,
   Download,
   ExternalLink,
-  Trophy
+  Trophy,
+  AtSign,
+  User,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
@@ -38,8 +40,11 @@ import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { useAuth } from '@/context/AuthContext';
 import { usePlugin } from '@/hooks/use-plugin';
 import { allPlugins } from '@/data/plugins';
-import { getInstalledPlugins, saveInstalledPlugins, getUserProfile } from '@/services/userService';
+import { getInstalledPlugins, saveInstalledPlugins, getUserProfile, searchUsers, type SearchedUser } from '@/services/userService';
 import Image from 'next/image';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -81,6 +86,12 @@ export function CommandPalette({
   const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
   const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set());
 
+  // New state for user search
+  const [userSearchResults, setUserSearchResults] = useState<SearchedUser[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const isUserSearchMode = search.startsWith('@');
+  
+
   useEffect(() => {
     if (user && isOpen) {
       getUserProfile(user.uid).then(setUserProfile);
@@ -89,6 +100,26 @@ export function CommandPalette({
       });
     }
   }, [user, isOpen]);
+  
+  useEffect(() => {
+    if (isUserSearchMode) {
+      const searchQuery = search.substring(1);
+      if (searchQuery.length > 1) {
+        setIsSearchingUsers(true);
+        const debounceTimer = setTimeout(() => {
+          searchUsers(searchQuery).then(results => {
+            setUserSearchResults(results);
+            setIsSearchingUsers(false);
+          });
+        }, 300);
+        return () => clearTimeout(debounceTimer);
+      } else {
+        setUserSearchResults([]);
+      }
+    } else {
+        setUserSearchResults([]);
+    }
+  }, [search, isUserSearchMode]);
 
 
   const runCommand = useCallback((command: () => void) => {
@@ -170,29 +201,29 @@ export function CommandPalette({
         })
       }
     ]
-  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, handleToggleFullScreen, user, installedPlugins, userProfile]);
+  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, handleToggleFullScreen, user, installedPlugins, userProfile, handleOpenPlugin, handlePluginInstall]);
   
   const filteredGroups = useMemo(() => {
-    if (!search) return groups;
+    if (!search || isUserSearchMode) return groups;
     return groups
       .map(group => ({
         ...group,
         items: group.items.filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
       }))
       .filter(group => group.items.length > 0);
-  }, [search, groups]);
+  }, [search, groups, isUserSearchMode]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
       const hasVisibleCommands = filteredGroups.reduce((acc, group) => acc + group.items.length, 0) > 0;
       
       if (e.key === "Enter") {
-        if (search.trim().length > 0 && !hasVisibleCommands) {
+        if (search.trim().length > 0 && !isUserSearchMode && !hasVisibleCommands) {
             e.preventDefault();
             setPages(p => [...p, 'aiChat']);
         }
       }
     },
-    [search, filteredGroups]
+    [search, filteredGroups, isUserSearchMode]
   );
   
   return (
@@ -200,47 +231,70 @@ export function CommandPalette({
       {activePage === 'commandList' ? (
         <>
           <CommandInput 
-            placeholder="Type a command or ask AI..."
+            placeholder="Type a command or @ to search users..."
             value={search}
             onValueChange={setSearch}
             onKeyDown={onKeyDown}
           />
           <CommandList>
-            <CommandEmpty>
-                {search.trim().length > 0 ? (
-                    <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
-                        <CalendarAiLogo className="h-6 w-6" />
-                        <span>Press Enter to ask AI anything...</span>
-                    </div>
-                ) : (
-                   <div className="py-6 text-center text-sm">No results found.</div>
-                )}
-            </CommandEmpty>
-            {filteredGroups.map((group) => (
-                <React.Fragment key={group.heading}>
-                    <CommandGroup heading={group.heading}>
-                    {group.items.map(({ id, href, label, icon: Icon, action, actionLabel, actionIcon: ActionIcon }) => (
-                        <CommandItem key={id || href} onSelect={action || (() => runCommand(() => router.push(href!)))}>
-                          <Icon className="mr-2 h-4 w-4" />
-                          <span>{label}</span>
-                          {actionLabel && ActionIcon && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if(action) action();
-                                }}
-                                className="ml-auto flex items-center gap-1.5 text-xs bg-muted/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md px-2 py-0.5"
-                              >
-                                <ActionIcon className="h-3 w-3" />
-                                {actionLabel}
-                              </button>
-                          )}
-                        </CommandItem>
-                    ))}
-                    </CommandGroup>
-                    {filteredGroups.indexOf(group) < filteredGroups.length - 1 && <CommandSeparator />}
-                </React.Fragment>
-            ))}
+            {isUserSearchMode ? (
+              <>
+                {isSearchingUsers && <div className="p-4 flex items-center justify-center text-sm text-muted-foreground"><LoadingSpinner size="sm" className="mr-2"/>Searching users...</div>}
+                {!isSearchingUsers && userSearchResults.length === 0 && search.length > 1 && <CommandEmpty>No users found.</CommandEmpty>}
+                <CommandGroup heading="Users">
+                  {userSearchResults.map(u => (
+                    <CommandItem key={u.uid} onSelect={() => runCommand(() => router.push(`/profile/${u.username}`))}>
+                        <Avatar className="mr-3 h-6 w-6">
+                            <AvatarImage src={u.photoURL || undefined} />
+                            <AvatarFallback><User className="h-4 w-4"/></AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                            <span className="font-medium">{u.displayName}</span>
+                            <span className="text-xs text-muted-foreground">@{u.username}</span>
+                        </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            ) : (
+              <>
+                <CommandEmpty>
+                    {search.trim().length > 0 ? (
+                        <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
+                            <CalendarAiLogo className="h-6 w-6" />
+                            <span>Press Enter to ask AI anything...</span>
+                        </div>
+                    ) : (
+                       <div className="py-6 text-center text-sm">No results found.</div>
+                    )}
+                </CommandEmpty>
+                {filteredGroups.map((group, groupIndex) => (
+                    <React.Fragment key={group.heading}>
+                        <CommandGroup heading={group.heading}>
+                        {group.items.map(({ id, href, label, icon: Icon, action, actionLabel, actionIcon: ActionIcon }) => (
+                            <CommandItem key={id || href} onSelect={action || (() => runCommand(() => router.push(href!)))}>
+                              <Icon className="mr-2 h-4 w-4" />
+                              <span>{label}</span>
+                              {actionLabel && ActionIcon && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if(action) action();
+                                    }}
+                                    className="ml-auto flex items-center gap-1.5 text-xs bg-muted/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md px-2 py-0.5"
+                                  >
+                                    <ActionIcon className="h-3 w-3" />
+                                    {actionLabel}
+                                  </button>
+                              )}
+                            </CommandItem>
+                        ))}
+                        </CommandGroup>
+                        {filteredGroups.indexOf(group) < filteredGroups.length - 1 && groupIndex < filteredGroups.length -1 && <CommandSeparator />}
+                    </React.Fragment>
+                ))}
+              </>
+            )}
           </CommandList>
         </>
       ) : (

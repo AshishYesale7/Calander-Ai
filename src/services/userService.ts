@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks } from '@/types';
 import type { User } from 'firebase/auth';
 import { deleteImageByUrl } from './storageService';
@@ -244,6 +244,65 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
     }
 };
 
+export type SearchedUser = {
+  uid: string;
+  displayName: string;
+  username: string;
+  photoURL: string | null;
+  email: string;
+};
+
+// New function to search for users
+export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> => {
+  if (!db) throw new Error("Firestore is not initialized.");
+  if (!searchQuery) return [];
+
+  const usersCollection = collection(db, 'users');
+  const lowerCaseQuery = searchQuery.toLowerCase();
+  
+  const usernameQuery = query(usersCollection, where('username', '>=', lowerCaseQuery), where('username', '<=', lowerCaseQuery + '\uf8ff'), limit(5));
+  const displayNameQuery = query(usersCollection, where('displayName', '>=', lowerCaseQuery), where('displayName', '<=', lowerCaseQuery + '\uf8ff'), limit(5));
+  const displayNameCapsQuery = query(usersCollection, where('displayName', '>=', searchQuery), where('displayName', '<=', searchQuery + '\uf8ff'), limit(5));
+  const emailQuery = query(usersCollection, where('email', '==', lowerCaseQuery), limit(5));
+
+  try {
+    const [usernameSnap, displayNameSnap, displayNameCapsSnap, emailSnap] = await Promise.all([
+      getDocs(usernameQuery),
+      getDocs(displayNameQuery),
+      getDocs(displayNameCapsSnap),
+      getDocs(emailQuery)
+    ]);
+    
+    const usersMap = new Map<string, SearchedUser>();
+
+    const processSnapshot = (snapshot: any) => {
+        snapshot.docs.forEach((doc: any) => {
+            const data = doc.data();
+            if (!usersMap.has(doc.id)) {
+                usersMap.set(doc.id, {
+                    uid: doc.id,
+                    displayName: data.displayName || 'Anonymous',
+                    username: data.username || '',
+                    email: data.email || '',
+                    photoURL: data.photoURL || null,
+                });
+            }
+        });
+    };
+    
+    processSnapshot(usernameSnap);
+    processSnapshot(displayNameSnap);
+    processSnapshot(displayNameCapsSnap);
+    processSnapshot(emailSnap);
+    
+    return Array.from(usersMap.values());
+
+  } catch (error) {
+    console.error("Error searching for users:", error);
+    return [];
+  }
+};
+
 
 export const saveUserFCMToken = async (userId: string, token: string): Promise<void> => {
     if (!db) {
@@ -309,3 +368,5 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
+
+    
