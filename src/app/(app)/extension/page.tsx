@@ -56,7 +56,7 @@ const FullScreenPluginView: React.FC = () => {
           {typeof LogoComponent === 'string' ? (
             <Image src={LogoComponent} alt={`${activePlugin.name} logo`} width={28} height={28} />
           ) : (
-            typeof LogoComponent === 'function' && <LogoComponent />
+            typeof LogoComponent === 'function' && <LogoComponent className="h-7 w-7" />
           )}
           <h2 className="text-xl font-semibold">{activePlugin.name}</h2>
         </div>
@@ -67,7 +67,7 @@ const FullScreenPluginView: React.FC = () => {
         </div>
       </header>
       <main className="flex-1 overflow-auto">
-        {PluginComponent && <PluginComponent />}
+        <PluginComponent />
       </main>
     </div>
   );
@@ -129,7 +129,7 @@ export default function ExtensionPage() {
       updateInstalledPlugins(newSet);
       setInstallingPlugin(null);
       toast({ title: "Plugin Installed", description: `${pluginName} has been added.` });
-    }, 3000);
+    }, 1500); // Shorter delay
   };
   
   const handleUninstall = (pluginName: string) => {
@@ -174,7 +174,7 @@ export default function ExtensionPage() {
                         className="w-full h-full object-contain"
                     />
                 ) : (
-                    LogoComponent && <LogoComponent />
+                    LogoComponent && <LogoComponent className="h-12 w-12 text-foreground/80 group-hover:text-primary transition-colors"/>
                 )}
             </div>
             <div className="text-center">

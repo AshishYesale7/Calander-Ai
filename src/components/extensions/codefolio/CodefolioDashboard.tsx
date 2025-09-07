@@ -17,6 +17,7 @@ import type { TimelineEvent } from "@/types";
 import { saveTimelineEvent } from "@/services/timelineService";
 import { useTimezone } from "@/hooks/use-timezone";
 import CodefolioContributionGraph from "./CodefolioContributionGraph";
+import { usePlugin } from "@/hooks/use-plugin";
 
 export default function CodefolioDashboard() {
   const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
@@ -25,6 +26,7 @@ export default function CodefolioDashboard() {
   const { apiKey } = useApiKey();
   const { toast } = useToast();
   const { timezone } = useTimezone();
+  const { openLoginView } = usePlugin();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +37,9 @@ export default function CodefolioDashboard() {
         if (usernames && Object.values(usernames).some(u => u)) {
           const stats = await fetchCodingStats({ ...usernames, apiKey });
           setUserData(stats);
+        } else {
+          // If no usernames are set, open the login/settings modal.
+          openLoginView();
         }
       } catch (error) {
         console.error("Failed to fetch coding stats", error);
@@ -45,7 +50,7 @@ export default function CodefolioDashboard() {
     };
     
     fetchData();
-  }, [user, apiKey, toast]);
+  }, [user, apiKey, toast, openLoginView]);
   
   const totalSolved = Object.values(userData || {}).reduce((acc, platform) => {
     if (platform && platform.totalSolved && !platform.error) {
@@ -113,6 +118,8 @@ export default function CodefolioDashboard() {
   }
   
   if (!userData || Object.keys(userData).length === 0) {
+      // This state will likely not be shown for long as the openLoginView will be called.
+      // But it's good practice to have it as a fallback.
       return <div className="text-center p-8">No coding data found. Please set up your usernames in Settings.</div>;
   }
 
