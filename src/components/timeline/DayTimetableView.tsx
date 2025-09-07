@@ -1,12 +1,12 @@
 
 'use client';
 
-import type { TimelineEvent } from '@/types';
+import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Clock, LayoutGrid, UserPlus, Filter } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -225,14 +228,11 @@ const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
             <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-4 w-4" /></Button>
             <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
         </div>
-        <div className="flex items-center gap-1 text-gray-400">
-             {/* This space is for the center toolbar if needed */}
-        </div>
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
+             <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view">
+            <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className="h-7 w-7">
                 <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
             </Button>
         </div>
@@ -298,7 +298,7 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
         </div>
          <div className="border-t border-gray-700/50 pt-2 space-y-0.5">
             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
-                <Clock size={16}/><span>Statistics</span>
+                <Activity size={16}/><span>Statistics</span>
             </div>
              <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
                 <Palette size={16}/><span>Daily Planning</span>
@@ -307,41 +307,55 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
     </div>
 )};
 
-const PlannerTaskList = () => {
-    const tasks = [
-        { title: 'Thumbnail: Twitch HQ', tags: [{name: 'Plan', color: 'bg-blue-500'}, {name: 'Thumbnails', color: 'bg-purple-500'}] },
-        { title: 'Thumbnail: AI/ML Project Ideas', tags: [{name: 'Thumbnails', color: 'bg-purple-500'}]},
-        { title: 'Thumbnail: AI Eng Courses', tags: [{name: 'Thumbnails', color: 'bg-purple-500'}]},
-        { title: 'Write Cynicism script', tags: [{name: 'Scripts', color: 'bg-gray-500'}]},
-        { title: 'Book notes', tags: [{name: 'Book', color: 'bg-red-500'}]},
-        { title: 'Film Cynicism Video', subItem: "Content Calendar", tags: [{name: 'Film', color: 'bg-blue-500'}]},
-    ];
+const PlannerTaskList = ({
+  taskLists,
+  tasks,
+  activeListId,
+  onAddTask,
+}: {
+  taskLists: GoogleTaskList[];
+  tasks: RawGoogleTask[];
+  activeListId: string;
+  onAddTask: (listId: string, title: string) => void;
+}) => {
+    const [newTaskTitle, setNewTaskTitle] = useState('');
+    const activeList = taskLists.find(list => list.id === activeListId);
+
+    const handleAddTask = (e: React.FormEvent) => {
+        e.preventDefault();
+        const title = newTaskTitle.trim();
+        if (title && activeList) {
+            onAddTask(activeList.id, title);
+            setNewTaskTitle('');
+        }
+    };
+    
     return (
         <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50">
             <div className="flex justify-between items-center mb-2 px-1">
                 <h1 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Inbox size={16} /> Inbox
+                    <Inbox size={16} /> {activeList?.title || 'Inbox'}
                 </h1>
                 <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
-             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-2 text-xs h-8">
-                <Plus className="mr-2 h-4 w-4" /> Add new task
-            </Button>
-            <div className="space-y-1 text-xs">
+            <form onSubmit={handleAddTask}>
+                 <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-2 text-xs h-8">
+                    <Plus className="mr-2 h-4 w-4" />
+                    <Input
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        placeholder="Add new task"
+                        className="bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0"
+                    />
+                </Button>
+            </form>
+            <div className="space-y-1 text-xs overflow-y-auto">
                 {tasks.map(task => (
-                    <div key={task.title} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
+                    <div key={task.id} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
                         <div className="flex items-center gap-2">
-                           <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
-                            <label htmlFor={task.title} className="text-gray-200 text-xs">{task.title}</label>
-                            {task.tags.map(tag => (
-                                <Badge key={tag.name} className={cn("text-[9px] px-1 py-0 h-4", tag.color)}>{tag.name}</Badge>
-                            ))}
+                           <Checkbox id={task.id} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
+                            <label htmlFor={task.id} className="text-gray-200 text-xs">{task.title}</label>
                         </div>
-                        {task.subItem && (
-                            <div className="pl-6 text-[10px] text-gray-400 flex items-center gap-1 mt-1">
-                                <Calendar size={12}/>{task.subItem}
-                            </div>
-                        )}
                     </div>
                 ))}
             </div>
@@ -442,7 +456,7 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-type ActivePlannerView = 'inbox' | 'today' | 'upcoming' | 'all' | string; // string for project IDs
+type ActivePlannerView = 'inbox' | 'today' | 'upcoming' | 'all' | string;
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
@@ -452,6 +466,10 @@ const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }
     <GripVertical className="h-4 w-4 text-gray-600 group-hover:text-white" />
   </div>
 );
+
+interface TasksByList {
+    [key: string]: RawGoogleTask[];
+}
 
 export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
@@ -470,6 +488,9 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const startWidthsRef = useRef<number[]>([]);
   
   const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
+  const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
+  const [tasks, setTasks] = useState<TasksByList>({});
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
 
 
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
@@ -521,6 +542,70 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
   const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
+
+  const fetchTaskData = useCallback(async () => {
+    if (!user || !isMaximized) return;
+    setIsTasksLoading(true);
+    try {
+      const lists = await getGoogleTaskLists(user.uid);
+      setTaskLists(lists);
+
+      const defaultListId = lists.find(l => l.title.includes('My Tasks'))?.id || lists[0]?.id;
+      if (defaultListId) {
+        setActivePlannerView(defaultListId);
+      }
+      
+      const tasksPromises = lists.map(list => getAllTasksFromList(user.uid, list.id));
+      const tasksResults = await Promise.all(tasksPromises);
+      
+      const tasksByListId: TasksByList = {};
+      lists.forEach((list, index) => {
+        tasksByListId[list.id] = tasksResults[index];
+      });
+      setTasks(tasksByListId);
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to fetch tasks.", variant: "destructive" });
+    } finally {
+      setIsTasksLoading(false);
+    }
+  }, [user, isMaximized, toast]);
+  
+  useEffect(() => {
+    fetchTaskData();
+  }, [fetchTaskData]);
+
+
+  const handleAddTask = async (listId: string, title: string) => {
+    if (!user) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const newTask: RawGoogleTask = {
+      id: tempId,
+      title,
+      status: 'needsAction',
+      updated: new Date().toISOString(),
+    };
+
+    setTasks(prev => ({
+      ...prev,
+      [listId]: [newTask, ...(prev[listId] || [])],
+    }));
+
+    try {
+      const createdTask = await createGoogleTask(user.uid, listId, { title });
+      setTasks(prev => ({
+        ...prev,
+        [listId]: prev[listId].map(t => t.id === tempId ? createdTask as RawGoogleTask : t),
+      }));
+    } catch (error) {
+      setTasks(prev => ({
+        ...prev,
+        [listId]: prev[listId].filter(t => t.id !== tempId),
+      }));
+      toast({ title: "Error", description: "Failed to create task.", variant: "destructive" });
+    }
+  };
+
 
   useEffect(() => {
     if (isToday) {
@@ -599,7 +684,18 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
             <div className="flex flex-1 min-h-0">
                 <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
                 <Resizer onMouseDown={onMouseDown(0)} />
-                <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerTaskList /></div>
+                <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
+                   {isTasksLoading ? (
+                     <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
+                   ) : (
+                      <PlannerTaskList
+                        taskLists={taskLists}
+                        tasks={tasks[activePlannerView] || []}
+                        activeListId={activePlannerView}
+                        onAddTask={handleAddTask}
+                      />
+                   )}
+                </div>
                 <Resizer onMouseDown={onMouseDown(1)} />
                 <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline /></div>
             </div>
@@ -859,3 +955,4 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
