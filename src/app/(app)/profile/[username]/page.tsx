@@ -77,16 +77,17 @@ export default function UserProfilePage({ params }: { params: { username: string
     const [streakData, setStreakData] = useState<StreakData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { username } = params;
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
     useEffect(() => {
-        const fetchProfile = async (username: string) => {
-            if (!username) return;
+        const fetchProfile = async (usernameToFetch: string) => {
+            if (!usernameToFetch) return;
             setIsLoading(true);
             setError(null);
             try {
-                const fetchedProfile = await getUserByUsername(username);
+                const fetchedProfile = await getUserByUsername(usernameToFetch);
                 if (fetchedProfile) {
                     setProfile(fetchedProfile);
                     const fetchedStreak = await getStreakData(fetchedProfile.uid);
@@ -102,10 +103,10 @@ export default function UserProfilePage({ params }: { params: { username: string
             }
         };
 
-        if (params.username) {
-            fetchProfile(params.username);
+        if (username) {
+            fetchProfile(username);
         }
-    }, [params]);
+    }, [username]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-full"><LoadingSpinner size="lg" /></div>;
