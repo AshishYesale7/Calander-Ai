@@ -1,3 +1,4 @@
+
 'use server';
 import { db } from '@/lib/firebase';
 import type { StreakData, LeaderboardUser } from '@/types';
