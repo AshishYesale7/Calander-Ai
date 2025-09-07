@@ -51,7 +51,7 @@ const FullScreenPluginView: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-300">
-      <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+      <header className="p-2 border-b border-border/30 flex items-center justify-between flex-shrink-0 relative z-10">
         <div className="flex items-center gap-3 ml-2">
           {typeof LogoComponent === 'string' ? (
             <Image src={LogoComponent} alt={`${activePlugin.name} logo`} width={28} height={28} />
