@@ -9,12 +9,11 @@ import { Link2, Zap, Settings } from "lucide-react";
 export default function DiscordDashboard() {
     
     const discordBgStyle = {
-        backgroundImage: 'linear-gradient(145deg, hsl(235, 85%, 60%), hsl(240, 80%, 40%))',
+        backgroundColor: '#5865F2',
     };
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 min-h-full w-full" style={discordBgStyle}>
-            <div className="absolute inset-0 bg-black/10"></div>
             <div className="max-w-4xl mx-auto relative z-10">
                 <header className="mb-12 text-center">
                     <DiscordLogo className="h-24 w-24 mx-auto text-white drop-shadow-lg" />
