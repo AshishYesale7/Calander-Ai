@@ -6,7 +6,6 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useAuth } from './AuthContext';
 import { getStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
-import { usePathname } from 'next/navigation';
 
 interface StreakContextType {
   streakData: StreakData | null;
@@ -21,17 +20,16 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [streakData, setStreakData] = useState<StreakData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const pathname = usePathname();
 
-  // This effect fetches the initial data. It no longer creates it.
+  // This effect fetches the initial data when the component mounts or the user changes.
   useEffect(() => {
     const fetchStreakData = async () => {
-        // Only fetch if we have a user. The tracker hook will handle creation.
         if (user) {
             setIsLoading(true);
             try {
+                // Always get the latest from Firestore on load.
                 const data = await getStreakData(user.uid);
-                setStreakData(data); // This will be null if user is new, which is intended.
+                setStreakData(data);
             } catch (error) {
                 console.error("Error fetching streak data:", error);
                 setStreakData(null);
@@ -39,7 +37,7 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
                 setIsLoading(false);
             }
         } else {
-            // No user, so not loading and no data.
+            // No user, so reset state
             setIsLoading(false);
             setStreakData(null);
         }

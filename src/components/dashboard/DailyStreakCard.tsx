@@ -166,7 +166,7 @@ export default function DailyStreakCard() {
                           {isInsightLoading && !streakData.insight?.text ? (
                               <LoadingSpinner size="sm" className="text-white/80"/>
                           ) : (
-                              <p className="animate-in fade-in duration-500">{streakData.insight?.text}</p>
+                              <p className="animate-in fade-in duration-500">{streakData.insight?.text || 'Consistency is key.'}</p>
                           )}
                         </div>
                     </div>

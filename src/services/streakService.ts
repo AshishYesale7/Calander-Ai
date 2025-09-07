@@ -62,6 +62,8 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
   }
   
   try {
+    // Using merge: true ensures we only update the fields provided
+    // and don't overwrite the entire document.
     await setDoc(streakDocRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Failed to update streak data in Firestore:", error);
@@ -88,6 +90,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             
             const userProfile = await getUserProfile(userId);
             
+            // The XP for ranking should be the total time up to the current point.
             const timeSpentForRank = (streakData.timeSpentTotal || 0) + (streakData.timeSpentToday || 0);
             
             if (userProfile) {
@@ -102,6 +105,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     countryCode: userProfile.countryCode,
                 };
             }
+            // Return a default object if profile doesn't exist, though it should.
             return {
                 id: userId,
                 displayName: 'Anonymous User',
@@ -116,6 +120,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         
         const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];
         
+        // Sort again on the client side to ensure the final calculated XP is ranked correctly.
         return leaderboard.sort((a,b) => b.timeSpentTotal - a.timeSpentTotal);
 
     } catch (error) {

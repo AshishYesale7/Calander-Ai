@@ -18,8 +18,10 @@ export const useStreakTracker = () => {
     const streakContext = useContext(StreakContext);
     const { timezone } = useTimezone();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedTimeRef = useRef<Date | null>(null);
 
     if (!streakContext) {
+        // This can happen briefly during context setup, so we just return.
         return;
     }
     const { streakData, setStreakData } = streakContext;
@@ -28,6 +30,7 @@ export const useStreakTracker = () => {
         if (!user) return;
         try {
             await updateStreakData(user.uid, dataToSave);
+            lastSavedTimeRef.current = new Date();
         } catch (error) {
             console.error("Failed to save streak data:", error);
         }
@@ -42,13 +45,17 @@ export const useStreakTracker = () => {
         const daysDifference = differenceInCalendarDays(nowInUserTz, lastActivityInUserTz);
         
         if (daysDifference > 0) {
-            const updatedData: StreakData = { 
+            const yesterdayTimeSpent = streakData.timeSpentToday;
+            const streakContinued = daysDifference === 1 && streakData.todayStreakCompleted;
+            
+            const updatedData: StreakData = {
                 ...streakData,
+                timeSpentTotal: (streakData.timeSpentTotal || 0) + yesterdayTimeSpent,
                 timeSpentToday: 0,
-                timeSpentTotal: (streakData.timeSpentTotal || 0) + streakData.timeSpentToday,
                 todayStreakCompleted: false,
-                currentStreak: daysDifference > 1 ? 0 : streakData.currentStreak, 
+                currentStreak: streakContinued ? streakData.currentStreak : 0,
                 lastActivityDate: new Date(),
+                insight: undefined, // Clear insight for the new day
             };
             
             setStreakData(updatedData);
@@ -58,13 +65,28 @@ export const useStreakTracker = () => {
 
     // Effect for logging activity when daily goal is completed.
     useEffect(() => {
-        if (streakData?.todayStreakCompleted && user) {
-            const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
-            if (streakData.completedDays?.includes(todayStr)) {
-                 logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
-            }
+        if (!user || !streakData?.todayStreakCompleted) return;
+
+        const todayStr = format(toZonedTime(new Date(), timezone), 'yyyy-MM-dd');
+        // Find the last completed day to prevent duplicate logging
+        const lastCompletedDay = streakData.completedDays?.[streakData.completedDays.length - 1];
+
+        if (lastCompletedDay === todayStr) {
+             // Check if the activity for today has already been logged.
+             // This is a simple check; a more robust system might store logged dates.
+             // For now, we assume if the last completed day is today, we might have logged it.
+             // A better approach would be to check if insight for today's streak has been generated.
+            return;
         }
-    }, [streakData?.todayStreakCompleted, streakData?.completedDays, user, timezone]);
+
+        // A simplistic way to prevent re-logging: check if the streak has increased.
+        // This assumes logging happens right after streak increment.
+        if(streakData.insight?.lastUpdatedStreak === streakData.currentStreak) return;
+
+
+        logUserActivity(user.uid, 'task_completed', { title: "Daily Streak Goal" });
+
+    }, [streakData?.todayStreakCompleted, streakData?.completedDays, user, timezone, streakData?.currentStreak, streakData?.insight]);
 
     // Main timer effect for tracking active engagement.
     useEffect(() => {
@@ -113,6 +135,7 @@ export const useStreakTracker = () => {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
+            // Save the latest state when timer stops
             if(streakData) {
                 const { insight, ...dataToSave } = streakData;
                 saveData(dataToSave);
@@ -127,7 +150,8 @@ export const useStreakTracker = () => {
             }
         };
         
-        if (user && streakData) {
+        // Only start the timer if we have a user and data, and the tab is visible.
+        if (user && streakData && !document.hidden) {
             startTimer();
             document.addEventListener('visibilitychange', handleVisibilityChange);
         }
