@@ -28,11 +28,18 @@ import {
   Expand,
   Shrink,
   PlusCircle,
+  Download,
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { useAuth } from '@/context/AuthContext';
+import { usePlugin } from '@/context/PluginContext';
+import { allPlugins } from '@/data/plugins';
+import { getInstalledPlugins, saveInstalledPlugins, getUserProfile } from '@/services/userService';
+import Image from 'next/image';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,6 +49,7 @@ const menuItems = [
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 ];
 
 interface CommandPaletteProps {
@@ -64,10 +72,24 @@ export function CommandPalette({
   const router = useRouter();
   const { setTheme, theme } = useTheme();
   const { user } = useAuth();
+  const { setActivePlugin } = usePlugin();
   
   const [search, setSearch] = useState('');
   const [pages, setPages] = useState<('commandList' | 'aiChat')[]>(['commandList']);
   const activePage = pages[pages.length - 1];
+  
+  const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
+  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (user && isOpen) {
+      getUserProfile(user.uid).then(setUserProfile);
+      getInstalledPlugins(user.uid).then(plugins => {
+        if(plugins) setInstalledPlugins(new Set(plugins));
+      });
+    }
+  }, [user, isOpen]);
+
 
   const runCommand = useCallback((command: () => void) => {
     onOpenChange(false);
@@ -84,9 +106,24 @@ export function CommandPalette({
     }
   }, [isOpen]);
   
+  const handlePluginInstall = (e: React.MouseEvent, pluginName: string) => {
+    e.stopPropagation();
+    if (!user) return;
+    const newSet = new Set(installedPlugins).add(pluginName);
+    setInstalledPlugins(newSet);
+    saveInstalledPlugins(user.uid, Array.from(newSet));
+  };
+  
+  const handleOpenPlugin = (plugin: (typeof allPlugins)[0]) => {
+     runCommand(() => {
+        router.push('/extension');
+        setTimeout(() => setActivePlugin(plugin), 100);
+    });
+  };
+
   const groups = useMemo(() => {
-    const profileItem = user?.displayName // This is a stand-in, username should be fetched
-      ? { id: 'viewProfile', label: 'View Profile', icon: UserCircle, action: () => runCommand(() => router.push(`/profile/${user.displayName}`)) }
+    const profileItem = userProfile?.username
+      ? { id: 'viewProfile', label: 'View Profile', icon: UserCircle, action: () => runCommand(() => router.push(`/profile/${userProfile.username}`)) }
       : null;
 
     return [
@@ -114,8 +151,23 @@ export function CommandPalette({
             { id: 'toggleFullscreen', label: isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen', icon: isFullScreen ? Shrink : Expand, action: () => runCommand(handleToggleFullScreen) },
         ].filter(Boolean)
       },
+      {
+        heading: 'Plugins',
+        items: allPlugins.map(plugin => {
+            const isInstalled = installedPlugins.has(plugin.name);
+            const LogoComponent = plugin.logo;
+            return {
+                id: `plugin-${plugin.name}`,
+                label: plugin.name,
+                icon: typeof LogoComponent === 'string' ? () => <Image src={LogoComponent} alt={plugin.name} width={16} height={16} /> : LogoComponent,
+                action: isInstalled ? () => handleOpenPlugin(plugin) : (e: React.MouseEvent) => handlePluginInstall(e, plugin.name),
+                actionLabel: isInstalled ? 'Open' : 'Install',
+                actionIcon: isInstalled ? ExternalLink : Download,
+            };
+        })
+      }
     ]
-  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, handleToggleFullScreen, user]);
+  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, handleToggleFullScreen, user, installedPlugins, userProfile]);
   
   const filteredGroups = useMemo(() => {
     if (!search) return groups;
@@ -164,10 +216,19 @@ export function CommandPalette({
             {filteredGroups.map((group) => (
                 <React.Fragment key={group.heading}>
                     <CommandGroup heading={group.heading}>
-                    {group.items.map(({ id, href, label, icon: Icon, action }) => (
+                    {group.items.map(({ id, href, label, icon: Icon, action, actionLabel, actionIcon: ActionIcon }) => (
                         <CommandItem key={id || href} onSelect={action || (() => runCommand(() => router.push(href!)))}>
-                        <Icon className="mr-2 h-4 w-4" />
-                        <span>{label}</span>
+                          <Icon className="mr-2 h-4 w-4" />
+                          <span>{label}</span>
+                          {actionLabel && ActionIcon && (
+                              <button
+                                onClick={(e) => action && action(e as any)}
+                                className="ml-auto flex items-center gap-1.5 text-xs bg-muted/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md px-2 py-0.5"
+                              >
+                                <ActionIcon className="h-3 w-3" />
+                                {actionLabel}
+                              </button>
+                          )}
                         </CommandItem>
                     ))}
                     </CommandGroup>
