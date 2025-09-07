@@ -139,15 +139,36 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            let username = data.username;
+            const dataToUpdate: {[key: string]: any} = {};
+            let needsUpdate = false;
 
-            // If username is missing, create and save a default one.
+            // Lazy migration for username
+            let username = data.username;
             if (!username) {
                 username = `user_${userId.substring(0, 5)}`;
+                dataToUpdate.username = username;
+                needsUpdate = true;
+            }
+
+            // Lazy migration for other profile fields
+            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode'];
+            fieldsToDefault.forEach(field => {
+                if (data[field] === undefined) {
+                    dataToUpdate[field] = field === 'socials' ? { github: '', linkedin: '', twitter: '' } : field === 'bio' ? '' : null;
+                    needsUpdate = true;
+                }
+            });
+            
+            // Lazy migration for preferences
+            if (data.preferences === undefined) {
+                dataToUpdate.preferences = { routine: [] };
+                needsUpdate = true;
+            }
+
+            if(needsUpdate) {
                 // Asynchronously update the document without blocking the response.
-                // We don't await this so the function returns faster.
-                updateDoc(userDocRef, { username: username }).catch(err => {
-                    console.error(`Failed to save default username for user ${userId}:`, err);
+                updateDoc(userDocRef, dataToUpdate).catch(err => {
+                    console.error(`Failed to lazy-migrate profile for user ${userId}:`, err);
                 });
             }
 
@@ -155,11 +176,11 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
                 displayName: data.displayName,
                 username: username,
                 photoURL: data.photoURL,
-                bio: data.bio,
-                socials: data.socials,
-                statusEmoji: data.statusEmoji,
-                countryCode: data.countryCode,
-                routine: data.preferences?.routine || [], // Safely access nested property
+                bio: data.bio || '',
+                socials: data.socials || { github: '', linkedin: '', twitter: '' },
+                statusEmoji: data.statusEmoji || null,
+                countryCode: data.countryCode || null,
+                routine: data.preferences?.routine || [],
             };
         }
         return null;

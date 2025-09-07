@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import type { UserSubscription } from '@/types';
 import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { createUserProfile } from './userService';
 
 export const updateUserSubscriptionStatus = async (
   userId: string,
@@ -41,6 +42,13 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
             endDate: (sub.endDate as Timestamp).toDate(),
         } as UserSubscription;
     } else {
+        if (!docSnap.exists()) {
+            // Eagerly create the user profile if it doesn't exist, which can happen for new sign-ups
+            // This is a fire-and-forget operation, we don't need to wait for it.
+            const user = { uid: userId } as any; // Mock user object for creation
+            createUserProfile(user);
+        }
+        
         // User exists but has no subscription, or user doc doesn't exist yet.
         // Create a new 7-day trial subscription.
         const trialEndDate = new Date();

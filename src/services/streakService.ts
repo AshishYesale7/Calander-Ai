@@ -21,7 +21,8 @@ export const getStreakData = async (userId: string): Promise<StreakData> => {
     const docSnap = await getDoc(streakDocRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return {
+      // Lazy migration: check for missing fields and provide defaults
+      const a = {
         currentStreak: data.currentStreak || 0,
         longestStreak: data.longestStreak || 0,
         lastActivityDate: data.lastActivityDate ? (data.lastActivityDate as Timestamp).toDate() : new Date(),
@@ -31,6 +32,7 @@ export const getStreakData = async (userId: string): Promise<StreakData> => {
         insight: data.insight || undefined,
         completedDays: data.completedDays || [],
       };
+      return a
     } else {
       // If document does not exist, create it with default values.
       const newStreakData: StreakData = {

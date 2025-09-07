@@ -5,9 +5,9 @@ import type { ReactNode } from 'react';
 import { createContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getCodingUsernames, saveCodingUsernames } from '@/services/userService';
+import { getCodingUsernames, saveCodingUsernames, getInstalledPlugins, saveInstalledPlugins } from '@/services/userService';
 import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
-import { allPlugins } from '@/data/plugins';
+import { allPlugins, DEFAULT_PLUGINS } from '@/data/plugins';
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
 
 type Plugin = (typeof allPlugins)[0];
@@ -53,8 +53,10 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   useEffect(() => {
-    checkLoginStatus();
-  }, [checkLoginStatus]);
+    if (user) {
+      checkLoginStatus();
+    }
+  }, [user, checkLoginStatus]);
   
   const openLoginView = useCallback(() => {
     setActivePlugin(null);
