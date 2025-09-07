@@ -139,8 +139,8 @@ export default function LeaderboardPageV2() {
             <div
                 key={u.id}
                 className={cn(
-                    "flex items-center gap-4 p-2 rounded-lg",
-                    isCurrentUser && "bg-muted"
+                    "flex items-center gap-4 p-2 rounded-lg transition-colors",
+                    isCurrentUser && "bg-primary/20"
                 )}
             >
                 <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
