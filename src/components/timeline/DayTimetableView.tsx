@@ -226,7 +226,7 @@ const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
             <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
         </div>
         <div className="flex items-center gap-1 text-gray-400">
-             {/* Toolbar on the right */}
+             {/* This space is for the center toolbar if needed */}
         </div>
         <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
@@ -460,30 +460,38 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const onMouseMove = (e: MouseEvent) => {
+  const onMouseMove = useCallback((e: MouseEvent) => {
     if (isResizing.current === null) return;
     const dx = e.clientX - startXRef.current;
-    const totalWidth = window.innerWidth * 0.98; // Assuming the container takes up most of the screen width
-    const dxPercent = (dx / totalWidth) * 100;
+    
+    const containerWidth = e.currentTarget instanceof Window 
+        ? e.currentTarget.innerWidth 
+        : (e.currentTarget as HTMLElement).offsetWidth;
+
+    const dxPercent = (dx / containerWidth) * 100;
     
     const newWidths = [...startWidthsRef.current];
     const leftPanelIndex = isResizing.current;
     const rightPanelIndex = isResizing.current + 1;
 
-    newWidths[leftPanelIndex] += dxPercent;
-    newWidths[rightPanelIndex] -= dxPercent;
+    const minWidth = 15;
+
+    const proposedLeftWidth = newWidths[leftPanelIndex] + dxPercent;
+    const proposedRightWidth = newWidths[rightPanelIndex] - dxPercent;
     
-    // Constraints (e.g., min 15% width)
-    if (newWidths[leftPanelIndex] < 15 || newWidths[rightPanelIndex] < 15) return;
+    if (proposedLeftWidth < minWidth || proposedRightWidth < minWidth) return;
+
+    newWidths[leftPanelIndex] = proposedLeftWidth;
+    newWidths[rightPanelIndex] = proposedRightWidth;
 
     setPanelWidths(newWidths);
-  };
+  }, []);
 
-  const onMouseUp = () => {
+  const onMouseUp = useCallback(() => {
     isResizing.current = null;
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
-  };
+  }, [onMouseMove]);
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
   const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
