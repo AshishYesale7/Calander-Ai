@@ -36,7 +36,7 @@ import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
 import { usePlugin } from '@/hooks/use-plugin';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, addDays, toDate } from 'date-fns';
+import { format, startOfWeek, addDays, toDate, isToday as dfnsIsToday } from 'date-fns';
 import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
 
 const navItems = [
@@ -188,16 +188,28 @@ export default function Header({
   }, []);
 
   const weekDaysWithStatus = useMemo(() => {
-      if (!streakData) return weekDays.map(day => ({ dayChar: format(day, 'E').charAt(0), isCompleted: false }));
+      if (!streakData) {
+          return weekDays.map(day => ({
+              dayChar: format(day, 'E').charAt(0),
+              isCompleted: false,
+          }));
+      }
       const completedDaysSet = new Set(streakData.completedDays || []);
       return weekDays.map((day) => {
           const dayStr = format(day, 'yyyy-MM-dd');
+          if (dfnsIsToday(day)) {
+              return {
+                  dayChar: format(day, 'E').charAt(0),
+                  isCompleted: streakData.todayStreakCompleted,
+              };
+          }
           return {
               dayChar: format(day, 'E').charAt(0),
               isCompleted: completedDaysSet.has(dayStr),
           };
       });
   }, [weekDays, streakData]);
+
 
   const progressPercent = useMemo(() => {
       if (!streakData) return 0;
@@ -277,29 +289,29 @@ export default function Header({
                         </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-[450px] frosted-glass p-0 overflow-hidden" sideOffset={10}>
-                    <div className="relative text-foreground w-full space-y-4">
+                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-[450px] p-0 overflow-hidden border-amber-700/50 bg-transparent shadow-lg border-0" sideOffset={10}>
+                    <div className="relative text-foreground w-full space-y-4 bg-amber-600 rounded-lg">
                          {streakData && (
                             <TrophyFlameIcon 
                                 isComplete={streakData.todayStreakCompleted} 
                                 className="absolute top-2 right-2 h-24 w-24 opacity-30 transform -rotate-12 z-0"
                             />
                         )}
-                        <div className="p-4 relative z-10">
+                        <div className="p-4 relative z-10 text-white">
                             <div>
-                                <h3 className="text-lg font-bold text-primary">
+                                <h3 className="text-lg font-bold">
                                     Daily Goal
                                 </h3>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-sm text-white/80 mt-1 h-5">
                                 {streakData.insight?.text || "Keep your streak alive!"}
                                 </p>
                             </div>
 
-                            <div className="mt-4 p-4 bg-background/25 rounded-xl space-y-4">
+                            <div className="mt-4 p-4 bg-black/25 rounded-xl space-y-4">
                                 <div className="flex justify-around">
                                     {weekDaysWithStatus.map(({ dayChar, isCompleted }, index) => (
                                         <div key={index} className="flex flex-col items-center gap-2">
-                                            <span className="text-xs font-semibold text-muted-foreground">{dayChar}</span>
+                                            <span className="text-xs font-semibold text-white/70">{dayChar}</span>
                                             <div className="h-7 w-7 rounded-full flex items-center justify-center transition-all">
                                                 <DailyFlameIcon isComplete={isCompleted} />
                                             </div>
@@ -307,7 +319,7 @@ export default function Header({
                                     ))}
                                 </div>
                                 <div className="pt-2">
-                                    <div className="relative h-2 w-full bg-muted/50 rounded-full">
+                                    <div className="relative h-2 w-full bg-gray-600/50 rounded-full">
                                         <div
                                             className="absolute top-0 left-0 h-full bg-amber-400 rounded-full transition-all duration-300"
                                             style={{ width: `${progressPercent}%` }}
@@ -315,13 +327,13 @@ export default function Header({
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-amber-400"></div>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-center text-amber-300 mt-2 font-mono">
+                                    <p className="text-xs text-center text-amber-200 mt-2 font-mono">
                                         {formatTime(streakData.timeSpentToday || 0)} / {formatTime(STREAK_GOAL_SECONDS)} min
                                     </p>
                                 </div>
                             </div>
                         </div>
-                        <div className="-mx-1 mt-2">
+                        <div className="-mx-1 mt-2 bg-background/50 rounded-b-lg">
                             <ContributionGraphCard />
                         </div>
                     </div>
