@@ -133,15 +133,27 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string }> | null> => {
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
+            let username = data.username;
+
+            // If username is missing, create and save a default one.
+            if (!username) {
+                username = `user_${userId.substring(0, 5)}`;
+                // Asynchronously update the document without blocking the response.
+                // We don't await this so the function returns faster.
+                updateDoc(userDocRef, { username: username }).catch(err => {
+                    console.error(`Failed to save default username for user ${userId}:`, err);
+                });
+            }
+
             return {
                 displayName: data.displayName,
-                username: data.username || `user_${userId.substring(0, 5)}`,
+                username: username,
                 photoURL: data.photoURL,
                 bio: data.bio,
                 socials: data.socials,
