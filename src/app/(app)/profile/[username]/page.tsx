@@ -81,11 +81,12 @@ export default function UserProfilePage({ params }: { params: { username: string
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchProfile = async (username: string) => {
+            if (!username) return;
             setIsLoading(true);
             setError(null);
             try {
-                const fetchedProfile = await getUserByUsername(params.username);
+                const fetchedProfile = await getUserByUsername(username);
                 if (fetchedProfile) {
                     setProfile(fetchedProfile);
                     const fetchedStreak = await getStreakData(fetchedProfile.uid);
@@ -101,7 +102,7 @@ export default function UserProfilePage({ params }: { params: { username: string
             }
         };
 
-        fetchProfile();
+        fetchProfile(params.username);
     }, [params.username]);
 
     if (isLoading) {
