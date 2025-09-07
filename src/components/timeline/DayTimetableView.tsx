@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -117,8 +117,7 @@ function calculateEventLayouts(
       const startDate = e.date;
       const endDate = e.endDate;
       if (!(startDate instanceof Date) || isNaN(startDate.valueOf())) {
-         // console.warn(`Invalid start date for event ${e.id}. Skipping layout.`);
-         return null; // Skip events with invalid dates
+         return null; 
       }
       const start = startDate.getHours() * 60 + startDate.getMinutes();
       let endValue;
@@ -139,7 +138,7 @@ function calculateEventLayouts(
         endInMinutes: endValue,
       };
     })
-    .filter(e => e !== null) // Remove skipped events
+    .filter(e => e !== null) 
     .sort((a, b) => { 
       if (!a || !b) return 0;
       if (a.startInMinutes !== b.startInMinutes) return a.startInMinutes - b.startInMinutes;
@@ -150,7 +149,7 @@ function calculateEventLayouts(
   
   let i = 0;
   while (i < events.length) {
-    if (!events[i]) { i++; continue; } // Should not happen with filter
+    if (!events[i]) { i++; continue; }
     let currentGroup = [events[i]!];
     let maxEndInGroup = events[i]!.endInMinutes;
     for (let j = i + 1; j < events.length; j++) {
@@ -216,6 +215,112 @@ function calculateEventLayouts(
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
 
+// --- New Components for Maximized View ---
+
+const PlannerSidebar = () => (
+    <div className="w-64 bg-gray-900/50 p-4 flex flex-col gap-6">
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-3">Main</h3>
+            <ul className="space-y-1 text-gray-200">
+                <li className="flex items-center gap-3 p-2 rounded-md bg-gray-700/50"><Inbox size={18} /><span>Inbox</span><Badge className="ml-auto">3</Badge></li>
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Calendar size={18} /><span>Today</span></li>
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Star size={18} /><span>Upcoming</span></li>
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Columns size={18} /><span>All Tasks</span></li>
+            </ul>
+        </div>
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-3">Projects</h3>
+            <ul className="space-y-1 text-gray-300">
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-purple-500"></div><span>Work</span></li>
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-amber-600"></div><span>Fitness</span></li>
+                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span>Travel</span></li>
+            </ul>
+        </div>
+    </div>
+);
+
+const PlannerTaskList = () => (
+    <div className="flex-1 bg-gray-800/60 p-6 flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-white">Inbox</h1>
+            <Button variant="ghost"><ChevronDown className="mr-2" /> More</Button>
+        </div>
+        <div className="space-y-3">
+            {[
+                { title: 'Create thumbnails for next 3 videos', tags: ['Thumbnails', 'Design'] },
+                { title: 'Write script for "Productivity Hacks" video', tags: ['Scripts', 'Writing'] },
+                { title: 'Edit and schedule this week\'s short-form content', tags: ['Editing', 'Social Media'] },
+            ].map(task => (
+                <div key={task.title} className="bg-gray-700/50 p-4 rounded-lg flex items-center gap-4 cursor-grab active:cursor-grabbing">
+                    <GripVertical className="text-gray-500" />
+                    <Checkbox id={task.title} className="border-gray-500"/>
+                    <div className="flex-1">
+                        <label htmlFor={task.title} className="text-gray-200">{task.title}</label>
+                        <div className="flex gap-2 mt-1">
+                            {task.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const PlannerWeeklyTimeline = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const hours = Array.from({ length: 20 }, (_, i) => i + 5); // 5 AM to 12 AM (midnight)
+    
+    // Mock data for events
+    const events = [
+        { day: 1, start: 9, duration: 8, title: 'Work', color: 'bg-purple-600' },
+        { day: 2, start: 9, duration: 8, title: 'Work', color: 'bg-purple-600' },
+        { day: 3, start: 9, duration: 4, title: 'Work', color: 'bg-purple-600' },
+        { day: 1, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
+        { day: 3, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
+        { day: 5, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
+        { day: 6, start: 18, duration: 3, title: 'Flight', color: 'bg-blue-600' },
+    ];
+    
+    // Calculate current time position
+    const now = new Date();
+    const nowPosition = (now.getHours() - 5 + now.getMinutes() / 60) * 50; // 50px per hour
+
+    return (
+        <div className="w-[800px] flex-shrink-0 bg-black/50 p-4">
+            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-2">
+                {days.map(day => <div key={day}>{day}</div>)}
+            </div>
+            <div className="relative">
+                {/* Hours background */}
+                <div className="grid grid-cols-7">
+                    {days.map(day => (
+                        <div key={day} className="border-r border-gray-700/50 last:border-r-0">
+                            {hours.map(hour => (
+                                <div key={`${day}-${hour}`} className="h-[50px] border-t border-gray-700/50"></div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                {/* Events overlay */}
+                <div className="absolute inset-0 grid grid-cols-7">
+                    {events.map((event, i) => (
+                        <div key={i} className={cn('p-2 rounded-lg text-white text-sm font-medium m-1', event.color)}
+                            style={{ gridColumnStart: event.day + 1, gridRowStart: event.start - 4, gridRowEnd: event.start - 4 + event.duration }}>
+                            {event.title}
+                        </div>
+                    ))}
+                </div>
+                 {/* "Now" line */}
+                <div className="absolute w-full h-[2px] bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
+                    <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// Main Component
 interface DayTimetableViewProps {
   date: Date;
   events: TimelineEvent[];
@@ -311,13 +416,32 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
 
+  // New Maximized View
+  if (isMaximized) {
+    return (
+        <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
+            <header className="p-4 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0">
+                <h1 className="text-xl font-bold">Weekly Planner</h1>
+                 <Button variant="ghost" size="icon" onClick={() => setIsMaximized(false)} aria-label="Minimize view">
+                    <Minimize className="h-6 w-6 text-gray-400 hover:text-white" />
+                </Button>
+            </header>
+            <div className="flex flex-1 min-h-0">
+                <PlannerSidebar />
+                <PlannerTaskList />
+                <div className="flex-1 overflow-x-auto">
+                    <PlannerWeeklyTimeline />
+                </div>
+            </div>
+        </div>
+    )
+  }
+
   return (
     <Card 
       className={cn(
         "frosted-glass w-full shadow-xl flex flex-col transition-all duration-300",
-        isMaximized
-          ? "fixed inset-0 top-16 z-40 rounded-none border-none max-h-none"
-          : "max-h-[70vh]"
+        "max-h-[70vh]"
       )}
       data-theme={viewTheme}
     >
@@ -329,35 +453,33 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
           <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
         </div>
         <div className="flex items-center">
-            {isMaximized && (
-               <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Theme settings">
-                      <Settings className="h-6 w-6 text-muted-foreground hover:text-primary" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 frosted-glass">
-                    <RadioGroup value={viewTheme} onValueChange={(v) => setViewTheme(v as TimetableViewTheme)}>
-                      <div className="space-y-1">
-                        <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                          <RadioGroupItem value="default" id="t-default" />
-                          <span>Default</span>
-                        </Label>
-                         <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                          <RadioGroupItem value="professional" id="t-prof" />
-                          <span>Professional</span>
-                        </Label>
-                         <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                          <RadioGroupItem value="wood" id="t-wood" />
-                          <span>Wood Plank</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </PopoverContent>
-                </Popover>
-            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Theme settings">
+                  <Palette className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 frosted-glass">
+                <RadioGroup value={viewTheme} onValueChange={(v) => setViewTheme(v as TimetableViewTheme)}>
+                  <div className="space-y-1">
+                    <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                      <RadioGroupItem value="default" id="t-default" />
+                      <span>Default</span>
+                    </Label>
+                      <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                      <RadioGroupItem value="professional" id="t-prof" />
+                      <span>Professional</span>
+                    </Label>
+                      <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                      <RadioGroupItem value="wood" id="t-wood" />
+                      <span>Wood Plank</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </PopoverContent>
+            </Popover>
             <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
-                {isMaximized ? <Minimize className="h-6 w-6 text-muted-foreground hover:text-primary" /> : <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />}
+                <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
               <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
