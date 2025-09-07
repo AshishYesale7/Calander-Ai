@@ -29,7 +29,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
-                username: user.email?.split('@')[0] || `user_${user.uid.substring(0, 5)}`,
+                username: user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`,
                 photoURL: user.photoURL || null,
                 createdAt: new Date(),
                 bio: '',
@@ -145,7 +145,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
             // Lazy migration for username
             let username = data.username;
             if (!username) {
-                username = `user_${userId.substring(0, 5)}`;
+                username = `user_${userId.substring(0, 10)}`;
                 dataToUpdate.username = username;
                 needsUpdate = true;
             }
@@ -221,7 +221,7 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
         return {
             uid: userDoc.id,
             displayName: userData.displayName || 'Anonymous User',
-            username: userData.username || `user_${userDoc.id.substring(0, 5)}`,
+            username: userData.username || `user_${userDoc.id.substring(0, 10)}`,
             photoURL: userData.photoURL || null,
             bio: userData.bio || '',
             socials: userData.socials || null,
@@ -302,3 +302,4 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
+
