@@ -61,9 +61,6 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
           fcm_options: {
             link: input.url || process.env.NEXT_PUBLIC_BASE_URL || '/',
           },
-           notification: {
-                icon: '/logo.png'
-           }
         },
       },
     };
