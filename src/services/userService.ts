@@ -174,6 +174,13 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
                 needsUpdate = true;
             }
 
+            // Ensure searchableIndex exists for older users (lazy migration)
+            if (!data.searchableIndex) {
+                 const displayName = data.displayName || 'Anonymous User';
+                 dataToUpdate['searchableIndex'] = Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()]));
+                 needsUpdate = true;
+            }
+
             const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL', 'coverPhotoURL', 'followersCount', 'followingCount'];
             fieldsToDefault.forEach(field => {
                 if (data[field] === undefined) {
@@ -191,10 +198,6 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
             }
 
             if (needsUpdate) {
-                 // Also ensure searchableIndex is created/updated during lazy migration
-                const displayName = data.displayName || 'Anonymous User';
-                dataToUpdate['searchableIndex'] = Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()]));
-                
                 updateDoc(userDocRef, dataToUpdate).catch(err => {
                     console.error(`Failed to lazy-migrate profile for user ${userId}:`, err);
                 });
@@ -388,3 +391,5 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
+
+    
