@@ -451,3 +451,54 @@ body {
 .animate-scroll-vertical {
     animation: scroll-vertical 20s linear infinite;
 }
+
+/* NEW: DayTimetableView Themes */
+[data-theme='professional'] .timetable-main-area {
+  @apply bg-gray-800;
+}
+[data-theme='professional'] .timetable-hours-column {
+  @apply bg-gray-900 text-gray-400 border-r-gray-700;
+}
+[data-theme='professional'] .timetable-hour-line {
+  @apply border-gray-700/70;
+}
+[data-theme='professional'] .timetable-ruler {
+  @apply bg-gray-900/80 border-b-gray-700;
+}
+[data-theme='professional'] .timetable-allday-area {
+  @apply bg-gray-800/50 border-b-gray-700;
+}
+[data-theme='professional'] .timetable-event-card {
+  @apply shadow-lg border-2;
+}
+
+[data-theme='wood'] {
+  --wood-bg-url: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+  --wood-color: #6b4a2f; /* A base wood color */
+}
+[data-theme='wood'] .timetable-main-area {
+  background-image: var(--wood-bg-url), linear-gradient(to bottom right, #8c6a4d, var(--wood-color));
+  background-blend-mode: overlay;
+}
+[data-theme='wood'] .timetable-hours-column {
+  @apply bg-yellow-900/40 text-yellow-100 border-r-yellow-800/50;
+}
+[data-theme='wood'] .timetable-hour-line {
+  @apply border-yellow-800/40;
+}
+[data-theme='wood'] .timetable-ruler {
+  @apply bg-yellow-900/60 border-b-yellow-800/50 text-yellow-200;
+}
+[data-theme='wood'] .timetable-allday-area {
+  @apply bg-yellow-900/20 border-b-yellow-800/50;
+}
+[data-theme='wood'] .timetable-event-card {
+  @apply shadow-xl border-opacity-50;
+  /* Making event cards look like paper on the wood */
+  background-color: #fdfbf7 !important;
+  color: #4a2d1a !important;
+  border-color: #dcd3c4 !important;
+}
+[data-theme='wood'] .timetable-event-card .text-accent {
+  color: #8c6a4d !important;
+}

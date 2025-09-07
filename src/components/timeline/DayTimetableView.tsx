@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,9 @@ import EventOverviewPanel from './EventOverviewPanel';
 import { Checkbox } from '../ui/checkbox';
 import { logUserActivity } from '@/services/activityLogService';
 import { useAuth } from '@/context/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -208,7 +211,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -222,6 +225,8 @@ interface DayTimetableViewProps {
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
 }
 
+type TimetableViewTheme = 'default' | 'professional' | 'wood';
+
 export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -231,6 +236,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [now, setNow] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
   const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
@@ -306,12 +312,15 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
 
   return (
-    <Card className={cn(
+    <Card 
+      className={cn(
         "frosted-glass w-full shadow-xl flex flex-col transition-all duration-300",
         isMaximized
           ? "fixed inset-0 top-16 z-40 rounded-none border-none max-h-none"
           : "max-h-[70vh]"
-    )}>
+      )}
+      data-theme={viewTheme}
+    >
       <CardHeader className="p-4 border-b border-border/30 flex flex-row justify-between items-center">
         <div>
           <CardTitle className="font-headline text-xl text-primary">
@@ -320,6 +329,33 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
           <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
         </div>
         <div className="flex items-center">
+            {isMaximized && (
+               <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="Theme settings">
+                      <Settings className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 frosted-glass">
+                    <RadioGroup value={viewTheme} onValueChange={(v) => setViewTheme(v as TimetableViewTheme)}>
+                      <div className="space-y-1">
+                        <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="default" id="t-default" />
+                          <span>Default</span>
+                        </Label>
+                         <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="professional" id="t-prof" />
+                          <span>Professional</span>
+                        </Label>
+                         <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="wood" id="t-wood" />
+                          <span>Wood Plank</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </PopoverContent>
+                </Popover>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
                 {isMaximized ? <Minimize className="h-6 w-6 text-muted-foreground hover:text-primary" /> : <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />}
             </Button>
@@ -330,7 +366,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       </CardHeader>
 
       {allDayEvents.length > 0 && (
-        <div className="p-3 border-b border-border/30 space-y-1 bg-background/50">
+        <div className="p-3 border-b border-border/30 space-y-1 timetable-allday-area">
           {allDayEvents.map(event => {
             if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
             const statusBadge = getStatusBadgeVariant(event.status);
@@ -393,9 +429,9 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       )}
       
       <div className="flex flex-1 min-h-0">
-        <CardContent ref={scrollContainerRef} className="p-0 flex-1 min-h-0 overflow-auto">
+        <CardContent ref={scrollContainerRef} className="p-0 flex-1 min-h-0 overflow-auto timetable-main-area">
           <div className="flex w-full">
-              <div className="w-16 md:w-20 bg-background border-r border-border/30">
+              <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
                   <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
                   <div>
                       {hours.map(hour => (
@@ -410,7 +446,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
               <div className="flex-1 relative" style={{ minWidth: 0 }}>
                   <div
                   className={cn(
-                      "sticky top-0 z-30 bg-background/80 backdrop-blur-sm flex items-center border-b border-border/30",
+                      "sticky top-0 z-30 backdrop-blur-sm flex items-center border-b border-border/30 timetable-ruler",
                       minuteRulerHeightClass
                   )}
                   style={{ minWidth: minEventGridWidth }} 
@@ -423,10 +459,10 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       </div>
                   </div>
 
-                  <div className="relative" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px` }}> 
+                  <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px` }}> 
                   {hours.map(hour => (
                       <div key={`line-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px`, top: `${hour * HOUR_HEIGHT_PX}px` }}
-                          className="border-b border-border/20 last:border-b-0 w-full absolute left-0 right-0 z-0"
+                          className="border-b border-border/20 last:border-b-0 w-full absolute left-0 right-0 z-0 timetable-hour-line"
                       ></div>
                   ))}
 
@@ -451,7 +487,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       <div
                           key={event.id}
                           className={cn(
-                          "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer",
+                          "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer timetable-event-card",
                           "focus-within:ring-2 focus-within:ring-ring",
                           !event.color && getEventTypeStyleClasses(event.type),
                           isSmallWidth ? "p-0.5" : "p-1",
