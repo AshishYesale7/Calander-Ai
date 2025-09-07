@@ -79,5 +79,8 @@ export async function deleteImageByUrl(imageUrl: string): Promise<void> {
             return;
         }
         console.error(`Failed to delete image at ${imageUrl}:`, error);
+        // Do not throw here to prevent breaking the client-side flow.
+        // It's better to orphan an image than to fail the entire profile update.
     }
 };
+
