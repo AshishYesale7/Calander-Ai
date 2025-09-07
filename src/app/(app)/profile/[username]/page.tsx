@@ -102,8 +102,10 @@ export default function UserProfilePage({ params }: { params: { username: string
             }
         };
 
-        fetchProfile(params.username);
-    }, [params.username]);
+        if (params.username) {
+            fetchProfile(params.username);
+        }
+    }, [params]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-full"><LoadingSpinner size="lg" /></div>;
