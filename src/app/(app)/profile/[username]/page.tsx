@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getUserByUsername, updateUserProfile, type PublicUserProfile } from '@/services/userService';
@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { timezones } from '@/lib/timezones';
+import { uploadProfileImage } from '@/services/storageService';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -27,53 +29,68 @@ import {
 } from "@/components/ui/select";
 
 
-const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean }) => (
-    <div className="relative">
-        <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden">
-            <Image
-                src={"https://images.unsplash.com/photo-1554147090-e1221a04a0625?q=80&w=2070&auto=format&fit=crop"}
-                alt="Cover"
-                layout="fill"
-                objectFit="cover"
-                data-ai-hint="abstract background"
-            />
-        </div>
-        <div className="p-6 pt-0">
-            <div className="flex justify-between items-end -mt-16">
-                <div className="relative">
-                    <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                        <AvatarImage src={profile.photoURL || ''} alt={profile.displayName} />
-                        <AvatarFallback className="text-4xl">
-                            {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    {profile.countryCode && !isEditing && (
-                        <div className="absolute bottom-2 right-2">
-                          <CountryFlag countryCode={profile.countryCode} className="h-8 w-8 border-2 border-background"/>
-                        </div>
-                    )}
-                </div>
-                <div className="flex gap-2">
-                    {children}
-                    {isEditing ? (
-                        <>
-                           <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
-                                {isLoading ? <LoadingSpinner size="sm" className="mr-2"/> : <Save className="mr-2 h-4 w-4" />} Save
+const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    return (
+        <div className="relative">
+            <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden">
+                <Image
+                    src={"https://images.unsplash.com/photo-1554147090-e1221a04a0625?q=80&w=2070&auto=format&fit=crop"}
+                    alt="Cover"
+                    layout="fill"
+                    objectFit="cover"
+                    data-ai-hint="abstract background"
+                />
+            </div>
+            <div className="p-6 pt-0">
+                <div className="flex justify-between items-end -mt-16">
+                    <div className="relative group">
+                        <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                            <AvatarImage src={profile.photoURL || ''} alt={profile.displayName} />
+                            <AvatarFallback className="text-4xl">
+                                {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
+                            </AvatarFallback>
+                        </Avatar>
+                        {isEditing && (
+                            <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ImageIcon className="h-8 w-8 text-white"/>
+                                <input type="file" ref={fileInputRef} onChange={onFileSelect} accept="image/*" className="hidden"/>
+                            </button>
+                        )}
+                        {profile.countryCode && !isEditing && (
+                            <div className="absolute bottom-2 right-2">
+                            <CountryFlag countryCode={profile.countryCode} className="h-8 w-8 border-2 border-background"/>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        {children}
+                        {isEditing ? (
+                            <>
+                            <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
+                                    {isLoading ? <LoadingSpinner size="sm" className="mr-2"/> : <Save className="mr-2 h-4 w-4" />} Save
+                                </Button>
+                                <Button variant="ghost" size="sm" className="mb-2" onClick={onCancel}>
+                                    <X className="mr-2 h-4 w-4"/> Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <Button variant="outline" size="sm" className="mb-2" onClick={onEditToggle}>
+                                <Edit className="mr-2 h-4 w-4"/> Edit Profile
                             </Button>
-                            <Button variant="ghost" size="sm" className="mb-2" onClick={onCancel}>
-                                <X className="mr-2 h-4 w-4"/> Cancel
-                            </Button>
-                        </>
-                    ) : (
-                         <Button variant="outline" size="sm" className="mb-2" onClick={onEditToggle}>
-                            <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                        </Button>
-                    )}
+                        )}
+                    </div>
                 </div>
+                {uploadProgress !== null && (
+                    <div className="mt-2">
+                        <Progress value={uploadProgress} className="w-full h-2" />
+                        <p className="text-xs text-muted-foreground text-center mt-1">Uploading image...</p>
+                    </div>
+                )}
             </div>
         </div>
-    </div>
-);
+    )
+};
 
 const ProfileInfoCard = ({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) => (
     <Card className="frosted-glass">
@@ -92,7 +109,7 @@ export default function UserProfilePage() {
     const { user: currentUser, refreshUser } = useAuth();
     const params = useParams();
     const { toast } = useToast();
-    const username = Array.isArray(params.username) ? params.username[0] : params.username;
+    const username = Array.isArray(params.username) ? params.username[0] : params.username as string;
     
     const [profile, setProfile] = useState<PublicUserProfile | null>(null);
     const [streakData, setStreakData] = useState<StreakData | null>(null);
@@ -105,15 +122,19 @@ export default function UserProfilePage() {
     const [editDisplayName, setEditDisplayName] = useState('');
     const [editUsername, setEditUsername] = useState('');
     const [editBio, setEditBio] = useState('');
-    const [editPhotoURL, setEditPhotoURL] = useState('');
     const [editGithub, setEditGithub] = useState('');
     const [editLinkedin, setEditLinkedin] = useState('');
     const [editTwitter, setEditTwitter] = useState('');
     const [editCountryCode, setEditCountryCode] = useState<string | null>(null);
+    
+    // New state for image upload
+    const [newImageFile, setNewImageFile] = useState<File | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
-    const fetchProfile = async (usernameToFetch: string) => {
+    const fetchProfile = useCallback(async (usernameToFetch: string) => {
         if (!usernameToFetch) return;
         setIsLoading(true);
         setError(null);
@@ -124,7 +145,6 @@ export default function UserProfilePage() {
                 setEditDisplayName(fetchedProfile.displayName || '');
                 setEditUsername(fetchedProfile.username || '');
                 setEditBio(fetchedProfile.bio || '');
-                setEditPhotoURL(fetchedProfile.photoURL || '');
                 setEditGithub(fetchedProfile.socials?.github || '');
                 setEditLinkedin(fetchedProfile.socials?.linkedin || '');
                 setEditTwitter(fetchedProfile.socials?.twitter || '');
@@ -141,23 +161,51 @@ export default function UserProfilePage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (username) {
             fetchProfile(username);
         }
-    }, [username]);
+    }, [username, fetchProfile]);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setNewImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string);
+                setProfile(prev => prev ? {...prev, photoURL: reader.result as string} : null);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSave = async () => {
         if (!isOwnProfile || !currentUser) return;
         setIsLoading(true);
+        
+        let newPhotoURL = profile?.photoURL;
+
+        if (newImageFile) {
+            try {
+                newPhotoURL = await uploadProfileImage(currentUser.uid, newImageFile, (progress) => setUploadProgress(progress));
+                setUploadProgress(null);
+                setNewImageFile(null);
+            } catch (err) {
+                toast({ title: "Image Upload Failed", description: "Could not upload your new profile picture. Please try again.", variant: "destructive" });
+                setIsLoading(false);
+                return;
+            }
+        }
+
         try {
             await updateUserProfile(currentUser.uid, {
                 displayName: editDisplayName,
                 username: editUsername,
+                photoURL: newPhotoURL,
                 bio: editBio,
-                photoURL: editPhotoURL,
                 socials: { github: editGithub, linkedin: editLinkedin, twitter: editTwitter },
                 countryCode: editCountryCode,
             });
@@ -177,12 +225,16 @@ export default function UserProfilePage() {
         setEditDisplayName(profile.displayName || '');
         setEditUsername(profile.username || '');
         setEditBio(profile.bio || '');
-        setEditPhotoURL(profile.photoURL || '');
         setEditGithub(profile.socials?.github || '');
         setEditLinkedin(profile.socials?.linkedin || '');
         setEditTwitter(profile.socials?.twitter || '');
         setEditCountryCode(profile.countryCode || null);
+        setNewImageFile(null);
+        setPreviewUrl(null);
+        setUploadProgress(null);
         setIsEditing(false);
+        // This will force a re-fetch to revert the optimistic image preview
+        fetchProfile(username);
     };
 
     const countries = useMemo(() => {
@@ -218,6 +270,8 @@ export default function UserProfilePage() {
                     onSave={handleSave}
                     onCancel={handleCancel}
                     isLoading={isLoading}
+                    onFileSelect={handleFileSelect}
+                    uploadProgress={uploadProgress}
                  >
                      {!isOwnProfile && (
                         <>
@@ -257,10 +311,6 @@ export default function UserProfilePage() {
                         {isEditing ? (
                             <div className="space-y-4">
                                 <Textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
-                                <div>
-                                    <Label htmlFor="photoURL" className="flex items-center gap-2 mb-1.5"><ImageIcon className="h-4 w-4"/>Photo URL</Label>
-                                    <Input id="photoURL" value={editPhotoURL} onChange={e => setEditPhotoURL(e.target.value)} placeholder="https://..." />
-                                </div>
                             </div>
                         ) : (
                             <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
@@ -342,6 +392,4 @@ export default function UserProfilePage() {
             </div>
         </div>
     )
-
-    
 }
