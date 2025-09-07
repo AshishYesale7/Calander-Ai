@@ -26,6 +26,8 @@ export interface UserPreferences {
   bio?: string;
   socials?: SocialLinks;
   photoURL?: string | null;
+  followersCount: number;
+  followingCount: number;
 }
 
 export type EarlyReminder = 'none' | 'on_day' | '1_day' | '2_days' | '1_week';
@@ -99,13 +101,11 @@ export interface ResourceLink {
   isAiRecommended?: boolean;
 }
 
-// This interface is now only used for the AI flow output, not for displaying
 export interface TodaysPlan {
   schedule: { time: string; activity: string }[];
   microGoals: string[];
 }
 
-// Type for a single item in the AI-generated daily plan schedule
 export interface DailyPlanScheduleItem {
   id: string;
   time: string;
@@ -113,7 +113,6 @@ export interface DailyPlanScheduleItem {
   status: 'pending' | 'completed' | 'missed';
 }
 
-// AI-Generated Daily Plan
 export interface DailyPlan {
   schedule: DailyPlanScheduleItem[];
   microGoals: string[];
@@ -121,13 +120,12 @@ export interface DailyPlan {
   motivationalQuote: string;
 }
 
-// Types for Google Data Processing Flow
 export interface RawCalendarEvent {
   id: string;
   summary: string;
   description?: string;
-  startDateTime: string; // ISO 8601 format, should include time
-  endDateTime: string; // ISO 8601 format, should include time
+  startDateTime: string; 
+  endDateTime: string; 
   htmlLink?: string;
 }
 
@@ -135,7 +133,7 @@ export interface RawGoogleTask {
   id: string;
   title: string;
   notes?: string;
-  due?: string; // ISO 8601 date string, e.g., "2024-05-30T00:00:00.000Z"
+  due?: string; 
   status: 'needsAction' | 'completed';
   link?: string;
   updated: string;
@@ -145,7 +143,7 @@ export interface RawGmailMessage {
   id: string;
   subject: string;
   snippet: string;
-  internalDate: string; // epoch milliseconds string
+  internalDate: string; 
   link?: string;
 }
 
@@ -160,13 +158,13 @@ export interface GoogleTaskList {
 }
 
 export interface ActionableInsight {
-  id:string; // e.g., 'cal:original_event_id' or 'task:original_task_id'
-  googleEventId?: string; // The original, unmodified event ID from the Google Calendar API.
-  googleTaskId?: string; // The original, unmodified task ID from the Google Tasks API.
+  id:string; 
+  googleEventId?: string; 
+  googleTaskId?: string; 
   title: string;
-  date: string; // ISO 8601 format, should include time (start time for events)
-  endDate?: string; // ISO 8601 format, end time for events, optional
-  isAllDay?: boolean; // Optional flag for all-day events
+  date: string; 
+  endDate?: string; 
+  isAllDay?: boolean; 
   summary: string;
   source: 'google_calendar' | 'gmail' | 'google_tasks';
   originalLink?: string;
@@ -194,14 +192,13 @@ export interface SourceLink {
 }
 
 export interface DeadlineItem {
-    date: string; // ISO 8601 format
+    date: string; 
     title: string;
     description: string;
     category: 'Exam' | 'Internship' | 'Job' | 'Other';
     sourceLinks?: SourceLink[];
 }
 
-// New type for storing tracked keywords
 export interface TrackedKeyword {
     id: string;
     keyword: string;
@@ -210,13 +207,11 @@ export interface TrackedKeyword {
     summary?: string;
 }
 
-// New type for conversational AI
 export interface ChatMessage {
     role: 'user' | 'model' | 'tool';
     content: string;
 }
 
-// New types for Codefolio feature
 export interface CodingActivity {
     date: Date;
     count: number;
@@ -245,14 +240,14 @@ export interface StreakData {
     longestStreak: number;
     lastActivityDate: Date;
     timeSpentToday: number;
-    timeSpentTotal: number; // Cumulative XP
+    timeSpentTotal: number;
     todayStreakCompleted: boolean;
     insight?: {
         text: string;
-        date: string; // YYYY-MM-DD
+        date: string; 
         lastUpdatedStreak: number;
     };
-    completedDays: string[]; // Array of "YYYY-MM-DD"
+    completedDays: string[]; 
 }
 
 export interface LeaderboardUser {
@@ -262,7 +257,7 @@ export interface LeaderboardUser {
     photoURL?: string | null;
     currentStreak: number;
     longestStreak: number;
-    timeSpentTotal: number; // XP for leaderboard
+    timeSpentTotal: number;
     statusEmoji?: string;
     countryCode?: string;
 }

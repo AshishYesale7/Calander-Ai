@@ -26,7 +26,6 @@ export const createUserProfile = async (user: User): Promise<void> => {
     try {
         const docSnap = await getDoc(userDocRef);
         if (!docSnap.exists()) {
-            // Create a comprehensive default profile structure for a new user.
             const defaultProfile = {
                 uid: user.uid,
                 email: user.email,
@@ -46,14 +45,15 @@ export const createUserProfile = async (user: User): Promise<void> => {
                     routine: []
                 },
                 codingUsernames: {},
-                installedPlugins: [], // Initialize with empty array
-                geminiApiKey: null, // Initialize API key as null
+                installedPlugins: [],
+                geminiApiKey: null,
+                followersCount: 0,
+                followingCount: 0,
             };
             await setDoc(userDocRef, defaultProfile);
         }
     } catch (error) {
         console.error("Failed to create user profile in Firestore:", error);
-        // Don't re-throw, as this is a background task.
     }
 }
 
@@ -63,7 +63,6 @@ export const saveCodingUsernames = async (userId: string, usernames: CodingUsern
         const usernamesToSave: { [key: string]: string | undefined | null } = {};
         for (const key in usernames) {
             const typedKey = key as keyof CodingUsernames;
-            // Set to null to remove the field if the value is undefined.
             usernamesToSave[typedKey] = usernames[typedKey] || null;
         }
 
@@ -144,7 +143,6 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
             const dataToUpdate: {[key: string]: any} = {};
             let needsUpdate = false;
 
-            // Lazy migration for username
             let username = data.username;
             if (!username) {
                 username = `user_${userId.substring(0, 10)}`;
@@ -152,25 +150,23 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
                 needsUpdate = true;
             }
 
-            // Lazy migration for other profile fields
-            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL'];
+            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL', 'followersCount', 'followingCount'];
             fieldsToDefault.forEach(field => {
                 if (data[field] === undefined) {
                     if (field === 'socials') dataToUpdate[field] = { github: '', linkedin: '', twitter: '' };
                     else if (field === 'bio') dataToUpdate[field] = '';
+                    else if (field === 'followersCount' || field === 'followingCount') dataToUpdate[field] = 0;
                     else dataToUpdate[field] = null;
                     needsUpdate = true;
                 }
             });
             
-            // Lazy migration for preferences
             if (data.preferences === undefined) {
                 dataToUpdate.preferences = { routine: [] };
                 needsUpdate = true;
             }
 
             if(needsUpdate) {
-                // Asynchronously update the document without blocking the response.
                 updateDoc(userDocRef, dataToUpdate).catch(err => {
                     console.error(`Failed to lazy-migrate profile for user ${userId}:`, err);
                 });
@@ -203,6 +199,8 @@ export type PublicUserProfile = {
     socials: SocialLinks | null;
     statusEmoji: string | null;
     countryCode: string | null;
+    followersCount: number;
+    followingCount: number;
 }
 
 export const getUserByUsername = async (username: string): Promise<PublicUserProfile | null> => {
@@ -221,7 +219,6 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
         const userDoc = querySnapshot.docs[0];
         const userData = userDoc.data();
 
-        // Return only the public-safe data
         return {
             uid: userDoc.id,
             displayName: userData.displayName || 'Anonymous User',
@@ -231,6 +228,8 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
             socials: userData.socials || null,
             statusEmoji: userData.statusEmoji || null,
             countryCode: userData.countryCode || null,
+            followersCount: userData.followersCount || 0,
+            followingCount: userData.followingCount || 0,
         };
 
     } catch (error) {
@@ -247,7 +246,6 @@ export const saveUserFCMToken = async (userId: string, token: string): Promise<v
     const tokensCollectionRef = collection(db, 'users', userId, 'fcmTokens');
     const tokenDocRef = doc(tokensCollectionRef, token);
     try {
-        // Using setDoc with the token as the ID prevents duplicate tokens from being saved.
         await setDoc(tokenDocRef, { createdAt: new Date() });
     } catch (error) {
         console.error("Failed to save FCM token to Firestore:", error);
@@ -255,7 +253,6 @@ export const saveUserFCMToken = async (userId: string, token: string): Promise<v
     }
 };
 
-// New functions for managing installed plugins
 export const saveInstalledPlugins = async (userId: string, pluginNames: string[]): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     try {

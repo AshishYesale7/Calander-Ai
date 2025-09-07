@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon, Rss, UserCheck } from 'lucide-react';
 import Image from 'next/image';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import { followUser, unfollowUser, getFollowers, getFollowing, listenForFollowChanges } from '@/services/followService';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import Link from 'next/link';
 
 const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,19 +67,15 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                     </div>
                     <div className="flex gap-2">
                         {children}
-                        {isEditing ? (
-                            <>
-                            <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
+                        {isEditing && (
+                             <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
                                     {isLoading ? <LoadingSpinner size="sm" className="mr-2"/> : <Save className="mr-2 h-4 w-4" />} Save
                                 </Button>
                                 <Button variant="ghost" size="sm" className="mb-2" onClick={onCancel}>
                                     <X className="mr-2 h-4 w-4"/> Cancel
                                 </Button>
-                            </>
-                        ) : (
-                            <Button variant="outline" size="sm" className="mb-2" onClick={onEditToggle}>
-                                <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                            </Button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -104,6 +102,47 @@ const ProfileInfoCard = ({ title, icon: Icon, children }: { title: string; icon:
     </Card>
 );
 
+const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerText: React.ReactNode; fetchFunction: (userId: string) => Promise<{ id: string; displayName: string; photoURL: string | null; username: string; }[]>; profileId: string }) => {
+    const [users, setUsers] = useState<{ id: string; displayName: string; photoURL: string | null; username: string; }[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleOpen = async (open: boolean) => {
+        if (open && users.length === 0) {
+            setIsLoading(true);
+            const fetchedUsers = await fetchFunction(profileId);
+            setUsers(fetchedUsers);
+            setIsLoading(false);
+        }
+    };
+    
+    return (
+        <Popover onOpenChange={handleOpen}>
+            <PopoverTrigger asChild>
+                <button className="text-left hover:text-primary transition-colors">{triggerText}</button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 max-h-80 overflow-y-auto p-2 frosted-glass">
+                 {isLoading ? (
+                    <div className="flex justify-center items-center p-4"><LoadingSpinner /></div>
+                 ) : users.length === 0 ? (
+                    <p className="text-sm text-center text-muted-foreground p-4">No users to show.</p>
+                 ) : (
+                    <div className="space-y-1">
+                        {users.map(u => (
+                            <Link href={`/profile/${u.username}`} key={u.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={u.photoURL || ''} alt={u.displayName}/>
+                                    <AvatarFallback>{u.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-medium truncate">{u.displayName}</span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 
 export default function UserProfilePage() {
     const { user: currentUser, refreshUser } = useAuth();
@@ -118,7 +157,6 @@ export default function UserProfilePage() {
 
     const [isEditing, setIsEditing] = useState(false);
     
-    // Editable state
     const [editDisplayName, setEditDisplayName] = useState('');
     const [editUsername, setEditUsername] = useState('');
     const [editBio, setEditBio] = useState('');
@@ -128,9 +166,13 @@ export default function UserProfilePage() {
     const [editCountryCode, setEditCountryCode] = useState<string | null>(null);
     const [editPhotoUrl, setEditPhotoUrl] = useState('');
     
-    // New state for image upload
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    
+    const [followersCount, setFollowersCount] = useState(0);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
@@ -169,6 +211,21 @@ export default function UserProfilePage() {
             fetchProfile(username);
         }
     }, [username, fetchProfile]);
+    
+    // Real-time follow data listener
+    useEffect(() => {
+        if (!profile?.uid || !currentUser?.uid) return;
+        
+        const unsubscribe = listenForFollowChanges(profile.uid, currentUser.uid, (data) => {
+            setFollowersCount(data.followersCount);
+            setFollowingCount(data.followingCount);
+            setIsFollowing(data.isCurrentUserFollowing);
+        });
+
+        return () => unsubscribe();
+
+    }, [profile?.uid, currentUser?.uid]);
+
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -206,7 +263,6 @@ export default function UserProfilePage() {
 
         try {
              if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
-                // Do not block the profile update for image deletion. Run it in the background.
                 deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
             }
 
@@ -219,7 +275,7 @@ export default function UserProfilePage() {
                 countryCode: editCountryCode,
             });
             await refreshUser();
-            await fetchProfile(editUsername); // Refetch profile data with new username if changed
+            await fetchProfile(editUsername);
             toast({ title: "Profile Updated", description: "Your changes have been saved." });
             setIsEditing(false);
         } catch (err) {
@@ -242,8 +298,23 @@ export default function UserProfilePage() {
         setNewImageFile(null);
         setUploadProgress(null);
         setIsEditing(false);
-        // This will force a re-fetch to revert the optimistic image preview
         fetchProfile(username);
+    };
+
+    const handleFollowToggle = async () => {
+        if (!currentUser || !profile || isOwnProfile) return;
+        setIsFollowLoading(true);
+        try {
+            if (isFollowing) {
+                await unfollowUser(currentUser.uid, profile.uid);
+            } else {
+                await followUser(currentUser.uid, profile.uid);
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Could not update follow status.", variant: "destructive" });
+        } finally {
+            setIsFollowLoading(false);
+        }
     };
 
     const countries = useMemo(() => {
@@ -283,10 +354,15 @@ export default function UserProfilePage() {
                     uploadProgress={uploadProgress}
                  >
                      {!isOwnProfile && (
-                        <>
+                        <div className="flex gap-2">
                            <Button variant="outline"><MessageSquare className="mr-2 h-4 w-4" /> Message</Button>
-                           <Button><UserPlus className="mr-2 h-4 w-4" /> Follow</Button>
-                        </>
+                           <Button onClick={handleFollowToggle} disabled={isFollowLoading}>
+                                {isFollowLoading ? <LoadingSpinner size="sm" className="mr-2"/> : (
+                                    isFollowing ? <UserCheck className="mr-2 h-4 w-4"/> : <UserPlus className="mr-2 h-4 w-4"/>
+                                )}
+                                {isFollowing ? "Following" : "Follow"}
+                           </Button>
+                        </div>
                     )}
                  </ProfileHeader>
                 <div className="p-6 pt-0 mt-4 space-y-4">
@@ -311,6 +387,19 @@ export default function UserProfilePage() {
                             </div>
                         </div>
                     )}
+                    
+                    <div className="flex items-center gap-6 text-sm">
+                        <FollowListPopover
+                            profileId={profile.uid}
+                            fetchFunction={getFollowing}
+                            triggerText={<><span className="font-bold text-foreground">{followingCount}</span> Following</>}
+                        />
+                        <FollowListPopover
+                            profileId={profile.uid}
+                            fetchFunction={getFollowers}
+                            triggerText={<><span className="font-bold text-foreground">{followersCount}</span> Followers</>}
+                        />
+                    </div>
                 </div>
             </Card>
 
@@ -352,7 +441,7 @@ export default function UserProfilePage() {
                            <p className="text-sm text-muted-foreground">No streak data available.</p>
                         )}
                     </ProfileInfoCard>
-                     <ProfileInfoCard title="Socials" icon={Github}>
+                     <ProfileInfoCard title="Socials" icon={Rss}>
                          {isEditing ? (
                              <div className="space-y-3">
                                 <div className="flex items-center gap-2">
