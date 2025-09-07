@@ -5,7 +5,9 @@ import type { StreakData, LeaderboardUser } from '@/types';
 import { collection, doc, getDoc, setDoc, Timestamp, getDocs, query, orderBy, limit, updateDoc, increment } from 'firebase/firestore';
 import { getUserProfile } from './userService';
 
-const getStreakDocRef = (userId: string) => {
+const STREAK_GOAL_SECONDS = 300; // 5 minutes
+
+export const getStreakDocRef = (userId: string) => {
   if (!db) {
     throw new Error("Firestore is not initialized.");
   }
@@ -29,6 +31,7 @@ export const getStreakData = async (userId: string): Promise<StreakData> => {
         completedDays: data.completedDays || [],
       };
     } else {
+      // If document does not exist, create it with default values.
       const newStreakData: StreakData = {
           currentStreak: 0,
           longestStreak: 0,
@@ -38,6 +41,7 @@ export const getStreakData = async (userId: string): Promise<StreakData> => {
           todayStreakCompleted: false,
           completedDays: [],
       };
+      // Important: Convert Date to Timestamp for Firestore
       await setDoc(streakDocRef, { 
         ...newStreakData,
         lastActivityDate: Timestamp.fromDate(newStreakData.lastActivityDate)
@@ -69,22 +73,47 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
 
 /**
  * Atomically increments the total time spent for a user.
+ * This is the primary function called by the client's heartbeat.
  */
 export const addTimeToTotal = async (userId: string, timeToAdd: number): Promise<void> => {
     if (!userId || timeToAdd <= 0) return;
+    
     const streakDocRef = getStreakDocRef(userId);
+    
     try {
-        await updateDoc(streakDocRef, {
-            timeSpentTotal: increment(timeToAdd)
-        });
-    } catch (error) {
-        // If the document doesn't exist, it might be a new user. Create it.
         const docSnap = await getDoc(streakDocRef);
+        
         if (!docSnap.exists()) {
-             await updateStreakData(userId, { timeSpentTotal: timeToAdd });
-        } else {
-            console.error(`Failed to increment time for user ${userId}:`, error);
+            // If the document doesn't exist (e.g., brand new user), create it.
+            await getStreakData(userId);
         }
+        
+        const currentData = (docSnap.data() as StreakData) || { timeSpentToday: 0, todayStreakCompleted: false, currentStreak: 0, longestStreak: 0 };
+        const wasGoalCompletedToday = currentData.todayStreakCompleted;
+        const newTimeSpentToday = (currentData.timeSpentToday || 0) + timeToAdd;
+
+        const dataToUpdate: { [key: string]: any } = {
+            timeSpentToday: increment(timeToAdd),
+            timeSpentTotal: increment(timeToAdd),
+            lastActivityDate: Timestamp.now()
+        };
+
+        // Check if the streak goal has been met for the first time today
+        if (newTimeSpentToday >= STREAK_GOAL_SECONDS && !wasGoalCompletedToday) {
+            dataToUpdate.todayStreakCompleted = true;
+            dataToUpdate.currentStreak = increment(1);
+            
+            const newStreak = (currentData.currentStreak || 0) + 1;
+            if (newStreak > (currentData.longestStreak || 0)) {
+                dataToUpdate.longestStreak = newStreak;
+            }
+        }
+        
+        await updateDoc(streakDocRef, dataToUpdate);
+
+    } catch (error) {
+        console.error(`Failed to increment time for user ${userId}:`, error);
+        // Do not throw error to client, as heartbeat failures should be silent.
     }
 };
 
