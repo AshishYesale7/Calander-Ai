@@ -114,72 +114,68 @@ const CodefolioContributionGraph = ({ contributions }: CodefolioContributionGrap
                 <Badge variant="outline" className="bg-background/80">{currentStreak} Day{currentStreak === 1 ? '' : 's'} streak</Badge>
             </CardHeader>
             <CardContent className="p-0 mt-4">
-                {!contributions ? (
-                    <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">No submission data available.</div>
-                ) : (
-                    <TooltipProvider>
-                    <div className="flex gap-2">
-                        <div className="w-full overflow-hidden">
-                             <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
-                                <div className="relative">
-                                     <div className="grid grid-flow-col auto-cols-[16px] gap-x-1 mb-1 h-5">
-                                        {monthLabels.map((month) => (
-                                            <div 
-                                                key={`${month.name}-${month.weekIndex}`}
-                                                className="text-xs text-muted-foreground text-left"
-                                                style={{ gridColumnStart: month.weekIndex + 1 }}
-                                            >
-                                                {month.name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-flow-col auto-cols-min gap-x-1 w-max">
-                                    {weeks.map((week, weekIndex) => {
-                                        return (
-                                            <React.Fragment key={weekIndex}>
-                                                <div className="grid grid-rows-7 gap-1 w-4">
-                                                    {week.map((day, dayIndex) => {
-                                                        if (!day) {
-                                                          return <div key={`${weekIndex}-${dayIndex}`} className="w-4 h-4" />;
-                                                        }
-                                                        const dateString = format(day, 'yyyy-MM-dd');
-                                                        const level = contributions[dateString] || 0;
-                                                        return (
-                                                            <Tooltip key={dateString} delayDuration={100}>
-                                                                <TooltipTrigger asChild>
-                                                                    <div className={cn(
-                                                                        "w-4 h-4 rounded-[2px] flex items-center justify-center border border-white/10", 
-                                                                        getLevelColor(level)
-                                                                    )}>
-                                                                    </div>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="p-2">
-                                                                    <p className="text-sm font-semibold">{level} submission{level !== 1 && 's'} on</p>
-                                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </React.Fragment>
-                                        )
-                                    })}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                         <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-6 gap-0.5">
-                           <div className="h-4 flex items-center">Mon</div>
-                           <div className="h-4 flex items-center">Tue</div>
-                           <div className="h-4 flex items-center">Wed</div>
-                           <div className="h-4 flex items-center">Thu</div>
-                           <div className="h-4 flex items-center">Fri</div>
-                           <div className="h-4 flex items-center">Sat</div>
-                           <div className="h-4 flex items-center">Sun</div>
-                        </div>
-                    </div>
-                    </TooltipProvider>
-                )}
+                 <TooltipProvider>
+                 <div className="flex gap-2">
+                     <div className="w-full overflow-hidden">
+                          <div ref={scrollContainerRef} className="overflow-x-auto pb-2" style={{ ['scrollbarWidth' as any]: 'thin' }}>
+                             <div className="relative">
+                                  <div className="grid grid-flow-col auto-cols-[16px] gap-x-1 mb-1 h-5">
+                                     {monthLabels.map((month) => (
+                                         <div 
+                                             key={`${month.name}-${month.weekIndex}`}
+                                             className="text-xs text-muted-foreground text-left"
+                                             style={{ gridColumnStart: month.weekIndex + 1 }}
+                                         >
+                                             {month.name}
+                                         </div>
+                                     ))}
+                                 </div>
+                                 <div className="grid grid-flow-col auto-cols-min gap-x-1 w-max">
+                                 {weeks.map((week, weekIndex) => {
+                                     return (
+                                         <React.Fragment key={weekIndex}>
+                                             <div className="grid grid-rows-7 gap-1 w-4">
+                                                 {week.map((day, dayIndex) => {
+                                                     if (!day) {
+                                                       return <div key={`${weekIndex}-${dayIndex}`} className="w-4 h-4" />;
+                                                     }
+                                                     const dateString = format(day, 'yyyy-MM-dd');
+                                                     const level = contributions ? contributions[dateString] || 0 : 0;
+                                                     return (
+                                                         <Tooltip key={dateString} delayDuration={100}>
+                                                             <TooltipTrigger asChild>
+                                                                 <div className={cn(
+                                                                     "w-4 h-4 rounded-[2px] flex items-center justify-center border border-white/10", 
+                                                                     getLevelColor(level)
+                                                                 )}>
+                                                                 </div>
+                                                             </TooltipTrigger>
+                                                             <TooltipContent className="p-2">
+                                                                 <p className="text-sm font-semibold">{level} submission{level !== 1 && 's'} on</p>
+                                                                 <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                             </TooltipContent>
+                                                         </Tooltip>
+                                                     );
+                                                 })}
+                                             </div>
+                                         </React.Fragment>
+                                     )
+                                 })}
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                      <div className="flex flex-col text-xs text-muted-foreground shrink-0 pt-6 gap-0.5">
+                        <div className="h-4 flex items-center">Mon</div>
+                        <div className="h-4 flex items-center">Tue</div>
+                        <div className="h-4 flex items-center">Wed</div>
+                        <div className="h-4 flex items-center">Thu</div>
+                        <div className="h-4 flex items-center">Fri</div>
+                        <div className="h-4 flex items-center">Sat</div>
+                        <div className="h-4 flex items-center">Sun</div>
+                     </div>
+                 </div>
+                 </TooltipProvider>
             </CardContent>
         </Card>
     );
