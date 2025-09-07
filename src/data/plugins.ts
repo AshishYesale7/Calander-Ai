@@ -7,6 +7,8 @@ import AiGymTrainerDashboard from '@/components/extensions/aigymtrainer/AiGymTra
 import { AiGymTrainerLogo } from '@/components/logo/AiGymTrainerLogo';
 import NotionDashboard from '@/components/extensions/notion/NotionDashboard';
 import { NotionLogo } from '@/components/logo/NotionLogo';
+import DiscordDashboard from '@/components/extensions/discord/DiscordDashboard';
+import { DiscordLogo } from '@/components/logo/DiscordLogo';
 
 // In a real application, this would come from a database or API.
 export const allPlugins = [
@@ -33,6 +35,12 @@ export const allPlugins = [
     logo: NotionLogo,
     description: 'Sync your tasks and notes from Notion databases.',
     component: NotionDashboard,
+  },
+   {
+    name: 'Discord',
+    logo: DiscordLogo,
+    description: 'Create events and get reminders directly in Discord.',
+    component: DiscordDashboard,
   },
   {
     name: 'Android Studio',
@@ -92,12 +100,6 @@ export const allPlugins = [
       name: 'CLion',
       logo: 'https://worldvectorlogo.com/logos/clion.svg',
       description: 'A cross-platform IDE for C and C++ by JetBrains.',
-      component: BookshelfDashboard, // Placeholder
-  },
-  {
-      name: 'Discord',
-      logo: 'https://worldvectorlogo.com/logos/discord-6.svg',
-      description: 'All-in-one voice and text chat for gamers.',
       component: BookshelfDashboard, // Placeholder
   },
   {
