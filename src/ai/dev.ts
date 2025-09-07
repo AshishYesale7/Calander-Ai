@@ -1,3 +1,4 @@
+
 'use server';
 
 import { config } from 'dotenv';
@@ -16,3 +17,6 @@ import '@/ai/flows/track-deadlines-flow.ts';
 import '@/ai/flows/send-notification-flow.ts';
 import '@/ai/flows/fetch-coding-stats-flow.ts';
 import '@/ai/flows/generate-streak-insight-flow.ts';
+import '@/ai/flows/generate-workout-flow.ts';
+
+    
