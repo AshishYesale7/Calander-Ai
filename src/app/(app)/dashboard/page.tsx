@@ -218,6 +218,7 @@ export default function DashboardPage() {
             isDeletable: true,
             isAllDay: insight.isAllDay || false,
             priority: 'None',
+            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
         };
     }
 
@@ -236,6 +237,7 @@ export default function DashboardPage() {
             isDeletable: true,
             isAllDay: true, // Tasks are always all-day
             priority: 'None',
+            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
         };
     }
     
@@ -390,9 +392,9 @@ export default function DashboardPage() {
     ).sort((a,b) => a.date.getTime() - b.date.getTime());
   }, [activeEvents, selectedDateForDayView]);
 
-  const handleOpenEditModal = useCallback((event?: TimelineEvent) => {
+  const handleOpenEditModal = useCallback((event?: TimelineEvent, isNew: boolean = false) => {
     if (event) {
-      setIsAddingNewEvent(false);
+      setIsAddingNewEvent(isNew);
       setEventBeingEdited({
         ...event,
         date: event.date instanceof Date ? event.date : parseDatePreservingTime(event.date as unknown as string) || new Date(),
@@ -415,6 +417,7 @@ export default function DashboardPage() {
         priority: 'None',
         status: 'pending',
         icon: CalendarIconLucide,
+        reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
       });
     }
     setIsEditModalOpen(true);
@@ -583,6 +586,7 @@ export default function DashboardPage() {
                         isDeletable: true,
                         status: 'pending',
                         priority: 'None',
+                        reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
                     };
                     eventsToSave.push(newEvent);
                 }
@@ -661,7 +665,7 @@ export default function DashboardPage() {
                       onSync={handleSyncCalendarData}
                       isSyncing={isLoading}
                       onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
-                      isTrashOpen={isTrashPanelOpen}
+                      isTrashOpen={isTrashOpen}
                   />
                 </div>
                 {isTrashPanelOpen && (
@@ -777,3 +781,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

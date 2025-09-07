@@ -484,7 +484,7 @@ interface DayTimetableViewProps {
   events: TimelineEvent[];
   onClose: () => void;
   onDeleteEvent?: (eventId: string) => void;
-  onEditEvent?: (event: TimelineEvent) => void;
+  onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
 }
 
@@ -684,10 +684,11 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
         priority: 'None',
         status: 'pending',
         icon: CalendarDays,
+        reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
     };
     
     if (onEditEvent) {
-      onEditEvent(newEvent);
+      onEditEvent(newEvent, true);
     }
     
     setDraggedTask(null);
@@ -1045,6 +1046,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
 
 
 
