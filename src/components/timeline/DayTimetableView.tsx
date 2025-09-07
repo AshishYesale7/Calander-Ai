@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -210,88 +210,175 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
 
 // --- New Components for Maximized View ---
 
-const PlannerSidebar = () => (
-    <div className="w-64 bg-gray-900/50 p-4 flex flex-col gap-6">
-        <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Main</h3>
-            <ul className="space-y-1 text-gray-200">
-                <li className="flex items-center gap-3 p-2 rounded-md bg-gray-700/50"><Inbox size={18} /><span>Inbox</span><Badge className="ml-auto">3</Badge></li>
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Calendar size={18} /><span>Today</span></li>
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Star size={18} /><span>Upcoming</span></li>
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><Columns size={18} /><span>All Tasks</span></li>
-            </ul>
+const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
+    <header className="p-2 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-sm">
+        <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
+            <h2 className="font-semibold text-white">Aug 2025 <span className="text-gray-400">W32</span></h2>
         </div>
-        <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Projects</h3>
-            <ul className="space-y-1 text-gray-300">
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-purple-500"></div><span>Work</span></li>
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-amber-600"></div><span>Fitness</span></li>
-                <li className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700/30"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span>Travel</span></li>
-            </ul>
+        <div className="flex items-center gap-1 text-gray-400">
+            <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-5 w-5" /></Button>
         </div>
-    </div>
+        <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><LinkIcon className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view">
+                <Minimize className="h-5 w-5 text-gray-400 hover:text-white" />
+            </Button>
+        </div>
+    </header>
 );
 
-const PlannerTaskList = () => (
-    <div className="flex-1 bg-gray-800/60 p-6 flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-white">Inbox</h1>
-            <Button variant="ghost"><ChevronDown className="mr-2" /> More</Button>
+const PlannerSidebar = () => {
+    const mainSections = [
+        { icon: Inbox, label: 'Inbox', count: 6 },
+        { icon: Calendar, label: 'Today' },
+        { icon: Star, label: 'Upcoming' },
+        { icon: Columns, label: 'All tasks' },
+    ];
+    const projects = [
+        { color: 'bg-red-500', char: 'B', label: 'Book' },
+        { color: 'bg-green-500', char: 'N', label: 'Newsletter' },
+        { color: 'bg-yellow-500', char: 'F', label: 'Fitness' },
+        { color: 'bg-purple-500', char: 'W', label: 'Work' },
+        { color: 'bg-blue-500', char: 'F', label: 'Film' },
+    ];
+    return (
+    <div className="w-56 bg-gray-900/50 p-3 flex flex-col gap-4 text-sm">
+        <div>
+            <ul className="space-y-0.5 text-gray-300">
+                {mainSections.map(s => (
+                    <li key={s.label} className={cn("flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30", s.label === 'Inbox' && 'bg-gray-700/50 font-semibold text-white')}>
+                        <s.icon size={18} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200">{s.count}</Badge>}
+                    </li>
+                ))}
+            </ul>
         </div>
-        <div className="space-y-3">
-            {[
-                { title: 'Create thumbnails for next 3 videos', tags: ['Thumbnails', 'Design'] },
-                { title: 'Write script for "Productivity Hacks" video', tags: ['Scripts', 'Writing'] },
-                { title: 'Edit and schedule this week\'s short-form content', tags: ['Editing', 'Social Media'] },
-            ].map(task => (
-                <div key={task.title} className="bg-gray-700/50 p-4 rounded-lg flex items-center gap-4 cursor-grab active:cursor-grabbing">
-                    <GripVertical className="text-gray-500" />
-                    <Checkbox id={task.title} className="border-gray-500"/>
-                    <div className="flex-1">
-                        <label htmlFor={task.title} className="text-gray-200">{task.title}</label>
-                        <div className="flex gap-2 mt-1">
-                            {task.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
-                        </div>
-                    </div>
-                </div>
-            ))}
+        <div className="flex-1 space-y-3">
+             <div>
+                <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Projects</h3>
+                <ul className="space-y-0.5 text-gray-300">
+                   {projects.map(p => (
+                        <li key={p.label} className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
+                            <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
+                            <span>{p.label}</span>
+                        </li>
+                   ))}
+                </ul>
+            </div>
+            <div>
+                 <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Tags</h3>
+                 {/* Tags can be added here */}
+            </div>
+        </div>
+         <div className="border-t border-gray-700/50 pt-2 space-y-0.5">
+            <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
+                <Clock size={18}/><span>Statistics</span>
+            </div>
+             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
+                <Palette size={18}/><span>Daily Planning</span>
+            </div>
         </div>
     </div>
-);
+)};
+
+const PlannerTaskList = () => {
+    const tasks = [
+        { title: 'Thumbnail: Twitch HQ', tags: [{name: 'Plan', color: 'bg-blue-500'}, {name: 'Thumbnails', color: 'bg-purple-500'}] },
+        { title: 'Thumbnail: AI/ML Project Ideas', tags: [{name: 'Thumbnails', color: 'bg-purple-500'}]},
+        { title: 'Thumbnail: AI Eng Courses', tags: [{name: 'Thumbnails', color: 'bg-purple-500'}]},
+        { title: 'Write Cynicism script', tags: [{name: 'Scripts', color: 'bg-gray-500'}]},
+        { title: 'Book notes', tags: [{name: 'Book', color: 'bg-red-500'}]},
+        { title: 'Film Cynicism Video', subItem: "Content Calendar", tags: [{name: 'Film', color: 'bg-blue-500'}]},
+    ];
+    return (
+        <div className="flex-1 bg-gray-800/60 p-4 flex flex-col border-r border-gray-700/50">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-lg font-bold text-white">Inbox</h1>
+            </div>
+             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-4 text-sm">
+                <Plus className="mr-2 h-4 w-4" /> Add new task
+            </Button>
+            <div className="space-y-1 text-sm">
+                {tasks.map(task => (
+                    <div key={task.title} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
+                        <div className="flex items-center gap-2">
+                           <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400"/>
+                            <label htmlFor={task.title} className="text-gray-200">{task.title}</label>
+                            {task.tags.map(tag => (
+                                <Badge key={tag.name} className={cn("text-xs px-1.5 py-0", tag.color)}>{tag.name}</Badge>
+                            ))}
+                        </div>
+                        {task.subItem && (
+                            <div className="pl-6 text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                <Calendar size={12}/>{task.subItem}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+};
 
 const PlannerWeeklyTimeline = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const hours = Array.from({ length: 20 }, (_, i) => i + 5); // 5 AM to 12 AM (midnight)
+    const days = ['Sun 3', 'Mon 4', 'Tue 5', 'Wed 6', 'Thu 7', 'Fri 8', 'Sat 9'];
+    const hours = Array.from({ length: 20 }, (_, i) => i + 5); 
     
-    // Mock data for events
-    const events = [
-        { day: 1, start: 9, duration: 8, title: 'Work', color: 'bg-purple-600' },
-        { day: 2, start: 9, duration: 8, title: 'Work', color: 'bg-purple-600' },
-        { day: 3, start: 9, duration: 4, title: 'Work', color: 'bg-purple-600' },
-        { day: 1, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
-        { day: 3, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
-        { day: 5, start: 7, duration: 1, title: 'Gym', color: 'bg-amber-700' },
-        { day: 6, start: 18, duration: 3, title: 'Flight', color: 'bg-blue-600' },
+    const allDayEvents = [
+        { day: 1, span: 5, title: 'Office', color: 'bg-blue-900/80' },
+        { day: 6, span: 2, title: 'Switzerland', color: 'bg-red-900/80' },
+    ];
+    const timedEvents = [
+        { day: 1, start: 6, duration: 1, title: 'Meditate', icon: Lock },
+        { day: 2, start: 6, duration: 1, title: 'Meditate', icon: Lock },
+        { day: 3, start: 6, duration: 1, title: 'Meditate', icon: Lock },
+        { day: 4, start: 6, duration: 1, title: 'Meditate', icon: Lock },
+        { day: 5, start: 6, duration: 1, title: 'Meditate', icon: Lock },
+        { day: 1, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 2, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 3, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 4, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 2, start: 7, duration: 1, title: 'Commute', color: 'bg-blue-800/80' },
+        { day: 1, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
+        { day: 2, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
+        { day: 3, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
+        { day: 6, start: 10.5, duration: 2.7, title: 'Flight to Zurich', subTitle: '(UA 5248)', color: 'bg-blue-800/80' },
     ];
     
-    // Calculate current time position
     const now = new Date();
     const nowPosition = (now.getHours() - 5 + now.getMinutes() / 60) * 50; // 50px per hour
 
     return (
-        <div className="w-[800px] flex-shrink-0 bg-black/50 p-4">
-            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-2">
+        <div className="w-[1200px] flex-shrink-0 bg-black/30 p-2 text-xs">
+            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1">
                 {days.map(day => <div key={day}>{day}</div>)}
             </div>
+             <div className="relative border-b border-gray-700/50 mb-1 pb-1">
+                {allDayEvents.map((event, i) => (
+                    <div key={i} className={cn("absolute text-white p-1 rounded-sm text-xs font-semibold", event.color)}
+                        style={{ gridColumnStart: event.day, gridColumnEnd: event.day + event.span, left: `${((event.day - 1) / 7) * 100}%`, width: `${(event.span / 7) * 100}%` }}>
+                        {event.title}
+                    </div>
+                ))}
+                <div className="h-6"></div> {/* Placeholder for height */}
+            </div>
             <div className="relative">
-                {/* Hours background */}
+                <div className="absolute left-[-30px] top-0 bottom-0 text-right text-gray-500 text-[10px]">
+                    {hours.map(hour => (
+                        <div key={hour} className="h-[50px] -mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'am' : 'pm'}</div>
+                    ))}
+                </div>
                 <div className="grid grid-cols-7">
                     {days.map(day => (
                         <div key={day} className="border-r border-gray-700/50 last:border-r-0">
@@ -301,17 +388,22 @@ const PlannerWeeklyTimeline = () => {
                         </div>
                     ))}
                 </div>
-                {/* Events overlay */}
                 <div className="absolute inset-0 grid grid-cols-7">
-                    {events.map((event, i) => (
-                        <div key={i} className={cn('p-2 rounded-lg text-white text-sm font-medium m-1', event.color)}
-                            style={{ gridColumnStart: event.day + 1, gridRowStart: event.start - 4, gridRowEnd: event.start - 4 + event.duration }}>
-                            {event.title}
+                    {timedEvents.map((event, i) => (
+                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-xs', event.color)}
+                            style={{ gridColumnStart: event.day, gridRow: 'auto / span ' + (event.duration * 2), top: `${(event.start - 5) * 50}px`, height: `${event.duration * 50}px`}}>
+                            <div className='flex items-center gap-1'>
+                                {event.icon && <event.icon size={12}/>}{event.title}
+                            </div>
+                            {event.subTitle && <p className="text-gray-300 text-[10px]">{event.subTitle}</p>}
                         </div>
                     ))}
+                    <div className="absolute border border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300"
+                        style={{ gridColumnStart: 5, top: `${(10) * 50}px`, height: '25px'}}>
+                        <p className="text-xs font-semibold">Thumbnail: Twitch HQ</p>
+                    </div>
                 </div>
-                 {/* "Now" line */}
-                <div className="absolute w-full h-[2px] bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
+                <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
                     <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
                 </div>
             </div>
@@ -420,16 +512,11 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   if (isMaximized) {
     return (
         <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-            <header className="p-4 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0">
-                <h1 className="text-xl font-bold">Weekly Planner</h1>
-                 <Button variant="ghost" size="icon" onClick={() => setIsMaximized(false)} aria-label="Minimize view">
-                    <Minimize className="h-6 w-6 text-gray-400 hover:text-white" />
-                </Button>
-            </header>
+            <PlannerHeader onMinimize={() => setIsMaximized(false)} />
             <div className="flex flex-1 min-h-0">
                 <PlannerSidebar />
                 <PlannerTaskList />
-                <div className="flex-1 overflow-x-auto">
+                <div className="flex-1 overflow-auto">
                     <PlannerWeeklyTimeline />
                 </div>
             </div>
