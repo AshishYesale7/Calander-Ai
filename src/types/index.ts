@@ -70,6 +70,7 @@ export interface AppNotification {
   type: 'new_follower' | 'event_reminder' | 'system_alert';
   message: string;
   link?: string; // e.g., to a user profile or event
+  imageUrl?: string | null; // URL of the user/event image
   isRead: boolean;
   createdAt: Date;
 }

@@ -19,9 +19,19 @@ import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
-const getNotificationIcon = (type: AppNotification['type']) => {
-    switch (type) {
+const getNotificationIcon = (notification: AppNotification) => {
+    if (notification.type === 'new_follower' && notification.imageUrl) {
+        return (
+            <Avatar className="h-8 w-8">
+                <AvatarImage src={notification.imageUrl} alt="Follower" />
+                <AvatarFallback><UserPlus className="h-5 w-5" /></AvatarFallback>
+            </Avatar>
+        )
+    }
+    
+    switch (notification.type) {
         case 'new_follower':
             return <UserPlus className="h-5 w-5 text-blue-400" />;
         default:
@@ -86,8 +96,8 @@ export default function NotificationPanel() {
         )}
         onClick={() => !notification.isRead && handleMarkOneAsRead(notification.id)}
        >
-        <div className="h-8 w-8 flex-shrink-0 bg-background rounded-full flex items-center justify-center mt-0.5">
-          {getNotificationIcon(notification.type)}
+        <div className="flex-shrink-0 bg-background rounded-full flex items-center justify-center mt-0.5">
+          {getNotificationIcon(notification)}
         </div>
         <div>
           <p className="text-sm font-medium text-foreground">{notification.message}</p>

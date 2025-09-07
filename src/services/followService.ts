@@ -55,7 +55,8 @@ export async function followUser(currentUserId: string, targetUserId: string) {
   await createNotification(targetUserId, {
     type: 'new_follower',
     message: `${followerName} started following you.`,
-    link: `/profile/${currentUserProfile?.username || ''}`
+    link: `/profile/${currentUserProfile?.username || ''}`,
+    imageUrl: currentUserProfile?.photoURL,
   });
 
   // Send a push notification
