@@ -8,6 +8,7 @@ import { getAuthenticatedClient } from './googleAuthService';
 import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalendarEvent } from './googleCalendarService';
 import { startOfDay, endOfDay } from 'date-fns';
 import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { createNotification } from './notificationService';
 
 const getTimelineEventsCollection = (userId: string) => {
   if (!db) {
@@ -111,8 +112,17 @@ export const saveTimelineEvent = async (
             '1_week': '1 week before'
         }
         const reminderText = reminderMapping[event.reminder.earlyReminder] || 'at the scheduled time';
-
+        const notificationMessage = `Reminder for "${event.title}" is set for ${reminderText}.`;
+        
         try {
+            // Create an in-app notification
+            await createNotification(userId, {
+                type: 'event_reminder',
+                message: notificationMessage,
+                link: '/dashboard'
+            });
+            
+            // Also send a push notification
             await sendNotification({
                 userId: userId,
                 title: 'Reminder Set',
