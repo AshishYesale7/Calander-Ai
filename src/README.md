@@ -31,6 +31,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **Gamified Motivation & Leaderboard:**
     *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal. It’s not just about logging in; it’s about active engagement to keep your flame alive.
     *   **Competitive Leaderboard:** See how you stack up against other ambitious users. The leaderboard ranks users based on their total time spent and engagement (XP), not just their streak, promoting consistent effort over time.
+    *   **User Profiles & Social Features:** Every user has a dedicated, shareable profile page to showcase their bio, social links, and activity streak. Users can follow each other to build a community.
 *   **Extension Marketplace :** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers and software engineering students:
     *   **Unified Dashboard:** By simply entering your usernames for Codeforces, LeetCode, and CodeChef, you get a centralized dashboard that visualizes your coding progress.
     *   **Aggregated Stats:** See your total problems solved across all platforms, your current ratings, and your problem-solving streak.
@@ -42,14 +43,15 @@ FutureSight is a web application built with a modern tech stack, designed to be 
     *   **Google Sync:** Seamlessly syncs with Google Calendar and Google Tasks.
     *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails, summarizes them, and displays them on your dashboard to ensure you don't miss key information. It intelligently filters out OTPs, password resets, and other security-related emails.
 *   **Personalized News & Resources:**
-    *   A news feed that can be filtered by interests like "AI," "Internships," or "GATE" to keep you updated on relevant topics. Articles can be summarized by the AI.
+    *   An **AI Opportunity Tracker** that can find and track important upcoming deadlines for any topic, exam, or company you provide.
     *   A resources page where you can bookmark your own learning materials and also receive AI-generated suggestions based on your unique goals and skills.
 *   **Advanced User Experience:**
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
     *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
-    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and intelligently falls back to a conversational AI assistant. If a typed query doesn't match a built-in command, the palette prompts the user to "Ask AI anything," allowing for seamless natural language event creation and other interactions.
+    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and allows for quick navigation, plugin management (install/open), user search (`@`), and falls back to a conversational AI assistant for natural language event creation.
     *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
+    *   **Collapsible Sidebar:** The main navigation sidebar can be collapsed to maximize content view, with its state saved per-device.
     *   **Mobile App Download Section:** The landing page features a dedicated section with a dynamic "gravity well" animation, prompting users to download the mobile applications for iOS and Android.
 
 ## 3. Link to Prototype
