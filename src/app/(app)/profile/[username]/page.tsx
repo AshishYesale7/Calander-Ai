@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon } from 'lucide-react';
+import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { timezones } from '@/lib/timezones';
-import { uploadProfileImage } from '@/services/storageService';
+import { uploadProfileImage, deleteImageByUrl } from '@/services/storageService';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -126,11 +126,11 @@ export default function UserProfilePage() {
     const [editLinkedin, setEditLinkedin] = useState('');
     const [editTwitter, setEditTwitter] = useState('');
     const [editCountryCode, setEditCountryCode] = useState<string | null>(null);
+    const [editPhotoUrl, setEditPhotoUrl] = useState('');
     
     // New state for image upload
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
@@ -149,6 +149,7 @@ export default function UserProfilePage() {
                 setEditLinkedin(fetchedProfile.socials?.linkedin || '');
                 setEditTwitter(fetchedProfile.socials?.twitter || '');
                 setEditCountryCode(fetchedProfile.countryCode || null);
+                setEditPhotoUrl(fetchedProfile.photoURL || '');
 
                 const fetchedStreak = await getStreakData(fetchedProfile.uid);
                 setStreakData(fetchedStreak);
@@ -175,7 +176,7 @@ export default function UserProfilePage() {
             setNewImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setPreviewUrl(reader.result as string);
+                setEditPhotoUrl(reader.result as string);
                 setProfile(prev => prev ? {...prev, photoURL: reader.result as string} : null);
             };
             reader.readAsDataURL(file);
@@ -183,10 +184,11 @@ export default function UserProfilePage() {
     };
 
     const handleSave = async () => {
-        if (!isOwnProfile || !currentUser) return;
+        if (!isOwnProfile || !currentUser || !profile) return;
         setIsLoading(true);
         
-        let newPhotoURL = profile?.photoURL;
+        let newPhotoURL = profile.photoURL;
+        const oldPhotoURL = profile.photoURL;
 
         if (newImageFile) {
             try {
@@ -198,9 +200,16 @@ export default function UserProfilePage() {
                 setIsLoading(false);
                 return;
             }
+        } else if (editPhotoUrl !== oldPhotoURL) {
+            newPhotoURL = editPhotoUrl;
         }
 
         try {
+             if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
+                // Do not block the profile update for image deletion. Run it in the background.
+                deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
+            }
+
             await updateUserProfile(currentUser.uid, {
                 displayName: editDisplayName,
                 username: editUsername,
@@ -229,8 +238,8 @@ export default function UserProfilePage() {
         setEditLinkedin(profile.socials?.linkedin || '');
         setEditTwitter(profile.socials?.twitter || '');
         setEditCountryCode(profile.countryCode || null);
+        setEditPhotoUrl(profile.photoURL || '');
         setNewImageFile(null);
-        setPreviewUrl(null);
         setUploadProgress(null);
         setIsEditing(false);
         // This will force a re-fetch to revert the optimistic image preview
@@ -311,6 +320,13 @@ export default function UserProfilePage() {
                         {isEditing ? (
                             <div className="space-y-4">
                                 <Textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
+                                <div>
+                                    <Label htmlFor="photoUrl">Image URL</Label>
+                                    <div className="flex items-center gap-2">
+                                        <LinkIcon className="h-5 w-5 text-muted-foreground" />
+                                        <Input id="photoUrl" value={editPhotoUrl} onChange={e => setEditPhotoUrl(e.target.value)} placeholder="https://example.com/image.png" />
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">

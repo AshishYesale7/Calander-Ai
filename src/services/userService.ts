@@ -117,20 +117,9 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
-    const currentProfileSnap = await getDoc(userDocRef);
-    const currentProfileData = currentProfileSnap.data();
-    const oldPhotoURL = currentProfileData?.photoURL;
-
     if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
     if(profileData.username !== undefined) dataToUpdate['username'] = profileData.username;
-    if(profileData.photoURL !== undefined) {
-        dataToUpdate['photoURL'] = profileData.photoURL;
-        // If a new photoURL is being set and it's different from the old one, delete the old one.
-        if (oldPhotoURL && oldPhotoURL !== profileData.photoURL) {
-            // Do not block the profile update for image deletion. Run it in the background.
-            deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
-        }
-    }
+    if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
     if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
     if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
     if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
