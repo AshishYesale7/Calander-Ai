@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, addDays, toDate } from 'date-fns';
+import { format, startOfWeek, addDays, toDate, isToday } from 'date-fns';
 import { generateStreakInsight } from '@/ai/flows/generate-streak-insight-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import { getLeaderboardData, updateStreakData } from '@/services/streakService';
@@ -114,9 +114,24 @@ export default function DailyStreakCard() {
     }, []);
 
     const weekDaysWithStatus = useMemo(() => {
-        const completedDaysSet = new Set(streakData?.completedDays || []);
+        if (!streakData) {
+            return weekDays.map(day => ({
+                dayChar: format(day, 'E').charAt(0),
+                isCompleted: false,
+            }));
+        }
+        const completedDaysSet = new Set(streakData.completedDays || []);
         return weekDays.map((day) => {
             const dayStr = format(day, 'yyyy-MM-dd');
+            // Check if it's today
+            if (isToday(day)) {
+                // For today, the status depends on todayStreakCompleted
+                return {
+                    dayChar: format(day, 'E').charAt(0),
+                    isCompleted: streakData.todayStreakCompleted,
+                };
+            }
+            // For other days, check the historical completedDays
             return {
                 dayChar: format(day, 'E').charAt(0),
                 isCompleted: completedDaysSet.has(dayStr),
