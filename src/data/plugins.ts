@@ -5,6 +5,8 @@ import BookshelfDashboard from '@/components/extensions/bookshelf/BookshelfDashb
 import { BookShelfLogo } from '@/components/logo/BookShelfLogo';
 import AiGymTrainerDashboard from '@/components/extensions/aigymtrainer/AiGymTrainerDashboard';
 import { AiGymTrainerLogo } from '@/components/logo/AiGymTrainerLogo';
+import NotionDashboard from '@/components/extensions/notion/NotionDashboard';
+import { NotionLogo } from '@/components/logo/NotionLogo';
 
 // In a real application, this would come from a database or API.
 export const allPlugins = [
@@ -25,6 +27,12 @@ export const allPlugins = [
     logo: AiGymTrainerLogo,
     description: 'Get personalized workout plans from an AI coach.',
     component: AiGymTrainerDashboard,
+  },
+  {
+    name: 'Notion',
+    logo: NotionLogo,
+    description: 'Sync your tasks and notes from Notion databases.',
+    component: NotionDashboard,
   },
   {
     name: 'Android Studio',
@@ -126,5 +134,3 @@ export const allPlugins = [
 
 // Define and export the default plugins separately.
 export const DEFAULT_PLUGINS = ['Codefolio Ally', 'Book Shelf', 'AI Gym Trainer', 'VS Code', 'Figma'];
-
-    
