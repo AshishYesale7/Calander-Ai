@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -210,7 +210,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -218,22 +218,20 @@ function calculateEventLayouts(
 // --- New Components for Maximized View ---
 
 const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
-    <header className="p-2 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-sm">
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
-            <h2 className="font-semibold text-white">Aug 2025 <span className="text-gray-400">W32</span></h2>
+    <header className="p-2 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
+        <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-4 w-4" /></Button>
+            <h2 className="font-semibold text-white px-2">Aug 2025</h2>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-4 w-4" /></Button>
         </div>
         <div className="flex items-center gap-1 text-gray-400">
             <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-5 w-5" /></Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7"><LinkIcon className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view">
-                <Minimize className="h-5 w-5 text-gray-400 hover:text-white" />
+                <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
             </Button>
         </div>
     </header>
@@ -254,12 +252,12 @@ const PlannerSidebar = () => {
         { color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     return (
-    <div className="w-56 bg-gray-900/50 p-3 flex flex-col gap-4 text-sm">
+    <div className="w-56 bg-gray-900/50 p-3 flex flex-col gap-4 text-xs">
         <div>
             <ul className="space-y-0.5 text-gray-300">
                 {mainSections.map(s => (
                     <li key={s.label} className={cn("flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30", s.label === 'Inbox' && 'bg-gray-700/50 font-semibold text-white')}>
-                        <s.icon size={18} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200">{s.count}</Badge>}
+                        <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200 h-5 px-1.5 text-xs">{s.count}</Badge>}
                     </li>
                 ))}
             </ul>
@@ -304,19 +302,19 @@ const PlannerTaskList = () => {
     return (
         <div className="flex-1 bg-gray-800/60 p-4 flex flex-col border-r border-gray-700/50">
             <div className="flex justify-between items-center mb-4">
-                <h1 className="text-lg font-bold text-white">Inbox</h1>
+                <h1 className="text-base font-bold text-white">Inbox</h1>
             </div>
-             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-4 text-sm">
+             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-4 text-xs h-8">
                 <Plus className="mr-2 h-4 w-4" /> Add new task
             </Button>
-            <div className="space-y-1 text-sm">
+            <div className="space-y-1 text-xs">
                 {tasks.map(task => (
                     <div key={task.title} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
                         <div className="flex items-center gap-2">
-                           <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400"/>
+                           <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
                             <label htmlFor={task.title} className="text-gray-200">{task.title}</label>
                             {task.tags.map(tag => (
-                                <Badge key={tag.name} className={cn("text-xs px-1.5 py-0", tag.color)}>{tag.name}</Badge>
+                                <Badge key={tag.name} className={cn("text-[10px] px-1 py-0 h-4", tag.color)}>{tag.name}</Badge>
                             ))}
                         </div>
                         {task.subItem && (
@@ -345,11 +343,11 @@ const PlannerWeeklyTimeline = () => {
         { day: 3, start: 6, duration: 1, title: 'Meditate', icon: Lock },
         { day: 4, start: 6, duration: 1, title: 'Meditate', icon: Lock },
         { day: 5, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 1, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 2, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 3, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 4, start: 6.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 2, start: 7, duration: 1, title: 'Commute', color: 'bg-blue-800/80' },
+        { day: 1, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 2, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 3, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 4, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
+        { day: 2, start: 8, duration: 1, title: 'Commute', color: 'bg-gray-600/80' },
         { day: 1, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
         { day: 2, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
         { day: 3, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
@@ -365,13 +363,14 @@ const PlannerWeeklyTimeline = () => {
                 {days.map(day => <div key={day}>{day}</div>)}
             </div>
              <div className="relative border-b border-gray-700/50 mb-1 pb-1">
-                {allDayEvents.map((event, i) => (
-                    <div key={i} className={cn("absolute text-white p-1 rounded-sm text-xs font-semibold", event.color)}
-                        style={{ gridColumnStart: event.day, gridColumnEnd: event.day + event.span, left: `${((event.day - 1) / 7) * 100}%`, width: `${(event.span / 7) * 100}%` }}>
-                        {event.title}
-                    </div>
-                ))}
-                <div className="h-6"></div> {/* Placeholder for height */}
+                 <div className="grid grid-cols-7 h-6">
+                    {allDayEvents.map((event, i) => (
+                        <div key={i} className={cn("text-white p-1 rounded-sm text-xs font-semibold overflow-hidden whitespace-nowrap", event.color)}
+                            style={{ gridColumnStart: event.day, gridColumnEnd: `span ${event.span}`}}>
+                            {event.title}
+                        </div>
+                    ))}
+                 </div>
             </div>
             <div className="relative">
                 <div className="absolute left-[-30px] top-0 bottom-0 text-right text-gray-500 text-[10px]">
@@ -390,7 +389,7 @@ const PlannerWeeklyTimeline = () => {
                 </div>
                 <div className="absolute inset-0 grid grid-cols-7">
                     {timedEvents.map((event, i) => (
-                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-xs', event.color)}
+                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-xs overflow-hidden', event.color)}
                             style={{ gridColumnStart: event.day, gridRow: 'auto / span ' + (event.duration * 2), top: `${(event.start - 5) * 50}px`, height: `${event.duration * 50}px`}}>
                             <div className='flex items-center gap-1'>
                                 {event.icon && <event.icon size={12}/>}{event.title}
