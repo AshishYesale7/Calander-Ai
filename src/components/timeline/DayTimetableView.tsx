@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -213,20 +213,20 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
 
 // --- New Components for Maximized View ---
 
-const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
+const PlannerHeader = ({ onMinimize, week, onNavigateWeek, onTodayClick }: { onMinimize: () => void; week: Date[]; onNavigateWeek: (direction: 'prev' | 'next') => void; onTodayClick: () => void; }) => (
     <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-4 w-4" /></Button>
-            <h2 className="font-semibold text-white px-2 text-sm">Aug 2025</h2>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-4 w-4" /></Button>
-            <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigateWeek('prev')}><ChevronLeft className="h-4 w-4" /></Button>
+            <h2 className="font-semibold text-white px-2 text-sm">{format(week[0], 'MMM yyyy')}</h2>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigateWeek('next')}><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="ghost" className="h-7 px-2 text-xs" onClick={onTodayClick}>Today</Button>
         </div>
         <div className="flex items-center gap-1">
              <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
@@ -292,11 +292,11 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
                    ))}
                 </ul>
             </div>
-            <div>
+             <div>
                  <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Tags</h3>
             </div>
         </div>
-         <div className="border-t border-gray-700/50 pt-2 space-y-0.5 text-gray-400">
+         <div className="border-t border-gray-700/50 pt-2 space-y-0.5 text-gray-300">
              <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
                 <Clock size={16}/><span>Statistics</span>
             </div>
@@ -339,15 +339,15 @@ const PlannerTaskList = ({
                 <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
             <form onSubmit={handleAddTask}>
-                 <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-2 text-xs h-8">
-                    <Plus className="mr-2 h-4 w-4" />
+                 <div className="flex items-center gap-2 text-gray-400 hover:text-white mb-2 text-xs h-8 px-1.5">
+                    <Plus className="mr-1 h-4 w-4" />
                     <Input
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
                         placeholder="Add new task"
-                        className="bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0"
+                        className="bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0 placeholder:text-gray-500"
                     />
-                </Button>
+                </div>
             </form>
             <div className="space-y-1 text-xs overflow-y-auto">
                 {tasks.map(task => (
@@ -363,44 +363,55 @@ const PlannerTaskList = ({
     )
 };
 
-const PlannerWeeklyTimeline = () => {
-    const days = ['Sun 3', 'Mon 4', 'Tue 5', 'Wed 6', 'Thu 7', 'Fri 8', 'Sat 9'];
+const PlannerWeeklyTimeline = ({ week, events }: { week: Date[], events: TimelineEvent[] }) => {
     const hours = Array.from({ length: 20 }, (_, i) => i + 5); 
-    
-    const allDayEvents = [
-        { day: 1, span: 5, title: 'Office', color: 'bg-blue-900/80' },
-        { day: 6, span: 2, title: 'Switzerland', color: 'bg-red-900/80' },
-    ];
-    const timedEvents = [
-        { day: 1, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 2, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 3, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 4, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 5, start: 6, duration: 1, title: 'Meditate', icon: Lock },
-        { day: 1, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 2, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 3, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 4, start: 7.5, duration: 1, title: 'Gym', color: 'bg-yellow-800/80' },
-        { day: 2, start: 8, duration: 1, title: 'Commute', color: 'bg-gray-600/80' },
-        { day: 1, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
-        { day: 2, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
-        { day: 3, start: 9, duration: 8, title: 'Work', color: 'bg-purple-800/80' },
-        { day: 6, start: 10.5, duration: 2.7, title: 'Flight to Zurich', subTitle: '(UA 5248)', color: 'bg-blue-800/80' },
-    ];
-    
     const now = new Date();
     const nowPosition = (now.getHours() - 5 + now.getMinutes() / 60) * 50; // 50px per hour
+
+    const { allDayEvents, timedEvents } = useMemo(() => {
+        const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
+        const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
+        const relevantEvents = events.filter(e => e.date >= weekStart && e.date <= weekEnd);
+
+        return {
+            allDayEvents: relevantEvents.filter(e => e.isAllDay),
+            timedEvents: relevantEvents.filter(e => !e.isAllDay),
+        };
+    }, [week, events]);
+    
+    const getDayIndex = (date: Date) => {
+        return date.getDay(); // Sunday = 0
+    };
+    
+    const getEventStyles = (event: TimelineEvent) => {
+        const startHour = getHours(event.date);
+        const startMinute = getMinutes(event.date);
+        const top = (startHour - 5 + startMinute / 60) * 50; // 50px per hour, starting from 5 AM
+
+        let durationHours = 1;
+        if (event.endDate) {
+            const diffMs = event.endDate.getTime() - event.date.getTime();
+            durationHours = diffMs / (1000 * 60 * 60);
+        }
+        const height = durationHours * 50;
+
+        return {
+            gridColumnStart: getDayIndex(event.date) + 1,
+            top: `${top}px`,
+            height: `${height}px`,
+        };
+    };
 
     return (
         <div className="w-[1200px] flex-shrink-0 bg-black/30 p-2 text-xs">
             <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
-                {days.map(day => <div key={day}>{day}</div>)}
+                {week.map(day => <div key={day.toISOString()}>{format(day, 'EEE d')}</div>)}
             </div>
              <div className="relative border-b border-gray-700/50 mb-1 pb-1">
                  <div className="grid grid-cols-7 h-5">
                     {allDayEvents.map((event, i) => (
-                        <div key={i} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", event.color)}
-                            style={{ gridColumnStart: event.day, gridColumnEnd: `span ${event.span}`}}>
+                        <div key={event.id} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", getEventTypeStyleClasses(event.type))}
+                            style={{ gridColumnStart: getDayIndex(event.date) + 1, gridColumnEnd: `span 1`}}>
                             {event.title}
                         </div>
                     ))}
@@ -413,22 +424,22 @@ const PlannerWeeklyTimeline = () => {
                     ))}
                 </div>
                 <div className="grid grid-cols-7">
-                    {days.map(day => (
-                        <div key={day} className="border-r border-gray-700/50 last:border-r-0">
+                    {week.map(day => (
+                        <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
                             {hours.map(hour => (
-                                <div key={`${day}-${hour}`} className="h-[50px] border-t border-gray-700/50"></div>
+                                <div key={`${day.toISOString()}-${hour}`} className="h-[50px] border-t border-gray-700/50"></div>
                             ))}
                         </div>
                     ))}
                 </div>
                 <div className="absolute inset-0 grid grid-cols-7">
                     {timedEvents.map((event, i) => (
-                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', event.color)}
-                            style={{ gridColumnStart: event.day, gridRow: 'auto / span ' + (event.duration * 2), top: `${(event.start - 5) * 50}px`, height: `${event.duration * 50}px`}}>
+                        <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
+                            style={getEventStyles(event)}>
                             <div className='flex items-center gap-1 text-[10px]'>
                                 {event.icon && <event.icon size={12}/>}{event.title}
                             </div>
-                            {event.subTitle && <p className="text-gray-300 text-[10px]">{event.subTitle}</p>}
+                            <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>
                         </div>
                     ))}
                     <div className="absolute border border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300"
@@ -436,9 +447,9 @@ const PlannerWeeklyTimeline = () => {
                         <p className="text-[10px] font-semibold">Thumbnail: Twitch HQ</p>
                     </div>
                 </div>
-                <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
+                {dfnsIsToday(now) && <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
                     <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
-                </div>
+                </div>}
             </div>
         </div>
     );
@@ -491,7 +502,20 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
+  
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
 
+  const currentWeekDays = useMemo(() => {
+    return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
+  }, [currentWeekStart]);
+
+  const handleNavigateWeek = (direction: 'prev' | 'next') => {
+    setCurrentWeekStart(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1));
+  };
+
+  const handleTodayClick = () => {
+    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  };
 
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
     isResizing.current = index;
@@ -680,7 +704,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   if (isMaximized) {
     return (
         <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-            <PlannerHeader onMinimize={() => setIsMaximized(false)} />
+            <PlannerHeader onMinimize={() => setIsMaximized(false)} week={currentWeekDays} onNavigateWeek={handleNavigateWeek} onTodayClick={handleTodayClick} />
             <div className="flex flex-1 min-h-0">
                 <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
                 <Resizer onMouseDown={onMouseDown(0)} />
@@ -697,7 +721,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                    )}
                 </div>
                 <Resizer onMouseDown={onMouseDown(1)} />
-                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline /></div>
+                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline week={currentWeekDays} events={events} /></div>
             </div>
         </div>
     )
@@ -955,5 +979,6 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
 
 
