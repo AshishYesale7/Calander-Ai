@@ -1,3 +1,4 @@
+
 import { getGoogleAuthUrl } from '@/services/googleAuthService';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${requestUrl.protocol}//${requestUrl.host}`;
         
         const redirectUrl = new URL(baseUrl);
-        redirectUrl.pathname = '/'; // Redirect to home page
+        redirectUrl.pathname = '/settings'; // Redirect to settings page on error
         redirectUrl.searchParams.set('google_auth_error', 'setup_failed');
         return NextResponse.redirect(redirectUrl);
     }

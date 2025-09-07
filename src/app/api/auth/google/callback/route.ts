@@ -1,4 +1,5 @@
 
+
 import { getTokensFromCode, saveGoogleTokensToFirestore, getRedirectURI } from '@/services/googleAuthService';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const { userId } = JSON.parse(Buffer.from(decodeURIComponent(state), 'base64').toString('ascii'));
+        const { userId, provider } = JSON.parse(Buffer.from(decodeURIComponent(state), 'base64').toString('ascii'));
 
         if (!userId) {
             throw new Error('User ID not found in state parameter.');
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
               <script>
                 // Notify the main window to reload and then close the popup.
                 if (window.opener) {
-                  window.opener.postMessage('auth-success', '*');
+                  window.opener.postMessage('auth-success-google', '*');
                 }
                 setTimeout(() => window.close(), 500);
               </script>

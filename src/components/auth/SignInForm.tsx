@@ -90,7 +90,7 @@ export default function SignInForm() {
 
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success') {
+      if (event.data === 'auth-success-google' || event.data === 'auth-success-notion') {
         window.location.reload();
       }
     };
@@ -120,7 +120,7 @@ export default function SignInForm() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
+      const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google' })).toString('base64');
       const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
       window.open(authUrl, '_blank', 'width=500,height=600');
       toast({ title: 'Connecting Google Account...', description: 'Please authorize access in the popup window.' });

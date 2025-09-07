@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getToken } from 'firebase/messaging';
 import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { NotionLogo } from '../logo/NotionLogo';
 
 
 declare global {
@@ -57,6 +58,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const { user, refreshUser } = useAuth();
   const [apiKeyInput, setApiKeyInput] = useState(currentApiKey || '');
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
+  const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
 
   const [isLinkingPhone, setIsLinkingPhone] = useState(false);
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
@@ -88,6 +90,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     };
   }, []);
 
+  const checkNotionStatus = async (userId: string) => {
+    if (!userId) return;
+    try {
+      const res = await fetch('/api/auth/notion/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      setIsNotionConnected(data.isConnected);
+    } catch (error) {
+      setIsNotionConnected(false);
+    }
+  };
+
+
   useEffect(() => {
     if (!isOpen) {
        if (pollIntervalRef.current) {
@@ -114,6 +132,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 setIsGoogleConnected(false);
                 toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
             });
+            checkNotionStatus(user.uid);
         }
     }
   }, [currentApiKey, isOpen, toast, user]);
@@ -173,7 +192,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success') {
+      if (event.data === 'auth-success-google' || event.data === 'auth-success-notion') {
         window.location.reload();
       }
     };
@@ -189,7 +208,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         return;
     }
 
-    const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
+    const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google' })).toString('base64');
     const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
 
     if (isGoogleProviderLinked) {
@@ -254,6 +273,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to disconnect from Google. Please try again.', variant: 'destructive' });
       }
+  };
+  
+  const handleConnectNotion = () => {
+    if (!user) {
+        toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
+        return;
+    }
+    const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'notion' })).toString('base64');
+    const authUrl = `/api/auth/notion/redirect?state=${encodeURIComponent(state)}`;
+    window.open(authUrl, '_blank', 'width=500,height=600');
+  };
+
+  const handleDisconnectNotion = async () => {
+    if (!user) return;
+    // Logic to disconnect Notion will go here
+    toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
 
   const handleSendLinkOtp = async () => {
@@ -474,6 +509,37 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <Button onClick={handleConnectGoogle} variant="outline" className="w-full" disabled={isPolling}>
                         {isPolling ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
                         {isPolling ? 'Waiting for connection...' : 'Connect with Google'}
+                    </Button>
+                )}
+            </div>
+
+            <Separator/>
+
+            <div className="space-y-3 px-2">
+                 <Label className="font-semibold text-base flex items-center text-primary">
+                    <NotionLogo className="mr-2 h-5 w-5" /> Notion Integration
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Connect your Notion account to sync tasks from your databases.
+                </p>
+                {isNotionConnected === null ? (
+                    <div className="flex items-center space-x-2 h-10">
+                        <LoadingSpinner size="sm" />
+                        <span className="text-sm text-muted-foreground">Checking connection status...</span>
+                    </div>
+                ) : isNotionConnected ? (
+                    <div className="flex items-center justify-between h-10">
+                        <p className="text-sm text-green-400 font-medium flex items-center">
+                            <CheckCircle className="mr-2 h-4 w-4" /> Connected
+                        </p>
+                        <Button onClick={handleDisconnectNotion} variant="destructive">
+                            <Unplug className="mr-2 h-4 w-4" /> Disconnect
+                        </Button>
+                    </div>
+                ) : (
+                    <Button onClick={handleConnectNotion} variant="outline" className="w-full">
+                       <NotionLogo className="mr-2 h-4 w-4" />
+                       Connect with Notion
                     </Button>
                 )}
             </div>
