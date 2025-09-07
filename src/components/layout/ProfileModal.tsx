@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
-import { Edit, Github, Linkedin, Twitter, Save, X, Trash2 } from 'lucide-react';
+import { Edit, Github, Linkedin, Twitter, Save, X, Trash2, AtSign } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/services/userService';
@@ -49,6 +49,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
   
   // State for form fields
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -69,6 +70,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
       getUserProfile(user.uid).then(profile => {
         if (profile) {
             setDisplayName(profile.displayName || user.displayName || '');
+            setUsername(profile.username || '');
             setBio(profile.bio || '');
             setGithubUrl(profile.socials?.github || '');
             setLinkedinUrl(profile.socials?.linkedin || '');
@@ -76,6 +78,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
             setCountryCode(profile.countryCode || null);
         } else {
              setDisplayName(user.displayName || '');
+             setUsername(user.email?.split('@')[0] || '');
         }
       }).finally(() => setIsLoading(false));
     }
@@ -92,6 +95,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
     try {
         await updateUserProfile(user.uid, {
             displayName: displayName,
+            username: username,
             photoURL: user.photoURL,
             bio: bio,
             socials: {
@@ -173,14 +177,28 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
 
             <div className="mt-4">
                 {isEditing ? (
+                  <div className="space-y-4">
                     <Input
                         className="text-2xl font-bold !bg-transparent !border-0 !border-b-2 !rounded-none !p-1 !h-auto focus-visible:ring-0"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         placeholder="Your Name"
                     />
+                     <div className="flex items-center gap-2">
+                        <AtSign className="h-5 w-5 text-muted-foreground" />
+                        <Input
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="username"
+                            className="!bg-transparent !border-0 !border-b-2 !rounded-none !p-1 !h-auto focus-visible:ring-0 text-sm"
+                        />
+                    </div>
+                  </div>
                 ) : (
+                  <>
                     <h2 className="text-2xl font-bold text-primary">{displayName || "Anonymous User"}</h2>
+                    <p className="text-sm text-muted-foreground">@{username || user?.email?.split('@')[0]}</p>
+                  </>
                 )}
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
@@ -208,6 +226,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                                 <SelectValue placeholder="Select your country" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
                                 {countries.map(country => (
                                     <SelectItem key={country} value={country}>
                                     {country}

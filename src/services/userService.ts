@@ -29,6 +29,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
+                username: user.email?.split('@')[0] || `user${user.uid.substring(0, 5)}`,
                 photoURL: user.photoURL || null,
                 createdAt: new Date(),
                 bio: '',
@@ -110,11 +111,12 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; photoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
     if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
+    if(profileData.username !== undefined) dataToUpdate['username'] = profileData.username;
     if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
     if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
     if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
@@ -131,7 +133,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string, photoURL: string }> | null> => {
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; username: string; photoURL: string }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -139,6 +141,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
             const data = docSnap.data();
             return {
                 displayName: data.displayName,
+                username: data.username,
                 photoURL: data.photoURL,
                 bio: data.bio,
                 socials: data.socials,

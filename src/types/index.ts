@@ -19,6 +19,7 @@ export interface RoutineItem {
 }
 
 export interface UserPreferences {
+  username?: string;
   routine: RoutineItem[];
   countryCode?: string;
   statusEmoji?: string;
