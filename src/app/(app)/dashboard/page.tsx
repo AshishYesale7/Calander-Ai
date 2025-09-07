@@ -625,7 +625,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         <div className="xl:col-span-2 space-y-8">
-          <Tabs defaultValue="calendar">
+          <Tabs defaultValue="calendar" className="relative">
             <div className="flex justify-between items-center mb-4 gap-2">
               <TabsList className="inline-flex h-auto p-1 rounded-full bg-muted/50 backdrop-blur-sm border border-border/30">
                 <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
@@ -646,7 +646,7 @@ export default function DashboardPage() {
               </Button>
             </div>
             
-            <TabsContent value="calendar" className="mt-0 space-y-8">
+            <TabsContent value="calendar" className="mt-0">
               <div className="relative">
                 <div className={cn("transition-all duration-300", isTrashPanelOpen && "pr-0 md:pr-[24rem]")}>
                   <EventCalendarView
@@ -671,24 +671,26 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              {selectedDateForDayView ? (
-                  <DayTimetableView
-                      date={selectedDateForDayView}
-                      events={eventsForDayView}
-                      onClose={closeDayTimetableView}
-                      onDeleteEvent={handleDeleteTimelineEvent}
-                      onEditEvent={handleOpenEditModal}
-                      onEventStatusChange={handleEventStatusUpdate}
-                  />
-              ) : (
-                  <SlidingTimelineView
-                      events={activeEvents}
-                      onDeleteEvent={handleDeleteTimelineEvent}
-                      onEditEvent={handleOpenEditModal}
-                      currentDisplayMonth={activeDisplayMonth}
-                      onNavigateMonth={handleMonthNavigationForSharedViews}
-                  />
-              )}
+              <div className={cn(selectedDateForDayView ? "mt-8" : "mt-0")}>
+                {selectedDateForDayView ? (
+                    <DayTimetableView
+                        date={selectedDateForDayView}
+                        events={eventsForDayView}
+                        onClose={closeDayTimetableView}
+                        onDeleteEvent={handleDeleteTimelineEvent}
+                        onEditEvent={handleOpenEditModal}
+                        onEventStatusChange={handleEventStatusUpdate}
+                    />
+                ) : (
+                    <SlidingTimelineView
+                        events={activeEvents}
+                        onDeleteEvent={handleDeleteTimelineEvent}
+                        onEditEvent={handleOpenEditModal}
+                        currentDisplayMonth={activeDisplayMonth}
+                        onNavigateMonth={handleMonthNavigationForSharedViews}
+                    />
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="list" className="mt-0">
