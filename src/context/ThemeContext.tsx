@@ -35,7 +35,7 @@ const BACKGROUND_COLOR_STORAGE_KEY = 'futuresight-background-color';
 const CUSTOM_THEME_STORAGE_KEY = 'futuresight-custom-theme';
 const GLASS_EFFECT_STORAGE_KEY = 'futuresight-glass-effect';
 const GLASS_SETTINGS_STORAGE_KEY = 'futuresight-glass-settings';
-const DEFAULT_BACKGROUND_IMAGE = 'https://r4.wallpaperflare.com/wallpaper/113/431/804/science-fiction-digital-art-concept-art-artwork-fantasy-art-hd-wallpaper-68368da8e0100c58d06ca1fec8e2e4fa.jpg';
+const DEFAULT_BACKGROUND_IMAGE = 'https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg';
 
 const DEFAULT_GLASS_EFFECT_SETTINGS: GlassEffectSettings = {
   frosted: { blur: 16 },
