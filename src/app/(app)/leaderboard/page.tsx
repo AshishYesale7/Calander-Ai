@@ -171,30 +171,33 @@ export default function LeaderboardPageV2() {
     }
     
     return (
-        <div className="flex flex-col lg:flex-row items-start gap-8 max-w-6xl mx-auto">
-            {/* Left Column: Leaderboard */}
-            <div className="w-full lg:flex-1 space-y-8">
-                <LeagueHeader />
+        <div className="frosted-glass p-4 md:p-8 rounded-xl">
+            <div className="flex flex-col lg:flex-row items-start gap-8 max-w-6xl mx-auto">
+                {/* Left Column: Leaderboard */}
+                <div className="w-full lg:flex-1 space-y-8">
+                    <LeagueHeader />
 
-                <div className="space-y-2">
-                    {leaderboard.slice(0, LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, index + 1))}
+                    <div className="space-y-2">
+                        {leaderboard.slice(0, LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, index + 1))}
+                    </div>
+
+                    <div className="flex items-center gap-4 text-green-400 font-bold my-4">
+                        <ArrowUp className="h-5 w-5" />
+                        <span className="text-sm">PROMOTION ZONE</span>
+                        <div className="flex-1 h-px bg-green-400/30"></div>
+                    </div>
+
+                    <div className="space-y-2">
+                        {leaderboard.slice(LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, LEAGUE_PROMOTION_COUNT + index + 1))}
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-green-400 font-bold my-4">
-                    <ArrowUp className="h-5 w-5" />
-                    <span className="text-sm">PROMOTION ZONE</span>
-                    <div className="flex-1 h-px bg-green-400/30"></div>
+                {/* Right Column: Status Panel */}
+                <div className="w-full lg:w-80">
+                    <StatusPanel userStatus={userProfile?.statusEmoji || null} onStatusChange={handleStatusChange} />
                 </div>
-
-                <div className="space-y-2">
-                    {leaderboard.slice(LEAGUE_PROMOTION_COUNT).map((u, index) => renderUserRow(u, LEAGUE_PROMOTION_COUNT + index + 1))}
-                </div>
-            </div>
-
-            {/* Right Column: Status Panel */}
-            <div className="w-full lg:w-80">
-                <StatusPanel userStatus={userProfile?.statusEmoji || null} onStatusChange={handleStatusChange} />
             </div>
         </div>
     );
 }
+
