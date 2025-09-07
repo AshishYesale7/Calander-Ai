@@ -139,8 +139,7 @@ export default function LeaderboardPageV2() {
             <div
                 key={u.id}
                 className={cn(
-                    "flex items-center gap-4 p-2 rounded-lg transition-colors",
-                    isCurrentUser && "bg-black/[.85] backdrop-blur-0"
+                    "flex items-center gap-4 p-2 rounded-lg transition-colors"
                 )}
             >
                 <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
@@ -156,7 +155,7 @@ export default function LeaderboardPageV2() {
                         <span className="absolute -bottom-1 -right-1 text-lg bg-card p-0.5 rounded-full leading-none">{u.statusEmoji}</span>
                     )}
                 </div>
-                <p className="font-semibold text-foreground flex-1">{u.displayName || `User ${u.id.substring(0, 5)}`}</p>
+                <p className={cn("font-semibold flex-1", isCurrentUser ? "text-green-400" : "text-foreground")}>{u.displayName || `User ${u.id.substring(0, 5)}`}</p>
                 <p className="text-sm font-bold text-yellow-400">{formatXP(u.timeSpentTotal)} XP</p>
             </div>
         );
