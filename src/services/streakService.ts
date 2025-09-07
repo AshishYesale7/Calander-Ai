@@ -1,4 +1,3 @@
-
 'use server';
 import { db } from '@/lib/firebase';
 import type { StreakData, LeaderboardUser } from '@/types';
@@ -7,7 +6,8 @@ import { getUserProfile } from './userService';
 
 const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
-export const getStreakDocRef = (userId: string) => {
+// This is now an internal helper function and is NOT exported.
+const getStreakDocRef = (userId: string) => {
   if (!db) {
     throw new Error("Firestore is not initialized.");
   }

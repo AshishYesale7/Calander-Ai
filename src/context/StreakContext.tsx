@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
@@ -6,8 +5,8 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getStreakData } from '@/services/streakService';
 import type { StreakData } from '@/types';
-import { onSnapshot, type Timestamp } from 'firebase/firestore';
-import { getStreakDocRef } from '@/services/streakService';
+import { onSnapshot, type Timestamp, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 
 interface StreakContextType {
@@ -26,9 +25,10 @@ export const StreakProvider = ({ children }: { children: ReactNode }) => {
 
   // This effect fetches the initial data when the component mounts or the user changes.
   useEffect(() => {
-    if (user) {
+    if (user && db) {
         setIsLoading(true);
-        const streakDocRef = getStreakDocRef(user.uid);
+        // We create the doc ref here directly now.
+        const streakDocRef = doc(db, 'streaks', user.uid);
         
         // Set up a real-time listener
         const unsubscribe = onSnapshot(streakDocRef, (doc) => {
