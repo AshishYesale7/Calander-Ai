@@ -9,8 +9,6 @@ import {
   getDoc,
   getDocs,
   Timestamp,
-  onSnapshot,
-  query,
 } from 'firebase/firestore';
 import { getUserProfile } from './userService';
 import { sendNotification } from '@/ai/flows/send-notification-flow';
@@ -20,8 +18,9 @@ const getFollowersCollection = (userId: string) => collection(db, 'users', userI
 const getFollowingCollection = (userId: string) => collection(db, 'users', userId, 'following');
 
 // Follow a user
-export const followUser = async (currentUserId: string, targetUserId: string) => {
+export async function followUser(currentUserId: string, targetUserId: string) {
   if (currentUserId === targetUserId) return;
+  if (!db) throw new Error("Firestore is not initialized.");
 
   const batch = writeBatch(db);
 
@@ -60,7 +59,8 @@ export const followUser = async (currentUserId: string, targetUserId: string) =>
 };
 
 // Unfollow a user
-export const unfollowUser = async (currentUserId: string, targetUserId: string) => {
+export async function unfollowUser(currentUserId: string, targetUserId: string) {
+  if (!db) throw new Error("Firestore is not initialized.");
   const batch = writeBatch(db);
 
   const followingRef = doc(getFollowingCollection(currentUserId), targetUserId);
@@ -83,7 +83,7 @@ export const unfollowUser = async (currentUserId: string, targetUserId: string) 
 };
 
 // Get a list of followers for a user
-export const getFollowers = async (userId: string) => {
+export async function getFollowers(userId: string) {
   const followersSnapshot = await getDocs(getFollowersCollection(userId));
   const userPromises = followersSnapshot.docs.map(doc => getUserProfile(doc.id));
   const users = await Promise.all(userPromises);
@@ -91,56 +91,9 @@ export const getFollowers = async (userId: string) => {
 };
 
 // Get a list of users someone is following
-export const getFollowing = async (userId: string) => {
+export async function getFollowing(userId: string) {
   const followingSnapshot = await getDocs(getFollowingCollection(userId));
   const userPromises = followingSnapshot.docs.map(doc => getUserProfile(doc.id));
   const users = await Promise.all(userPromises);
   return users.filter(u => u).map(u => ({ id: u!.uid, displayName: u!.displayName, photoURL: u!.photoURL, username: u!.username }));
-};
-
-// Real-time listener for follow data
-export const listenForFollowChanges = (
-    profileUserId: string,
-    currentUserId: string,
-    callback: (data: { followersCount: number; followingCount: number; isCurrentUserFollowing: boolean }) => void
-) => {
-    const userDocRef = doc(db, 'users', profileUserId);
-    
-    // Listen for changes on the main user document (for counts)
-    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
-        const followersCount = docSnap.data()?.followersCount || 0;
-        const followingCount = docSnap.data()?.followingCount || 0;
-        
-        // Check if the current user is a follower of the profile user
-        const followerDocRef = doc(getFollowersCollection(profileUserId), currentUserId);
-        getDoc(followerDocRef).then(followerSnap => {
-            callback({
-                followersCount,
-                followingCount,
-                isCurrentUserFollowing: followerSnap.exists(),
-            });
-        });
-    });
-
-    // Also listen directly to the follower document for real-time button updates
-    const followerDocRef = doc(getFollowersCollection(profileUserId), currentUserId);
-    const unsubscribeFollower = onSnapshot(followerDocRef, () => {
-        // When this specific doc changes, re-fetch the main counts and status
-        getDoc(userDocRef).then(docSnap => {
-            const followersCount = docSnap.data()?.followersCount || 0;
-            const followingCount = docSnap.data()?.followingCount || 0;
-             getDoc(followerDocRef).then(followerSnap => {
-                callback({
-                    followersCount,
-                    followingCount,
-                    isCurrentUserFollowing: followerSnap.exists(),
-                });
-            });
-        });
-    });
-
-    return () => {
-        unsubscribeUser();
-        unsubscribeFollower();
-    };
 };

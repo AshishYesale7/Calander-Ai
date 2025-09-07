@@ -27,9 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { followUser, unfollowUser, getFollowers, getFollowing, listenForFollowChanges } from '@/services/followService';
+import { followUser, unfollowUser, getFollowers, getFollowing } from '@/services/followService';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Link from 'next/link';
+import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +68,16 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                         )}
                     </div>
                     <div className="flex gap-2">
-                        {children}
+                        {isOwnProfile && !isEditing && (
+                            <Button variant="outline" size="sm" className="mb-2" onClick={onEditToggle}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                            </Button>
+                        )}
+                        {!isOwnProfile && (
+                           <>
+                                {children}
+                           </>
+                        )}
                         {isEditing && (
                              <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
@@ -214,8 +225,50 @@ export default function UserProfilePage() {
     
     // Real-time follow data listener
     useEffect(() => {
-        if (!profile?.uid || !currentUser?.uid) return;
+        if (!profile?.uid || !currentUser?.uid || !db) return;
         
+        const getFollowersCollection = (userId: string) => collection(db, 'users', userId, 'followers');
+
+        const listenForFollowChanges = (
+            profileUserId: string,
+            currentUserId: string,
+            callback: (data: { followersCount: number; followingCount: number; isCurrentUserFollowing: boolean }) => void
+        ) => {
+            const userDocRef = doc(db, 'users', profileUserId);
+            const followerDocRef = doc(getFollowersCollection(profileUserId), currentUserId);
+
+            const unsubUser = onSnapshot(userDocRef, (docSnap) => {
+                const followersCount = docSnap.data()?.followersCount || 0;
+                const followingCount = docSnap.data()?.followingCount || 0;
+                getDoc(followerDocRef).then(followerSnap => {
+                    callback({
+                        followersCount,
+                        followingCount,
+                        isCurrentUserFollowing: followerSnap.exists(),
+                    });
+                });
+            });
+
+            const unsubFollower = onSnapshot(followerDocRef, () => {
+                getDoc(userDocRef).then(docSnap => {
+                    const followersCount = docSnap.data()?.followersCount || 0;
+                    const followingCount = docSnap.data()?.followingCount || 0;
+                    getDoc(followerDocRef).then(followerSnap => {
+                        callback({
+                            followersCount,
+                            followingCount,
+                            isCurrentUserFollowing: followerSnap.exists(),
+                        });
+                    });
+                });
+            });
+
+            return () => {
+                unsubUser();
+                unsubFollower();
+            };
+        };
+
         const unsubscribe = listenForFollowChanges(profile.uid, currentUser.uid, (data) => {
             setFollowersCount(data.followersCount);
             setFollowingCount(data.followingCount);
@@ -252,6 +305,9 @@ export default function UserProfilePage() {
                 newPhotoURL = await uploadProfileImage(currentUser.uid, newImageFile, (progress) => setUploadProgress(progress));
                 setUploadProgress(null);
                 setNewImageFile(null);
+                 if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
+                    await deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
+                }
             } catch (err) {
                 toast({ title: "Image Upload Failed", description: "Could not upload your new profile picture. Please try again.", variant: "destructive" });
                 setIsLoading(false);
@@ -262,10 +318,6 @@ export default function UserProfilePage() {
         }
 
         try {
-             if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
-                deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
-            }
-
             await updateUserProfile(currentUser.uid, {
                 displayName: editDisplayName,
                 username: editUsername,
