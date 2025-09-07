@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Link2, Zap, Settings } from "lucide-react";
 export default function DiscordDashboard() {
     
     const discordBgStyle = {
-        backgroundColor: '#5865F2',
+        backgroundColor: '#282828',
     };
 
     return (
