@@ -665,7 +665,7 @@ export default function DashboardPage() {
                       onSync={handleSyncCalendarData}
                       isSyncing={isLoading}
                       onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
-                      isTrashOpen={isTrashOpen}
+                      isTrashOpen={isTrashPanelOpen}
                   />
                 </div>
                 {isTrashPanelOpen && (
@@ -781,4 +781,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
