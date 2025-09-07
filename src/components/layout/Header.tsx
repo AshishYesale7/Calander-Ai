@@ -412,7 +412,10 @@ export default function Header({
                   <Clock className="mr-2 h-4 w-4" />
                   <span>Date & Time Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}>
+                <DropdownMenuItem
+                  onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}
+                  disabled={!userProfile?.username}
+                >
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>View Profile</span>
                 </DropdownMenuItem>
