@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download, ExternalLink, Code, Settings, CheckCircle, Trash2 } from 'lucide-react';
+import { Search, Download, ExternalLink, Code, Settings, CheckCircle, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
@@ -79,6 +79,7 @@ export default function ExtensionPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set());
+  const [installingPlugin, setInstallingPlugin] = useState<string | null>(null);
   
   const { 
     activePlugin, 
@@ -121,9 +122,14 @@ export default function ExtensionPage() {
   }, [user, toast]);
 
   const handleInstall = (pluginName: string) => {
-    const newSet = new Set(installedPluginsSet);
-    newSet.add(pluginName);
-    updateInstalledPlugins(newSet);
+    setInstallingPlugin(pluginName);
+    setTimeout(() => {
+      const newSet = new Set(installedPluginsSet);
+      newSet.add(pluginName);
+      updateInstalledPlugins(newSet);
+      setInstallingPlugin(null);
+      toast({ title: "Plugin Installed", description: `${pluginName} has been added.` });
+    }, 3000);
   };
   
   const handleUninstall = (pluginName: string) => {
@@ -153,6 +159,7 @@ export default function ExtensionPage() {
   const PluginCardItem = ({ plugin }: { plugin: Plugin }) => {
     const isInstalled = installedPluginsSet.has(plugin.name);
     const isCodefolio = plugin.name === 'Codefolio Ally';
+    const isInstalling = installingPlugin === plugin.name;
     const LogoComponent = plugin.logo;
 
     return (
@@ -188,8 +195,19 @@ export default function ExtensionPage() {
                         </Button>
                     </div>
                 ) : (
-                    <Button variant="default" size="sm" className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90" onClick={() => handleInstall(plugin.name)}>
-                        <Download className="h-3 w-3 mr-1.5"/> Install
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="mt-2 h-7 px-3 text-xs bg-accent hover:bg-accent/90"
+                        onClick={() => handleInstall(plugin.name)}
+                        disabled={isInstalling}
+                    >
+                        {isInstalling ? (
+                            <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                        ) : (
+                            <Download className="h-3 w-3 mr-1.5"/>
+                        )}
+                        {isInstalling ? 'Installing...' : 'Install'}
                     </Button>
                 )}
             </div>
