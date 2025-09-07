@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2 } from 'lucide-react';
+import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
 import { useToast } from '@/hooks/use-toast';
@@ -105,6 +105,7 @@ export default function UserProfilePage() {
     const [editDisplayName, setEditDisplayName] = useState('');
     const [editUsername, setEditUsername] = useState('');
     const [editBio, setEditBio] = useState('');
+    const [editPhotoURL, setEditPhotoURL] = useState('');
     const [editGithub, setEditGithub] = useState('');
     const [editLinkedin, setEditLinkedin] = useState('');
     const [editTwitter, setEditTwitter] = useState('');
@@ -123,6 +124,7 @@ export default function UserProfilePage() {
                 setEditDisplayName(fetchedProfile.displayName || '');
                 setEditUsername(fetchedProfile.username || '');
                 setEditBio(fetchedProfile.bio || '');
+                setEditPhotoURL(fetchedProfile.photoURL || '');
                 setEditGithub(fetchedProfile.socials?.github || '');
                 setEditLinkedin(fetchedProfile.socials?.linkedin || '');
                 setEditTwitter(fetchedProfile.socials?.twitter || '');
@@ -155,6 +157,7 @@ export default function UserProfilePage() {
                 displayName: editDisplayName,
                 username: editUsername,
                 bio: editBio,
+                photoURL: editPhotoURL,
                 socials: { github: editGithub, linkedin: editLinkedin, twitter: editTwitter },
                 countryCode: editCountryCode,
             });
@@ -174,6 +177,7 @@ export default function UserProfilePage() {
         setEditDisplayName(profile.displayName || '');
         setEditUsername(profile.username || '');
         setEditBio(profile.bio || '');
+        setEditPhotoURL(profile.photoURL || '');
         setEditGithub(profile.socials?.github || '');
         setEditLinkedin(profile.socials?.linkedin || '');
         setEditTwitter(profile.socials?.twitter || '');
@@ -251,7 +255,13 @@ export default function UserProfilePage() {
                 <div className="md:col-span-2 space-y-6">
                      <ProfileInfoCard title="About" icon={AtSign}>
                         {isEditing ? (
-                            <Textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
+                            <div className="space-y-4">
+                                <Textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
+                                <div>
+                                    <Label htmlFor="photoURL" className="flex items-center gap-2 mb-1.5"><ImageIcon className="h-4 w-4"/>Photo URL</Label>
+                                    <Input id="photoURL" value={editPhotoURL} onChange={e => setEditPhotoURL(e.target.value)} placeholder="https://..." />
+                                </div>
+                            </div>
                         ) : (
                             <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
                                 {profile.bio || 'This user has not written a bio yet.'}
@@ -334,3 +344,4 @@ export default function UserProfilePage() {
     )
 
     
+}

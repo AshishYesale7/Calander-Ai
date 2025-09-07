@@ -21,10 +21,11 @@ export interface RoutineItem {
 export interface UserPreferences {
   username: string;
   routine: RoutineItem[];
-  countryCode?: string;
-  statusEmoji?: string;
+  countryCode?: string | null;
+  statusEmoji?: string | null;
   bio?: string;
   socials?: SocialLinks;
+  photoURL?: string | null;
 }
 
 export type EarlyReminder = 'none' | 'on_day' | '1_day' | '2_days' | '1_week';
@@ -258,7 +259,7 @@ export interface LeaderboardUser {
     id: string;
     displayName: string;
     username: string;
-    photoURL?: string;
+    photoURL?: string | null;
     currentStreak: number;
     longestStreak: number;
     timeSpentTotal: number; // XP for leaderboard

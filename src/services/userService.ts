@@ -151,10 +151,12 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
             }
 
             // Lazy migration for other profile fields
-            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode'];
+            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL'];
             fieldsToDefault.forEach(field => {
                 if (data[field] === undefined) {
-                    dataToUpdate[field] = field === 'socials' ? { github: '', linkedin: '', twitter: '' } : field === 'bio' ? '' : null;
+                    if (field === 'socials') dataToUpdate[field] = { github: '', linkedin: '', twitter: '' };
+                    else if (field === 'bio') dataToUpdate[field] = '';
+                    else dataToUpdate[field] = null;
                     needsUpdate = true;
                 }
             });
@@ -302,4 +304,5 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
+
 
