@@ -26,6 +26,7 @@ export interface UserPreferences {
   bio?: string;
   socials?: SocialLinks;
   photoURL?: string | null;
+  coverPhotoURL?: string | null;
   followersCount: number;
   followingCount: number;
 }

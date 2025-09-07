@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getUserByUsername, updateUserProfile, type PublicUserProfile } from '@/services/userService';
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon, Rss, UserCheck } from 'lucide-react';
+import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon, Rss, UserCheck, Camera } from 'lucide-react';
 import Image from 'next/image';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useTheme } from '@/hooks/use-theme';
 
 // Define a type for the editable fields to manage them in a single state
 type EditableProfileState = {
@@ -39,6 +40,7 @@ type EditableProfileState = {
     username: string;
     bio: string;
     photoURL: string | null;
+    coverPhotoURL: string | null;
     socials: {
         github: string;
         linkedin: string;
@@ -47,18 +49,25 @@ type EditableProfileState = {
     countryCode: string | null;
 };
 
-const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
+const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, onCoverFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, onCoverFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const coverFileInputRef = useRef<HTMLInputElement>(null);
     return (
         <div className="relative">
-            <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden">
+            <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden group">
                 <Image
-                    src={"https://images.unsplash.com/photo-1554147090-e1221a04a0625?q=80&w=2070&auto=format&fit=crop"}
+                    src={profile.coverPhotoURL || "https://images.unsplash.com/photo-1554147090-e1221a04a0625?q=80&w=2070&auto=format&fit=crop"}
                     alt="Cover"
                     layout="fill"
                     objectFit="cover"
                     data-ai-hint="abstract background"
                 />
+                 {isEditing && (
+                    <button onClick={() => coverFileInputRef.current?.click()} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="h-8 w-8 text-white"/>
+                        <input type="file" ref={coverFileInputRef} onChange={onCoverFileSelect} accept="image/*" className="hidden"/>
+                    </button>
+                )}
             </div>
             <div className="p-6 pt-0">
                 <div className="flex justify-between items-end -mt-16">
@@ -176,6 +185,7 @@ const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerT
 
 export default function UserProfilePage() {
     const { user: currentUser, refreshUser } = useAuth();
+    const { setBackgroundImage } = useTheme();
     const params = useParams();
     const { toast } = useToast();
     const username = Array.isArray(params.username) ? params.username[0] : params.username as string;
@@ -190,6 +200,7 @@ export default function UserProfilePage() {
     const [editableState, setEditableState] = useState<EditableProfileState | null>(null);
     
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
+    const [newCoverImageFile, setNewCoverImageFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     
     const [followersCount, setFollowersCount] = useState(0);
@@ -205,6 +216,7 @@ export default function UserProfilePage() {
             username: profileData.username || '',
             bio: profileData.bio || '',
             photoURL: profileData.photoURL || null,
+            coverPhotoURL: profileData.coverPhotoURL || null,
             socials: {
                 github: profileData.socials?.github || '',
                 linkedin: profileData.socials?.linkedin || '',
@@ -308,6 +320,20 @@ export default function UserProfilePage() {
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleCoverFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setNewCoverImageFile(file);
+             const reader = new FileReader();
+            reader.onloadend = () => {
+                if (editableState) {
+                    setEditableState({ ...editableState, coverPhotoURL: reader.result as string });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSave = async () => {
         if (!isOwnProfile || !currentUser || !profile || !editableState) return;
@@ -315,31 +341,43 @@ export default function UserProfilePage() {
         
         let newPhotoURL = profile.photoURL;
         const oldPhotoURL = profile.photoURL;
+        
+        let newCoverPhotoURL = profile.coverPhotoURL;
+        const oldCoverPhotoURL = profile.coverPhotoURL;
 
-        if (newImageFile) {
-            try {
-                newPhotoURL = await uploadProfileImage(currentUser.uid, newImageFile, (progress) => setUploadProgress(progress));
+        try {
+            if (newImageFile) {
+                newPhotoURL = await uploadProfileImage(currentUser.uid, newImageFile, 'profileImages', (progress) => setUploadProgress(progress));
                 setUploadProgress(null);
                 setNewImageFile(null);
                  if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
                     await deleteImageByUrl(oldPhotoURL);
                 }
-            } catch (err) {
-                toast({ title: "Image Upload Failed", description: "Could not upload your new profile picture. Please try again.", variant: "destructive" });
-                setIsSaving(false);
-                return;
+            } else if (editableState.photoURL !== oldPhotoURL) {
+                newPhotoURL = editableState.photoURL;
+                if (oldPhotoURL) await deleteImageByUrl(oldPhotoURL);
             }
-        } else if (editableState.photoURL !== oldPhotoURL) {
-            newPhotoURL = editableState.photoURL;
-            if (oldPhotoURL) await deleteImageByUrl(oldPhotoURL);
-        }
 
-        try {
+            if (newCoverImageFile) {
+                newCoverPhotoURL = await uploadProfileImage(currentUser.uid, newCoverImageFile, 'coverImages', (progress) => setUploadProgress(progress));
+                setUploadProgress(null);
+                setNewCoverImageFile(null);
+                if (oldCoverPhotoURL && newCoverPhotoURL !== oldCoverPhotoURL) {
+                    await deleteImageByUrl(oldCoverPhotoURL);
+                }
+            } else if (editableState.coverPhotoURL !== oldCoverPhotoURL) {
+                newCoverPhotoURL = editableState.coverPhotoURL;
+                if (oldCoverPhotoURL) await deleteImageByUrl(oldCoverPhotoURL);
+            }
+            
             const dataToSave = {
                 ...editableState,
                 photoURL: newPhotoURL,
+                coverPhotoURL: newCoverPhotoURL,
             };
+
             await updateUserProfile(currentUser.uid, dataToSave);
+            setBackgroundImage(newCoverPhotoURL);
             await refreshUser();
             await fetchProfile(dataToSave.username); // Refetch profile with the potentially new username
             toast({ title: "Profile Updated", description: "Your changes have been saved." });
@@ -355,6 +393,7 @@ export default function UserProfilePage() {
         if (!profile) return;
         setEditingFields(profile);
         setNewImageFile(null);
+        setNewCoverImageFile(null);
         setUploadProgress(null);
         setIsEditing(false);
     };
@@ -420,13 +459,14 @@ export default function UserProfilePage() {
         <div className="max-w-4xl mx-auto">
             <Card className="frosted-glass p-0">
                  <ProfileHeader 
-                    profile={{ ...profile, photoURL: isEditing ? editableState.photoURL : profile.photoURL }}
+                    profile={{ ...profile, photoURL: isEditing ? editableState.photoURL : profile.photoURL, coverPhotoURL: isEditing ? editableState.coverPhotoURL : profile.coverPhotoURL }}
                     isEditing={isEditing}
                     onEditToggle={() => setIsEditing(true)}
                     onSave={handleSave}
                     onCancel={handleCancel}
                     isSaving={isSaving}
                     onFileSelect={handleFileSelect}
+                    onCoverFileSelect={handleCoverFileSelect}
                     uploadProgress={uploadProgress}
                     isOwnProfile={isOwnProfile}
                  >
@@ -487,10 +527,17 @@ export default function UserProfilePage() {
                             <div className="space-y-4">
                                 <Textarea value={editableState.bio} onChange={e => handleEditableStateChange('bio', e.target.value)} placeholder="Tell us about yourself..." />
                                 <div>
-                                    <Label htmlFor="photoUrl">Image URL</Label>
+                                    <Label htmlFor="photoUrl">Avatar Image URL</Label>
                                     <div className="flex items-center gap-2">
                                         <LinkIcon className="h-5 w-5 text-muted-foreground" />
                                         <Input id="photoUrl" value={editableState.photoURL || ''} onChange={e => handleEditableStateChange('photoURL', e.target.value)} placeholder="https://example.com/image.png" />
+                                    </div>
+                                </div>
+                                 <div>
+                                    <Label htmlFor="coverPhotoUrl">Cover Image URL</Label>
+                                    <div className="flex items-center gap-2">
+                                        <LinkIcon className="h-5 w-5 text-muted-foreground" />
+                                        <Input id="coverPhotoUrl" value={editableState.coverPhotoURL || ''} onChange={e => handleEditableStateChange('coverPhotoURL', e.target.value)} placeholder="https://example.com/cover.png" />
                                     </div>
                                 </div>
                             </div>

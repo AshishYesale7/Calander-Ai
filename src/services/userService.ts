@@ -32,6 +32,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
                 displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
                 username: user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`,
                 photoURL: user.photoURL || null,
+                coverPhotoURL: null,
                 createdAt: new Date(),
                 bio: '',
                 socials: {
@@ -112,13 +113,14 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; coverPhotoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
     if(profileData.displayName !== undefined) dataToUpdate['displayName'] = profileData.displayName;
     if(profileData.username !== undefined) dataToUpdate['username'] = profileData.username;
     if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
+    if(profileData.coverPhotoURL !== undefined) dataToUpdate['coverPhotoURL'] = profileData.coverPhotoURL;
     if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
     if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
     if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
@@ -134,7 +136,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string | null; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }> | null> => {
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string | null; coverPhotoURL: string | null; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -150,7 +152,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
                 needsUpdate = true;
             }
 
-            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL', 'followersCount', 'followingCount'];
+            const fieldsToDefault: (keyof PublicUserProfile)[] = ['bio', 'socials', 'statusEmoji', 'countryCode', 'photoURL', 'coverPhotoURL', 'followersCount', 'followingCount'];
             fieldsToDefault.forEach(field => {
                 if (data[field] === undefined) {
                     if (field === 'socials') dataToUpdate[field] = { github: '', linkedin: '', twitter: '' };
@@ -176,6 +178,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
                 displayName: data.displayName,
                 username: username,
                 photoURL: data.photoURL,
+                coverPhotoURL: data.coverPhotoURL,
                 bio: data.bio || '',
                 socials: data.socials || { github: '', linkedin: '', twitter: '' },
                 statusEmoji: data.statusEmoji || null,
@@ -195,6 +198,7 @@ export type PublicUserProfile = {
     displayName: string;
     username: string;
     photoURL: string | null;
+    coverPhotoURL: string | null;
     bio: string;
     socials: SocialLinks | null;
     statusEmoji: string | null;
@@ -224,6 +228,7 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
             displayName: userData.displayName || 'Anonymous User',
             username: userData.username || `user_${userDoc.id.substring(0, 10)}`,
             photoURL: userData.photoURL || null,
+            coverPhotoURL: userData.coverPhotoURL || null,
             bio: userData.bio || '',
             socials: userData.socials || null,
             statusEmoji: userData.statusEmoji || null,

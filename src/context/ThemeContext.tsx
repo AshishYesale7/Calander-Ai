@@ -1,7 +1,10 @@
+
 'use client';
 
 import type { ReactNode} from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
+import { getUserProfile } from '@/services/userService';
 
 type Theme = 'light' | 'dark';
 type CustomTheme = Record<string, string>;
@@ -83,6 +86,7 @@ const getInitialState = <T,>(key: string, defaultValue: T): T => {
 
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [theme, setThemeState] = useState<Theme>(() => getInitialState<Theme>(THEME_STORAGE_KEY, 'dark'));
   const [backgroundImage, setBackgroundImageState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_IMAGE_STORAGE_KEY, DEFAULT_BACKGROUND_IMAGE));
   const [backgroundColor, setBackgroundColorState] = useState<string | null>(() => getInitialState<string | null>(BACKGROUND_COLOR_STORAGE_KEY, null));
@@ -94,6 +98,21 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Fetch cover photo on user change
+  useEffect(() => {
+      if (user) {
+          getUserProfile(user.uid).then(profile => {
+              if (profile && profile.coverPhotoURL) {
+                  setBackgroundImageState(profile.coverPhotoURL);
+              } else {
+                  // If user has no cover photo, fall back to locally stored or default.
+                  const localBg = getInitialState<string | null>(BACKGROUND_IMAGE_STORAGE_KEY, DEFAULT_BACKGROUND_IMAGE);
+                  setBackgroundImageState(localBg);
+              }
+          });
+      }
+  }, [user]);
 
   const setItemInStorage = <T,>(key: string, value: T | null) => {
     if (isMounted) {
@@ -124,15 +143,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   const setBackgroundImage = useCallback((url: string | null) => {
-    // When a new image is set, it becomes the source of truth.
-    // The color must be cleared to allow the image to be visible.
     setBackgroundImageState(url);
     setBackgroundColorState(null);
   }, []);
   
   const setBackgroundColor = useCallback((color: string | null) => {
-    // When a color is set, it becomes the source of truth.
-    // The image must be cleared to allow the color to be visible.
     setBackgroundColorState(color);
     setBackgroundImageState(null);
   }, []);
@@ -150,7 +165,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const resetCustomizations = useCallback(() => {
-    // Reset restores the default image and clears any custom color.
     setBackgroundImageState(DEFAULT_BACKGROUND_IMAGE);
     setBackgroundColorState(null);
     setCustomThemeState(null);
