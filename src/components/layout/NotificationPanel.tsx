@@ -1,47 +1,109 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Bell, CalendarClock } from 'lucide-react';
+import { Bell, UserPlus, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getTimelineEvents } from '@/services/timelineService';
-import type { TimelineEvent } from '@/types';
-import { startOfToday, endOfToday, addDays, isWithinInterval, formatDistanceToNowStrict, format } from 'date-fns';
+import { getNotifications, markAllNotificationsAsRead, markNotificationAsRead } from '@/services/notificationService';
+import type { AppNotification } from '@/types';
+import { formatDistanceToNow } from 'date-fns';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ScrollArea } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+const getNotificationIcon = (type: AppNotification['type']) => {
+    switch (type) {
+        case 'new_follower':
+            return <UserPlus className="h-5 w-5 text-blue-400" />;
+        default:
+            return <Bell className="h-5 w-5 text-accent" />;
+    }
+};
 
 export default function NotificationPanel() {
   const { user } = useAuth();
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Set up a real-time listener for notifications
   useEffect(() => {
-    if (user) {
+    if (user && db) {
       setIsLoading(true);
-      getTimelineEvents(user.uid)
-        .then(setEvents)
-        .finally(() => setIsLoading(false));
+      const notificationsCollection = collection(db, 'users', user.uid, 'notifications');
+      const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(20));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedNotifications = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: (doc.data().createdAt as any).toDate(),
+        } as AppNotification));
+        setNotifications(fetchedNotifications);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Failed to listen for notifications:", error);
+        setIsLoading(false);
+      });
+
+      return () => unsubscribe(); // Cleanup listener on unmount
+    } else {
+        setIsLoading(false);
+        setNotifications([]);
     }
   }, [user]);
+  
+  const hasUnread = useMemo(() => notifications.some(n => !n.isRead), [notifications]);
 
-  const upcomingEvents = useMemo(() => {
-    const todayStart = startOfToday();
-    const nextThreeDaysEnd = endOfToday(addDays(todayStart, 3));
-    return events
-      .filter(event => 
-          !event.deletedAt &&
-          event.date && 
-          isWithinInterval(event.date, { start: todayStart, end: nextThreeDaysEnd })
-      )
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [events]);
+  const handleMarkOneAsRead = async (notificationId: string) => {
+    if (!user) return;
+    // Optimistically update the UI
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
+    await markNotificationAsRead(user.uid, notificationId);
+  };
+  
+  const handleMarkAllAsRead = async () => {
+    if (!user || !hasUnread) return;
+    setNotifications(prev => prev.map(n => ({...n, isRead: true})));
+    await markAllNotificationsAsRead(user.uid);
+  };
 
-  const hasUnread = upcomingEvents.length > 0;
+
+  const NotificationItem = ({ notification }: { notification: AppNotification }) => {
+    const itemContent = (
+      <div
+        className={cn(
+            "flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted",
+            !notification.isRead && "bg-blue-500/10"
+        )}
+        onClick={() => !notification.isRead && handleMarkOneAsRead(notification.id)}
+       >
+        <div className="h-8 w-8 flex-shrink-0 bg-background rounded-full flex items-center justify-center mt-0.5">
+          {getNotificationIcon(notification.type)}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">{notification.message}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
+          </p>
+        </div>
+      </div>
+    );
+    
+    if (notification.link) {
+      return <Link href={notification.link}>{itemContent}</Link>;
+    }
+    
+    return itemContent;
+  };
 
   return (
     <Popover>
@@ -58,35 +120,30 @@ export default function NotificationPanel() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 frosted-glass p-0">
-        <div className="p-4 border-b border-border/30">
-            <h3 className="font-headline text-lg text-primary">Notifications</h3>
-            <p className="text-sm text-muted-foreground">Upcoming events in the next 3 days.</p>
+        <div className="p-4 border-b border-border/30 flex justify-between items-center">
+            <div>
+              <h3 className="font-headline text-lg text-primary">Notifications</h3>
+            </div>
+            {hasUnread && (
+              <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={handleMarkAllAsRead}>
+                <CheckCheck className="h-4 w-4 mr-1.5"/>
+                Mark all as read
+              </Button>
+            )}
         </div>
         <ScrollArea className="h-[400px]">
-            <div className="p-4 space-y-4">
+            <div className="p-2 space-y-1">
                 {isLoading ? (
                     <div className="flex justify-center py-16">
                         <LoadingSpinner />
                     </div>
-                ) : upcomingEvents.length > 0 ? (
-                    upcomingEvents.map(event => (
-                        <div key={event.id} className="flex items-start gap-3">
-                            <div className="h-8 w-8 flex-shrink-0 bg-accent/10 rounded-full flex items-center justify-center">
-                                <CalendarClock className="h-5 w-5 text-accent" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold">{event.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {format(event.date, 'MMM d, h:mm a')}
-                                    <span className="mx-1 text-muted-foreground/50">·</span>
-                                    {formatDistanceToNowStrict(event.date, { addSuffix: true })}
-                                </p>
-                            </div>
-                        </div>
+                ) : notifications.length > 0 ? (
+                    notifications.map(notification => (
+                      <NotificationItem key={notification.id} notification={notification} />
                     ))
                 ) : (
                     <div className="text-center py-16 text-muted-foreground">
-                        <p className="text-sm">No upcoming events.</p>
+                        <p className="text-sm">No new notifications.</p>
                     </div>
                 )}
             </div>

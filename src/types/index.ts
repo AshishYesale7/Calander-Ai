@@ -65,6 +65,16 @@ export interface TimelineEvent {
   deletedAt?: Date; // For soft deletes
 }
 
+export interface AppNotification {
+  id: string;
+  type: 'new_follower' | 'event_reminder' | 'system_alert';
+  message: string;
+  link?: string; // e.g., to a user profile or event
+  isRead: boolean;
+  createdAt: Date;
+}
+
+
 export interface CareerGoal {
   id: string;
   title: string;

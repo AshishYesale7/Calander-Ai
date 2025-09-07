@@ -12,6 +12,8 @@ import {
 } from 'firebase/firestore';
 import { getUserProfile } from './userService';
 import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { createNotification } from './notificationService';
+
 
 // Helper to get collection references
 const getFollowersCollection = (userId: string) => collection(db, 'users', userId, 'followers');
@@ -46,10 +48,17 @@ export async function followUser(currentUserId: string, targetUserId: string) {
   
   await batch.commit();
   
-  // Send notification to the user who was followed
   const currentUserProfile = await getUserProfile(currentUserId);
   const followerName = currentUserProfile?.displayName || 'A new user';
   
+  // Create an in-app notification
+  await createNotification(targetUserId, {
+    type: 'new_follower',
+    message: `${followerName} started following you.`,
+    link: `/profile/${currentUserProfile?.username || ''}`
+  });
+
+  // Send a push notification
   await sendNotification({
     userId: targetUserId,
     title: 'New Follower!',
