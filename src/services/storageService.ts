@@ -56,12 +56,21 @@ export const uploadProfileImage = async (
 
 /**
  * Deletes an image from Firebase Storage using its full URL.
+ * It now verifies that the URL belongs to the app's Firebase Storage before attempting deletion.
  * @param imageUrl The full URL of the image to delete.
  */
 export const deleteImageByUrl = async (imageUrl: string): Promise<void> => {
     if (!storage) {
         throw new Error("Firebase Storage is not initialized.");
     }
+    
+    // Check if the URL is a Firebase Storage URL for this project's bucket
+    const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    if (!storageBucket || !imageUrl.startsWith(`https://firebasestorage.googleapis.com/v0/b/${storageBucket}`)) {
+        console.log(`Skipping deletion of external or non-storage URL: ${imageUrl}`);
+        return;
+    }
+
     try {
         const imageRef = ref(storage, imageUrl);
         await deleteObject(imageRef);
@@ -72,6 +81,8 @@ export const deleteImageByUrl = async (imageUrl: string): Promise<void> => {
             return;
         }
         console.error(`Failed to delete image at ${imageUrl}:`, error);
-        throw new Error("Could not delete the old profile image.");
+        // We will no longer throw an error here to prevent crashing the client on non-critical cleanup.
+        // The error is logged for debugging, but the user flow can continue.
     }
 };
+
