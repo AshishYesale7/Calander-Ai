@@ -218,18 +218,20 @@ function calculateEventLayouts(
 // --- New Components for Maximized View ---
 
 const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
-    <header className="p-2 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
+    <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
         <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronLeft className="h-4 w-4" /></Button>
-            <h2 className="font-semibold text-white px-2">Aug 2025</h2>
+            <h2 className="font-semibold text-white px-2 text-sm">Aug 2025</h2>
             <Button variant="ghost" size="icon" className="h-7 w-7"><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-        <div className="flex items-center gap-1 text-gray-400">
             <Button variant="ghost" className="h-7 px-2 text-xs">Today</Button>
         </div>
+        <div className="flex items-center gap-1 text-gray-400">
+             {/* Toolbar on the right */}
+        </div>
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><LinkIcon className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view">
                 <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
             </Button>
@@ -256,7 +258,7 @@ const PlannerSidebar = () => {
         <div>
             <ul className="space-y-0.5 text-gray-300">
                 {mainSections.map(s => (
-                    <li key={s.label} className={cn("flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30", s.label === 'Inbox' && 'bg-gray-700/50 font-semibold text-white')}>
+                    <li key={s.label} className={cn("flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs", s.label === 'Inbox' && 'bg-gray-700/50 font-semibold text-white')}>
                         <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200 h-5 px-1.5 text-xs">{s.count}</Badge>}
                     </li>
                 ))}
@@ -267,7 +269,7 @@ const PlannerSidebar = () => {
                 <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Projects</h3>
                 <ul className="space-y-0.5 text-gray-300">
                    {projects.map(p => (
-                        <li key={p.label} className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
+                        <li key={p.label} className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs">
                             <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
                             <span>{p.label}</span>
                         </li>
@@ -276,14 +278,13 @@ const PlannerSidebar = () => {
             </div>
             <div>
                  <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Tags</h3>
-                 {/* Tags can be added here */}
             </div>
         </div>
          <div className="border-t border-gray-700/50 pt-2 space-y-0.5">
-            <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
+            <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
                 <Clock size={16}/><span>Statistics</span>
             </div>
-             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
+             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
                 <Palette size={16}/><span>Daily Planning</span>
             </div>
         </div>
@@ -300,11 +301,14 @@ const PlannerTaskList = () => {
         { title: 'Film Cynicism Video', subItem: "Content Calendar", tags: [{name: 'Film', color: 'bg-blue-500'}]},
     ];
     return (
-        <div className="bg-gray-800/60 p-4 flex flex-col border-r border-gray-700/50">
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-base font-bold text-white">Inbox</h1>
+        <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50">
+            <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Inbox size={16} /> Inbox
+                </h1>
+                <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
-             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-4 text-xs h-8">
+             <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-700/50 mb-2 text-xs h-8">
                 <Plus className="mr-2 h-4 w-4" /> Add new task
             </Button>
             <div className="space-y-1 text-xs">
@@ -314,11 +318,11 @@ const PlannerTaskList = () => {
                            <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
                             <label htmlFor={task.title} className="text-gray-200 text-xs">{task.title}</label>
                             {task.tags.map(tag => (
-                                <Badge key={tag.name} className={cn("text-[10px] px-1 py-0 h-4", tag.color)}>{tag.name}</Badge>
+                                <Badge key={tag.name} className={cn("text-[9px] px-1 py-0 h-4", tag.color)}>{tag.name}</Badge>
                             ))}
                         </div>
                         {task.subItem && (
-                            <div className="pl-6 text-xs text-gray-400 flex items-center gap-1 mt-1">
+                            <div className="pl-6 text-[10px] text-gray-400 flex items-center gap-1 mt-1">
                                 <Calendar size={12}/>{task.subItem}
                             </div>
                         )}
@@ -359,13 +363,13 @@ const PlannerWeeklyTimeline = () => {
 
     return (
         <div className="w-[1200px] flex-shrink-0 bg-black/30 p-2 text-xs">
-            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1">
+            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
                 {days.map(day => <div key={day}>{day}</div>)}
             </div>
              <div className="relative border-b border-gray-700/50 mb-1 pb-1">
-                 <div className="grid grid-cols-7 h-6">
+                 <div className="grid grid-cols-7 h-5">
                     {allDayEvents.map((event, i) => (
-                        <div key={i} className={cn("text-white p-1 rounded-sm text-[10px] font-semibold overflow-hidden whitespace-nowrap", event.color)}
+                        <div key={i} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", event.color)}
                             style={{ gridColumnStart: event.day, gridColumnEnd: `span ${event.span}`}}>
                             {event.title}
                         </div>
@@ -389,7 +393,7 @@ const PlannerWeeklyTimeline = () => {
                 </div>
                 <div className="absolute inset-0 grid grid-cols-7">
                     {timedEvents.map((event, i) => (
-                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-xs overflow-hidden', event.color)}
+                        <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', event.color)}
                             style={{ gridColumnStart: event.day, gridRow: 'auto / span ' + (event.duration * 2), top: `${(event.start - 5) * 50}px`, height: `${event.duration * 50}px`}}>
                             <div className='flex items-center gap-1 text-[10px]'>
                                 {event.icon && <event.icon size={12}/>}{event.title}
@@ -399,7 +403,7 @@ const PlannerWeeklyTimeline = () => {
                     ))}
                     <div className="absolute border border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300"
                         style={{ gridColumnStart: 5, top: `${(10) * 50}px`, height: '25px'}}>
-                        <p className="text-xs font-semibold">Thumbnail: Twitch HQ</p>
+                        <p className="text-[10px] font-semibold">Thumbnail: Twitch HQ</p>
                     </div>
                 </div>
                 <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
@@ -423,6 +427,15 @@ interface DayTimetableViewProps {
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
 
+const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
+  <div
+    className="w-1.5 cursor-col-resize flex items-center justify-center bg-transparent hover:bg-gray-700/50 transition-colors"
+    onMouseDown={onMouseDown}
+  >
+    <GripVertical className="h-4 w-4 text-gray-600" />
+  </div>
+);
+
 export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -433,6 +446,44 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
+
+  const [panelWidths, setPanelWidths] = useState([20, 25, 55]);
+  const isResizing = useRef<number | null>(null);
+  const startXRef = useRef(0);
+  const startWidthsRef = useRef<number[]>([]);
+
+  const onMouseDown = (index: number) => (e: React.MouseEvent) => {
+    isResizing.current = index;
+    startXRef.current = e.clientX;
+    startWidthsRef.current = [...panelWidths];
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (isResizing.current === null) return;
+    const dx = e.clientX - startXRef.current;
+    const totalWidth = window.innerWidth * 0.98; // Assuming the container takes up most of the screen width
+    const dxPercent = (dx / totalWidth) * 100;
+    
+    const newWidths = [...startWidthsRef.current];
+    const leftPanelIndex = isResizing.current;
+    const rightPanelIndex = isResizing.current + 1;
+
+    newWidths[leftPanelIndex] += dxPercent;
+    newWidths[rightPanelIndex] -= dxPercent;
+    
+    // Constraints (e.g., min 15% width)
+    if (newWidths[leftPanelIndex] < 15 || newWidths[rightPanelIndex] < 15) return;
+
+    setPanelWidths(newWidths);
+  };
+
+  const onMouseUp = () => {
+    isResizing.current = null;
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
   const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
@@ -507,17 +558,16 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
 
-  // New Maximized View
   if (isMaximized) {
     return (
         <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
             <PlannerHeader onMinimize={() => setIsMaximized(false)} />
             <div className="flex flex-1 min-h-0">
-                <PlannerSidebar />
-                <PlannerTaskList />
-                <div className="flex-1 overflow-auto">
-                    <PlannerWeeklyTimeline />
-                </div>
+                <div style={{ flexBasis: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar /></div>
+                <Resizer onMouseDown={onMouseDown(0)} />
+                <div style={{ flexBasis: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerTaskList /></div>
+                <Resizer onMouseDown={onMouseDown(1)} />
+                <div style={{ flexBasis: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline /></div>
             </div>
         </div>
     )
@@ -773,3 +823,5 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     </Card>
   );
 }
+
+    
