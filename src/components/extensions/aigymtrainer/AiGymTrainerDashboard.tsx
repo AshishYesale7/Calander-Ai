@@ -9,15 +9,16 @@ import { Dumbbell } from "lucide-react";
 
 export default function AiGymTrainerDashboard() {
     
-    const woodBgStyle = {
-        backgroundImage: 'url(https://www.transparenttextures.com/patterns/wood-pattern.png), linear-gradient(to bottom right, #6b4a2f, #4a2d1a)',
-        backgroundBlendMode: 'overlay',
-        backgroundColor: '#583A24',
+    const newBgStyle = {
+        backgroundImage: 'url(https://t3.ftcdn.net/jpg/07/64/35/60/360_F_764356037_r3JjDGtxqV6LvropuUkrf6IVseSillSc.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 min-h-full w-full" style={woodBgStyle}>
-            <div className="max-w-4xl mx-auto">
+        <div className="p-4 sm:p-6 lg:p-8 min-h-full w-full" style={newBgStyle}>
+            <div className="absolute inset-0 bg-black/50"></div>
+            <div className="max-w-4xl mx-auto relative z-10">
                 <div className="mb-8 text-center">
                     <AiGymTrainerLogo className="h-24 w-24 mx-auto text-yellow-400 drop-shadow-lg" />
                     <h1 className="text-4xl font-bold font-headline text-white/90 drop-shadow-md mt-4">
