@@ -307,10 +307,10 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   return (
     <Card className={cn(
-        "frosted-glass w-full shadow-xl flex flex-col mt-6 transition-all duration-300",
+        "frosted-glass w-full shadow-xl flex flex-col transition-all duration-300",
         isMaximized 
           ? "fixed inset-0 top-16 z-40 rounded-none border-none max-h-none"
-          : "max-h-[70vh]"
+          : "mt-6 max-h-[70vh]"
     )}>
       <CardHeader className="p-4 border-b border-border/30 flex flex-row justify-between items-center">
         <div>
