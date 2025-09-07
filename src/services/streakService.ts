@@ -2,7 +2,7 @@
 'use server';
 import { db } from '@/lib/firebase';
 import type { StreakData, LeaderboardUser } from '@/types';
-import { collection, doc, getDoc, setDoc, Timestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, Timestamp, getDocs, query, orderBy, limit, updateDoc, increment } from 'firebase/firestore';
 import { getUserProfile } from './userService';
 
 const getStreakDocRef = (userId: string) => {
@@ -12,13 +12,12 @@ const getStreakDocRef = (userId: string) => {
   return doc(db, 'streaks', userId);
 };
 
-export const getStreakData = async (userId: string): Promise<StreakData | null> => {
+export const getStreakData = async (userId: string): Promise<StreakData> => {
   const streakDocRef = getStreakDocRef(userId);
   try {
     const docSnap = await getDoc(streakDocRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      // Ensure all fields are correctly typed, providing defaults for new fields
       return {
         currentStreak: data.currentStreak || 0,
         longestStreak: data.longestStreak || 0,
@@ -30,8 +29,6 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
         completedDays: data.completedDays || [],
       };
     } else {
-      // If the document does not exist, this is a new user for streak tracking.
-      // Create and save a new default streak record for them.
       const newStreakData: StreakData = {
           currentStreak: 0,
           longestStreak: 0,
@@ -41,8 +38,11 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
           todayStreakCompleted: false,
           completedDays: [],
       };
-      await updateStreakData(userId, newStreakData); // Save the new record
-      return newStreakData; // Return the newly created data
+      await setDoc(streakDocRef, { 
+        ...newStreakData,
+        lastActivityDate: Timestamp.fromDate(newStreakData.lastActivityDate)
+      });
+      return newStreakData;
     }
   } catch (error) {
     console.error("Failed to get streak data from Firestore:", error);
@@ -53,22 +53,39 @@ export const getStreakData = async (userId: string): Promise<StreakData | null> 
 export const updateStreakData = async (userId: string, data: Partial<StreakData>): Promise<void> => {
   const streakDocRef = getStreakDocRef(userId);
   
-  // Create a mutable copy to avoid modifying the original object
   const dataToSave: { [key: string]: any } = { ...data };
   
-  // Convert any Date objects to Firestore Timestamps before saving
   if (data.lastActivityDate) {
       dataToSave.lastActivityDate = Timestamp.fromDate(data.lastActivityDate);
   }
   
   try {
-    // Using merge: true ensures we only update the fields provided
-    // and don't overwrite the entire document.
     await setDoc(streakDocRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Failed to update streak data in Firestore:", error);
     throw new Error("Could not update streak data.");
   }
+};
+
+/**
+ * Atomically increments the total time spent for a user.
+ */
+export const addTimeToTotal = async (userId: string, timeToAdd: number): Promise<void> => {
+    if (!userId || timeToAdd <= 0) return;
+    const streakDocRef = getStreakDocRef(userId);
+    try {
+        await updateDoc(streakDocRef, {
+            timeSpentTotal: increment(timeToAdd)
+        });
+    } catch (error) {
+        // If the document doesn't exist, it might be a new user. Create it.
+        const docSnap = await getDoc(streakDocRef);
+        if (!docSnap.exists()) {
+             await updateStreakData(userId, { timeSpentTotal: timeToAdd });
+        } else {
+            console.error(`Failed to increment time for user ${userId}:`, error);
+        }
+    }
 };
 
 export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
@@ -78,7 +95,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
 
     const streaksCollectionRef = collection(db, 'streaks');
     
-    // The leaderboard is now ranked by the cumulative 'timeSpentTotal'
     const q = query(streaksCollectionRef, orderBy('timeSpentTotal', 'desc'), limit(50));
     
     try {
@@ -90,8 +106,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             
             const userProfile = await getUserProfile(userId);
             
-            // The XP for ranking should be the total time up to the current point.
-            const timeSpentForRank = (streakData.timeSpentTotal || 0) + (streakData.timeSpentToday || 0);
+            const timeSpentForRank = (streakData.timeSpentTotal || 0);
             
             if (userProfile) {
                 return {
@@ -105,7 +120,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     countryCode: userProfile.countryCode,
                 };
             }
-            // Return a default object if profile doesn't exist, though it should.
             return {
                 id: userId,
                 displayName: 'Anonymous User',
@@ -120,7 +134,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
         
         const leaderboard = (await Promise.all(leaderboardPromises)).filter(u => u !== null) as LeaderboardUser[];
         
-        // Sort again on the client side to ensure the final calculated XP is ranked correctly.
         return leaderboard.sort((a,b) => b.timeSpentTotal - a.timeSpentTotal);
 
     } catch (error) {
