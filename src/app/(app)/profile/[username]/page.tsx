@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null }) => {
+const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     return (
         <div className="relative">
@@ -404,6 +404,7 @@ export default function UserProfilePage() {
                     isLoading={isLoading}
                     onFileSelect={handleFileSelect}
                     uploadProgress={uploadProgress}
+                    isOwnProfile={isOwnProfile}
                  >
                      {!isOwnProfile && (
                         <div className="flex gap-2">
