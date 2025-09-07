@@ -619,8 +619,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        <TodaysPlanCard />
-        <DailyStreakCard />
+        <div className="md:col-span-2">
+            <TodaysPlanCard />
+        </div>
+        <div className="md:hidden">
+            <DailyStreakCard />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
