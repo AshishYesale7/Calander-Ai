@@ -239,27 +239,35 @@ const PlannerHeader = ({ onMinimize }: { onMinimize: () => void }) => (
     </header>
 );
 
-const PlannerSidebar = () => {
+const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, setActiveView: (view: string) => void }) => {
     const mainSections = [
-        { icon: Inbox, label: 'Inbox', count: 6 },
-        { icon: Calendar, label: 'Today' },
-        { icon: Star, label: 'Upcoming' },
-        { icon: Columns, label: 'All tasks' },
+        { id: 'inbox', icon: Inbox, label: 'Inbox', count: 6 },
+        { id: 'today', icon: Calendar, label: 'Today' },
+        { id: 'upcoming', icon: Star, label: 'Upcoming' },
+        { id: 'all', icon: Columns, label: 'All tasks' },
     ];
     const projects = [
-        { color: 'bg-red-500', char: 'B', label: 'Book' },
-        { color: 'bg-green-500', char: 'N', label: 'Newsletter' },
-        { color: 'bg-yellow-500', char: 'F', label: 'Fitness' },
-        { color: 'bg-purple-500', char: 'W', label: 'Work' },
-        { color: 'bg-blue-500', char: 'F', label: 'Film' },
+        { id: 'proj-book', color: 'bg-red-500', char: 'B', label: 'Book' },
+        { id: 'proj-news', color: 'bg-green-500', char: 'N', label: 'Newsletter' },
+        { id: 'proj-fit', color: 'bg-yellow-500', char: 'F', label: 'Fitness' },
+        { id: 'proj-work', color: 'bg-purple-500', char: 'W', label: 'Work' },
+        { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     return (
-    <div className="bg-gray-900/50 p-3 flex flex-col gap-4 text-xs">
+    <div className="bg-gray-900/50 p-2 flex flex-col gap-4 text-xs">
         <div>
             <ul className="space-y-0.5 text-gray-300">
                 {mainSections.map(s => (
-                    <li key={s.label} className={cn("flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs", s.label === 'Inbox' && 'bg-gray-700/50 font-semibold text-white')}>
-                        <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200 h-5 px-1.5 text-xs">{s.count}</Badge>}
+                    <li key={s.id}>
+                        <button
+                          onClick={() => setActiveView(s.id)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs",
+                            activeView === s.id && 'bg-gray-700/50 font-semibold text-white'
+                          )}
+                        >
+                            <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200 h-5 px-1.5 text-xs">{s.count}</Badge>}
+                        </button>
                     </li>
                 ))}
             </ul>
@@ -269,9 +277,17 @@ const PlannerSidebar = () => {
                 <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Projects</h3>
                 <ul className="space-y-0.5 text-gray-300">
                    {projects.map(p => (
-                        <li key={p.label} className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs">
-                            <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
-                            <span>{p.label}</span>
+                        <li key={p.id}>
+                           <button
+                             onClick={() => setActiveView(p.id)}
+                             className={cn(
+                               "w-full flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs",
+                               activeView === p.id && 'bg-gray-700/50 font-semibold text-white'
+                             )}
+                           >
+                                <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
+                                <span>{p.label}</span>
+                            </button>
                         </li>
                    ))}
                 </ul>
@@ -426,13 +442,14 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
+type ActivePlannerView = 'inbox' | 'today' | 'upcoming' | 'all' | string; // string for project IDs
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
-    className="w-1.5 cursor-col-resize flex items-center justify-center bg-transparent hover:bg-gray-700/50 transition-colors"
+    className="w-1.5 cursor-col-resize flex items-center justify-center bg-transparent hover:bg-gray-700/50 transition-colors group"
     onMouseDown={onMouseDown}
   >
-    <GripVertical className="h-4 w-4 text-gray-600" />
+    <GripVertical className="h-4 w-4 text-gray-600 group-hover:text-white" />
   </div>
 );
 
@@ -451,22 +468,24 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
+  
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
+
 
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
     isResizing.current = index;
     startXRef.current = e.clientX;
     startWidthsRef.current = [...panelWidths];
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   };
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (isResizing.current === null) return;
+    
     const dx = e.clientX - startXRef.current;
     
-    const containerWidth = e.currentTarget instanceof Window 
-        ? e.currentTarget.innerWidth 
-        : (e.currentTarget as HTMLElement).offsetWidth;
+    const containerWidth = document.body.clientWidth;
 
     const dxPercent = (dx / containerWidth) * 100;
     
@@ -476,11 +495,18 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
     const minWidth = 15;
 
-    const proposedLeftWidth = newWidths[leftPanelIndex] + dxPercent;
-    const proposedRightWidth = newWidths[rightPanelIndex] - dxPercent;
+    let proposedLeftWidth = newWidths[leftPanelIndex] + dxPercent;
+    let proposedRightWidth = newWidths[rightPanelIndex] - dxPercent;
     
-    if (proposedLeftWidth < minWidth || proposedRightWidth < minWidth) return;
-
+    if (proposedLeftWidth < minWidth) {
+        proposedRightWidth += proposedLeftWidth - minWidth;
+        proposedLeftWidth = minWidth;
+    }
+    if (proposedRightWidth < minWidth) {
+        proposedLeftWidth += proposedRightWidth - minWidth;
+        proposedRightWidth = minWidth;
+    }
+    
     newWidths[leftPanelIndex] = proposedLeftWidth;
     newWidths[rightPanelIndex] = proposedRightWidth;
 
@@ -489,8 +515,8 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   const onMouseUp = useCallback(() => {
     isResizing.current = null;
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
   }, [onMouseMove]);
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
@@ -571,11 +597,11 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
         <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
             <PlannerHeader onMinimize={() => setIsMaximized(false)} />
             <div className="flex flex-1 min-h-0">
-                <div style={{ flexBasis: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar /></div>
+                <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
                 <Resizer onMouseDown={onMouseDown(0)} />
-                <div style={{ flexBasis: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerTaskList /></div>
+                <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerTaskList /></div>
                 <Resizer onMouseDown={onMouseDown(1)} />
-                <div style={{ flexBasis: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline /></div>
+                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline /></div>
             </div>
         </div>
     )
