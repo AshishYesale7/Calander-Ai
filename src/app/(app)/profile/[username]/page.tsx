@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getUserByUsername, type PublicUserProfile } from '@/services/userService';
 import { getStreakData, type StreakData } from '@/services/streakService';
@@ -71,13 +71,15 @@ const ProfileInfoCard = ({ title, icon: Icon, children }: { title: string; icon:
 );
 
 
-export default function UserProfilePage({ params }: { params: { username: string } }) {
+export default function UserProfilePage({ params: serverParams }: { params: { username: string } }) {
     const { user: currentUser } = useAuth();
+    const params = useParams();
     const [profile, setProfile] = useState<PublicUserProfile | null>(null);
     const [streakData, setStreakData] = useState<StreakData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { username } = params;
+    
+    const username = Array.isArray(params.username) ? params.username[0] : params.username;
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
 
