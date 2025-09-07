@@ -181,7 +181,6 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
     }
 };
 
-// Deprecated in favor of the more comprehensive updateUserProfile
 export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     try {
@@ -192,7 +191,6 @@ export const saveUserPreferences = async (userId: string, preferences: Partial<U
     }
 };
 
-// Deprecated in favor of the more comprehensive getUserProfile
 export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
