@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Clock } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Clock, LayoutGrid, UserPlus, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -252,7 +252,7 @@ const PlannerSidebar = () => {
         { color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     return (
-    <div className="w-56 bg-gray-900/50 p-3 flex flex-col gap-4 text-xs">
+    <div className="bg-gray-900/50 p-3 flex flex-col gap-4 text-xs">
         <div>
             <ul className="space-y-0.5 text-gray-300">
                 {mainSections.map(s => (
@@ -281,10 +281,10 @@ const PlannerSidebar = () => {
         </div>
          <div className="border-t border-gray-700/50 pt-2 space-y-0.5">
             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
-                <Clock size={18}/><span>Statistics</span>
+                <Clock size={16}/><span>Statistics</span>
             </div>
              <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300">
-                <Palette size={18}/><span>Daily Planning</span>
+                <Palette size={16}/><span>Daily Planning</span>
             </div>
         </div>
     </div>
@@ -300,7 +300,7 @@ const PlannerTaskList = () => {
         { title: 'Film Cynicism Video', subItem: "Content Calendar", tags: [{name: 'Film', color: 'bg-blue-500'}]},
     ];
     return (
-        <div className="flex-1 bg-gray-800/60 p-4 flex flex-col border-r border-gray-700/50">
+        <div className="bg-gray-800/60 p-4 flex flex-col border-r border-gray-700/50">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-base font-bold text-white">Inbox</h1>
             </div>
@@ -312,7 +312,7 @@ const PlannerTaskList = () => {
                     <div key={task.title} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
                         <div className="flex items-center gap-2">
                            <Checkbox id={task.title} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
-                            <label htmlFor={task.title} className="text-gray-200">{task.title}</label>
+                            <label htmlFor={task.title} className="text-gray-200 text-xs">{task.title}</label>
                             {task.tags.map(tag => (
                                 <Badge key={tag.name} className={cn("text-[10px] px-1 py-0 h-4", tag.color)}>{tag.name}</Badge>
                             ))}
@@ -365,7 +365,7 @@ const PlannerWeeklyTimeline = () => {
              <div className="relative border-b border-gray-700/50 mb-1 pb-1">
                  <div className="grid grid-cols-7 h-6">
                     {allDayEvents.map((event, i) => (
-                        <div key={i} className={cn("text-white p-1 rounded-sm text-xs font-semibold overflow-hidden whitespace-nowrap", event.color)}
+                        <div key={i} className={cn("text-white p-1 rounded-sm text-[10px] font-semibold overflow-hidden whitespace-nowrap", event.color)}
                             style={{ gridColumnStart: event.day, gridColumnEnd: `span ${event.span}`}}>
                             {event.title}
                         </div>
@@ -391,7 +391,7 @@ const PlannerWeeklyTimeline = () => {
                     {timedEvents.map((event, i) => (
                         <div key={i} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-xs overflow-hidden', event.color)}
                             style={{ gridColumnStart: event.day, gridRow: 'auto / span ' + (event.duration * 2), top: `${(event.start - 5) * 50}px`, height: `${event.duration * 50}px`}}>
-                            <div className='flex items-center gap-1'>
+                            <div className='flex items-center gap-1 text-[10px]'>
                                 {event.icon && <event.icon size={12}/>}{event.title}
                             </div>
                             {event.subTitle && <p className="text-gray-300 text-[10px]">{event.subTitle}</p>}
@@ -667,7 +667,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       </div>
                   </div>
 
-                  <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px` }}> 
+                  <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px`, minWidth: minEventGridWidth }}> 
                   {hours.map(hour => (
                       <div key={`line-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px`, top: `${hour * HOUR_HEIGHT_PX}px` }}
                           className="border-b border-border/20 last:border-b-0 w-full absolute left-0 right-0 z-0 timetable-hour-line"
