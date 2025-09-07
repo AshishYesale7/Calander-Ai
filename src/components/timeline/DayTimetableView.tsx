@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -296,11 +296,11 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
                  <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Tags</h3>
             </div>
         </div>
-         <div className="border-t border-gray-700/50 pt-2 space-y-0.5">
-            <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
-                <Activity size={16}/><span>Statistics</span>
+         <div className="border-t border-gray-700/50 pt-2 space-y-0.5 text-gray-400">
+             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
+                <Clock size={16}/><span>Statistics</span>
             </div>
-             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-gray-300 text-xs">
+             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
                 <Palette size={16}/><span>Daily Planning</span>
             </div>
         </div>
@@ -955,4 +955,5 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
 
