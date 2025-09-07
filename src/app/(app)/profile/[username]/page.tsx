@@ -377,7 +377,10 @@ export default function UserProfilePage() {
             };
 
             await updateUserProfile(currentUser.uid, dataToSave);
+            
+            // This is the key fix: update the theme context with the new cover photo
             setBackgroundImage(newCoverPhotoURL);
+
             await refreshUser();
             await fetchProfile(dataToSave.username); // Refetch profile with the potentially new username
             toast({ title: "Profile Updated", description: "Your changes have been saved." });
@@ -622,3 +625,5 @@ export default function UserProfilePage() {
         </div>
     )
 }
+
+    
