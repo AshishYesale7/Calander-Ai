@@ -134,7 +134,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }> | null> => {
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string | null; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);

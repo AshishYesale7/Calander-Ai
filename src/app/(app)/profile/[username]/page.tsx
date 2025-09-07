@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getUserByUsername, updateUserProfile, type PublicUserProfile } from '@/services/userService';
@@ -33,7 +33,21 @@ import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isLoading, onFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isLoading: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
+// Define a type for the editable fields to manage them in a single state
+type EditableProfileState = {
+    displayName: string;
+    username: string;
+    bio: string;
+    photoURL: string | null;
+    socials: {
+        github: string;
+        linkedin: string;
+        twitter: string;
+    };
+    countryCode: string | null;
+};
+
+const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     return (
         <div className="relative">
@@ -80,8 +94,8 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                         )}
                         {isEditing && (
                              <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isLoading}>
-                                    {isLoading ? <LoadingSpinner size="sm" className="mr-2"/> : <Save className="mr-2 h-4 w-4" />} Save
+                                <Button variant="outline" size="sm" className="mb-2" onClick={onSave} disabled={isSaving}>
+                                    {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : <Save className="mr-2 h-4 w-4" />} Save
                                 </Button>
                                 <Button variant="ghost" size="sm" className="mb-2" onClick={onCancel}>
                                     <X className="mr-2 h-4 w-4"/> Cancel
@@ -164,18 +178,11 @@ export default function UserProfilePage() {
     const [profile, setProfile] = useState<PublicUserProfile | null>(null);
     const [streakData, setStreakData] = useState<StreakData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
-    
-    const [editDisplayName, setEditDisplayName] = useState('');
-    const [editUsername, setEditUsername] = useState('');
-    const [editBio, setEditBio] = useState('');
-    const [editGithub, setEditGithub] = useState('');
-    const [editLinkedin, setEditLinkedin] = useState('');
-    const [editTwitter, setEditTwitter] = useState('');
-    const [editCountryCode, setEditCountryCode] = useState<string | null>(null);
-    const [editPhotoUrl, setEditPhotoUrl] = useState('');
+    const [editableState, setEditableState] = useState<EditableProfileState | null>(null);
     
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -186,8 +193,23 @@ export default function UserProfilePage() {
     const [isFollowLoading, setIsFollowLoading] = useState(false);
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
+    
+    const setEditingFields = (profileData: PublicUserProfile) => {
+        setEditableState({
+            displayName: profileData.displayName || '',
+            username: profileData.username || '',
+            bio: profileData.bio || '',
+            photoURL: profileData.photoURL || null,
+            socials: {
+                github: profileData.socials?.github || '',
+                linkedin: profileData.socials?.linkedin || '',
+                twitter: profileData.socials?.twitter || '',
+            },
+            countryCode: profileData.countryCode || null,
+        });
+    };
 
-    const fetchProfile = useCallback(async (usernameToFetch: string) => {
+    const fetchProfile = async (usernameToFetch: string) => {
         if (!usernameToFetch) return;
         setIsLoading(true);
         setError(null);
@@ -195,14 +217,7 @@ export default function UserProfilePage() {
             const fetchedProfile = await getUserByUsername(usernameToFetch);
             if (fetchedProfile) {
                 setProfile(fetchedProfile);
-                setEditDisplayName(fetchedProfile.displayName || '');
-                setEditUsername(fetchedProfile.username || '');
-                setEditBio(fetchedProfile.bio || '');
-                setEditGithub(fetchedProfile.socials?.github || '');
-                setEditLinkedin(fetchedProfile.socials?.linkedin || '');
-                setEditTwitter(fetchedProfile.socials?.twitter || '');
-                setEditCountryCode(fetchedProfile.countryCode || null);
-                setEditPhotoUrl(fetchedProfile.photoURL || '');
+                setEditingFields(fetchedProfile);
 
                 const fetchedStreak = await getStreakData(fetchedProfile.uid);
                 setStreakData(fetchedStreak);
@@ -215,49 +230,44 @@ export default function UserProfilePage() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
-
+    };
+    
     useEffect(() => {
         if (username) {
             fetchProfile(username);
         }
-    }, [username, fetchProfile]);
+    }, [username]);
     
-    // Real-time follow data listener
     useEffect(() => {
         if (!profile?.uid || !currentUser?.uid || !db) return;
         
-        const getFollowersCollection = (userId: string) => collection(db, 'users', userId, 'followers');
-
         const listenForFollowChanges = (
             profileUserId: string,
             currentUserId: string,
             callback: (data: { followersCount: number; followingCount: number; isCurrentUserFollowing: boolean }) => void
         ) => {
             const userDocRef = doc(db, 'users', profileUserId);
-            const followerDocRef = doc(getFollowersCollection(profileUserId), currentUserId);
+            const followerDocRef = doc(collection(db, 'users', profileUserId, 'followers'), currentUserId);
 
             const unsubUser = onSnapshot(userDocRef, (docSnap) => {
-                const followersCount = docSnap.data()?.followersCount || 0;
-                const followingCount = docSnap.data()?.followingCount || 0;
+                const data = docSnap.data();
                 getDoc(followerDocRef).then(followerSnap => {
                     callback({
-                        followersCount,
-                        followingCount,
+                        followersCount: data?.followersCount || 0,
+                        followingCount: data?.followingCount || 0,
                         isCurrentUserFollowing: followerSnap.exists(),
                     });
                 });
             });
-
+            
             const unsubFollower = onSnapshot(followerDocRef, () => {
                 getDoc(userDocRef).then(docSnap => {
-                    const followersCount = docSnap.data()?.followersCount || 0;
-                    const followingCount = docSnap.data()?.followingCount || 0;
+                    const data = docSnap.data();
                     getDoc(followerDocRef).then(followerSnap => {
                         callback({
-                            followersCount,
-                            followingCount,
-                            isCurrentUserFollowing: followerSnap.exists(),
+                           followersCount: data?.followersCount || 0,
+                           followingCount: data?.followingCount || 0,
+                           isCurrentUserFollowing: followerSnap.exists(),
                         });
                     });
                 });
@@ -286,16 +296,17 @@ export default function UserProfilePage() {
             setNewImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setEditPhotoUrl(reader.result as string);
-                setProfile(prev => prev ? {...prev, photoURL: reader.result as string} : null);
+                if (editableState) {
+                    setEditableState({ ...editableState, photoURL: reader.result as string });
+                }
             };
             reader.readAsDataURL(file);
         }
     };
 
     const handleSave = async () => {
-        if (!isOwnProfile || !currentUser || !profile) return;
-        setIsLoading(true);
+        if (!isOwnProfile || !currentUser || !profile || !editableState) return;
+        setIsSaving(true);
         
         let newPhotoURL = profile.photoURL;
         const oldPhotoURL = profile.photoURL;
@@ -306,51 +317,59 @@ export default function UserProfilePage() {
                 setUploadProgress(null);
                 setNewImageFile(null);
                  if (oldPhotoURL && newPhotoURL !== oldPhotoURL) {
-                    await deleteImageByUrl(oldPhotoURL).catch(err => console.error("Failed to delete old profile image:", err));
+                    await deleteImageByUrl(oldPhotoURL);
                 }
             } catch (err) {
                 toast({ title: "Image Upload Failed", description: "Could not upload your new profile picture. Please try again.", variant: "destructive" });
-                setIsLoading(false);
+                setIsSaving(false);
                 return;
             }
-        } else if (editPhotoUrl !== oldPhotoURL) {
-            newPhotoURL = editPhotoUrl;
+        } else if (editableState.photoURL !== oldPhotoURL) {
+            newPhotoURL = editableState.photoURL;
+            if (oldPhotoURL) await deleteImageByUrl(oldPhotoURL);
         }
 
         try {
-            await updateUserProfile(currentUser.uid, {
-                displayName: editDisplayName,
-                username: editUsername,
+            const dataToSave = {
+                ...editableState,
                 photoURL: newPhotoURL,
-                bio: editBio,
-                socials: { github: editGithub, linkedin: editLinkedin, twitter: editTwitter },
-                countryCode: editCountryCode,
-            });
+            };
+            await updateUserProfile(currentUser.uid, dataToSave);
             await refreshUser();
-            await fetchProfile(editUsername);
+            await fetchProfile(dataToSave.username); // Refetch profile with the potentially new username
             toast({ title: "Profile Updated", description: "Your changes have been saved." });
             setIsEditing(false);
         } catch (err) {
             toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
 
     const handleCancel = () => {
         if (!profile) return;
-        setEditDisplayName(profile.displayName || '');
-        setEditUsername(profile.username || '');
-        setEditBio(profile.bio || '');
-        setEditGithub(profile.socials?.github || '');
-        setEditLinkedin(profile.socials?.linkedin || '');
-        setEditTwitter(profile.socials?.twitter || '');
-        setEditCountryCode(profile.countryCode || null);
-        setEditPhotoUrl(profile.photoURL || '');
+        setEditingFields(profile);
         setNewImageFile(null);
         setUploadProgress(null);
         setIsEditing(false);
-        fetchProfile(username);
+    };
+    
+    const handleEditableStateChange = (field: keyof EditableProfileState, value: any) => {
+        if (editableState) {
+            setEditableState(prev => ({...prev!, [field]: value}));
+        }
+    };
+
+    const handleSocialChange = (field: keyof EditableProfileState['socials'], value: string) => {
+        if (editableState) {
+            setEditableState(prev => ({
+                ...prev!,
+                socials: {
+                    ...prev!.socials,
+                    [field]: value
+                }
+            }));
+        }
     };
 
     const handleFollowToggle = async () => {
@@ -388,7 +407,7 @@ export default function UserProfilePage() {
         return notFound();
     }
 
-    if (!profile) {
+    if (!profile || !editableState) {
         return null;
     }
     
@@ -396,12 +415,12 @@ export default function UserProfilePage() {
         <div className="max-w-4xl mx-auto">
             <Card className="frosted-glass p-0">
                  <ProfileHeader 
-                    profile={profile}
+                    profile={{ ...profile, photoURL: isEditing ? editableState.photoURL : profile.photoURL }}
                     isEditing={isEditing}
                     onEditToggle={() => setIsEditing(true)}
                     onSave={handleSave}
                     onCancel={handleCancel}
-                    isLoading={isLoading}
+                    isSaving={isSaving}
                     onFileSelect={handleFileSelect}
                     uploadProgress={uploadProgress}
                     isOwnProfile={isOwnProfile}
@@ -423,11 +442,11 @@ export default function UserProfilePage() {
                         <div className="space-y-4">
                             <div>
                                 <Label htmlFor="displayName">Display Name</Label>
-                                <Input id="displayName" value={editDisplayName} onChange={e => setEditDisplayName(e.target.value)} />
+                                <Input id="displayName" value={editableState.displayName} onChange={e => handleEditableStateChange('displayName', e.target.value)} />
                             </div>
                              <div>
                                 <Label htmlFor="username">Username</Label>
-                                <Input id="username" value={editUsername} onChange={e => setEditUsername(e.target.value)} />
+                                <Input id="username" value={editableState.username} onChange={e => handleEditableStateChange('username', e.target.value)} />
                             </div>
                         </div>
                     ) : (
@@ -461,12 +480,12 @@ export default function UserProfilePage() {
                      <ProfileInfoCard title="About" icon={AtSign}>
                         {isEditing ? (
                             <div className="space-y-4">
-                                <Textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
+                                <Textarea value={editableState.bio} onChange={e => handleEditableStateChange('bio', e.target.value)} placeholder="Tell us about yourself..." />
                                 <div>
                                     <Label htmlFor="photoUrl">Image URL</Label>
                                     <div className="flex items-center gap-2">
                                         <LinkIcon className="h-5 w-5 text-muted-foreground" />
-                                        <Input id="photoUrl" value={editPhotoUrl} onChange={e => setEditPhotoUrl(e.target.value)} placeholder="https://example.com/image.png" />
+                                        <Input id="photoUrl" value={editableState.photoURL || ''} onChange={e => handleEditableStateChange('photoURL', e.target.value)} placeholder="https://example.com/image.png" />
                                     </div>
                                 </div>
                             </div>
@@ -499,15 +518,15 @@ export default function UserProfilePage() {
                              <div className="space-y-3">
                                 <div className="flex items-center gap-2">
                                    <Github className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editGithub} onChange={(e) => setEditGithub(e.target.value)} placeholder="GitHub URL" />
+                                   <Input value={editableState.socials.github} onChange={(e) => handleSocialChange('github', e.target.value)} placeholder="GitHub URL" />
                                 </div>
                                 <div className="flex items-center gap-2">
                                    <Linkedin className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editLinkedin} onChange={(e) => setEditLinkedin(e.target.value)} placeholder="LinkedIn URL" />
+                                   <Input value={editableState.socials.linkedin} onChange={(e) => handleSocialChange('linkedin', e.target.value)} placeholder="LinkedIn URL" />
                                 </div>
                                 <div className="flex items-center gap-2">
                                    <Twitter className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="Twitter/X URL" />
+                                   <Input value={editableState.socials.twitter} onChange={(e) => handleSocialChange('twitter', e.target.value)} placeholder="Twitter/X URL" />
                                 </div>
                             </div>
                          ) : (
@@ -526,7 +545,7 @@ export default function UserProfilePage() {
                              <div className="space-y-2">
                                 <Label htmlFor="country-select">Country</Label>
                                 <div className="flex items-center gap-2">
-                                    <Select value={editCountryCode || undefined} onValueChange={(value) => setEditCountryCode(value === "none" ? null : value)}>
+                                    <Select value={editableState.countryCode || undefined} onValueChange={(value) => handleEditableStateChange('countryCode', value === "none" ? null : value)}>
                                         <SelectTrigger id="country-select" className="flex-1">
                                             <SelectValue placeholder="Select your country" />
                                         </SelectTrigger>
@@ -539,7 +558,7 @@ export default function UserProfilePage() {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                     <Button variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setEditCountryCode(null)} title="Clear selection">
+                                     <Button variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => handleEditableStateChange('countryCode', null)} title="Clear selection">
                                         <Trash2 className="h-4 w-4" />
                                      </Button>
                                 </div>
