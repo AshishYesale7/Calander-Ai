@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -230,6 +230,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const nowIndicatorRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const isToday = useMemo(() => dfnsIsToday(date), [date]);
   const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
@@ -305,7 +306,12 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
 
   return (
-    <Card className="frosted-glass w-full shadow-xl flex flex-col mt-6 max-h-[70vh]">
+    <Card className={cn(
+        "frosted-glass w-full shadow-xl flex flex-col mt-6 transition-all duration-300",
+        isMaximized 
+          ? "fixed inset-0 top-16 z-40 rounded-none border-none max-h-none"
+          : "max-h-[70vh]"
+    )}>
       <CardHeader className="p-4 border-b border-border/30 flex flex-row justify-between items-center">
         <div>
           <CardTitle className="font-headline text-xl text-primary">
@@ -313,9 +319,14 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
           </CardTitle>
           <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
-          <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
-        </Button>
+        <div className="flex items-center">
+            <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
+                {isMaximized ? <Minimize className="h-6 w-6 text-muted-foreground hover:text-primary" /> : <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
+              <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
+            </Button>
+        </div>
       </CardHeader>
 
       {allDayEvents.length > 0 && (
@@ -339,7 +350,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
               style={event.color ? getCustomColorStyles(event.color) : {}}
               title={getEventTooltip(event)}
             >
-              <div className="font-medium flex items-center gap-2" onClick={() => handleEventClick(event)}>
+              <div className="font-medium flex items-center gap-2 cursor-pointer" onClick={() => handleEventClick(event)}>
                  {onEventStatusChange && (
                     <Checkbox
                         id={`check-allday-${event.id}`}
@@ -440,7 +451,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       <div
                           key={event.id}
                           className={cn(
-                          "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity",
+                          "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer",
                           "focus-within:ring-2 focus-within:ring-ring",
                           !event.color && getEventTypeStyleClasses(event.type),
                           isSmallWidth ? "p-0.5" : "p-1",
