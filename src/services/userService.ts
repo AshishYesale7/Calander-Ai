@@ -260,17 +260,19 @@ export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> 
   const usersCollection = collection(db, 'users');
   const lowerCaseQuery = searchQuery.toLowerCase();
   
+  // This query is for an exact match on the lowercase version of the username.
+  // For a true case-insensitive prefix search, you'd need a dedicated lowercase field.
+  // This is a good starting point.
   const usernameQuery = query(usersCollection, where('username', '>=', lowerCaseQuery), where('username', '<=', lowerCaseQuery + '\uf8ff'), limit(5));
-  const displayNameQuery = query(usersCollection, where('displayName', '>=', lowerCaseQuery), where('displayName', '<=', lowerCaseQuery + '\uf8ff'), limit(5));
-  const displayNameCapsQuery = query(usersCollection, where('displayName', '>=', searchQuery), where('displayName', '<=', searchQuery + '\uf8ff'), limit(5));
-  const emailQuery = query(usersCollection, where('email', '==', lowerCaseQuery), limit(5));
+  
+  // A second query for display name, also case-sensitive.
+  // To make this truly case-insensitive, you'd need another field in your DB, e.g., `displayName_lowercase`
+  const displayNameQuery = query(usersCollection, where('displayName', '>=', searchQuery), where('displayName', '<=', searchQuery + '\uf8ff'), limit(5));
 
   try {
-    const [usernameSnap, displayNameSnap, displayNameCapsSnap, emailSnap] = await Promise.all([
+    const [usernameSnap, displayNameSnap] = await Promise.all([
       getDocs(usernameQuery),
-      getDocs(displayNameQuery),
-      getDocs(displayNameCapsSnap),
-      getDocs(emailQuery)
+      getDocs(displayNameQuery)
     ]);
     
     const usersMap = new Map<string, SearchedUser>();
@@ -292,8 +294,6 @@ export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> 
     
     processSnapshot(usernameSnap);
     processSnapshot(displayNameSnap);
-    processSnapshot(displayNameCapsSnap);
-    processSnapshot(emailSnap);
     
     return Array.from(usersMap.values());
 
@@ -368,5 +368,3 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
-
-    

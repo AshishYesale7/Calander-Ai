@@ -104,7 +104,7 @@ export function CommandPalette({
   useEffect(() => {
     if (isUserSearchMode) {
       const searchQuery = search.substring(1);
-      if (searchQuery.length > 1) {
+      if (searchQuery.length > 0) { // Changed from > 1 to > 0
         setIsSearchingUsers(true);
         const debounceTimer = setTimeout(() => {
           searchUsers(searchQuery).then(results => {
@@ -290,7 +290,7 @@ export function CommandPalette({
                             </CommandItem>
                         ))}
                         </CommandGroup>
-                        {filteredGroups.indexOf(group) < filteredGroups.length - 1 && groupIndex < filteredGroups.length -1 && <CommandSeparator />}
+                        {filteredGroups.indexOf(group) < filteredGroups.length - 1 && groupIndex < filteredGroups.length - 1 && <CommandSeparator />}
                     </React.Fragment>
                 ))}
               </>
