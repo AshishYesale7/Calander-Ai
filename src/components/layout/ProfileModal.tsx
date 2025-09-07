@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
-import { Edit, Github, Linkedin, Twitter, Save, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Edit, Github, Linkedin, Twitter, Save, X, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/services/userService';
 import type { UserPreferences } from '@/types';
@@ -111,6 +111,17 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
+  const countries = useMemo(() => {
+    const countrySet = new Set<string>();
+    timezones.forEach(tz => {
+      const parts = tz.split('/');
+      if (parts.length > 1 && !['Etc', 'SystemV', 'US'].includes(parts[0])) {
+          countrySet.add(parts[0].replace(/_/g, ' '));
+      }
+    });
+    return Array.from(countrySet).sort();
+  }, []);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md frosted-glass p-0 border-0 overflow-hidden">
@@ -189,26 +200,25 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
             </div>
 
              {isEditing && (
-                <div className="mt-6">
-                  <Label htmlFor="country-select">Country</Label>
-                   <Select value={countryCode || ''} onValueChange={setCountryCode}>
-                      <SelectTrigger id="country-select">
-                        <SelectValue placeholder="Select your country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        {timezones.map(tz => {
-                          const parts = tz.split('/');
-                          const countryName = parts.length > 1 ? parts[0].replace(/_/g, ' ') : parts[0];
-                          const countryCodeGuess = "Country Code"; 
-                          return (
-                            <SelectItem key={tz} value={countryCodeGuess}>
-                              {countryName}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                <div className="mt-6 space-y-2">
+                    <Label htmlFor="country-select">Country</Label>
+                    <div className="flex items-center gap-2">
+                        <Select value={countryCode || undefined} onValueChange={(value) => setCountryCode(value === "none" ? null : value)}>
+                            <SelectTrigger id="country-select" className="flex-1">
+                                <SelectValue placeholder="Select your country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {countries.map(country => (
+                                    <SelectItem key={country} value={country}>
+                                    {country}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         <Button variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setCountryCode(null)} title="Clear selection">
+                            <Trash2 className="h-4 w-4" />
+                         </Button>
+                    </div>
                 </div>
               )}
 
