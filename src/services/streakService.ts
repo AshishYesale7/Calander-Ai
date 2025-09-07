@@ -143,6 +143,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
                     id: userId,
                     displayName: userProfile.displayName || 'Anonymous User',
                     photoURL: userProfile.photoURL,
+                    username: userProfile.username || `user_${userId.substring(0,5)}`,
                     currentStreak: streakData.currentStreak || 0,
                     longestStreak: streakData.longestStreak || 0,
                     timeSpentTotal: timeSpentForRank,
@@ -153,6 +154,7 @@ export const getLeaderboardData = async (): Promise<LeaderboardUser[]> => {
             return {
                 id: userId,
                 displayName: 'Anonymous User',
+                username: `user_${userId.substring(0,5)}`,
                 photoURL: undefined,
                 currentStreak: streakData.currentStreak || 0,
                 longestStreak: streakData.longestStreak || 0,

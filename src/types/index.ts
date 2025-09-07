@@ -257,6 +257,7 @@ export interface StreakData {
 export interface LeaderboardUser {
     id: string;
     displayName: string;
+    username: string;
     photoURL?: string;
     currentStreak: number;
     longestStreak: number;

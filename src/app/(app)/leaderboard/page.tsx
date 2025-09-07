@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
+import Link from 'next/link';
 
 const statusEmojis = [
   '😎', '🎉', '💪', '👀', '🍿', '🔥', '💯', '💩', '🏆', '🥗', '🐱‍👓', '👋'
@@ -135,11 +136,11 @@ export default function LeaderboardPageV2() {
 
     const renderUserRow = (u: LeaderboardUser, rank: number) => {
         const isCurrentUser = user && u.id === user.id;
-        return (
+        const userRowContent = (
             <div
-                key={u.id}
                 className={cn(
-                    "flex items-center gap-4 p-2 rounded-lg transition-colors"
+                    "flex items-center gap-4 p-2 rounded-lg transition-colors w-full",
+                    isCurrentUser ? "bg-primary/20" : "hover:bg-muted/50"
                 )}
             >
                 <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
@@ -158,6 +159,12 @@ export default function LeaderboardPageV2() {
                 <p className={cn("font-semibold flex-1", isCurrentUser ? "text-green-400" : "text-foreground")}>{u.displayName || `User ${u.id.substring(0, 5)}`}</p>
                 <p className="text-sm font-bold text-yellow-400">{formatXP(u.timeSpentTotal)} XP</p>
             </div>
+        );
+
+        return (
+            <Link key={u.id} href={`/profile/${u.username}`} className="block w-full">
+                {userRowContent}
+            </Link>
         );
     };
 
@@ -199,5 +206,3 @@ export default function LeaderboardPageV2() {
         </div>
     );
 }
-
-    
