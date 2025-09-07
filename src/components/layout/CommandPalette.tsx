@@ -106,8 +106,7 @@ export function CommandPalette({
     }
   }, [isOpen]);
   
-  const handlePluginInstall = (e: React.MouseEvent, pluginName: string) => {
-    e.stopPropagation();
+  const handlePluginInstall = (pluginName: string) => {
     if (!user) return;
     const newSet = new Set(installedPlugins).add(pluginName);
     setInstalledPlugins(newSet);
@@ -156,11 +155,15 @@ export function CommandPalette({
         items: allPlugins.map(plugin => {
             const isInstalled = installedPlugins.has(plugin.name);
             const LogoComponent = plugin.logo;
+            const action = isInstalled
+                ? () => handleOpenPlugin(plugin)
+                : () => handlePluginInstall(plugin.name);
+
             return {
                 id: `plugin-${plugin.name}`,
                 label: plugin.name,
                 icon: typeof LogoComponent === 'string' ? () => <Image src={LogoComponent} alt={plugin.name} width={16} height={16} /> : LogoComponent,
-                action: isInstalled ? () => handleOpenPlugin(plugin) : (e: React.MouseEvent) => handlePluginInstall(e, plugin.name),
+                action: action,
                 actionLabel: isInstalled ? 'Open' : 'Install',
                 actionIcon: isInstalled ? ExternalLink : Download,
             };
@@ -222,7 +225,10 @@ export function CommandPalette({
                           <span>{label}</span>
                           {actionLabel && ActionIcon && (
                               <button
-                                onClick={(e) => action && action(e as any)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if(action) action();
+                                }}
                                 className="ml-auto flex items-center gap-1.5 text-xs bg-muted/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md px-2 py-0.5"
                               >
                                 <ActionIcon className="h-3 w-3" />
