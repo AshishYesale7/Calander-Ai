@@ -9,6 +9,8 @@ import NotionDashboard from '@/components/extensions/notion/NotionDashboard';
 import { NotionLogo } from '@/components/logo/NotionLogo';
 import DiscordDashboard from '@/components/extensions/discord/DiscordDashboard';
 import { DiscordLogo } from '@/components/logo/DiscordLogo';
+import GSuiteDashboard from '@/components/extensions/gsuite/GSuiteDashboard';
+import { GSuiteLogo } from '@/components/logo/GSuiteLogo';
 
 // In a real application, this would come from a database or API.
 export const allPlugins = [
@@ -41,6 +43,12 @@ export const allPlugins = [
     logo: DiscordLogo,
     description: 'Create events and get reminders directly in Discord.',
     component: DiscordDashboard,
+  },
+  {
+    name: 'GSuite',
+    logo: GSuiteLogo,
+    description: 'Attach Drive files and summarize your documents.',
+    component: GSuiteDashboard,
   },
   {
     name: 'Android Studio',
