@@ -283,19 +283,30 @@ export type SearchedUser = {
 export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> => {
   if (!db) throw new Error("Firestore is not initialized.");
   const cleanedQuery = searchQuery.toLowerCase().trim();
-  if (!cleanedQuery) return [];
-
+  
   const usersCollection = collection(db, 'users');
-  const q = query(
-    usersCollection,
-    where('searchableIndex', 'array-contains', cleanedQuery),
-    limit(10)
-  );
+  let q;
+
+  if (!cleanedQuery) {
+    // If the query is empty, fetch all users (or a limited number of recent ones)
+    q = query(
+      usersCollection,
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+  } else {
+    // If there is a query, use the searchable index
+    q = query(
+      usersCollection,
+      where('searchableIndex', 'array-contains', cleanedQuery),
+      limit(10)
+    );
+  }
 
   try {
     const querySnapshot = await getDocs(q);
     
-    const users = querySnapshot.docs.map((doc: any) => {
+    return querySnapshot.docs.map((doc: any) => {
         const data = doc.data();
         return {
             uid: doc.id,
@@ -305,12 +316,6 @@ export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> 
             photoURL: data.photoURL || null,
         }
     });
-
-    // Client-side filter for prefix matching, since 'array-contains' is an exact match.
-    return users.filter(user => 
-        user.displayName.toLowerCase().startsWith(cleanedQuery) || 
-        user.username.toLowerCase().startsWith(cleanedQuery)
-    );
 
   } catch (error) {
     console.error("Error searching for users:", error);

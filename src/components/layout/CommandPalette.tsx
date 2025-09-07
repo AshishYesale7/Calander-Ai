@@ -104,18 +104,14 @@ export function CommandPalette({
   useEffect(() => {
     if (isUserSearchMode) {
       const searchQuery = search.substring(1);
-      if (searchQuery.length > 0) {
-        setIsSearchingUsers(true);
-        const debounceTimer = setTimeout(() => {
-          searchUsers(searchQuery).then(results => {
-            setUserSearchResults(results);
-            setIsSearchingUsers(false);
-          });
-        }, 300);
-        return () => clearTimeout(debounceTimer);
-      } else {
-        setUserSearchResults([]);
-      }
+      setIsSearchingUsers(true);
+      const debounceTimer = setTimeout(() => {
+        searchUsers(searchQuery).then(results => {
+          setUserSearchResults(results);
+          setIsSearchingUsers(false);
+        });
+      }, searchQuery.length > 0 ? 300 : 0); // Search immediately if just '@' is typed
+      return () => clearTimeout(debounceTimer);
     } else {
         setUserSearchResults([]);
     }
@@ -240,7 +236,7 @@ export function CommandPalette({
             {isUserSearchMode ? (
               <>
                 {isSearchingUsers && <div className="p-4 flex items-center justify-center text-sm text-muted-foreground"><LoadingSpinner size="sm" className="mr-2"/>Searching users...</div>}
-                {!isSearchingUsers && userSearchResults.length === 0 && search.length > 1 && <CommandEmpty>No users found.</CommandEmpty>}
+                {!isSearchingUsers && userSearchResults.length === 0 && <CommandEmpty>No users found.</CommandEmpty>}
                 <CommandGroup heading="Users">
                   {userSearchResults.map(u => (
                     <CommandItem key={u.uid} onSelect={() => runCommand(() => router.push(`/profile/${u.username}`))}>
