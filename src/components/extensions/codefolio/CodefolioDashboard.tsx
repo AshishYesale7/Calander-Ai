@@ -133,13 +133,15 @@ export default function CodefolioDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Left Column */}
+                {/* Left and Middle Columns */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <SolvedProblemsCard totalSolved={totalSolved} />
-                        <WeeklyTargetCard />
+                        <CodefolioContributionGraph contributions={userData.codeforces?.contributionData} />
                     </div>
-                    <CodefolioContributionGraph contributions={userData.codeforces?.contributionData} />
+                    
+                    <WeeklyTargetCard />
+
                     {userData.codeforces && !userData.codeforces.error && userData.codeforces.contests && userData.codeforces.contests.length > 0 && (
                         <UpcomingContests contests={userData.codeforces.contests} onAddContest={handleAddContestToTimeline} />
                     )}
