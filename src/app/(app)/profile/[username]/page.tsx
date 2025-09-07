@@ -56,7 +56,7 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
         <div className="relative">
             <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden group">
                 <Image
-                    src={profile.coverPhotoURL || "https://images.unsplash.com/photo-1554147090-e1221a04a0625?q=80&w=2070&auto=format&fit=crop"}
+                    src={profile.coverPhotoURL || "https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg"}
                     alt="Cover"
                     layout="fill"
                     objectFit="cover"
@@ -360,6 +360,7 @@ export default function UserProfilePage() {
 
             if (newCoverImageFile) {
                 newCoverPhotoURL = await uploadProfileImage(currentUser.uid, newCoverImageFile, 'coverImages', (progress) => setUploadProgress(progress));
+                setBackgroundImage(newCoverPhotoURL);
                 setUploadProgress(null);
                 setNewCoverImageFile(null);
                 if (oldCoverPhotoURL && newCoverPhotoURL !== oldCoverPhotoURL) {
@@ -367,6 +368,7 @@ export default function UserProfilePage() {
                 }
             } else if (editableState.coverPhotoURL !== oldCoverPhotoURL) {
                 newCoverPhotoURL = editableState.coverPhotoURL;
+                setBackgroundImage(newCoverPhotoURL);
                 if (oldCoverPhotoURL) await deleteImageByUrl(oldCoverPhotoURL);
             }
             
@@ -378,15 +380,12 @@ export default function UserProfilePage() {
 
             await updateUserProfile(currentUser.uid, dataToSave);
             
-            // This is the key fix: update the theme context with the new cover photo
-            setBackgroundImage(newCoverPhotoURL);
-
             await refreshUser();
-            await fetchProfile(dataToSave.username); // Refetch profile with the potentially new username
+            await fetchProfile(dataToSave.username);
             toast({ title: "Profile Updated", description: "Your changes have been saved." });
             setIsEditing(false);
-        } catch (err) {
-            toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message || "Failed to update profile.", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -510,11 +509,13 @@ export default function UserProfilePage() {
                     
                     <div className="flex items-center gap-6 text-sm">
                         <FollowListPopover
+                            key="following"
                             profileId={profile.uid}
                             fetchFunction={getFollowing}
                             triggerText={<><span className="font-bold text-foreground">{followingCount}</span> Following</>}
                         />
                         <FollowListPopover
+                            key="followers"
                             profileId={profile.uid}
                             fetchFunction={getFollowers}
                             triggerText={<><span className="font-bold text-foreground">{followersCount}</span> Followers</>}
@@ -625,5 +626,3 @@ export default function UserProfilePage() {
         </div>
     )
 }
-
-    
