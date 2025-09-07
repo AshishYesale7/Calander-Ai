@@ -19,6 +19,18 @@
       "description": "The public URL of your deployed application (e.g., https://yourapp.web.app).",
       "required": true
     },
+    "NOTION_CLIENT_ID": {
+      "description": "Your Notion integration Client ID.",
+      "required": false
+    },
+    "NOTION_CLIENT_SECRET": {
+      "description": "Your Notion integration Client Secret.",
+      "required": false
+    },
+    "NOTION_REDIRECT_URI": {
+      "description": "The full, public URL for the Notion OAuth callback. Should be NEXT_PUBLIC_BASE_URL + /api/auth/notion/callback",
+      "required": false
+    },
     "NEXT_PUBLIC_FIREBASE_API_KEY": {
       "description": "Firebase API Key from your Firebase project settings.",
       "required": true
