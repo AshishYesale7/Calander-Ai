@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getUserByUsername, updateUserProfile, type PublicUserProfile } from '@/services/userService';
@@ -131,14 +131,19 @@ const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerT
     const [users, setUsers] = useState<{ id: string; displayName: string; photoURL: string | null; username: string; }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleOpen = async (open: boolean) => {
+    const handleOpen = useCallback(async (open: boolean) => {
         if (open && users.length === 0) {
             setIsLoading(true);
-            const fetchedUsers = await fetchFunction(profileId);
-            setUsers(fetchedUsers);
-            setIsLoading(false);
+            try {
+                const fetchedUsers = await fetchFunction(profileId);
+                setUsers(fetchedUsers);
+            } catch (error) {
+                console.error("Failed to fetch follow list:", error);
+            } finally {
+                setIsLoading(false);
+            }
         }
-    };
+    }, [users.length, fetchFunction, profileId]);
     
     return (
         <Popover onOpenChange={handleOpen}>
@@ -194,7 +199,7 @@ export default function UserProfilePage() {
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
     
-    const setEditingFields = (profileData: PublicUserProfile) => {
+    const setEditingFields = useCallback((profileData: PublicUserProfile) => {
         setEditableState({
             displayName: profileData.displayName || '',
             username: profileData.username || '',
@@ -207,9 +212,9 @@ export default function UserProfilePage() {
             },
             countryCode: profileData.countryCode || null,
         });
-    };
+    }, []);
 
-    const fetchProfile = async (usernameToFetch: string) => {
+    const fetchProfile = useCallback(async (usernameToFetch: string) => {
         if (!usernameToFetch) return;
         setIsLoading(true);
         setError(null);
@@ -230,13 +235,13 @@ export default function UserProfilePage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [setEditingFields]);
     
     useEffect(() => {
         if (username) {
             fetchProfile(username);
         }
-    }, [username]);
+    }, [username, fetchProfile]);
     
     useEffect(() => {
         if (!profile?.uid || !currentUser?.uid || !db) return;
