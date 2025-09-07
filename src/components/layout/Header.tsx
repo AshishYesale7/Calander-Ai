@@ -30,7 +30,7 @@ import { SidebarTrigger } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
 import Image from 'next/image';
 import { allPlugins } from '@/data/plugins';
-import { getInstalledPlugins } from '@/services/userService';
+import { getInstalledPlugins, getUserProfile } from '@/services/userService';
 import { useStreak } from '@/context/StreakContext';
 import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
@@ -100,7 +100,6 @@ const STREAK_GOAL_SECONDS = 300; // 5 minutes
 
 interface HeaderProps {
   setIsCustomizeModalOpen: (open: boolean) => void;
-  setIsProfileModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   setIsLegalModalOpen: (open: boolean) => void;
   setIsTimezoneModalOpen: (open: boolean) => void;
@@ -110,7 +109,6 @@ interface HeaderProps {
 
 export default function Header({
   setIsCustomizeModalOpen,
-  setIsProfileModalOpen,
   setIsSettingsModalOpen,
   setIsLegalModalOpen,
   setIsTimezoneModalOpen,
@@ -127,10 +125,12 @@ export default function Header({
   const [isExtensionsPopoverOpen, setIsExtensionsPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { streakData } = useStreak();
+  const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
 
   useEffect(() => {
     if (user) {
         getInstalledPlugins(user.uid).then(names => setInstalledPluginNames(new Set(names)));
+        getUserProfile(user.uid).then(setUserProfile);
     }
   }, [user]);
 
@@ -412,7 +412,7 @@ export default function Header({
                   <Clock className="mr-2 h-4 w-4" />
                   <span>Date & Time Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)}>
+                <DropdownMenuItem onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}>
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>View Profile</span>
                 </DropdownMenuItem>

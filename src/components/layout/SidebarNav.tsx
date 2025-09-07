@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -31,7 +31,6 @@ import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -42,9 +41,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from '@/hooks/use-theme';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { Sidebar, useSidebar } from '../ui/sidebar';
+import { getUserProfile } from '@/services/userService';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -61,7 +61,6 @@ const navItems = [
 
 interface SidebarNavProps {
   setIsCustomizeModalOpen: (open: boolean) => void;
-  setIsProfileModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   setIsLegalModalOpen: (open: boolean) => void;
   setIsTimezoneModalOpen: (open: boolean) => void;
@@ -71,7 +70,6 @@ interface SidebarNavProps {
 
 export default function SidebarNav({
   setIsCustomizeModalOpen,
-  setIsProfileModalOpen,
   setIsSettingsModalOpen,
   setIsLegalModalOpen,
   setIsTimezoneModalOpen,
@@ -83,6 +81,13 @@ export default function SidebarNav({
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
+  const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
+
+  useEffect(() => {
+    if (user) {
+        getUserProfile(user.uid).then(setUserProfile);
+    }
+  }, [user]);
 
   const daysLeftInTrial = useMemo(() => {
     if (subscription?.status !== 'trial' || !subscription.endDate) return null;
@@ -183,7 +188,7 @@ export default function SidebarNav({
                 <Clock className="mr-2 h-4 w-4" />
                 <span>Date & Time Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)}>
+              <DropdownMenuItem onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}>
                 <UserCircle className="mr-2 h-4 w-4" />
                 <span>View Profile</span>
               </DropdownMenuItem>

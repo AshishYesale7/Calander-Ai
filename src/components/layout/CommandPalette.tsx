@@ -32,6 +32,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { useAuth } from '@/context/AuthContext';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -47,7 +48,6 @@ interface CommandPaletteProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   setIsCustomizeModalOpen: (open: boolean) => void;
-  setIsProfileModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
@@ -57,13 +57,13 @@ export function CommandPalette({
   isOpen,
   onOpenChange,
   setIsCustomizeModalOpen,
-  setIsProfileModalOpen,
   setIsSettingsModalOpen,
   handleToggleFullScreen,
   isFullScreen,
 }: CommandPaletteProps) {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  const { user } = useAuth();
   
   const [search, setSearch] = useState('');
   const [pages, setPages] = useState<('commandList' | 'aiChat')[]>(['commandList']);
@@ -85,6 +85,10 @@ export function CommandPalette({
   }, [isOpen]);
   
   const groups = useMemo(() => {
+    const profileItem = user?.displayName // This is a stand-in, username should be fetched
+      ? { id: 'viewProfile', label: 'View Profile', icon: UserCircle, action: () => runCommand(() => router.push(`/profile/${user.displayName}`)) }
+      : null;
+
     return [
       {
         heading: 'Navigation',
@@ -106,12 +110,12 @@ export function CommandPalette({
             { id: 'toggleTheme', label: 'Toggle Theme', icon: theme === 'dark' ? Sun : Moon, action: () => runCommand(() => setTheme(theme === 'light' ? 'dark' : 'light')) },
             { id: 'settings', label: 'Settings', icon: Settings, action: () => runCommand(() => setIsSettingsModalOpen(true)) },
             { id: 'customizeTheme', label: 'Customize Theme', icon: Palette, action: () => runCommand(() => setIsCustomizeModalOpen(true)) },
-            { id: 'viewProfile', label: 'View Profile', icon: UserCircle, action: () => runCommand(() => setIsProfileModalOpen(true)) },
+            profileItem,
             { id: 'toggleFullscreen', label: isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen', icon: isFullScreen ? Shrink : Expand, action: () => runCommand(handleToggleFullScreen) },
-        ]
+        ].filter(Boolean)
       },
     ]
-  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, setIsProfileModalOpen, handleToggleFullScreen]);
+  }, [runCommand, router, theme, isFullScreen, setTheme, setIsSettingsModalOpen, setIsCustomizeModalOpen, handleToggleFullScreen, user]);
   
   const filteredGroups = useMemo(() => {
     if (!search) return groups;
@@ -124,16 +128,13 @@ export function CommandPalette({
   }, [search, groups]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-      // Check if any commands are visible in the list
       const hasVisibleCommands = filteredGroups.reduce((acc, group) => acc + group.items.length, 0) > 0;
       
       if (e.key === "Enter") {
-        // If there is search text AND there are no visible commands, activate AI chat
         if (search.trim().length > 0 && !hasVisibleCommands) {
             e.preventDefault();
             setPages(p => [...p, 'aiChat']);
         }
-        // Otherwise, do nothing and let cmdk handle the default behavior (selecting an item)
       }
     },
     [search, filteredGroups]
