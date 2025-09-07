@@ -128,12 +128,8 @@ export default function LeaderboardPageV2() {
     }, [leaderboard, user]);
 
     const formatXP = (xpInSeconds: number): string => {
-        const hours = Math.floor(xpInSeconds / 3600);
-        if (hours > 0) {
-            return `${hours} hr`;
-        }
-        const minutes = Math.floor((xpInSeconds % 3600) / 60);
-        return `${minutes} min`;
+        const hours = xpInSeconds / 3600;
+        return `${hours.toFixed(2)} hrs`;
     };
 
 
