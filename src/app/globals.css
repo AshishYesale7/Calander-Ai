@@ -115,8 +115,8 @@ body {
 
 /* --- Frosted Glass Effect --- */
 [data-glass-effect="frosted"] .frosted-glass {
-  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
+  backdrop-filter: blur(var(--glass-blur, 24px));
 }
 
 /* --- Enhanced Water Droplets Effect --- */
