@@ -36,7 +36,7 @@ import { useTheme } from '@/hooks/use-theme';
 import AiAssistantChat from './AiAssistantChat';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { useAuth } from '@/context/AuthContext';
-import { usePlugin } from '@/context/PluginContext';
+import { usePlugin } from '@/hooks/use-plugin';
 import { allPlugins } from '@/data/plugins';
 import { getInstalledPlugins, saveInstalledPlugins, getUserProfile } from '@/services/userService';
 import Image from 'next/image';
