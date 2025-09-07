@@ -29,7 +29,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
-                username: user.email?.split('@')[0] || `user${user.uid.substring(0, 5)}`,
+                username: user.email?.split('@')[0] || `user_${user.uid.substring(0, 5)}`,
                 photoURL: user.photoURL || null,
                 createdAt: new Date(),
                 bio: '',
@@ -133,7 +133,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; username: string; photoURL: string }> | null> => {
+export const getUserProfile = async (userId: string): Promise<Partial<UserPreferences & { displayName: string; photoURL: string }> | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -141,7 +141,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
             const data = docSnap.data();
             return {
                 displayName: data.displayName,
-                username: data.username,
+                username: data.username || `user_${userId.substring(0, 5)}`,
                 photoURL: data.photoURL,
                 bio: data.bio,
                 socials: data.socials,
@@ -188,7 +188,7 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
         return {
             uid: userDoc.id,
             displayName: userData.displayName || 'Anonymous User',
-            username: userData.username,
+            username: userData.username || `user_${userDoc.id.substring(0, 5)}`,
             photoURL: userData.photoURL || null,
             bio: userData.bio || '',
             socials: userData.socials || null,

@@ -136,11 +136,12 @@ export default function LeaderboardPageV2() {
 
     const renderUserRow = (u: LeaderboardUser, rank: number) => {
         const isCurrentUser = user && u.id === user.id;
+        const username = u.username || `user_${u.id.substring(0, 5)}`;
         const userRowContent = (
             <div
                 className={cn(
                     "flex items-center gap-4 p-2 rounded-lg transition-colors w-full",
-                    isCurrentUser ? "bg-primary/20" : "hover:bg-muted/50"
+                    isCurrentUser ? "bg-black" : "hover:bg-muted/50"
                 )}
             >
                 <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
@@ -162,7 +163,7 @@ export default function LeaderboardPageV2() {
         );
 
         return (
-            <Link key={u.id} href={`/profile/${u.username}`} className="block w-full">
+            <Link key={u.id} href={`/profile/${username}`} className="block w-full">
                 {userRowContent}
             </Link>
         );
