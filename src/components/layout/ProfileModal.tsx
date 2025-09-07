@@ -23,6 +23,16 @@ import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import CountryFlag from '../leaderboard/CountryFlag';
+import { timezones } from '@/lib/timezones';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -30,7 +40,7 @@ interface ProfileModalProps {
 }
 
 const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { backgroundImage } = useTheme();
   const { toast } = useToast();
   
@@ -43,8 +53,10 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [twitterUrl, setTwitterUrl] = useState('');
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
-  // Mock data for stats - in a real app, this would come from user data
+
+  // This will now be handled by the streak context
   const stats = {
     goals: 3,
     skills: 4,
@@ -61,6 +73,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
             setGithubUrl(profile.socials?.github || '');
             setLinkedinUrl(profile.socials?.linkedin || '');
             setTwitterUrl(profile.socials?.twitter || '');
+            setCountryCode(profile.countryCode || null);
         } else {
              setDisplayName(user.displayName || '');
         }
@@ -85,8 +98,10 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                 github: githubUrl,
                 linkedin: linkedinUrl,
                 twitter: twitterUrl
-            }
+            },
+            countryCode,
         });
+        await refreshUser(); // This will refresh the user object in AuthContext
         toast({ title: 'Success', description: 'Your profile has been updated.' });
         setIsEditing(false);
     } catch (error) {
@@ -120,12 +135,19 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
          
           <div className="p-6 pt-0">
             <div className="flex justify-between items-end -mt-12">
-                 <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                    <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-                    <AvatarFallback className="text-3xl">
-                        {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                </Avatar>
+                 <div className="relative">
+                    <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+                        <AvatarFallback className="text-3xl">
+                            {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                    </Avatar>
+                     {countryCode && !isEditing && (
+                        <div className="absolute -bottom-1 -right-1">
+                          <CountryFlag countryCode={countryCode} className="h-7 w-7 border-2 border-background"/>
+                        </div>
+                    )}
+                </div>
                 <div className="flex gap-2">
                     {isEditing && (
                         <Button variant="outline" size="sm" className="mb-2" onClick={handleSaveChanges} disabled={isLoading}>
@@ -166,11 +188,29 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
                 )}
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-                <div><p className="text-xl font-bold text-accent">{stats.goals}</p><p className="text-xs text-muted-foreground">Goals</p></div>
-                <div><p className="text-xl font-bold text-accent">{stats.skills}</p><p className="text-xs text-muted-foreground">Skills</p></div>
-                <div><p className="text-xl font-bold text-accent">{stats.resources}</p><p className="text-xs text-muted-foreground">Resources</p></div>
-            </div>
+             {isEditing && (
+                <div className="mt-6">
+                  <Label htmlFor="country-select">Country</Label>
+                   <Select value={countryCode || ''} onValueChange={setCountryCode}>
+                      <SelectTrigger id="country-select">
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {timezones.map(tz => {
+                          const parts = tz.split('/');
+                          const countryName = parts.length > 1 ? parts[0].replace(/_/g, ' ') : parts[0];
+                          const countryCodeGuess = "Country Code"; 
+                          return (
+                            <SelectItem key={tz} value={countryCodeGuess}>
+                              {countryName}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                </div>
+              )}
 
             <div className="mt-6">
                 <h3 className="font-semibold text-foreground mb-2">Connect</h3>

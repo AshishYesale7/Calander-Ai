@@ -24,13 +24,29 @@ export const createUserProfile = async (user: User): Promise<void> => {
     try {
         const docSnap = await getDoc(userDocRef);
         if (!docSnap.exists()) {
-            await setDoc(userDocRef, {
+            // Create a comprehensive default profile structure for a new user.
+            const defaultProfile = {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous User',
-                photoURL: user.photoURL,
+                photoURL: user.photoURL || null,
                 createdAt: new Date(),
-            });
+                bio: '',
+                socials: {
+                    github: '',
+                    linkedin: '',
+                    twitter: ''
+                },
+                statusEmoji: null,
+                countryCode: null,
+                preferences: {
+                    routine: []
+                },
+                codingUsernames: {},
+                installedPlugins: [], // Initialize with empty array
+                geminiApiKey: null, // Initialize API key as null
+            };
+            await setDoc(userDocRef, defaultProfile);
         }
     } catch (error) {
         console.error("Failed to create user profile in Firestore:", error);
@@ -128,7 +144,7 @@ export const getUserProfile = async (userId: string): Promise<Partial<UserPrefer
                 socials: data.socials,
                 statusEmoji: data.statusEmoji,
                 countryCode: data.countryCode,
-                routine: data.routine || [],
+                routine: data.preferences?.routine || [], // Safely access nested property
             };
         }
         return null;
