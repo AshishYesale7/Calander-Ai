@@ -140,7 +140,7 @@ export default function LeaderboardPageV2() {
                 key={u.id}
                 className={cn(
                     "flex items-center gap-4 p-2 rounded-lg transition-colors",
-                    isCurrentUser ? "bg-black" : ""
+                    isCurrentUser && "bg-black/[.85] backdrop-blur-0"
                 )}
             >
                 <div className={cn("text-lg font-bold w-8 text-center", getRankColor(rank))}>
