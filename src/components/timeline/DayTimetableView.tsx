@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -213,7 +213,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -312,11 +312,13 @@ const PlannerTaskList = ({
   tasks,
   activeListId,
   onAddTask,
+  onDragStart,
 }: {
   taskLists: GoogleTaskList[];
   tasks: RawGoogleTask[];
   activeListId: string;
   onAddTask: (listId: string, title: string) => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const activeList = taskLists.find(list => list.id === activeListId);
@@ -351,7 +353,12 @@ const PlannerTaskList = ({
             </form>
             <div className="space-y-1 text-xs overflow-y-auto">
                 {tasks.map(task => (
-                    <div key={task.id} className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start">
+                    <div 
+                      key={task.id} 
+                      className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start cursor-grab"
+                      draggable
+                      onDragStart={(e) => onDragStart(e, task)}
+                    >
                         <div className="flex items-center gap-2">
                            <Checkbox id={task.id} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
                             <label htmlFor={task.id} className="text-gray-200 text-xs">{task.title}</label>
@@ -363,7 +370,17 @@ const PlannerTaskList = ({
     )
 };
 
-const PlannerWeeklyTimeline = ({ week, events }: { week: Date[], events: TimelineEvent[] }) => {
+const PlannerWeeklyTimeline = ({ 
+  week, 
+  events,
+  onDrop,
+  onDragOver,
+}: { 
+  week: Date[], 
+  events: TimelineEvent[],
+  onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void,
+}) => {
     const hours = Array.from({ length: 20 }, (_, i) => i + 5); 
     const now = new Date();
     const nowPosition = (now.getHours() - 5 + now.getMinutes() / 60) * 50; // 50px per hour
@@ -427,7 +444,12 @@ const PlannerWeeklyTimeline = ({ week, events }: { week: Date[], events: Timelin
                     {week.map(day => (
                         <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
                             {hours.map(hour => (
-                                <div key={`${day.toISOString()}-${hour}`} className="h-[50px] border-t border-gray-700/50"></div>
+                                <div 
+                                    key={`${day.toISOString()}-${hour}`} 
+                                    className="h-[50px] border-t border-gray-700/50"
+                                    onDrop={(e) => onDrop(e, day, hour)}
+                                    onDragOver={onDragOver}
+                                ></div>
                             ))}
                         </div>
                     ))}
@@ -504,6 +526,8 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  
+  const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
@@ -629,6 +653,45 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       toast({ title: "Error", description: "Failed to create task.", variant: "destructive" });
     }
   };
+  
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => {
+    setDraggedTask(task);
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify(task));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropDate: Date, dropHour: number) => {
+    e.preventDefault();
+    if (!draggedTask) return;
+
+    const newEventDate = set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 });
+
+    const newEvent: TimelineEvent = {
+        id: `custom-${Date.now()}`,
+        title: draggedTask.title,
+        date: newEventDate,
+        endDate: undefined,
+        type: 'custom',
+        notes: draggedTask.notes,
+        isAllDay: false,
+        isDeletable: true,
+        priority: 'None',
+        status: 'pending',
+        icon: CalendarDays,
+    };
+    
+    if (onEditEvent) {
+      onEditEvent(newEvent);
+    }
+    
+    setDraggedTask(null);
+  };
 
 
   useEffect(() => {
@@ -717,11 +780,14 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                         tasks={tasks[activePlannerView] || []}
                         activeListId={activePlannerView}
                         onAddTask={handleAddTask}
+                        onDragStart={handleDragStart}
                       />
                    )}
                 </div>
                 <Resizer onMouseDown={onMouseDown(1)} />
-                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto"><PlannerWeeklyTimeline week={currentWeekDays} events={events} /></div>
+                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
+                    <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} />
+                </div>
             </div>
         </div>
     )
@@ -979,6 +1045,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
 
 
 
