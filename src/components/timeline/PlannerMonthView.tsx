@@ -15,6 +15,7 @@ import {
   getDay,
   differenceInCalendarDays,
   addDays,
+  startOfDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
@@ -157,7 +158,7 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
                                 className="h-5 rounded text-white text-[10px] font-semibold px-1.5 flex items-center overflow-hidden"
                                 style={{
                                     gridColumnStart: getDay(event.start) - weekStartsOn + 1,
-                                    gridColumnEnd: `span ${event.span}`,
+                                    gridColumnEnd: `span ${"span"}`,
                                     backgroundColor: event.color,
                                     position: 'relative',
                                 }}
@@ -169,8 +170,8 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
                 </div>
             ))}
         </div>
-        <Popover open={popoverOpen} onOpenChange={setPopoverOpen} anchorEl={popoverAnchor}>
-            <PopoverContent className="w-48 bg-white text-black p-2 rounded-lg shadow-xl">
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverContent className="w-48 bg-white text-black p-2 rounded-lg shadow-xl" anchorEl={popoverAnchor}>
                  <div className="text-center font-bold text-sm mb-2">{format(popoverContent.date, 'MMMM d')}</div>
                  {popoverContent.events.map(event => (
                      <div key={event.id} className="text-xs mb-1">
