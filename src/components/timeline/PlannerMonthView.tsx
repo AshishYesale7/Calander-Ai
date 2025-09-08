@@ -1,0 +1,186 @@
+
+'use client';
+
+import { useMemo, useState } from 'react';
+import type { TimelineEvent } from '@/types';
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  isSameDay,
+  getDay,
+  differenceInCalendarDays,
+  addDays,
+} from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { Button } from '../ui/button';
+
+interface PlannerMonthViewProps {
+  month: Date;
+  events: TimelineEvent[];
+}
+
+interface ProcessedEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  color: string;
+  span: number;
+  row: number;
+}
+
+const getEventColor = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'exam': return '#EF4444'; // red-500
+    case 'deadline': return '#F97316'; // orange-500
+    case 'application': return '#8B5CF6'; // violet-500
+    case 'project': return '#3B82F6'; // blue-500
+    case 'goal': return '#22C55E'; // green-500
+    default: return '#6B7280'; // gray-500
+  }
+};
+
+export default function PlannerMonthView({ month, events }: PlannerMonthViewProps) {
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLDivElement | null>(null);
+  const [popoverContent, setPopoverContent] = useState<{ date: Date; events: TimelineEvent[] }>({ date: new Date(), events: [] });
+  
+  const weekStartsOn = 0; // Sunday
+
+  const days = useMemo(() => {
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const startDate = startOfWeek(monthStart, { weekStartsOn });
+    const endDate = endOfWeek(monthEnd, { weekStartsOn });
+    return eachDayOfInterval({ start: startDate, end: endDate });
+  }, [month, weekStartsOn]);
+
+  const weeks = useMemo(() => {
+    const weekChunks: Date[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weekChunks.push(days.slice(i, i + 7));
+    }
+    return weekChunks;
+  }, [days]);
+
+  const processedEvents = useMemo(() => {
+    const gridEvents: ProcessedEvent[][] = Array(days.length).fill(null).map(() => []);
+
+    const sortedEvents = [...events].sort((a,b) => differenceInCalendarDays(b.endDate || b.date, b.date) - differenceInCalendarDays(a.endDate || a.date, a.date));
+
+    sortedEvents.forEach(event => {
+      const eventStart = startOfDay(event.date);
+      const eventEnd = startOfDay(event.endDate || event.date);
+      
+      const startIndex = days.findIndex(day => isSameDay(day, eventStart));
+
+      if (startIndex === -1) return;
+
+      let currentDayIndex = startIndex;
+      let availableRow = 0;
+
+      // Find the first available row for this event
+      while (gridEvents[startIndex].some(e => e.row === availableRow)) {
+        availableRow++;
+      }
+
+      while (currentDayIndex < days.length && days[currentDayIndex] <= eventEnd) {
+        const dayOfWeek = getDay(days[currentDayIndex]);
+
+        if (dayOfWeek === weekStartsOn && currentDayIndex > startIndex) {
+            // Event continues on the next week, handled by the next loop
+        } else {
+             const span = Math.min(
+                (6 - dayOfWeek) + 1, // days left in week
+                differenceInCalendarDays(eventEnd, days[currentDayIndex]) + 1
+            );
+            
+            gridEvents[currentDayIndex].push({
+                id: event.id,
+                title: event.title,
+                start: eventStart,
+                end: eventEnd,
+                color: event.color || getEventColor(event.type),
+                span,
+                row: availableRow
+            });
+            currentDayIndex += span;
+        }
+      }
+    });
+
+    return gridEvents;
+  }, [days, events, weekStartsOn]);
+  
+  const handleDayClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
+    const dayEvents = events.filter(event => {
+        const eventStart = startOfDay(event.date);
+        const eventEnd = startOfDay(event.endDate || event.date);
+        return day >= eventStart && day <= eventEnd;
+    });
+
+    setPopoverContent({ date: day, events: dayEvents });
+    setPopoverAnchor(e.currentTarget);
+    setPopoverOpen(true);
+  };
+
+  return (
+    <div className="p-2 bg-white/10 rounded-lg text-xs flex-1 overflow-auto">
+        <div className="grid grid-cols-7 text-center font-semibold text-gray-400">
+            {weeks[0].map(day => <div key={day.toISOString()} className="py-2">{format(day, 'E')}</div>)}
+        </div>
+        <div className="grid grid-cols-7 grid-rows-5 gap-px bg-gray-700/50">
+            {days.map((day, dayIndex) => (
+                <div key={day.toISOString()} 
+                    className={cn(
+                        "relative bg-gray-900/30 min-h-[90px] p-1",
+                        !isSameMonth(day, month) && "bg-gray-800/20 opacity-70"
+                    )}
+                    onClick={(e) => handleDayClick(e, day)}
+                >
+                    <span className={cn(
+                        "font-semibold",
+                        isSameMonth(day, month) ? 'text-white' : 'text-gray-500'
+                    )}>
+                        {format(day, 'd')}
+                    </span>
+                    <div className="absolute top-7 left-0 right-0 space-y-px">
+                        {processedEvents[dayIndex].map(event => (
+                           <div 
+                                key={event.id}
+                                className="h-5 rounded text-white text-[10px] font-semibold px-1.5 flex items-center overflow-hidden"
+                                style={{
+                                    gridColumnStart: getDay(event.start) - weekStartsOn + 1,
+                                    gridColumnEnd: `span ${event.span}`,
+                                    backgroundColor: event.color,
+                                    position: 'relative',
+                                }}
+                            >
+                               {event.title}
+                           </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen} anchorEl={popoverAnchor}>
+            <PopoverContent className="w-48 bg-white text-black p-2 rounded-lg shadow-xl">
+                 <div className="text-center font-bold text-sm mb-2">{format(popoverContent.date, 'MMMM d')}</div>
+                 {popoverContent.events.map(event => (
+                     <div key={event.id} className="text-xs mb-1">
+                        <span className="font-semibold">{event.title}</span>
+                         {!event.isAllDay && <p>{format(event.date, 'p')}</p>}
+                     </div>
+                 ))}
+                 <Button className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white h-8 text-xs">Unlock Dates</Button>
+            </PopoverContent>
+        </Popover>
+    </div>
+  );
+}

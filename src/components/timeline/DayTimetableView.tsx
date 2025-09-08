@@ -32,6 +32,7 @@ import { Input } from '../ui/input';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import PlannerMonthView from './PlannerMonthView';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -597,8 +598,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
 
-  const isToday = useMemo(() => dfnsIsToday(date), [date]);
-  const isDayInPast = useMemo(() => isPast(date) && !isToday, [date, isToday]);
+  const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
@@ -768,6 +768,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
 
   useEffect(() => {
+    const isToday = dfnsIsToday(date);
     if (isToday) {
       const timer = setTimeout(() => {
         nowIndicatorRef.current?.scrollIntoView({
@@ -785,7 +786,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
         clearInterval(intervalId);
       };
     }
-  }, [isToday]);
+  }, [date]);
   
   const allDayEvents = useMemo(() => events.filter(e => e.isAllDay), [events]);
   const timedEvents = useMemo(() => events.filter(e => !e.isAllDay && e.date instanceof Date && !isNaN(e.date.valueOf())), [events]);
@@ -835,7 +836,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     return [event.title, timeString, countdownString, statusString, notesString].filter(Boolean).join('\n');
   };
 
-  const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
+  const currentTimeTopPosition = dfnsIsToday(date) ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
 
   if (isMaximized) {
     return (
@@ -863,7 +864,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                        <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                     )}
                     {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
-                    {plannerViewMode === 'month' && <div className="p-4">Month View Component Here</div>}
+                    {plannerViewMode === 'month' && <PlannerMonthView month={currentWeekStart} events={events} />}
                 </div>
             </div>
         </div>
@@ -1020,7 +1021,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       ></div>
                   ))}
 
-                  {isToday && (
+                  {dfnsIsToday(date) && (
                       <div
                       ref={nowIndicatorRef}
                       className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
