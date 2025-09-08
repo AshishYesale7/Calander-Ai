@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -220,7 +221,9 @@ function calculateEventLayouts(
 
 // --- New Components for Maximized View ---
 
-const PlannerHeader = ({ onMinimize, week, onNavigateWeek, onTodayClick }: { onMinimize: () => void; week: Date[]; onNavigateWeek: (direction: 'prev' | 'next') => void; onTodayClick: () => void; }) => (
+type PlannerViewMode = 'day' | 'week' | 'month';
+
+const PlannerHeader = ({ onMinimize, week, onNavigateWeek, onTodayClick, onViewChange }: { onMinimize: () => void; week: Date[]; onNavigateWeek: (direction: 'prev' | 'next') => void; onTodayClick: () => void; onViewChange: (view: PlannerViewMode) => void; }) => (
     <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
         <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigateWeek('prev')}><ChevronLeft className="h-4 w-4" /></Button>
@@ -229,7 +232,18 @@ const PlannerHeader = ({ onMinimize, week, onNavigateWeek, onTodayClick }: { onM
             <Button variant="ghost" className="h-7 px-2 text-xs" onClick={onTodayClick}>Today</Button>
         </div>
         <div className="flex items-center gap-1">
-             <Button variant="ghost" size="icon" className="h-7 w-7"><LayoutGrid className="h-4 w-4" /></Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onViewChange('day')}>Day</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('week')}>Week</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('month')}>Month</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className="h-7 w-7">
@@ -542,6 +556,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('week');
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
@@ -789,7 +804,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   if (isMaximized) {
     return (
         <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-            <PlannerHeader onMinimize={() => setIsMaximized(false)} week={currentWeekDays} onNavigateWeek={handleNavigateWeek} onTodayClick={handleTodayClick} />
+            <PlannerHeader onMinimize={() => setIsMaximized(false)} week={currentWeekDays} onNavigateWeek={handleNavigateWeek} onTodayClick={handleTodayClick} onViewChange={setPlannerViewMode}/>
             <div className="flex flex-1 min-h-0">
                 <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
                 <Resizer onMouseDown={onMouseDown(0)} />
@@ -808,7 +823,11 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                 </div>
                 <Resizer onMouseDown={onMouseDown(1)} />
                 <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
-                    <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                    {plannerViewMode === 'week' && (
+                       <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                    )}
+                    {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
+                    {plannerViewMode === 'month' && <div className="p-4">Month View Component Here</div>}
                 </div>
             </div>
         </div>
