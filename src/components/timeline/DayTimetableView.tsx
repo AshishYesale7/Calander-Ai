@@ -214,7 +214,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -346,6 +346,27 @@ const PlannerTaskList = ({
         }
     };
     
+    // Mock data for pills and durations
+    const getMockTaskDetails = (title: string) => {
+        const hash = title.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+        const durations = ['1h', '1h 15m', '1h 30m', '45m', '2h'];
+        const tags = [
+            { name: 'Newsletter', color: 'bg-green-500' },
+            { name: 'Film', color: 'bg-blue-500' },
+            { name: 'Thumbnails', color: 'bg-purple-500' },
+            { name: 'Scripts', color: 'bg-orange-500' },
+            { name: 'Book', color: 'bg-red-500' },
+        ];
+        const hasMetadata = Math.abs(hash % 5) > 1;
+        
+        return {
+            duration: hasMetadata ? durations[Math.abs(hash) % durations.length] : null,
+            tag: hasMetadata ? tags[Math.abs(hash) % tags.length] : null,
+            metadata: hasMetadata ? 'Content Calendar' : null,
+        }
+    }
+
+
     return (
         <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50">
             <div className="flex justify-between items-center mb-2 px-1">
@@ -366,19 +387,34 @@ const PlannerTaskList = ({
                 </div>
             </form>
             <div className="space-y-1 text-xs overflow-y-auto">
-                {tasks.map(task => (
-                    <div 
-                      key={task.id} 
-                      className="p-1 rounded-md hover:bg-gray-700/50 flex flex-col items-start cursor-grab"
-                      draggable
-                      onDragStart={(e) => onDragStart(e, task)}
-                    >
-                        <div className="flex items-center gap-2">
-                           <Checkbox id={task.id} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5"/>
-                            <label htmlFor={task.id} className="text-gray-200 text-xs">{task.title}</label>
+                {tasks.map(task => {
+                    const mockDetails = getMockTaskDetails(task.title);
+                    return (
+                        <div 
+                        key={task.id} 
+                        className="p-1.5 rounded-md hover:bg-gray-700/50 flex flex-col items-start cursor-grab"
+                        draggable
+                        onDragStart={(e) => onDragStart(e, task)}
+                        >
+                            <div className="flex items-start gap-2 w-full">
+                                <Checkbox id={task.id} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5 mt-0.5"/>
+                                <label htmlFor={task.id} className="text-gray-200 text-xs flex-1">{task.title}</label>
+                                {mockDetails.duration && (
+                                    <span className="text-gray-400 text-[10px] font-medium whitespace-nowrap">{mockDetails.duration}</span>
+                                )}
+                                {mockDetails.tag && (
+                                    <span className={cn("text-white text-[10px] font-bold px-1.5 py-0.5 rounded", mockDetails.tag.color)}>{mockDetails.tag.name}</span>
+                                )}
+                            </div>
+                             {mockDetails.metadata && (
+                                <div className="pl-6 text-[10px] text-gray-400 flex items-center gap-1">
+                                    <Calendar size={10}/>
+                                    <span>{mockDetails.metadata}</span>
+                                </div>
+                            )}
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
         </div>
     )
