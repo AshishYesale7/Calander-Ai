@@ -375,11 +375,13 @@ const PlannerWeeklyTimeline = ({
   events,
   onDrop,
   onDragOver,
+  ghostEvent,
 }: { 
   week: Date[], 
   events: TimelineEvent[],
   onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
-  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void,
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
+  ghostEvent: { date: Date, hour: number } | null,
 }) => {
     const hours = Array.from({ length: 20 }, (_, i) => i + 5); 
     const now = new Date();
@@ -448,26 +450,40 @@ const PlannerWeeklyTimeline = ({
                                     key={`${day.toISOString()}-${hour}`} 
                                     className="h-[50px] border-t border-gray-700/50"
                                     onDrop={(e) => onDrop(e, day, hour)}
-                                    onDragOver={onDragOver}
+                                    onDragOver={(e) => onDragOver(e, day, hour)}
                                 ></div>
                             ))}
                         </div>
                     ))}
                 </div>
-                <div className="absolute inset-0 grid grid-cols-7">
-                    {timedEvents.map((event, i) => (
-                        <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
-                            style={getEventStyles(event)}>
-                            <div className='flex items-center gap-1 text-[10px]'>
-                                {event.icon && <event.icon size={12}/>}{event.title}
-                            </div>
-                            <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>
+                <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                    {timedEvents.map((event, i) => {
+                        const style = getEventStyles(event);
+                        const isShort = style.height.replace('px', '') < 40;
+                        return (
+                          <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
+                              style={style}>
+                              <div className='flex items-center gap-1 text-[10px]'>
+                                  {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                  {!isShort && event.icon && <event.icon size={12}/>}
+                                  <span className="truncate">{event.title}</span>
+                              </div>
+                              {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                          </div>
+                        )
+                    })}
+                    {ghostEvent && (
+                        <div 
+                            className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                            style={{
+                                gridColumnStart: getDayIndex(ghostEvent.date) + 1,
+                                top: `${(ghostEvent.hour - 5) * 50}px`,
+                                height: '50px' // 1 hour duration for ghost
+                            }}
+                        >
+                            <p className="text-[10px] font-semibold">Drop to schedule</p>
                         </div>
-                    ))}
-                    <div className="absolute border border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300"
-                        style={{ gridColumnStart: 5, top: `${(10) * 50}px`, height: '25px'}}>
-                        <p className="text-[10px] font-semibold">Thumbnail: Twitch HQ</p>
-                    </div>
+                    )}
                 </div>
                 {dfnsIsToday(now) && <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
                     <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
@@ -528,6 +544,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
+  const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
@@ -587,9 +604,6 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
   }, [onMouseMove]);
-
-  const isToday = useMemo(() => dfnsIsToday(date), [date]);
-  const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
 
   const fetchTaskData = useCallback(async () => {
     if (!user || !isMaximized) return;
@@ -662,12 +676,16 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
+    if(draggedTask){
+        setGhostEvent({ date, hour });
+    }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropDate: Date, dropHour: number) => {
     e.preventDefault();
+    setGhostEvent(null);
     if (!draggedTask) return;
 
     const newEventDate = set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 });
@@ -787,7 +805,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                 </div>
                 <Resizer onMouseDown={onMouseDown(1)} />
                 <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
-                    <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} />
+                    <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                 </div>
             </div>
         </div>
@@ -1046,6 +1064,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 }
 
     
+
 
 
 
