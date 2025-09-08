@@ -546,6 +546,9 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
 
+  const isToday = useMemo(() => dfnsIsToday(date), [date]);
+  const isDayInPast = useMemo(() => isPast(date) && !isToday, [date, isToday]);
+
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
   }, [currentWeekStart]);
@@ -868,8 +871,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
             if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
             const statusBadge = getStatusBadgeVariant(event.status);
             const countdownText = getCountdownText(event.date);
-            const isEventInPast = isPast(event.date);
-            const isChecked = event.status === 'completed' || (event.status !== 'missed' && isEventInPast);
+            const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
 
             return (
             <div
@@ -977,8 +979,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                   {timedEventsWithLayout.map(event => {
                       if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
                       const isSmallWidth = parseFloat(event.layout.width) < 25;
-                      const isEventInPast = event.endDate ? isPast(event.endDate) : isPast(event.date);
-                      const isChecked = event.status === 'completed' || (event.status !== 'missed' && isEventInPast);
+                      const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
 
                       return (
                       <div
@@ -1062,11 +1063,3 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     </Card>
   );
 }
-
-    
-
-
-
-
-
-
