@@ -156,3 +156,13 @@ The `apphosting.yaml` file is already set up. To deploy your app, you will need 
 You can also deploy this application to Heroku with a single click using the button below. Heroku will automatically detect the `app.json` file and guide you through setting up the required environment variables.
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/AshishYesale7/FutureSight/tree/master)
+
+## 8. Documentation
+
+For comprehensive information about this repository, please refer to these detailed documentation files:
+
+- **[Repository Summary](./REPOSITORY_SUMMARY.md)** - Quick overview and key highlights
+- **[Complete Explanation](./REPOSITORY_EXPLANATION.md)** - Comprehensive project documentation
+- **[Technical Architecture](./TECHNICAL_ARCHITECTURE.md)** - Detailed technical specifications and architecture diagrams
+
+These documents provide in-depth coverage of the project's architecture, features, development guidelines, and deployment strategies.
