@@ -599,143 +599,174 @@ const PlannerWeeklyTimeline = ({
               ))}
           </div>
           {/* All-day events */}
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-gray-400 text-xs border-b border-gray-700/50 min-h-[40px]">
-            <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
-            <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
-              {allDayEventsByDay.map((dayEvents, dayIndex) => (
-                <div key={dayIndex} className="space-y-0.5">
-                  {dayEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={cn(
-                        'rounded px-1 py-0.5 text-white font-medium text-[10px] truncate',
-                        getEventTypeStyleClasses(event.type)
-                      )}
-                    >
-                      {event.title}
-                    </div>
-                  ))}
+            <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-gray-400 text-xs border-b border-gray-700/50 min-h-[40px]">
+                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
+                <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
+                    {allDayEventsByDay.map((dayEvents, dayIndex) => (
+                        <div key={dayIndex} className="space-y-0.5">
+                            {dayEvents.map((event) => (
+                                <Popover key={event.id}>
+                                    <PopoverTrigger asChild>
+                                        <div
+                                            className={cn(
+                                                'rounded px-1.5 py-1 text-white font-medium text-[10px] truncate cursor-pointer',
+                                                getEventTypeStyleClasses(event.type)
+                                            )}
+                                        >
+                                            {event.title}
+                                        </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
+                                        <div className="space-y-2">
+                                            <h4 className="font-semibold">{event.title}</h4>
+                                            <p className="text-muted-foreground">All-day event</p>
+                                            {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                            <div className="flex justify-end gap-1 pt-1">
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                                    <Edit3 className="h-3.5 w-3.5"/>
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                            <Trash2 className="h-3.5 w-3.5"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="frosted-glass">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                            <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            ))}
+                        </div>
+                    ))}
                 </div>
-              ))}
             </div>
-          </div>
         </div>
   
         {/* Main Grid: This part will scroll */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 flex overflow-y-auto">
-            <div className="flex flex-1 relative">
-              {/* Hour Gutter */}
-              <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
-                <div className="flex-1 relative">
-                  {hours.map((hour) => (
-                    <div
-                      key={hour}
-                      className="pr-1 flex items-start justify-end"
-                      style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
-                    >
-                      {hour > 0 && <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>}
+            <div className="flex-1 flex overflow-y-auto">
+                <div className="flex-1 flex relative">
+                    {/* Hour Gutter */}
+                    <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                        <div className="flex-1 relative">
+                        {hours.map((hour) => (
+                            <div
+                            key={hour}
+                            className="pr-1 flex items-start justify-end"
+                            style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
+                            >
+                            {hour > 0 && <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>}
+                            </div>
+                        ))}
+                        </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-    
-              {/* Timeline Grid */}
-              <div className="flex-1 relative">
-                <div className="grid grid-cols-7 h-full">
-                  {week.map(day => (
-                    <div key={day.toISOString()} className="border-l border-gray-700/50 first:border-l-0">
-                      {hours.map(hour => (
-                        <div 
-                          key={`${day.toISOString()}-${hour}`} 
-                          className="border-t border-gray-700/50"
-                          style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
-                          onDrop={(e) => onDrop(e, day, hour)}
-                          onDragOver={(e) => onDragOver(e, day, hour)}
-                        ></div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-  
-                <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
-                    {weeklyLayouts.map((dayLayout, dayIndex) => (
-                        <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
-                           {dayLayout.map(event => {
-                                const isShort = event.layout.height < 40;
-                                return (
-                                    <Popover key={event.id}>
-                                        <PopoverTrigger asChild>
-                                            <div
-                                                className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
-                                                style={event.layout}
-                                            >
-                                                <div className='flex items-center gap-1 text-[10px]'>
-                                                    {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                                    {!isShort && event.icon && <event.icon size={12}/>}
-                                                    <span className="truncate">{event.title}</span>
-                                                </div>
-                                                {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
-                                            <div className="space-y-2">
-                                                <h4 className="font-semibold">{event.title}</h4>
-                                                <p className="text-muted-foreground">{format(event.date, 'h:mm a')} - {event.endDate ? format(event.endDate, 'h:mm a') : ''}</p>
-                                                {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
-                                                <div className="flex justify-end gap-1 pt-1">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
-                                                        <Edit3 className="h-3.5 w-3.5"/>
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                                <Trash2 className="h-3.5 w-3.5"/>
+            
+                    {/* Timeline Grid */}
+                    <div className="flex-1 relative">
+                        {/* Now indicator line. Positioned relative to the entire grid including the hour gutter */}
+                         {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                            <div className="absolute h-px bg-purple-500 z-30 left-0 right-0" style={{ top: `${nowPosition}px` }}>
+                                <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] -left-1" />
+                            </div>
+                        )}
+                        <div className="grid grid-cols-7 h-full">
+                            {week.map(day => (
+                                <div key={day.toISOString()} className="border-l border-gray-700/50 first:border-l-0">
+                                {hours.map(hour => (
+                                    <div 
+                                    key={`${day.toISOString()}-${hour}`} 
+                                    className="border-t border-gray-700/50"
+                                    style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
+                                    onDrop={(e) => onDrop(e, day, hour)}
+                                    onDragOver={(e) => onDragOver(e, day, hour)}
+                                    ></div>
+                                ))}
+                                </div>
+                            ))}
+                        </div>
+        
+                        <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                            {weeklyLayouts.map((dayLayout, dayIndex) => (
+                                <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
+                                {dayLayout.map(event => {
+                                        const isShort = event.layout.height < 40;
+                                        return (
+                                            <Popover key={event.id}>
+                                                <PopoverTrigger asChild>
+                                                    <div
+                                                        className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
+                                                        style={event.layout}
+                                                    >
+                                                        <div className='flex items-center gap-1 text-[10px]'>
+                                                            {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                                            {!isShort && event.icon && <event.icon size={12}/>}
+                                                            <span className="truncate">{event.title}</span>
+                                                        </div>
+                                                        {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-semibold">{event.title}</h4>
+                                                        <p className="text-muted-foreground">{format(event.date, 'h:mm a')} - {event.endDate ? format(event.endDate, 'h:mm a') : ''}</p>
+                                                        {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                                        <div className="flex justify-end gap-1 pt-1">
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                                                <Edit3 className="h-3.5 w-3.5"/>
                                                             </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="frosted-glass">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
-                                                                <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                )
-                            })}
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                                        <Trash2 className="h-3.5 w-3.5"/>
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent className="frosted-glass">
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        )
+                                    })}
+                                </div>
+                            ))}
+        
+                            {ghostEvent && (
+                                <div 
+                                    className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                                    style={{
+                                        gridColumnStart: getDay(ghostEvent.date) + 1,
+                                        top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
+                                        height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
+                                    }}
+                                >
+                                    <p className="text-[10px] font-semibold">Drop to schedule</p>
+                                </div>
+                            )}
                         </div>
-                    ))}
-  
-                    {ghostEvent && (
-                        <div 
-                            className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
-                            style={{
-                                gridColumnStart: getDay(ghostEvent.date) + 1,
-                                top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
-                                height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
-                            }}
-                        >
-                            <p className="text-[10px] font-semibold">Drop to schedule</p>
-                        </div>
-                    )}
-                </div>
-                
-                 {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                    <div className="absolute h-px bg-purple-500 z-10 left-0 right-0" style={{ top: `${nowPosition}px` }}>
-                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] left-[-4px]" />
                     </div>
-                )}
-  
-              </div>
+                </div>
             </div>
-          </div>
         </div>
       </div>
     );
