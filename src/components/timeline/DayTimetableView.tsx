@@ -447,6 +447,8 @@ const PlannerTaskList = ({
     )
 };
 
+const HOUR_SLOT_HEIGHT = 50;
+
 const PlannerWeeklyTimeline = ({ 
   week, 
   events,
@@ -462,7 +464,7 @@ const PlannerWeeklyTimeline = ({
 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
-    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / (24 * 60) * (24 * 50);
+    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / 60 * HOUR_SLOT_HEIGHT;
 
     const { allDayEvents, timedEvents } = useMemo(() => {
         const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
@@ -486,14 +488,14 @@ const PlannerWeeklyTimeline = ({
     const getEventStyles = (event: TimelineEvent) => {
         const startHour = getHours(event.date);
         const startMinute = getMinutes(event.date);
-        const top = (startHour * 60 + startMinute) / 60 * 50;
+        const top = (startHour * 60 + startMinute) / 60 * HOUR_SLOT_HEIGHT;
 
         let durationHours = 1;
         if (event.endDate) {
             const diffMs = event.endDate.getTime() - event.date.getTime();
-            durationHours = diffMs / (1000 * 60 * 60);
+            durationHours = Math.max(0.25, diffMs / (1000 * 60 * 60)); // min 15 mins
         }
-        const height = durationHours * 50;
+        const height = durationHours * HOUR_SLOT_HEIGHT;
 
         return {
             gridColumnStart: getDayIndex(event.date) + 1,
@@ -503,12 +505,14 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex-1 w-full bg-black/30 p-2 text-xs flex overflow-auto">
+        <div className="flex flex-1 w-full bg-black/30 p-2 text-xs overflow-auto">
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0">
                 <div className="h-8"></div>
                 <div className="h-[2px]"></div>
                 {hours.map(hour => (
-                    <div key={hour} className="h-[50px] -mt-1.5 pr-1">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</div>
+                    <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
+                        <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>
+                    </div>
                 ))}
             </div>
             <div className="flex-1">
@@ -532,7 +536,8 @@ const PlannerWeeklyTimeline = ({
                                 {hours.map(hour => (
                                     <div 
                                         key={`${day.toISOString()}-${hour}`} 
-                                        className="h-[50px] border-t border-gray-700/50"
+                                        className="border-t border-gray-700/50"
+                                        style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
                                         onDrop={(e) => onDrop(e, day, hour)}
                                         onDragOver={(e) => onDragOver(e, day, hour)}
                                     ></div>
@@ -541,8 +546,8 @@ const PlannerWeeklyTimeline = ({
                         ))}
                         
                         {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                            <div className="absolute w-full h-px bg-purple-500 z-10 col-span-full" style={{ top: `${nowPosition}px`}}>
-                                <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]" style={{left: `${(getDayIndex(now) / 7) * 100}%`}}></div>
+                            <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1, gridColumnEnd: `span 1`}}>
+                                <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
                             </div>
                         )}
                     </div>
@@ -567,8 +572,8 @@ const PlannerWeeklyTimeline = ({
                                 className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
                                 style={{
                                     gridColumnStart: getDayIndex(ghostEvent.date) + 1,
-                                    top: `${ghostEvent.hour * 50}px`,
-                                    height: '50px' // 1 hour duration for ghost
+                                    top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
+                                    height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
                                 }}
                             >
                                 <p className="text-[10px] font-semibold">Drop to schedule</p>
