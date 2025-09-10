@@ -42,13 +42,13 @@ const minuteRulerHeightClass = 'h-8';
 
 const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'exam': return 'bg-red-500/20 border-red-500 text-red-700 dark:bg-red-700/20 dark:border-red-700 dark:text-red-300';
-    case 'deadline': return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:bg-yellow-700/20 dark:border-yellow-700 dark:text-yellow-300';
-    case 'goal': return 'bg-green-500/20 border-green-500 text-green-700 dark:bg-green-700/20 dark:border-green-700 dark:text-green-300';
-    case 'project': return 'bg-blue-500/20 border-blue-500 text-blue-700 dark:bg-blue-700/20 dark:border-blue-700 dark:text-blue-300';
-    case 'application': return 'bg-purple-500/20 border-purple-500 text-purple-700 dark:bg-purple-700/20 dark:border-purple-700 dark:text-purple-300';
-    case 'ai_suggestion': return 'bg-teal-500/20 border-teal-500 text-teal-700 dark:bg-teal-700/20 dark:border-teal-700 dark:text-teal-300';
-    default: return 'bg-gray-500/20 border-gray-500 text-gray-700 dark:bg-gray-700/20 dark:border-gray-700 dark:text-gray-300';
+    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
+    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
+    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
+    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
+    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
+    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
+    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
   }
 };
 
@@ -83,11 +83,12 @@ const getCustomColorStyles = (color?: string) => {
     const g = parseInt(hexMatch[2], 16);
     const b = parseInt(hexMatch[3], 16);
     return {
-      backgroundColor: `rgba(${r},${g},${b},0.25)`,
+      backgroundColor: `rgba(${r},${g},${b},0.8)`, // Increased opacity
       borderColor: color,
+      color: (r * 0.299 + g * 0.587 + b * 0.114) > 186 ? '#333' : '#fff' // Set text color based on background brightness
     };
   }
-  return { backgroundColor: `${color}40`, borderColor: color }; 
+  return { backgroundColor: `${color}B3`, borderColor: color }; // B3 is ~70% opacity
 };
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
@@ -630,16 +631,17 @@ const PlannerWeeklyTimeline = ({
 
     return (
       <div className={cn("flex flex-col flex-1 w-full text-xs h-full", themeClasses.container)}>
-        {/* Header and All-Day Events */}
         <div className={cn("sticky top-0 z-20 flex-shrink-0", themeClasses.headerContainer)}>
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center font-semibold text-xs">
-            <div className={cn("w-12 border-b border-r", themeClasses.headerCell)}></div>
-              {week.map((day) => (
-                <div key={day.toISOString()} className={cn("py-2 border-b border-l first:border-l-0", themeClasses.headerCell)}>
-                  {format(day, 'EEE d')}
+            <div className="grid grid-cols-[3rem_repeat(7,1fr)]">
+                <div className={cn("w-12 border-b border-r", themeClasses.headerCell)}></div>
+                <div className="grid grid-cols-7 col-span-7 text-center font-semibold text-xs">
+                    {week.map((day) => (
+                        <div key={day.toISOString()} className={cn("py-2 border-b border-l first:border-l-0", themeClasses.headerCell)}>
+                            {format(day, 'EEE d')}
+                        </div>
+                    ))}
                 </div>
-              ))}
-          </div>
+            </div>
             <div className={cn("grid grid-cols-[3rem_repeat(7,1fr)] text-xs border-b min-h-[40px]", themeClasses.headerCell)}>
                 <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex items-center justify-center border-r pr-1", themeClasses.headerCell, themeClasses.hourGutter)}>All-day</div>
                 <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
@@ -1511,7 +1513,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                                               className="mt-0.5 border-current flex-shrink-0"
                                           />
                                       )}
-                                      <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs", event.color ? 'text-foreground' : 'text-current')}>{event.title}</p>
+                                      <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs", event.color ? '' : 'text-current')}>{event.title}</p>
                                   </div>
                                   {!isSmallWidth && (
                                   <p className={cn("opacity-80 truncate text-[10px] pl-5", event.color ? 'text-foreground/80' : '')}>
