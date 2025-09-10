@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -224,35 +224,53 @@ function calculateEventLayouts(
 
 type PlannerViewMode = 'day' | 'week' | 'month';
 
-const PlannerHeader = ({ onMinimize, week, onNavigateWeek, onTodayClick, onViewChange }: { onMinimize: () => void; week: Date[]; onNavigateWeek: (direction: 'prev' | 'next') => void; onTodayClick: () => void; onViewChange: (view: PlannerViewMode) => void; }) => (
-    <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
-        <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigateWeek('prev')}><ChevronLeft className="h-4 w-4" /></Button>
-            <h2 className="font-semibold text-white px-2 text-sm">{format(week[0], 'MMM yyyy')}</h2>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigateWeek('next')}><ChevronRight className="h-4 w-4" /></Button>
-            <Button variant="ghost" className="h-7 px-2 text-xs" onClick={onTodayClick}>Today</Button>
-        </div>
-        <div className="flex items-center gap-1">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <LayoutGrid className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => onViewChange('day')}>Day</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewChange('week')}>Week</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewChange('month')}>Month</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className="h-7 w-7">
-                <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
-            </Button>
-        </div>
-    </header>
-);
+const PlannerHeader = ({ 
+    activeView, 
+    date,
+    onNavigate,
+    onTodayClick, 
+    onMinimize, 
+    onViewChange 
+}: { 
+    activeView: PlannerViewMode;
+    date: Date;
+    onNavigate: (direction: 'prev' | 'next') => void;
+    onTodayClick: () => void;
+    onMinimize: () => void;
+    onViewChange: (view: PlannerViewMode) => void;
+}) => {
+    const getTitle = () => {
+        switch(activeView) {
+            case 'day': return format(date, 'MMM d, yyyy');
+            case 'week': return `${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d, yyyy')}`;
+            case 'month': return format(date, 'MMMM yyyy');
+        }
+    };
+
+    return (
+        <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('prev')}><ChevronLeft className="h-4 w-4" /></Button>
+                <h2 className="font-semibold text-white px-2 text-sm">{getTitle()}</h2>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="ghost" className="h-7 px-2 text-xs" onClick={onTodayClick}>Today</Button>
+            </div>
+            <div className="flex items-center gap-1 bg-gray-800/50 p-0.5 rounded-md">
+                <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Day</Button>
+                <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Week</Button>
+                <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Month</Button>
+            </div>
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className="h-7 w-7">
+                    <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
+                </Button>
+            </div>
+        </header>
+    );
+};
+
 
 const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, setActiveView: (view: string) => void }) => {
     const mainSections = [
@@ -571,7 +589,7 @@ interface TasksByList {
     [key: string]: RawGoogleTask[];
 }
 
-export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
+export default function DayTimetableView({ date: initialDate, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -592,24 +610,32 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
-  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('week');
+  const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
+  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('day');
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
 
-  const isDayInPast = useMemo(() => isPast(date) && !dfnsIsToday(date), [date]);
+  const isToday = useMemo(() => dfnsIsToday(currentDisplayDate), [currentDisplayDate]);
+  const isDayInPast = useMemo(() => isPast(currentDisplayDate) && !dfnsIsToday(currentDisplayDate), [currentDisplayDate]);
 
   const currentWeekDays = useMemo(() => {
-    return eachDayOfInterval({ start: currentWeekStart, end: endOfWeek(currentWeekStart, { weekStartsOn: 0 }) });
-  }, [currentWeekStart]);
+    return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
+  }, [currentDisplayDate]);
 
-  const handleNavigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeekStart(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1));
+  const handleNavigate = (direction: 'prev' | 'next') => {
+      const newDate = (current: Date) => {
+        switch(plannerViewMode) {
+            case 'day': return direction === 'prev' ? subDays(current, 1) : addDays(current, 1);
+            case 'week': return direction === 'prev' ? subWeeks(current, 1) : addWeeks(current, 1);
+            case 'month': return direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1);
+        }
+      }
+      setCurrentDisplayDate(newDate);
   };
-
+  
   const handleTodayClick = () => {
-    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
+    setCurrentDisplayDate(new Date());
   };
 
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
@@ -766,28 +792,26 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     setDraggedTask(null);
   };
 
-
   useEffect(() => {
-    const isToday = dfnsIsToday(date);
-    if (isToday) {
-      const timer = setTimeout(() => {
-        nowIndicatorRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 500);
+    if (isToday && !isMaximized && nowIndicatorRef.current) {
+        const timer = setTimeout(() => {
+            nowIndicatorRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }, 500);
 
-      const intervalId = setInterval(() => {
-        setNow(new Date());
-      }, 60000); 
+        const intervalId = setInterval(() => {
+            setNow(new Date());
+        }, 60000);
 
-      return () => {
-        clearTimeout(timer);
-        clearInterval(intervalId);
-      };
+        return () => {
+            clearTimeout(timer);
+            clearInterval(intervalId);
+        };
     }
-  }, [date]);
-  
+  }, [isToday, isMaximized]);
+
   const allDayEvents = useMemo(() => events.filter(e => e.isAllDay), [events]);
   const timedEvents = useMemo(() => events.filter(e => !e.isAllDay && e.date instanceof Date && !isNaN(e.date.valueOf())), [events]);
 
@@ -831,44 +855,46 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return event.title;
     const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
     const statusString = event.status ? `Status: ${event.status.replace(/-/g, ' ')}` : '';
-    const countdownString = getCountdownText(event.date);
+    const countdownText = getCountdownText(event.date);
     const notesString = event.notes ? `Notes: ${event.notes}` : '';
-    return [event.title, timeString, countdownString, statusString, notesString].filter(Boolean).join('\n');
+    return [event.title, timeString, countdownText, statusString, notesString].filter(Boolean).join('\n');
   };
 
-  const currentTimeTopPosition = dfnsIsToday(date) ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
-
-  if (isMaximized) {
-    return (
-        <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-            <PlannerHeader onMinimize={() => setIsMaximized(false)} week={currentWeekDays} onNavigateWeek={handleNavigateWeek} onTodayClick={handleTodayClick} onViewChange={setPlannerViewMode}/>
-            <div className="flex flex-1 min-h-0">
-                <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
-                <Resizer onMouseDown={onMouseDown(0)} />
-                <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
-                   {isTasksLoading ? (
-                     <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
-                   ) : (
-                      <PlannerTaskList
-                        taskLists={taskLists}
-                        tasks={tasks[activePlannerView] || []}
-                        activeListId={activePlannerView}
-                        onAddTask={handleAddTask}
-                        onDragStart={handleDragStart}
-                      />
-                   )}
-                </div>
-                <Resizer onMouseDown={onMouseDown(1)} />
-                <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
-                    {plannerViewMode === 'week' && (
-                       <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
-                    )}
-                    {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
-                    {plannerViewMode === 'month' && <PlannerMonthView month={currentWeekStart} events={events} />}
-                </div>
+  const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
+  
+  const renderMaximizedView = () => (
+     <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
+        <PlannerHeader activeView={plannerViewMode} date={currentDisplayDate} onNavigate={handleNavigate} onTodayClick={handleTodayClick} onMinimize={() => setIsMaximized(false)} onViewChange={setPlannerViewMode}/>
+        <div className="flex flex-1 min-h-0">
+            <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
+            <Resizer onMouseDown={onMouseDown(0)} />
+            <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
+               {isTasksLoading ? (
+                 <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
+               ) : (
+                  <PlannerTaskList
+                    taskLists={taskLists}
+                    tasks={tasks[activePlannerView] || []}
+                    activeListId={activePlannerView}
+                    onAddTask={handleAddTask}
+                    onDragStart={handleDragStart}
+                  />
+               )}
+            </div>
+            <Resizer onMouseDown={onMouseDown(1)} />
+            <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
+                {plannerViewMode === 'week' && (
+                   <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                )}
+                {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
+                {plannerViewMode === 'month' && <PlannerMonthView month={currentDisplayDate} events={events} />}
             </div>
         </div>
-    )
+    </div>
+  );
+
+  if (isMaximized) {
+    return renderMaximizedView();
   }
 
   return (
@@ -882,7 +908,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       <CardHeader className="p-4 border-b border-border/30 flex flex-row justify-between items-center">
         <div>
           <CardTitle className="font-headline text-xl text-primary">
-            {format(date, 'MMMM d, yyyy')}
+            {format(initialDate, 'MMMM d, yyyy')}
           </CardTitle>
           <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
         </div>
@@ -1021,7 +1047,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       ></div>
                   ))}
 
-                  {dfnsIsToday(date) && (
+                  {isToday && (
                       <div
                       ref={nowIndicatorRef}
                       className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
