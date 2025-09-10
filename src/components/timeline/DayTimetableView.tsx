@@ -1375,11 +1375,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : '')} style={!isMobile ? { width: `${panelWidths[0]}%` } : {}}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : `w-[${panelWidths[1]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : '')} style={!isMobile ? { width: `${panelWidths[1]}%` } : {}}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1396,7 +1396,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
-              <div className="flex-1 flex flex-col" style={{width: isSidebarOpen && !isMobile ? `${panelWidths[2]}%` : '100%'}}>
+              <div className="flex-1 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col">
                       {plannerViewMode === 'week' ? (
                          <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
@@ -1658,3 +1658,5 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
