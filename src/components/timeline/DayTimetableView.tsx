@@ -462,12 +462,16 @@ const PlannerWeeklyTimeline = ({
 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
-    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / 60 * 50;
+    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / (24 * 60) * (24 * 50);
 
     const { allDayEvents, timedEvents } = useMemo(() => {
         const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
         const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
-        const relevantEvents = events.filter(e => e.date >= weekStart && e.date <= weekEnd);
+        const relevantEvents = events.filter(e => {
+            if (!e.date) return false;
+            const eventDate = dfnsStartOfDay(e.date);
+            return eventDate >= weekStart && eventDate <= weekEnd;
+        });
 
         return {
             allDayEvents: relevantEvents.filter(e => e.isAllDay),
@@ -482,7 +486,7 @@ const PlannerWeeklyTimeline = ({
     const getEventStyles = (event: TimelineEvent) => {
         const startHour = getHours(event.date);
         const startMinute = getMinutes(event.date);
-        const top = (startHour + startMinute / 60) * 50; 
+        const top = (startHour * 60 + startMinute) / 60 * 50;
 
         let durationHours = 1;
         if (event.endDate) {
@@ -896,7 +900,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     return [event.title, timeString, countdownText, statusString, notesString].filter(Boolean).join('\n');
   };
 
-  const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : 0;
+  const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : -1;
   
   const renderMaximizedView = () => (
      <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
@@ -1089,7 +1093,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       ></div>
                   ))}
 
-                  {isToday && (
+                  {isToday && currentTimeTopPosition >= 0 && (
                       <div
                       ref={nowIndicatorRef}
                       className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
