@@ -289,7 +289,7 @@ export default function Header({
                         </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-[450px] frosted-glass p-0 overflow-hidden" sideOffset={10}>
+                <PopoverContent onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')} className="w-96 frosted-glass p-0 overflow-hidden" sideOffset={10}>
                     <div className="relative">
                          {streakData && (
                             <TrophyFlameIcon 
@@ -299,7 +299,7 @@ export default function Header({
                         )}
                         <div className="p-4 relative z-10">
                             <div>
-                                <h3 className="text-lg font-bold">
+                                <h3 className="text-base font-bold">
                                     Daily Goal
                                 </h3>
                                 <p className="text-sm text-muted-foreground mt-1 h-5">
@@ -443,3 +443,5 @@ export default function Header({
     </>
   );
 }
+
+    
