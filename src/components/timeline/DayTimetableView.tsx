@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay as dfnsIsSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -488,7 +488,7 @@ const PlannerWeeklyTimeline = ({
     const getEventStyles = (event: TimelineEvent) => {
         const startHour = getHours(event.date);
         const startMinute = getMinutes(event.date);
-        const top = (startHour * 60 + startMinute) / 60 * HOUR_SLOT_HEIGHT;
+        const top = ((startHour * 60 + startMinute) / 60) * HOUR_SLOT_HEIGHT;
 
         let durationHours = 1;
         if (event.endDate) {
@@ -505,26 +505,51 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex flex-1 w-full bg-black/30 text-xs">
-            {/* Hour Gutter */}
-            <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
-                <div className="h-[2.25rem] border-b border-r border-gray-700/50 flex-shrink-0"></div> {/* Spacer for day headers */}
-                <div className="flex-1 relative">
-                    {hours.map(hour => (
-                        <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
-                            <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>
+        <div className="flex flex-col flex-1 w-full bg-black/30 text-xs">
+            {/* Header with All-Day Events */}
+            <div className="grid grid-cols-[3rem_1fr] text-center text-gray-400 font-semibold text-xs sticky top-0 bg-[#171717] z-20">
+                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-b border-r border-gray-700/50">
+                    All-day
+                </div>
+                <div className="grid grid-cols-7 flex-1">
+                    {week.map(day => (
+                        <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">
+                            {format(day, 'EEE d')}
                         </div>
                     ))}
                 </div>
             </div>
+             <div className="grid grid-cols-[3rem_1fr] text-center text-gray-400 font-semibold text-xs sticky top-[37px] bg-[#171717] z-10">
+                 <div className="w-12 border-r border-gray-700/50"></div>
+                 <div className="grid grid-cols-7 flex-1 min-h-[2.5rem] p-1 gap-1 border-b border-gray-700/50">
+                    {allDayEvents.map(event => (
+                        <div
+                            key={event.id}
+                            className={cn('rounded px-1 py-0.5 text-white font-medium text-[10px] truncate', getEventTypeStyleClasses(event.type))}
+                            style={{ gridColumnStart: getDayIndex(event.date) + 1 }}
+                        >
+                            {event.title}
+                        </div>
+                    ))}
+                 </div>
+            </div>
 
             {/* Main Grid */}
-            <div className="flex-1 flex flex-col">
-                <div className="grid grid-cols-7 text-center text-gray-400 font-semibold text-xs sticky top-0 bg-[#171717] z-20">
-                    {week.map(day => <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">{format(day, 'EEE d')}</div>)}
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                    <div className="relative">
+            <div className="flex-1 flex overflow-y-auto">
+                <div className="flex flex-1">
+                    {/* Hour Gutter */}
+                    <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                        <div className="flex-1 relative">
+                            {hours.map(hour => (
+                                <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
+                                    { hour > 0 && <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span> }
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Timeline Grid */}
+                    <div className="flex-1 relative">
                         <div className="grid grid-cols-7 h-full">
                             {week.map(day => (
                                 <div key={day.toISOString()} className="border-l border-gray-700/50 first:border-l-0">
@@ -541,7 +566,7 @@ const PlannerWeeklyTimeline = ({
                             ))}
                             
                            {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                                <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumn: `${getDayIndex(now) + 1} / span 1` }}>
+                                <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1}}>
                                     <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
                                 </div>
                             )}
@@ -847,12 +872,12 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             clearInterval(intervalId);
         };
     }
-  }, [dfnsIsToday, initialDate, isMaximized]);
+  }, [initialDate, isMaximized]);
   
   const eventsForDayView = useMemo(() => {
     return allEvents.filter(event =>
         event.date instanceof Date && !isNaN(event.date.valueOf()) &&
-        isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(initialDate))
+        dfnsIsSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(initialDate))
     );
   }, [allEvents, initialDate]);
 
