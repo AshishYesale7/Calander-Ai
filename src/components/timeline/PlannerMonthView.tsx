@@ -23,6 +23,7 @@ import { Button } from '../ui/button';
 interface PlannerMonthViewProps {
   month: Date;
   events: TimelineEvent[];
+  viewTheme: 'light' | 'dark';
 }
 
 interface ProcessedEvent {
@@ -46,7 +47,7 @@ const getEventColor = (type: TimelineEvent['type']) => {
   }
 };
 
-export default function PlannerMonthView({ month, events }: PlannerMonthViewProps) {
+export default function PlannerMonthView({ month, events, viewTheme }: PlannerMonthViewProps) {
   const [popoverDay, setPopoverDay] = useState<Date | null>(null);
 
   const weekStartsOn = 0; // Sunday
@@ -144,13 +145,23 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
     });
   }, [popoverDay, events]);
 
+  const themeClasses = {
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
+      headerText: viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500',
+      gridLines: viewTheme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-200',
+      dayCell: viewTheme === 'dark' ? 'bg-gray-900/40' : 'bg-white',
+      otherMonthCell: viewTheme === 'dark' ? 'bg-gray-800/20 opacity-70' : 'bg-gray-100 opacity-70',
+      dayText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
+      otherMonthText: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+  };
+
 
   return (
-    <div className="p-2 bg-black/30 rounded-lg text-xs flex-1 overflow-auto">
-        <div className="grid grid-cols-7 text-center font-semibold text-gray-400">
-            {weeks[0].map(day => <div key={day.toISOString()} className="py-2">{format(day, 'E')}</div>)}
+    <div className={cn("p-2 rounded-lg text-xs flex-1 overflow-auto", themeClasses.container)}>
+        <div className="grid grid-cols-7 text-center font-semibold">
+            {weeks[0].map(day => <div key={day.toISOString()} className={cn("py-2", themeClasses.headerText)}>{format(day, 'E')}</div>)}
         </div>
-        <div className="grid grid-cols-7 grid-rows-5 gap-px bg-gray-700/50">
+        <div className={cn("grid grid-cols-7 grid-rows-5 gap-px", themeClasses.gridLines)}>
             {days.map((day, dayIndex) => (
               <Popover key={day.toISOString()} onOpenChange={(open) => {
                   if (open) setPopoverDay(day);
@@ -158,12 +169,12 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
               }}>
                 <PopoverTrigger asChild>
                     <div className={cn(
-                        "relative bg-gray-900/40 min-h-[90px] p-1 flex flex-col cursor-pointer",
-                        !isSameMonth(day, month) && "bg-gray-800/20 opacity-70"
+                        "relative min-h-[90px] p-1 flex flex-col cursor-pointer",
+                        isSameMonth(day, month) ? themeClasses.dayCell : themeClasses.otherMonthCell
                     )}>
                         <span className={cn(
                             "font-semibold",
-                            isSameMonth(day, month) ? 'text-white' : 'text-gray-500'
+                            isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText
                         )}>
                             {format(day, 'd')}
                         </span>
@@ -199,3 +210,5 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
     </div>
   );
 }
+
+    

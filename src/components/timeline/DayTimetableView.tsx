@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
@@ -225,6 +224,7 @@ function calculateEventLayouts(
 // --- New Components for Maximized View ---
 
 type PlannerViewMode = 'day' | 'week' | 'month';
+type MaxViewTheme = 'light' | 'dark';
 
 const PlannerHeader = ({ 
     activeView, 
@@ -235,6 +235,8 @@ const PlannerHeader = ({
     onViewChange,
     onToggleSidebar,
     isSidebarOpen,
+    viewTheme,
+    onToggleTheme,
 }: { 
     activeView: PlannerViewMode;
     date: Date;
@@ -244,6 +246,8 @@ const PlannerHeader = ({
     onViewChange: (view: PlannerViewMode) => void;
     onToggleSidebar: () => void;
     isSidebarOpen: boolean;
+    viewTheme: MaxViewTheme;
+    onToggleTheme: () => void;
 }) => {
     const getTitle = () => {
         switch(activeView) {
@@ -253,28 +257,37 @@ const PlannerHeader = ({
         }
     };
 
+    const headerClasses = viewTheme === 'dark'
+        ? 'border-gray-700/50 text-gray-300'
+        : 'border-gray-200 bg-gray-50 text-gray-700';
+    const buttonClasses = viewTheme === 'dark'
+        ? 'text-gray-300 hover:bg-gray-700/50'
+        : 'text-gray-600 hover:bg-gray-200';
+    const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
+
     return (
-        <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
+        <header className={cn("p-1 border-b flex justify-between items-center flex-shrink-0 text-xs", headerClasses)}>
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleSidebar}>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleSidebar}>
                     {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
                 </Button>
-                <div className="h-5 w-px bg-gray-700/50" />
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('prev')}><ChevronLeft className="h-4 w-4" /></Button>
-                <h2 className="font-semibold text-white px-2 text-sm">{getTitle()}</h2>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
-                <Button variant="ghost" className="h-7 px-2 text-xs" onClick={onTodayClick}>Today</Button>
+                <div className={cn("h-5 w-px", viewTheme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-300')} />
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={() => onNavigate('prev')}><ChevronLeft className="h-4 w-4" /></Button>
+                <h2 className={cn("font-semibold px-2 text-sm", textClasses)}>{getTitle()}</h2>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="ghost" className={cn("h-7 px-2 text-xs", buttonClasses)} onClick={onTodayClick}>Today</Button>
             </div>
-            <div className="flex items-center gap-1 bg-gray-800/50 p-0.5 rounded-md">
-                <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Day</Button>
-                <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Week</Button>
-                <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">Month</Button>
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-200')}>
+                <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'day' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Day</span> : 'Day'}</Button>
+                <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'week' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Week</span> : 'Week'}</Button>
+                <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'month' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Month</span> : 'Month'}</Button>
             </div>
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7"><UserPlus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7"><Plus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className="h-7 w-7">
-                    <Minimize className="h-4 w-4 text-gray-400 hover:text-white" />
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
+                    <Minimize className="h-4 w-4" />
                 </Button>
             </div>
         </header>
@@ -282,7 +295,7 @@ const PlannerHeader = ({
 };
 
 
-const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, setActiveView: (view: string) => void }) => {
+const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme }) => {
     const mainSections = [
         { id: 'inbox', icon: Inbox, label: 'Inbox', count: 6 },
         { id: 'today', icon: Calendar, label: 'Today' },
@@ -296,20 +309,30 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
         { id: 'proj-work', color: 'bg-purple-500', char: 'W', label: 'Work' },
         { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
+    
+    const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-gray-50 text-gray-700';
+    const buttonClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/30' : 'hover:bg-gray-200';
+    const activeBtnClasses = viewTheme === 'dark' ? 'bg-gray-700/50 text-white' : 'bg-gray-200 text-gray-900';
+    const headingClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
+    const separatorClasses = viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200';
+    const badgeClasses = viewTheme === 'dark' ? 'bg-gray-600 text-gray-200' : 'bg-gray-300 text-gray-600';
+
+
     return (
-    <div className="bg-gray-900/50 p-2 flex flex-col gap-4 text-xs h-full">
+    <div className={cn("p-2 flex flex-col gap-4 text-xs h-full", sidebarClasses)}>
         <div>
-            <ul className="space-y-0.5 text-gray-300">
+            <ul className="space-y-0.5">
                 {mainSections.map(s => (
                     <li key={s.id}>
                         <button
                           onClick={() => setActiveView(s.id)}
                           className={cn(
-                            "w-full flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs",
-                            activeView === s.id && 'bg-gray-700/50 font-semibold text-white'
+                            "w-full flex items-center gap-3 p-1.5 rounded-md text-xs",
+                            buttonClasses,
+                            activeView === s.id && cn('font-semibold', activeBtnClasses)
                           )}
                         >
-                            <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className="ml-auto bg-gray-600 text-gray-200 h-5 px-1.5 text-xs">{s.count}</Badge>}
+                            <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className={cn("ml-auto h-5 px-1.5 text-xs", badgeClasses)}>{s.count}</Badge>}
                         </button>
                     </li>
                 ))}
@@ -317,15 +340,16 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
         </div>
         <div className="flex-1 space-y-3">
              <div>
-                <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Projects</h3>
-                <ul className="space-y-0.5 text-gray-300">
+                <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Projects</h3>
+                <ul className="space-y-0.5">
                    {projects.map(p => (
                         <li key={p.id}>
                            <button
                              onClick={() => setActiveView(p.id)}
                              className={cn(
-                               "w-full flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30 text-xs",
-                               activeView === p.id && 'bg-gray-700/50 font-semibold text-white'
+                               "w-full flex items-center gap-3 p-1.5 rounded-md text-xs",
+                               buttonClasses,
+                               activeView === p.id && cn('font-semibold', activeBtnClasses)
                              )}
                            >
                                 <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
@@ -336,14 +360,14 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
                 </ul>
             </div>
              <div>
-                 <h3 className="text-xs font-semibold text-gray-500 px-1.5 mb-1">Tags</h3>
+                 <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Tags</h3>
             </div>
         </div>
-         <div className="border-t border-gray-700/50 pt-2 space-y-0.5 text-gray-300">
-             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
+         <div className={cn("border-t pt-2 space-y-0.5", separatorClasses)}>
+             <div className={cn("flex items-center gap-3 p-1.5 rounded-md", buttonClasses)}>
                 <Clock size={16}/><span>Statistics</span>
             </div>
-             <div className="flex items-center gap-3 p-1.5 rounded-md hover:bg-gray-700/30">
+             <div className={cn("flex items-center gap-3 p-1.5 rounded-md", buttonClasses)}>
                 <Palette size={16}/><span>Daily Planning</span>
             </div>
         </div>
@@ -356,12 +380,14 @@ const PlannerTaskList = ({
   activeListId,
   onAddTask,
   onDragStart,
+  viewTheme,
 }: {
   taskLists: GoogleTaskList[];
   tasks: RawGoogleTask[];
   activeListId: string;
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
+  viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const activeList = taskLists.find(list => list.id === activeListId);
@@ -394,24 +420,30 @@ const PlannerTaskList = ({
             metadata: hasMetadata ? 'Content Calendar' : null,
         }
     }
+    
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-gray-100 border-r border-gray-200';
+    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+    const placeholderClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
+    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-200';
+    const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
 
     return (
-        <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50 h-full">
+        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
             <div className="flex justify-between items-center mb-2 px-1">
-                <h1 className="text-sm font-bold text-white flex items-center gap-2">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}>
                     <Inbox size={16} /> {activeList?.title || 'Inbox'}
                 </h1>
                 <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
             <form onSubmit={handleAddTask}>
-                 <div className="flex items-center gap-2 text-gray-400 hover:text-white mb-2 text-xs h-8 px-1.5">
+                 <div className={cn("flex items-center gap-2 mb-2 text-xs h-8 px-1.5", viewTheme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black')}>
                     <Plus className="mr-1 h-4 w-4" />
                     <Input
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
                         placeholder="Add new task"
-                        className="bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0 placeholder:text-gray-500"
+                        className={cn("bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0", placeholderClasses, headingClasses)}
                     />
                 </div>
             </form>
@@ -421,22 +453,22 @@ const PlannerTaskList = ({
                     return (
                         <div 
                         key={task.id} 
-                        className="p-1.5 rounded-md hover:bg-gray-700/50 flex flex-col items-start cursor-grab"
+                        className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
                         draggable
                         onDragStart={(e) => onDragStart(e, task)}
                         >
                             <div className="flex items-start gap-2 w-full">
-                                <Checkbox id={task.id} className="border-gray-500 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 h-3.5 w-3.5 mt-0.5"/>
-                                <label htmlFor={task.id} className="text-gray-200 text-xs flex-1">{task.title}</label>
+                                <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
+                                <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
                                 {mockDetails.duration && (
-                                    <span className="text-gray-400 text-[10px] font-medium whitespace-nowrap">{mockDetails.duration}</span>
+                                    <span className={cn("text-[10px] font-medium whitespace-nowrap", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>{mockDetails.duration}</span>
                                 )}
                                 {mockDetails.tag && (
                                     <span className={cn("text-white text-[10px] font-bold px-1.5 py-0.5 rounded", mockDetails.tag.color)}>{mockDetails.tag.name}</span>
                                 )}
                             </div>
                              {mockDetails.metadata && (
-                                <div className="pl-6 text-[10px] text-gray-400 flex items-center gap-1">
+                                <div className={cn("pl-6 text-[10px] flex items-center gap-1", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>
                                     <Calendar size={10}/>
                                     <span>{mockDetails.metadata}</span>
                                 </div>
@@ -544,6 +576,7 @@ const PlannerWeeklyTimeline = ({
   ghostEvent,
   onEditEvent,
   onDeleteEvent,
+  viewTheme,
 }: { 
   week: Date[], 
   events: TimelineEvent[],
@@ -552,10 +585,11 @@ const PlannerWeeklyTimeline = ({
   ghostEvent: { date: Date, hour: number } | null,
   onEditEvent?: (event: TimelineEvent) => void;
   onDeleteEvent?: (eventId: string, eventTitle: string) => void;
+  viewTheme: MaxViewTheme;
 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
-    const nowPosition = (now.getHours() * HOUR_SLOT_HEIGHT) + (now.getMinutes() / 60 * HOUR_SLOT_HEIGHT);
+    const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
 
     const { allDayEventsByDay, timedEventsByDay } = useMemo(() => {
         const weekStart = dfnsStartOfDay(week[0]);
@@ -585,21 +619,29 @@ const PlannerWeeklyTimeline = ({
       return timedEventsByDay.map(dayEvents => calculateWeeklyEventLayouts(dayEvents));
     }, [timedEventsByDay]);
     
+    const themeClasses = {
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
+      headerContainer: viewTheme === 'dark' ? 'bg-[#171717]' : 'bg-gray-100',
+      headerCell: viewTheme === 'dark' ? 'border-gray-700/50 text-gray-400' : 'border-gray-200 text-gray-500',
+      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
+      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200',
+      eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
+    };
 
     return (
-      <div className="flex flex-col flex-1 w-full bg-black/30 text-xs h-full">
+      <div className={cn("flex flex-col flex-1 w-full text-xs h-full", themeClasses.container)}>
         {/* Header and All-Day Events */}
-        <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0">
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 font-semibold text-xs">
-            <div className="w-12 border-b border-r border-gray-700/50"></div>
+        <div className={cn("sticky top-0 z-20 flex-shrink-0", themeClasses.headerContainer)}>
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center font-semibold text-xs">
+            <div className={cn("w-12 border-b border-r", themeClasses.headerCell)}></div>
               {week.map((day) => (
-                <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">
+                <div key={day.toISOString()} className={cn("py-2 border-b border-l first:border-l-0", themeClasses.headerCell)}>
                   {format(day, 'EEE d')}
                 </div>
               ))}
           </div>
-            <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-gray-400 text-xs border-b border-gray-700/50 min-h-[40px]">
-                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
+            <div className={cn("grid grid-cols-[3rem_repeat(7,1fr)] text-xs border-b min-h-[40px]", themeClasses.headerCell)}>
+                <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex items-center justify-center border-r pr-1", themeClasses.headerCell, themeClasses.hourGutter)}>All-day</div>
                 <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
                     {allDayEventsByDay.map((dayEvents, dayIndex) => (
                         <div key={dayIndex} className="space-y-0.5">
@@ -608,8 +650,9 @@ const PlannerWeeklyTimeline = ({
                                     <PopoverTrigger asChild>
                                         <div
                                             className={cn(
-                                                'rounded px-1.5 py-1 text-white font-medium text-[10px] truncate cursor-pointer',
-                                                getEventTypeStyleClasses(event.type)
+                                                'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer',
+                                                getEventTypeStyleClasses(event.type),
+                                                themeClasses.eventText
                                             )}
                                         >
                                             {event.title}
@@ -655,7 +698,7 @@ const PlannerWeeklyTimeline = ({
         <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 flex overflow-y-auto">
                 <div className="flex-1 flex relative">
-                    <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                    <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex flex-col", themeClasses.hourGutter)}>
                         <div className="flex-1 relative">
                         {hours.map((hour) => (
                             <div
@@ -677,11 +720,11 @@ const PlannerWeeklyTimeline = ({
                         )}
                         <div className="grid grid-cols-7 h-full">
                             {week.map(day => (
-                                <div key={day.toISOString()} className="border-l border-gray-700/50 first:border-l-0">
+                                <div key={day.toISOString()} className={cn("border-l", themeClasses.hourLine, "first:border-l-0")}>
                                 {hours.map(hour => (
                                     <div 
                                     key={`${day.toISOString()}-${hour}`} 
-                                    className="border-t border-gray-700/50"
+                                    className={cn("border-t", themeClasses.hourLine)}
                                     style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
                                     onDrop={(e) => onDrop(e, day, hour)}
                                     onDragOver={(e) => onDragOver(e, day, hour)}
@@ -700,7 +743,7 @@ const PlannerWeeklyTimeline = ({
                                             <Popover key={event.id}>
                                                 <PopoverTrigger asChild>
                                                     <div
-                                                        className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
+                                                        className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)}
                                                         style={event.layout}
                                                     >
                                                         <div className='flex items-center gap-1 text-[10px]'>
@@ -708,7 +751,7 @@ const PlannerWeeklyTimeline = ({
                                                             {!isShort && event.icon && <event.icon size={12}/>}
                                                             <span className="truncate">{event.title}</span>
                                                         </div>
-                                                        {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                                        {!isShort && <p className={cn("opacity-80 text-[10px]", viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600')}>{format(event.date, 'h:mm a')}</p>}
                                                     </div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
@@ -772,15 +815,26 @@ const PlannerDayView = ({
   events,
   onEditEvent,
   onDeleteEvent,
+  viewTheme,
 }: {
   date: Date;
   events: TimelineEvent[];
   onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onDeleteEvent?: (eventId: string, eventTitle: string) => void;
+  viewTheme: MaxViewTheme;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const now = new Date();
   const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
+  
+  const themeClasses = {
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
+      allDayArea: viewTheme === 'dark' ? 'bg-[#171717] border-b border-gray-700/50' : 'bg-gray-100 border-b border-gray-200',
+      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-gray-400 border-r border-gray-200',
+      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
+      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200',
+      eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
+    };
 
   const { allDayEvents, timedEvents } = useMemo(() => {
     const dayEvents = events.filter(event => isSameDay(event.date, date));
@@ -790,22 +844,22 @@ const PlannerDayView = ({
     };
   }, [date, events]);
   
-  const { eventsWithLayout, maxConcurrentColumns } = useMemo(
+  const { eventsWithLayout } = useMemo(
     () => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX),
     [timedEvents]
   );
 
   return (
-    <div className="flex flex-col flex-1 w-full bg-black/30 text-xs h-full">
+    <div className={cn("flex flex-col flex-1 w-full text-xs h-full", themeClasses.container)}>
         {/* All-Day Events */}
-        <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0 border-b border-gray-700/50">
-            <div className="flex items-center text-gray-400 text-xs min-h-[40px]">
-                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
+        <div className={cn("sticky top-0 z-20 flex-shrink-0", themeClasses.allDayArea)}>
+            <div className="flex items-center text-xs min-h-[40px]">
+                <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex items-center justify-center pr-1", themeClasses.allDayGutter)}>All-day</div>
                 <div className="flex-1 p-1 space-y-0.5">
                     {allDayEvents.map((event) => (
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
-                                <div className={cn('rounded px-1.5 py-1 text-white font-medium text-[10px] truncate cursor-pointer', getEventTypeStyleClasses(event.type))}>
+                                <div className={cn('rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)}>
                                     {event.title}
                                 </div>
                             </PopoverTrigger>
@@ -822,7 +876,7 @@ const PlannerDayView = ({
         <div className="flex-1 flex overflow-y-auto">
              <div className="flex-1 flex relative">
                 {/* Hour Gutter */}
-                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex flex-col", themeClasses.hourGutter)}>
                     <div className="flex-1 relative">
                         {hours.map((hour) => (
                             <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
@@ -841,7 +895,7 @@ const PlannerDayView = ({
                     )}
                     <div className="h-full">
                         {hours.map(hour => (
-                            <div key={hour} className="border-t border-gray-700/50" style={{ height: `${HOUR_HEIGHT_PX}px` }}></div>
+                            <div key={hour} className={cn("border-t", themeClasses.hourLine)} style={{ height: `${HOUR_HEIGHT_PX}px` }}></div>
                         ))}
                     </div>
                     
@@ -851,14 +905,14 @@ const PlannerDayView = ({
                              return (
                                 <Popover key={event.id}>
                                     <PopoverTrigger asChild>
-                                        <div className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))} style={event.layout}>
+                                        <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)} style={event.layout}>
                                            {/* Event content */}
                                             <div className='flex items-center gap-1 text-[10px]'>
                                                 {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
                                                 {!isShort && event.icon && <event.icon size={12}/>}
                                                 <span className="truncate">{event.title}</span>
                                             </div>
-                                            {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                            {!isShort && <p className={cn("opacity-80 text-[10px]", viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600')}>{format(event.date, 'h:mm a')}</p>}
                                         </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
@@ -927,6 +981,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   
   const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
   const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('day');
+  const [maximizedViewTheme, setMaximizedViewTheme] = useState<MaxViewTheme>('dark');
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
@@ -1201,12 +1256,23 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const currentTimeTopPosition = dfnsIsToday(initialDate) ? nowPosition : -1;
   
   const renderMaximizedView = () => (
-     <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-        <PlannerHeader activeView={plannerViewMode} date={currentDisplayDate} onNavigate={handleNavigate} onTodayClick={handleTodayClick} onMinimize={() => setIsMaximized(false)} onViewChange={setPlannerViewMode} onToggleSidebar={handleToggleSidebar} isSidebarOpen={isSidebarOpen}/>
+     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-white text-gray-800')}>
+        <PlannerHeader 
+          activeView={plannerViewMode} 
+          date={currentDisplayDate} 
+          onNavigate={handleNavigate} 
+          onTodayClick={handleTodayClick} 
+          onMinimize={() => setIsMaximized(false)} 
+          onViewChange={setPlannerViewMode} 
+          onToggleSidebar={handleToggleSidebar} 
+          isSidebarOpen={isSidebarOpen}
+          viewTheme={maximizedViewTheme}
+          onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
+        />
         <div className="flex flex-1 min-h-0">
             {isSidebarOpen && (
                 <>
-                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
+                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
                     <Resizer onMouseDown={onMouseDown(0)} />
                     <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
                        {isTasksLoading ? (
@@ -1218,6 +1284,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                             activeListId={activePlannerView}
                             onAddTask={handleAddTask}
                             onDragStart={handleDragStart}
+                            viewTheme={maximizedViewTheme}
                           />
                        )}
                     </div>
@@ -1227,11 +1294,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
                 <div className="flex-1 min-h-0 flex flex-col">
                     {plannerViewMode === 'week' ? (
-                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} />
+                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
                     ) : plannerViewMode === 'day' ? (
-                      <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} />
+                      <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme}/>
                     ) : (
-                      <PlannerMonthView month={currentDisplayDate} events={allEvents} />
+                      <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
                     )}
                 </div>
             </div>
@@ -1491,3 +1558,5 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
