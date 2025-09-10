@@ -167,7 +167,7 @@ function calculateEventLayouts(
       }
     }
     
-    currentGroup.sort((a,b) => a.startInMinutes - b.startInMinutes || a.originalIndex - a.originalIndex);
+    currentGroup.sort((a,b) => a.startInMinutes - b.startInMinutes || a.originalIndex - b.originalIndex);
 
     const columns: { event: typeof events[0]; columnOrder: number }[][] = [];
     for (const event of currentGroup) {
@@ -215,7 +215,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -246,7 +246,7 @@ const PlannerHeader = ({
     const getTitle = () => {
         switch(activeView) {
             case 'day': return format(date, 'MMM d, yyyy');
-            case 'week': return `${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d, yyyy')}`;
+            case 'week': return `${format(startOfWeek(date, {weekStartsOn:0}), 'MMM d')} - ${format(endOfWeek(date, {weekStartsOn:0}), 'MMM d, yyyy')}`;
             case 'month': return format(date, 'MMMM yyyy');
         }
     };
@@ -499,7 +499,7 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="w-[1200px] flex-shrink-0 bg-black/30 p-2 text-xs">
+        <div className="flex-1 w-full bg-black/30 p-2 text-xs">
             <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
                 {week.map(day => <div key={day.toISOString()}>{format(day, 'EEE d')}</div>)}
             </div>
@@ -513,58 +513,62 @@ const PlannerWeeklyTimeline = ({
                     ))}
                  </div>
             </div>
-            <div className="relative">
-                <div className="absolute left-[-30px] top-0 bottom-0 text-right text-gray-500 text-[10px]">
+            <div className="relative flex">
+                <div className="w-8 text-right text-gray-500 text-[10px] flex-shrink-0">
                     {hours.map(hour => (
                         <div key={hour} className="h-[50px] -mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'am' : 'pm'}</div>
                     ))}
                 </div>
-                <div className="grid grid-cols-7">
-                    {week.map(day => (
-                        <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
-                            {hours.map(hour => (
-                                <div 
-                                    key={`${day.toISOString()}-${hour}`} 
-                                    className="h-[50px] border-t border-gray-700/50"
-                                    onDrop={(e) => onDrop(e, day, hour)}
-                                    onDragOver={(e) => onDragOver(e, day, hour)}
-                                ></div>
-                            ))}
-                        </div>
-                    ))}
-                </div>
-                <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
-                    {timedEvents.map((event, i) => {
-                        const style = getEventStyles(event);
-                        const isShort = style.height.replace('px', '') < 40;
-                        return (
-                          <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
-                              style={style}>
-                              <div className='flex items-center gap-1 text-[10px]'>
-                                  {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                  {!isShort && event.icon && <event.icon size={12}/>}
-                                  <span className="truncate">{event.title}</span>
-                              </div>
-                              {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
-                          </div>
-                        )
-                    })}
-                    {ghostEvent && (
-                        <div 
-                            className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
-                            style={{
-                                gridColumnStart: getDayIndex(ghostEvent.date) + 1,
-                                top: `${(ghostEvent.hour - 5) * 50}px`,
-                                height: '50px' // 1 hour duration for ghost
-                            }}
-                        >
-                            <p className="text-[10px] font-semibold">Drop to schedule</p>
+                <div className="flex-1 relative">
+                    <div className="grid grid-cols-7 h-full">
+                        {week.map(day => (
+                            <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
+                                {hours.map(hour => (
+                                    <div 
+                                        key={`${day.toISOString()}-${hour}`} 
+                                        className="h-[50px] border-t border-gray-700/50"
+                                        onDrop={(e) => onDrop(e, day, hour)}
+                                        onDragOver={(e) => onDragOver(e, day, hour)}
+                                    ></div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                        {timedEvents.map((event, i) => {
+                            const style = getEventStyles(event);
+                            const isShort = style.height.replace('px', '') < 40;
+                            return (
+                            <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
+                                style={style}>
+                                <div className='flex items-center gap-1 text-[10px]'>
+                                    {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                    {!isShort && event.icon && <event.icon size={12}/>}
+                                    <span className="truncate">{event.title}</span>
+                                </div>
+                                {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                            </div>
+                            )
+                        })}
+                        {ghostEvent && (
+                            <div 
+                                className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                                style={{
+                                    gridColumnStart: getDayIndex(ghostEvent.date) + 1,
+                                    top: `${(ghostEvent.hour - 5) * 50}px`,
+                                    height: '50px' // 1 hour duration for ghost
+                                }}
+                            >
+                                <p className="text-[10px] font-semibold">Drop to schedule</p>
+                            </div>
+                        )}
+                    </div>
+                    {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                        <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1}}>
+                            <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
                         </div>
                     )}
                 </div>
-                {dfnsIsToday(now) && <div className="absolute w-[calc(100%+30px)] left-[-30px] h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px` }}>
-                    <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
-                </div>}
             </div>
         </div>
     );
@@ -919,11 +923,15 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 </>
             )}
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 overflow-auto">
-                {plannerViewMode === 'week' && (
-                   <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                {plannerViewMode === 'week' ? (
+                   <div className="flex">
+                    <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                   </div>
+                ) : plannerViewMode === 'day' ? (
+                  <div className="p-4">Day View Component Here</div>
+                ) : (
+                  <PlannerMonthView month={currentDisplayDate} events={allEvents} />
                 )}
-                {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
-                {plannerViewMode === 'month' && <PlannerMonthView month={currentDisplayDate} events={allEvents} />}
             </div>
         </div>
     </div>
