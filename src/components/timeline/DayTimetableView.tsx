@@ -5,8 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO } from 'date-fns';
-import { isToday as dfnsIsToday, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isToday as dfnsIsToday, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -260,11 +259,13 @@ const PlannerHeader = ({
 
     const headerClasses = viewTheme === 'dark'
         ? 'border-gray-700/50 text-gray-300'
-        : 'border-gray-200 bg-stone-50 text-gray-700';
+        : 'border-stone-200 bg-[#fff8ed] text-gray-700';
     const buttonClasses = viewTheme === 'dark'
         ? 'text-gray-300 hover:bg-gray-700/50'
         : 'text-gray-600 hover:bg-stone-200';
     const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
+    const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-stone-200';
+
 
     return (
         <header className={cn("p-1 border-b flex justify-between items-center flex-shrink-0 text-xs", headerClasses)}>
@@ -278,7 +279,7 @@ const PlannerHeader = ({
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
                 <Button variant="ghost" className={cn("h-7 px-2 text-xs", buttonClasses)} onClick={onTodayClick}>Today</Button>
             </div>
-            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-stone-200')}>
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewModeButtonContainer)}>
                 <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'day' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Day</span> : 'Day'}</Button>
                 <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'week' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Week</span> : 'Week'}</Button>
                 <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'month' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Month</span> : 'Month'}</Button>
@@ -311,7 +312,7 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
         { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     
-    const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-stone-50 text-gray-700';
+    const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-[#fff8ed] text-gray-700';
     const buttonClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/30' : 'hover:bg-stone-200';
     const activeBtnClasses = viewTheme === 'dark' ? 'bg-gray-700/50 text-white' : 'bg-stone-200 text-gray-900';
     const headingClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
@@ -621,10 +622,10 @@ const PlannerWeeklyTimeline = ({
     }, [timedEventsByDay]);
     
     const themeClasses = {
-      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-stone-50',
-      headerContainer: viewTheme === 'dark' ? 'bg-[#171717]' : 'bg-stone-100',
-      headerCell: viewTheme === 'dark' ? 'border-gray-700/50 text-gray-400' : 'border-stone-200 text-gray-500',
-      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-[#fff8ed]',
+      headerContainer: viewTheme === 'dark' ? 'bg-[#171717]' : 'bg-[#faefdd]',
+      headerCell: viewTheme === 'dark' ? 'border-gray-700/50 text-gray-400' : 'border-stone-200 text-stone-500',
+      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-stone-400',
       hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-stone-200',
       eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
     };
@@ -653,8 +654,7 @@ const PlannerWeeklyTimeline = ({
                                         <div
                                             className={cn(
                                                 'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer',
-                                                'bg-blue-500/80 border-blue-500', // unified color for now
-                                                themeClasses.eventText
+                                                getEventTypeStyleClasses(event.type),
                                             )}
                                         >
                                             {event.title}
@@ -716,7 +716,7 @@ const PlannerWeeklyTimeline = ({
             
                     <div className="flex-1 relative">
                          {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                            <div className="absolute h-px bg-purple-500 z-30 left-0 right-0" style={{ top: `${nowPosition}px` }}>
+                            <div className="absolute h-px bg-purple-500 z-30" style={{ top: `${nowPosition}px`, left: 0, right: 0 }}>
                                 <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] -left-1" />
                             </div>
                         )}
@@ -745,7 +745,7 @@ const PlannerWeeklyTimeline = ({
                                             <Popover key={event.id}>
                                                 <PopoverTrigger asChild>
                                                     <div
-                                                        className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)}
+                                                        className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
                                                         style={event.layout}
                                                     >
                                                         <div className='flex items-center gap-1 text-[10px]'>
@@ -753,7 +753,7 @@ const PlannerWeeklyTimeline = ({
                                                             {!isShort && event.icon && <event.icon size={12}/>}
                                                             <span className="truncate">{event.title}</span>
                                                         </div>
-                                                        {!isShort && <p className={cn("opacity-80 text-[10px]", viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600')}>{format(event.date, 'h:mm a')}</p>}
+                                                        {!isShort && <p className={cn("opacity-80 text-[10px]")}>{format(event.date, 'h:mm a')}</p>}
                                                     </div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
@@ -796,7 +796,7 @@ const PlannerWeeklyTimeline = ({
                                     className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
                                     style={{
                                         gridColumnStart: getDay(ghostEvent.date) + 1,
-                                        top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
+                                        top: `${ghostEvent.hour * HOUR_HEIGHT_PX}px`,
                                         height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
                                     }}
                                 >
@@ -830,10 +830,10 @@ const PlannerDayView = ({
   const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
   
   const themeClasses = {
-      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-stone-50',
-      allDayArea: viewTheme === 'dark' ? 'bg-[#171717] border-b border-gray-700/50' : 'bg-stone-100 border-b border-stone-200',
-      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-gray-400 border-r border-stone-200',
-      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-[#fff8ed]',
+      allDayArea: viewTheme === 'dark' ? 'bg-[#171717] border-b border-gray-700/50' : 'bg-[#faefdd] border-b border-stone-200',
+      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-stone-400 border-r border-stone-200',
+      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-stone-400',
       hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-stone-200',
       eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
     };
@@ -861,7 +861,7 @@ const PlannerDayView = ({
                     {allDayEvents.map((event) => (
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
-                                <div className={cn('rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)}>
+                                <div className={cn('rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer', getEventTypeStyleClasses(event.type))}>
                                     {event.title}
                                 </div>
                             </PopoverTrigger>
@@ -907,14 +907,14 @@ const PlannerDayView = ({
                              return (
                                 <Popover key={event.id}>
                                     <PopoverTrigger asChild>
-                                        <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)} style={event.layout}>
+                                        <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))} style={event.layout}>
                                            {/* Event content */}
                                             <div className='flex items-center gap-1 text-[10px]'>
                                                 {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
                                                 {!isShort && event.icon && <event.icon size={12}/>}
                                                 <span className="truncate">{event.title}</span>
                                             </div>
-                                            {!isShort && <p className={cn("opacity-80 text-[10px]", viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600')}>{format(event.date, 'h:mm a')}</p>}
+                                            {!isShort && <p className={cn("opacity-80 text-[10px]")}>{format(event.date, 'h:mm a')}</p>}
                                         </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
@@ -1258,7 +1258,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const currentTimeTopPosition = dfnsIsToday(initialDate) ? nowPosition : -1;
   
   const renderMaximizedView = () => (
-     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-white text-gray-800')}>
+     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-[#fff8ed] text-gray-800')}>
         <PlannerHeader 
           activeView={plannerViewMode} 
           date={currentDisplayDate} 
@@ -1462,16 +1462,14 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       ></div>
                   ))}
 
-                  {currentTimeTopPosition >= 0 && (
-                      <div
-                      ref={nowIndicatorRef}
-                      className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
-                      style={{ top: `${currentTimeTopPosition}px` }}
-                      >
-                      <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
-                      <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
-                      </div>
-                  )}
+                  <div 
+                    className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                    ref={nowIndicatorRef}
+                    style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
+                    >
+                    <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
+                    <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
+                    </div>
 
                   {timedEventsWithLayout.map(event => {
                       if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
@@ -1560,5 +1558,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
-    
