@@ -6,7 +6,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -541,12 +541,16 @@ const PlannerWeeklyTimeline = ({
   onDrop,
   onDragOver,
   ghostEvent,
+  onEditEvent,
+  onDeleteEvent,
 }: { 
   week: Date[], 
   events: TimelineEvent[],
   onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
   onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
   ghostEvent: { date: Date, hour: number } | null,
+  onEditEvent?: (event: TimelineEvent) => void;
+  onDeleteEvent?: (eventId: string, eventTitle: string) => void;
 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
@@ -620,7 +624,7 @@ const PlannerWeeklyTimeline = ({
         {/* Main Grid: This part will scroll */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 flex overflow-y-auto">
-            <div className="flex flex-1">
+            <div className="flex flex-1 relative">
               {/* Hour Gutter */}
               <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
                 <div className="flex-1 relative">
@@ -653,30 +657,57 @@ const PlannerWeeklyTimeline = ({
                     </div>
                   ))}
                 </div>
-
-                 {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                    <div className="absolute h-px bg-purple-500 z-10 left-0 right-0" style={{ top: `${nowPosition}px` }}>
-                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px]" style={{left: `calc(${(100/7) * getDay(now)}% - 4px)`}} />
-                    </div>
-                )}
   
                 <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
                     {weeklyLayouts.map((dayLayout, dayIndex) => (
                         <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
-                            {dayLayout.map(event => {
+                           {dayLayout.map(event => {
                                 const isShort = event.layout.height < 40;
                                 return (
-                                    <div key={event.id}
-                                        className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto', getEventTypeStyleClasses(event.type))}
-                                        style={event.layout}
-                                    >
-                                        <div className='flex items-center gap-1 text-[10px]'>
-                                            {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                            {!isShort && event.icon && <event.icon size={12}/>}
-                                            <span className="truncate">{event.title}</span>
-                                        </div>
-                                        {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
-                                    </div>
+                                    <Popover key={event.id}>
+                                        <PopoverTrigger asChild>
+                                            <div
+                                                className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
+                                                style={event.layout}
+                                            >
+                                                <div className='flex items-center gap-1 text-[10px]'>
+                                                    {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                                    {!isShort && event.icon && <event.icon size={12}/>}
+                                                    <span className="truncate">{event.title}</span>
+                                                </div>
+                                                {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                            </div>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
+                                            <div className="space-y-2">
+                                                <h4 className="font-semibold">{event.title}</h4>
+                                                <p className="text-muted-foreground">{format(event.date, 'h:mm a')} - {event.endDate ? format(event.endDate, 'h:mm a') : ''}</p>
+                                                {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                                <div className="flex justify-end gap-1 pt-1">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                                        <Edit3 className="h-3.5 w-3.5"/>
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                                <Trash2 className="h-3.5 w-3.5"/>
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="frosted-glass">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 )
                             })}
                         </div>
@@ -695,6 +726,12 @@ const PlannerWeeklyTimeline = ({
                         </div>
                     )}
                 </div>
+                
+                 {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                    <div className="absolute h-px bg-purple-500 z-10 left-0 right-0" style={{ top: `${nowPosition}px`, gridColumn: `1 / span 7` }}>
+                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px]" style={{left: `calc(${(100/7) * getDay(now)}% - 4px)`}} />
+                    </div>
+                )}
   
               </div>
             </div>
@@ -1056,7 +1093,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
                 <div className="flex-1 min-h-0 flex flex-col">
                     {plannerViewMode === 'week' ? (
-                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} />
                     ) : plannerViewMode === 'day' ? (
                       <div className="p-4">Day View Component Here</div>
                     ) : (
@@ -1320,4 +1357,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
