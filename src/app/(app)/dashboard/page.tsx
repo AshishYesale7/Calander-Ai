@@ -7,6 +7,7 @@ import EventCalendarView from '@/components/timeline/EventCalendarView';
 import SlidingTimelineView from '@/components/timeline/SlidingTimelineView';
 import DayTimetableView from '@/components/timeline/DayTimetableView';
 import EditEventModal from '@/components/timeline/EditEventModal';
+import TimelineListView from '@/components/timeline/TimelineListView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
