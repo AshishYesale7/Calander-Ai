@@ -615,9 +615,6 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
             <TodaysPlanCard />
         </div>
-        <div className="h-0.5 overflow-hidden md:hidden">
-            <DailyStreakCard />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
