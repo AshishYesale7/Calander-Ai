@@ -296,12 +296,29 @@ const PlannerHeader = ({
 };
 
 
-const PlannerSidebar = ({ activeView, setActiveView, viewTheme, taskLists }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme, taskLists: GoogleTaskList[] }) => {
+const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme }) => {
+    
+    // Hardcoded structure based on the user's image
     const mainSections = [
+        { id: 'inbox', icon: Inbox, label: 'Inbox', badge: 6 },
         { id: 'today', icon: Calendar, label: 'Today' },
         { id: 'upcoming', icon: Star, label: 'Upcoming' },
+        { id: 'all_tasks', icon: Columns, label: 'All tasks' },
+    ];
+
+    const projectSections = [
+        { id: 'book', color: 'bg-red-500', label: 'Book' },
+        { id: 'newsletter', color: 'bg-green-500', label: 'Newsletter' },
+        { id: 'fitness', color: 'bg-yellow-500', label: 'Fitness' },
+        { id: 'work', color: 'bg-indigo-500', label: 'Work' },
+        { id: 'film', color: 'bg-blue-500', label: 'Film' },
     ];
     
+    const utilitySections = [
+        { id: 'statistics', icon: Clock, label: 'Statistics'},
+        { id: 'daily_planning', icon: Palette, label: 'Daily Planning'},
+    ];
+
     const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-[#fff8ed] text-gray-700';
     const buttonClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/30' : 'hover:bg-stone-200';
     const activeBtnClasses = viewTheme === 'dark' ? 'bg-gray-700/50 text-white' : 'bg-stone-200 text-gray-900';
@@ -311,57 +328,59 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme, taskLists }: { a
 
 
     return (
-    <div className={cn("p-2 flex flex-col gap-4 text-xs h-full", sidebarClasses)}>
-        <div>
-            <ul className="space-y-0.5">
+        <div className={cn("p-2 flex flex-col gap-4 text-sm h-full", sidebarClasses)}>
+            <div className="space-y-1">
                 {mainSections.map(s => (
-                    <li key={s.id}>
-                        <button
-                          onClick={() => setActiveView(s.id)}
-                          className={cn(
-                            "w-full flex items-center gap-3 p-1.5 rounded-md text-xs",
+                    <button
+                        key={s.id}
+                        onClick={() => setActiveView(s.id)}
+                        className={cn(
+                            "w-full flex items-center justify-between gap-3 p-1.5 rounded-md text-sm",
                             buttonClasses,
                             activeView === s.id && cn('font-semibold', activeBtnClasses)
-                          )}
-                        >
-                            <s.icon size={16} /><span>{s.label}</span>
-                        </button>
-                    </li>
+                        )}
+                    >
+                        <div className="flex items-center gap-3">
+                           <s.icon size={18} /><span>{s.label}</span>
+                        </div>
+                        {s.badge && <span className={cn("text-xs font-bold px-1.5 rounded-full", badgeClasses)}>{s.badge}</span>}
+                    </button>
                 ))}
-            </ul>
-        </div>
-        <div className="flex-1 space-y-3">
-             <div>
-                <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Task Lists</h3>
-                <ul className="space-y-0.5">
-                   {taskLists.map(p => (
-                        <li key={p.id}>
-                           <button
-                             onClick={() => setActiveView(p.id)}
-                             className={cn(
-                               "w-full flex items-center gap-3 p-1.5 rounded-md text-xs",
-                               buttonClasses,
-                               activeView === p.id && cn('font-semibold', activeBtnClasses)
-                             )}
-                           >
-                                <Inbox size={16} />
-                                <span>{p.title}</span>
-                            </button>
-                        </li>
-                   ))}
-                </ul>
+            </div>
+
+            <div className="space-y-2">
+                <h3 className={cn("text-xs font-bold px-1.5 mb-1", headingClasses)}>Projects</h3>
+                 {projectSections.map(p => (
+                     <button key={p.id} onClick={() => setActiveView(p.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md text-sm", buttonClasses, activeView === p.id && cn('font-semibold', activeBtnClasses))}>
+                         <span className={cn("h-3 w-3 rounded-full", p.color)}></span>
+                         <span>{p.label}</span>
+                     </button>
+                 ))}
+            </div>
+
+            <div className="space-y-2">
+                 <h3 className={cn("text-xs font-bold px-1.5 mb-1", headingClasses)}>Tags</h3>
+                 {/* Placeholder for tags */}
+            </div>
+
+            <div className={cn("mt-auto border-t pt-2 space-y-1", separatorClasses)}>
+                 {utilitySections.map(u => (
+                    <button key={u.id} onClick={() => setActiveView(u.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md text-sm", buttonClasses, activeView === u.id && cn('font-semibold', activeBtnClasses))}>
+                        <u.icon size={18} /><span>{u.label}</span>
+                    </button>
+                 ))}
+            </div>
+             <div className="shrink-0">
+                <div className={cn("h-px w-full my-1", separatorClasses)}></div>
+                <div className={cn("flex items-center gap-2 p-1.5 rounded-md text-sm", buttonClasses, "cursor-pointer")}>
+                    <span className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-xs">!</span>
+                    {/* Placeholder for an alert or info section */}
+                </div>
             </div>
         </div>
-         <div className={cn("border-t pt-2 space-y-0.5", separatorClasses)}>
-             <div className={cn("flex items-center gap-3 p-1.5 rounded-md", buttonClasses)}>
-                <Clock size={16}/><span>Statistics</span>
-            </div>
-             <div className={cn("flex items-center gap-3 p-1.5 rounded-md", buttonClasses)}>
-                <Palette size={16}/><span>Daily Planning</span>
-            </div>
-        </div>
-    </div>
-)};
+    );
+};
+
 
 const PlannerTaskList = ({
   taskLists,
@@ -981,7 +1000,7 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-type ActivePlannerView = 'today' | 'upcoming' | 'all' | string;
+type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | string;
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
@@ -1325,7 +1344,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         <div className="flex flex-1 min-h-0">
             {isSidebarOpen && (
                 <>
-                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} taskLists={taskLists} /></div>
+                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
                     <Resizer onMouseDown={onMouseDown(0)} />
                     <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
                        {isTasksLoading ? (
@@ -1417,60 +1436,56 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         <div className="p-3 border-b border-border/30 space-y-1 timetable-allday-area">
           {allDayEvents.map(event => {
             if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
-            const statusBadge = getStatusBadgeVariant(event.status);
-            const countdownText = getCountdownText(event.date);
             const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
 
             return (
-            <div
-              key={event.id}
-              className={cn(
-                "rounded-md p-1.5 text-xs flex justify-between items-center transition-opacity",
-                "hover:bg-muted/50",
-                isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
-                selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
-              )}
-              style={event.color ? getCustomColorStyles(event.color) : {}}
-              title={getEventTooltip(event)}
-            >
-              <div className="font-medium flex items-center gap-2 cursor-pointer" onClick={() => handleEventClick(event)}>
-                 {onEventStatusChange && (
-                    <Checkbox
-                        id={`check-allday-${event.id}`}
-                        checked={isChecked}
-                        onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
-                        className="border-current"
-                    />
-                )}
-                {getEventTypeIcon(event)} {event.title}
-                {countdownText && <span className="ml-2 text-muted-foreground text-[10px] flex items-center"><Info className="h-3 w-3 mr-0.5"/>{countdownText}</span>}
-              </div>
-              <div className="flex items-center space-x-1">
-                {event.status && (
-                    <Badge variant={statusBadge.variant} className={cn("capitalize text-[10px] px-1.5 py-0 h-auto", statusBadge.className)}>
-                        {event.status.replace(/-/g, ' ')}
-                    </Badge>
-                )}
-                {event.isDeletable && onDeleteEvent && (
-                  <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive/80 hover:bg-destructive/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="frosted-glass">
-                        <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                )}
-              </div>
-            </div>
+            <Popover key={event.id}>
+              <PopoverTrigger asChild>
+                <div
+                    className={cn(
+                        "rounded-md p-1.5 text-xs flex justify-between items-center transition-opacity cursor-pointer",
+                        "hover:bg-muted/50",
+                        isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
+                         getEventTypeStyleClasses(event.type)
+                    )}
+                    style={event.color ? getCustomColorStyles(event.color) : {}}
+                    title={getEventTooltip(event)}
+                >
+                    <div className="font-medium flex items-center gap-2" onClick={() => handleEventClick(event)}>
+                        {getEventTypeIcon(event)} {event.title}
+                    </div>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2 frosted-glass">
+                    <div className="space-y-2">
+                        <h4 className="font-semibold">{event.title}</h4>
+                        <p className="text-muted-foreground">All-day event</p>
+                        {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                        <div className="flex justify-end gap-1 pt-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                <Edit3 className="h-3.5 w-3.5"/>
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                        <Trash2 className="h-3.5 w-3.5"/>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="frosted-glass">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                        <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
           )})}
         </div>
       )}
