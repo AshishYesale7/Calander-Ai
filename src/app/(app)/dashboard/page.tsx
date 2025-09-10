@@ -16,7 +16,7 @@ import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import type { ProcessGoogleDataInput, ActionableInsight } from '@/ai/flows/process-google-data-flow';
 import { mockTimelineEvents } from '@/data/mock';
 import type { TimelineEvent, UserPreferences } from '@/types';
-import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay, subDays, isToday } from 'date-fns';
+import { format, parseISO, addMonths, subMonths, startOfMonth, isSameDay, startOfDay as dfnsStartOfDay, subDays, isToday, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
@@ -615,7 +615,7 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
             <TodaysPlanCard />
         </div>
-        <div className="invisible md:hidden">
+        <div className="h-0.5 overflow-hidden md:hidden">
             <DailyStreakCard />
         </div>
       </div>
