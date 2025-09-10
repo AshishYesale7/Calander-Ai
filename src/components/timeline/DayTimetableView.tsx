@@ -1046,7 +1046,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
+  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
@@ -1646,4 +1646,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
