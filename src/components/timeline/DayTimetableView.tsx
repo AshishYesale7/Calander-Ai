@@ -1047,7 +1047,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
   const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
   const savedWidthsRef = useRef([18, 22, 60]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -1178,14 +1180,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   useEffect(() => {
     fetchTaskData();
   }, [fetchTaskData]);
-
-  useEffect(() => {
-    // This effect runs once on mount on the client side
-    const isMobile = window.innerWidth < 768; // Tailwind's 'md' breakpoint
-    if (isMobile) {
-        handleToggleSidebar(); // This will close it and set widths correctly
-    }
-  }, []); // Empty dependency array ensures it runs only once
 
 
   const handleAddTask = async (listId: string, title: string) => {
