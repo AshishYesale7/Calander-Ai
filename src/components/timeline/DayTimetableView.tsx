@@ -450,6 +450,91 @@ const PlannerTaskList = ({
 
 const HOUR_SLOT_HEIGHT = 50;
 
+// Corrected layout calculation for weekly view
+function calculateWeeklyEventLayouts(timedEvents: TimelineEvent[]): EventWithLayout[] {
+  const minuteHeightPx = HOUR_SLOT_HEIGHT / 60;
+  
+  const events = timedEvents
+    .map((e, idx) => {
+      const startDate = e.date;
+      const endDate = e.endDate;
+      if (!(startDate instanceof Date) || isNaN(startDate.valueOf())) return null;
+
+      const start = startDate.getHours() * 60 + startDate.getMinutes();
+      let endValue;
+      if (endDate && endDate instanceof Date && !isNaN(endDate.valueOf()) && isSameDay(startDate, endDate)) {
+        endValue = endDate.getHours() * 60 + endDate.getMinutes();
+      } else {
+        endValue = start + 60; // Default to 1 hour
+      }
+      endValue = Math.max(start + 15, endValue); // Min 15 mins
+
+      return { ...e, originalIndex: idx, startInMinutes: start, endInMinutes: endValue };
+    })
+    .filter(e => e !== null)
+    .sort((a, b) => a!.startInMinutes - b!.startInMinutes || (b!.endInMinutes - b!.startInMinutes) - (a!.endInMinutes - a!.startInMinutes));
+
+  const layoutResults: EventWithLayout[] = [];
+  
+  let i = 0;
+  while (i < events.length) {
+    if (!events[i]) { i++; continue; }
+    let currentGroup = [events[i]!];
+    let maxEndInGroup = events[i]!.endInMinutes;
+    for (let j = i + 1; j < events.length; j++) {
+      if (!events[j]) continue;
+      if (events[j]!.startInMinutes < maxEndInGroup) {
+        currentGroup.push(events[j]!);
+        maxEndInGroup = Math.max(maxEndInGroup, events[j]!.endInMinutes);
+      } else { break; }
+    }
+
+    const columns: { event: typeof events[0]; columnOrder: number }[][] = [];
+    for (const event of currentGroup) {
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        const lastEventInColumn = columns[c][columns[c].length - 1];
+        if (lastEventInColumn.event!.endInMinutes <= event!.startInMinutes) {
+          columns[c].push({event: event!, columnOrder: c});
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([{event: event!, columnOrder: columns.length}]);
+      }
+    }
+
+    const numColsInGroup = columns.length;
+    for (const col of columns) {
+      for (const item of col) {
+        const event = item.event;
+        if (!event) continue;
+        const colIdx = item.columnOrder;
+        
+        const colWidthPercentage = 100 / numColsInGroup;
+        const gapPercentage = 1;
+        const actualColWidth = colWidthPercentage - gapPercentage;
+        const leftOffset = colIdx * colWidthPercentage;
+
+        layoutResults.push({
+          ...event,
+          layout: {
+            top: event.startInMinutes * minuteHeightPx,
+            height: Math.max(15, (event.endInMinutes - event.startInMinutes) * minuteHeightPx),
+            left: `${leftOffset}%`,
+            width: `${actualColWidth}%`,
+            zIndex: 10 + colIdx,
+          },
+        });
+      }
+    }
+    i += currentGroup.length;
+  }
+  return layoutResults;
+}
+
+
 const PlannerWeeklyTimeline = ({ 
   week, 
   events,
@@ -467,8 +552,8 @@ const PlannerWeeklyTimeline = ({
     const now = new Date();
     const nowPosition = (now.getHours() * HOUR_SLOT_HEIGHT) + (now.getMinutes() / 60 * HOUR_SLOT_HEIGHT);
 
-    const { allDayEvents, timedEvents } = useMemo(() => {
-        const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
+    const { allDayEventsByDay, timedEventsByDay } = useMemo(() => {
+        const weekStart = dfnsStartOfDay(week[0]);
         const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
         const relevantEvents = events.filter(e => {
             if (!e.date) return false;
@@ -476,62 +561,54 @@ const PlannerWeeklyTimeline = ({
             return isWithinInterval(eventDate, {start: weekStart, end: weekEnd});
         });
 
-        return {
-            allDayEvents: relevantEvents.filter(e => e.isAllDay),
-            timedEvents: relevantEvents.filter(e => !e.isAllDay),
-        };
+        const allDay: TimelineEvent[][] = Array.from({ length: 7 }, () => []);
+        const timed: TimelineEvent[][] = Array.from({ length: 7 }, () => []);
+
+        relevantEvents.forEach(e => {
+          const dayIndex = getDay(e.date);
+          if (e.isAllDay) {
+            allDay[dayIndex].push(e);
+          } else {
+            timed[dayIndex].push(e);
+          }
+        });
+        
+        return { allDayEventsByDay: allDay, timedEventsByDay: timed };
     }, [week, events]);
-    
-    const getDayIndex = (date: Date) => {
-        return date.getDay(); // Sunday = 0
-    };
-    
-    const getEventStyles = (event: TimelineEvent) => {
-        const startHour = getHours(event.date);
-        const startMinute = getMinutes(event.date);
-        const top = (startHour * 60 + startMinute) / 60 * HOUR_SLOT_HEIGHT;
 
-        let durationHours = 1;
-        if (event.endDate) {
-            const diffMs = event.endDate.getTime() - event.date.getTime();
-            durationHours = Math.max(0.25, diffMs / (1000 * 60 * 60)); // min 15 mins
-        }
-        const height = durationHours * HOUR_SLOT_HEIGHT;
-
-        return {
-            gridColumnStart: getDayIndex(event.date) + 1,
-            top: `${top}px`,
-            height: `${height}px`,
-        };
-    };
+    const weeklyLayouts = useMemo(() => {
+      return timedEventsByDay.map(dayEvents => calculateWeeklyEventLayouts(dayEvents));
+    }, [timedEventsByDay]);
+    
 
     return (
       <div className="flex flex-col flex-1 w-full bg-black/30 text-xs">
         {/* Header with All-Day Events */}
         <div className="sticky top-0 bg-[#171717] z-20">
-          <div className="grid grid-cols-[3rem_1fr] text-center text-gray-400 font-semibold text-xs">
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 font-semibold text-xs">
             <div className="w-12 border-b border-r border-gray-700/50"></div>
-            <div className="grid grid-cols-7 flex-1">
               {week.map((day) => (
                 <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">
                   {format(day, 'EEE d')}
                 </div>
               ))}
-            </div>
           </div>
-          <div className="grid grid-cols-[3rem_1fr] text-center text-gray-400 text-xs">
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 text-xs">
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
             <div className="grid grid-cols-7 flex-1 min-h-[2.5rem] p-1 gap-1 border-b border-gray-700/50">
-              {allDayEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className={cn(
-                    'rounded px-1 py-0.5 text-white font-medium text-[10px] truncate',
-                    getEventTypeStyleClasses(event.type)
-                  )}
-                  style={{ gridColumnStart: getDayIndex(event.date) + 1 }}
-                >
-                  {event.title}
+              {allDayEventsByDay.map((dayEvents, dayIndex) => (
+                <div key={dayIndex} className="space-y-0.5">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        'rounded px-1 py-0.5 text-white font-medium text-[10px] truncate',
+                        getEventTypeStyleClasses(event.type)
+                      )}
+                    >
+                      {event.title}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -574,42 +651,46 @@ const PlannerWeeklyTimeline = ({
                 ))}
               </div>
 
-              <div className="absolute inset-y-0 w-full pointer-events-none">
-                {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                  <div className="absolute h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, left: `calc(${(getDayIndex(now) / 7) * 100}%)`, width: `calc(${100/7}%)` }}>
-                    <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
-                  </div>
-                )}
-                
-                <div className="absolute inset-0 grid grid-cols-7">
-                    {timedEvents.map((event, i) => {
-                        const style = getEventStyles(event);
-                        const isShort = style.height < 40;
-                        return (
-                        <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto', getEventTypeStyleClasses(event.type))}
-                            style={style}>
-                            <div className='flex items-center gap-1 text-[10px]'>
-                                {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                {!isShort && event.icon && <event.icon size={12}/>}
-                                <span className="truncate">{event.title}</span>
-                            </div>
-                            {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
-                        </div>
-                        )
-                    })}
-                    {ghostEvent && (
-                        <div 
-                            className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
-                            style={{
-                                gridColumnStart: getDayIndex(ghostEvent.date) + 1,
-                                top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
-                                height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
-                            }}
-                        >
-                            <p className="text-[10px] font-semibold">Drop to schedule</p>
-                        </div>
-                    )}
-                </div>
+              <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                  {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                    <div className="absolute h-px bg-purple-500 z-10 w-full" style={{ top: `${nowPosition}px`, gridColumnStart: getDay(now) + 1}}>
+                      <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
+                    </div>
+                  )}
+
+                  {weeklyLayouts.map((dayLayout, dayIndex) => (
+                      <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
+                          {dayLayout.map(event => {
+                              const isShort = event.layout.height < 40;
+                              return (
+                                  <div key={event.id}
+                                      className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto', getEventTypeStyleClasses(event.type))}
+                                      style={event.layout}
+                                  >
+                                      <div className='flex items-center gap-1 text-[10px]'>
+                                          {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                          {!isShort && event.icon && <event.icon size={12}/>}
+                                          <span className="truncate">{event.title}</span>
+                                      </div>
+                                      {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                  </div>
+                              )
+                          })}
+                      </div>
+                  ))}
+
+                  {ghostEvent && (
+                      <div 
+                          className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                          style={{
+                              gridColumnStart: getDay(ghostEvent.date) + 1,
+                              top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
+                              height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
+                          }}
+                      >
+                          <p className="text-[10px] font-semibold">Drop to schedule</p>
+                      </div>
+                  )}
               </div>
 
             </div>
