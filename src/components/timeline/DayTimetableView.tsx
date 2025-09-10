@@ -1046,7 +1046,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
+  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
@@ -1364,38 +1364,40 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
         <div className="flex flex-1 min-h-0">
-            {isSidebarOpen && (
-                <>
-                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
-                    <Resizer onMouseDown={onMouseDown(0)} />
-                    <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
-                       {isTasksLoading ? (
-                         <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
-                       ) : (
-                          <PlannerTaskList
-                            taskLists={taskLists}
-                            tasks={tasks[activePlannerView] || []}
-                            activeListId={activePlannerView}
-                            onAddTask={handleAddTask}
-                            onDragStart={handleDragStart}
-                            viewTheme={maximizedViewTheme}
-                          />
-                       )}
-                    </div>
-                    <Resizer onMouseDown={onMouseDown(1)} />
-                </>
-            )}
-            <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
-                <div className="flex-1 min-h-0 flex flex-col">
-                    {plannerViewMode === 'week' ? (
-                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
-                    ) : plannerViewMode === 'day' ? (
-                      <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme}/>
-                    ) : (
-                      <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
-                    )}
-                </div>
-            </div>
+          <div className={cn("flex flex-1 min-h-0", { 'md:hidden': !isSidebarOpen && typeof window !== 'undefined' && window.innerWidth < 768 })}>
+              {isSidebarOpen && (
+                  <>
+                      <div className="w-48 flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
+                      <div className="w-[1px] bg-border/30" />
+                      <div className="w-56 flex-shrink-0 flex-grow-0">
+                         {isTasksLoading ? (
+                           <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
+                         ) : (
+                            <PlannerTaskList
+                              taskLists={taskLists}
+                              tasks={tasks[activePlannerView] || []}
+                              activeListId={activePlannerView}
+                              onAddTask={handleAddTask}
+                              onDragStart={handleDragStart}
+                              viewTheme={maximizedViewTheme}
+                            />
+                         )}
+                      </div>
+                      <div className="w-[1px] bg-border/30" />
+                  </>
+              )}
+              <div className="flex-1 flex flex-col">
+                  <div className="flex-1 min-h-0 flex flex-col">
+                      {plannerViewMode === 'week' ? (
+                         <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
+                      ) : plannerViewMode === 'day' ? (
+                        <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme}/>
+                      ) : (
+                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
+                      )}
+                  </div>
+              </div>
+          </div>
         </div>
     </div>
   );
