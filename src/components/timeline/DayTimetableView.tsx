@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isSameDay, isWithinInterval } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -464,7 +465,7 @@ const PlannerWeeklyTimeline = ({
 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
-    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / 60 * HOUR_SLOT_HEIGHT;
+    const nowPosition = (now.getHours() * HOUR_SLOT_HEIGHT) + (now.getMinutes() / 60 * HOUR_SLOT_HEIGHT);
 
     const { allDayEvents, timedEvents } = useMemo(() => {
         const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
@@ -472,7 +473,7 @@ const PlannerWeeklyTimeline = ({
         const relevantEvents = events.filter(e => {
             if (!e.date) return false;
             const eventDate = dfnsStartOfDay(e.date);
-            return eventDate >= weekStart && eventDate <= weekEnd;
+            return isWithinInterval(eventDate, {start: weekStart, end: weekEnd});
         });
 
         return {
@@ -505,80 +506,73 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex flex-1 w-full bg-black/30 p-2 text-xs overflow-auto">
-            <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0">
-                <div className="h-8"></div>
-                <div className="h-[2px]"></div>
-                {hours.map(hour => (
-                    <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
-                        <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>
-                    </div>
-                ))}
+        <div className="flex flex-1 w-full bg-black/30 p-2 text-xs">
+            <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                <div className="h-[2.25rem] border-b border-r border-gray-700/50 flex-shrink-0"></div>
+                <div className="flex-1 relative">
+                    {hours.map(hour => (
+                        <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
+                            <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
-            <div className="flex-1">
-                <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
-                    {week.map(day => <div key={day.toISOString()}>{format(day, 'EEE d')}</div>)}
+            <div className="flex-1 flex flex-col">
+                <div className="grid grid-cols-7 text-center text-gray-400 font-semibold text-xs sticky top-0 bg-[#171717] z-20">
+                    {week.map(day => <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">{format(day, 'EEE d')}</div>)}
                 </div>
-                <div className="relative border-b border-gray-700/50 mb-1 pb-1">
-                    <div className="grid grid-cols-7 h-5">
-                        {allDayEvents.map((event, i) => (
-                            <div key={event.id} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", getEventTypeStyleClasses(event.type))}
-                                style={{ gridColumnStart: getDayIndex(event.date) + 1, gridColumnEnd: `span 1`}}>
-                                {event.title}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="relative">
-                    <div className="grid grid-cols-7 h-full">
-                        {week.map(day => (
-                            <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
-                                {hours.map(hour => (
-                                    <div 
-                                        key={`${day.toISOString()}-${hour}`} 
-                                        className="border-t border-gray-700/50"
-                                        style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
-                                        onDrop={(e) => onDrop(e, day, hour)}
-                                        onDragOver={(e) => onDragOver(e, day, hour)}
-                                    ></div>
-                                ))}
-                            </div>
-                        ))}
-                        
-                        {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                            <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1, gridColumnEnd: `span 1`}}>
-                                <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
-                            </div>
-                        )}
-                    </div>
-                    <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
-                        {timedEvents.map((event, i) => {
-                            const style = getEventStyles(event);
-                            const isShort = style.height.replace('px', '') < 40;
-                            return (
-                            <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
-                                style={style}>
-                                <div className='flex items-center gap-1 text-[10px]'>
-                                    {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                    {!isShort && event.icon && <event.icon size={12}/>}
-                                    <span className="truncate">{event.title}</span>
+                <div className="flex-1 overflow-y-auto">
+                    <div className="relative">
+                        <div className="grid grid-cols-7 h-full">
+                            {week.map(day => (
+                                <div key={day.toISOString()} className="border-l border-gray-700/50 first:border-l-0">
+                                    {hours.map(hour => (
+                                        <div 
+                                            key={`${day.toISOString()}-${hour}`} 
+                                            className="border-t border-gray-700/50"
+                                            style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
+                                            onDrop={(e) => onDrop(e, day, hour)}
+                                            onDragOver={(e) => onDragOver(e, day, hour)}
+                                        ></div>
+                                    ))}
                                 </div>
-                                {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
-                            </div>
-                            )
-                        })}
-                        {ghostEvent && (
-                            <div 
-                                className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
-                                style={{
-                                    gridColumnStart: getDayIndex(ghostEvent.date) + 1,
-                                    top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
-                                    height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
-                                }}
-                            >
-                                <p className="text-[10px] font-semibold">Drop to schedule</p>
-                            </div>
-                        )}
+                            ))}
+                            
+                            {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                                <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1, gridColumnEnd: `span 1`}}>
+                                    <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                            {timedEvents.map((event, i) => {
+                                const style = getEventStyles(event);
+                                const isShort = style.height.replace('px', '') < 40;
+                                return (
+                                <div key={event.id} className={cn('p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden', getEventTypeStyleClasses(event.type))}
+                                    style={style}>
+                                    <div className='flex items-center gap-1 text-[10px]'>
+                                        {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                        {!isShort && event.icon && <event.icon size={12}/>}
+                                        <span className="truncate">{event.title}</span>
+                                    </div>
+                                    {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                </div>
+                                )
+                            })}
+                            {ghostEvent && (
+                                <div 
+                                    className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                                    style={{
+                                        gridColumnStart: getDayIndex(ghostEvent.date) + 1,
+                                        top: `${ghostEvent.hour * HOUR_SLOT_HEIGHT}px`,
+                                        height: `${HOUR_SLOT_HEIGHT}px` // 1 hour duration for ghost
+                                    }}
+                                >
+                                    <p className="text-[10px] font-semibold">Drop to schedule</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -908,7 +902,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     return [event.title, timeString, countdownText, statusString, notesString].filter(Boolean).join('\n');
   };
 
-  const currentTimeTopPosition = dfnsIsToday(initialDate) ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : -1;
+  const currentTimeTopPosition = dfnsIsToday(initialDate) ? (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX) : -1;
   
   const renderMaximizedView = () => (
      <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
@@ -934,7 +928,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                     <Resizer onMouseDown={onMouseDown(1)} />
                 </>
             )}
-            <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 overflow-auto">
+            <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
                 {plannerViewMode === 'week' ? (
                    <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                 ) : plannerViewMode === 'day' ? (
@@ -1072,7 +1066,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       {hours.map(hour => (
                       <div key={`label-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px` }}
                           className="text-xs text-muted-foreground text-right pr-2 pt-1 border-b border-border/20 last:border-b-0 flex items-start justify-end">
-                          {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                          <span className='-translate-y-1/2'>{hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}</span>
                       </div>
                       ))}
                   </div>
@@ -1199,3 +1193,4 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
