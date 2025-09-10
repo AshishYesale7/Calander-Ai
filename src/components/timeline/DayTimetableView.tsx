@@ -6,7 +6,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, isToday as dfnsIsToday } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -168,7 +168,7 @@ function calculateEventLayouts(
       }
     }
     
-    currentGroup.sort((a,b) => a.startInMinutes - b.startInMinutes || a.originalIndex - b.originalIndex);
+    currentGroup.sort((a,b) => a.originalIndex - b.originalIndex);
 
     const columns: { event: typeof events[0]; columnOrder: number }[][] = [];
     for (const event of currentGroup) {
@@ -728,8 +728,8 @@ const PlannerWeeklyTimeline = ({
                 </div>
                 
                  {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                    <div className="absolute h-px bg-purple-500 z-10 left-0 right-0" style={{ top: `${nowPosition}px`, gridColumn: `1 / span 7` }}>
-                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px]" style={{left: `calc(${(100/7) * getDay(now)}% - 4px)`}} />
+                    <div className="absolute h-px bg-purple-500 z-10 left-0 right-0" style={{ top: `${nowPosition}px` }}>
+                        <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] left-[-4px]" />
                     </div>
                 )}
   
