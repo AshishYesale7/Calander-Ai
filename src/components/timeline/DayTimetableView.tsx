@@ -1049,10 +1049,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.innerWidth >= 768;
-  });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
@@ -1075,6 +1072,13 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     return savedTheme || 'dark';
   });
   
+  useEffect(() => {
+    // This now runs only on the client
+    if (typeof window !== 'undefined') {
+      setIsSidebarOpen(window.innerWidth >= 768);
+    }
+  }, []);
+
   useEffect(() => {
       if (typeof window !== 'undefined') {
           localStorage.setItem('planner-view-theme', maximizedViewTheme);
@@ -1276,17 +1280,23 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
 
   useEffect(() => {
-    if (dfnsIsToday(initialDate) && !isMaximized && nowIndicatorRef.current) {
-        const timer = setTimeout(() => {
-            nowIndicatorRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-            });
-        }, 500);
-
+    if (dfnsIsToday(initialDate) && !isMaximized) {
         const intervalId = setInterval(() => {
             setNow(new Date());
-        }, 60000);
+            if(nowIndicatorRef.current) {
+                const newTop = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
+                nowIndicatorRef.current.style.top = `${newTop}px`;
+            }
+        }, 60000); // Update every minute
+
+        const timer = setTimeout(() => {
+            if (nowIndicatorRef.current) {
+                nowIndicatorRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+            }
+        }, 500);
 
         return () => {
             clearTimeout(timer);
@@ -1371,11 +1381,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           <div className="flex flex-1 min-h-0">
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : 'w-[10%]')}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       <Resizer onMouseDown={onMouseDown(0)} />
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : 'w-[25%]')}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : `w-[${panelWidths[1]}%]`)}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1654,4 +1664,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
