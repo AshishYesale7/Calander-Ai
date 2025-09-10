@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -589,7 +589,7 @@ interface TasksByList {
     [key: string]: RawGoogleTask[];
 }
 
-export default function DayTimetableView({ date: initialDate, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
+export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -624,14 +624,14 @@ export default function DayTimetableView({ date: initialDate, events, onClose, o
   }, [currentDisplayDate]);
 
   const handleNavigate = (direction: 'prev' | 'next') => {
-      const newDate = (current: Date) => {
+      const newDateFn = (current: Date) => {
         switch(plannerViewMode) {
             case 'day': return direction === 'prev' ? subDays(current, 1) : addDays(current, 1);
             case 'week': return direction === 'prev' ? subWeeks(current, 1) : addWeeks(current, 1);
             case 'month': return direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1);
         }
       }
-      setCurrentDisplayDate(newDate);
+      setCurrentDisplayDate(newDateFn);
   };
   
   const handleTodayClick = () => {
@@ -811,10 +811,17 @@ export default function DayTimetableView({ date: initialDate, events, onClose, o
         };
     }
   }, [isToday, isMaximized]);
+  
+  const eventsForDayView = useMemo(() => {
+    return allEvents.filter(event =>
+        event.date instanceof Date && !isNaN(event.date.valueOf()) &&
+        isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(initialDate))
+    );
+  }, [allEvents, initialDate]);
 
-  const allDayEvents = useMemo(() => events.filter(e => e.isAllDay), [events]);
-  const timedEvents = useMemo(() => events.filter(e => !e.isAllDay && e.date instanceof Date && !isNaN(e.date.valueOf())), [events]);
-
+  const allDayEvents = useMemo(() => eventsForDayView.filter(e => e.isAllDay), [eventsForDayView]);
+  const timedEvents = useMemo(() => eventsForDayView.filter(e => !e.isAllDay && e.date instanceof Date && !isNaN(e.date.valueOf())), [eventsForDayView]);
+  
   const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(
     () => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX),
     [timedEvents]
@@ -884,10 +891,10 @@ export default function DayTimetableView({ date: initialDate, events, onClose, o
             <Resizer onMouseDown={onMouseDown(1)} />
             <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
                 {plannerViewMode === 'week' && (
-                   <PlannerWeeklyTimeline week={currentWeekDays} events={events} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                   <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                 )}
                 {plannerViewMode === 'day' && <div className="p-4">Day View Component Here</div>}
-                {plannerViewMode === 'month' && <PlannerMonthView month={currentDisplayDate} events={events} />}
+                {plannerViewMode === 'month' && <PlannerMonthView month={currentDisplayDate} events={allEvents} />}
             </div>
         </div>
     </div>

@@ -375,22 +375,11 @@ export default function DashboardPage() {
 
   const handleDayClickFromCalendar = (day: Date, hasEvents: boolean) => {
     setSelectedDateForDayView(day);
-    if (!hasEvents) {
-      toast({ title: "No Events", description: `No events scheduled for ${format(day, 'MMMM d, yyyy')}.` });
-    }
   };
 
   const closeDayTimetableView = () => {
     setSelectedDateForDayView(null);
   };
-
-  const eventsForDayView = useMemo(() => {
-    if (!selectedDateForDayView) return [];
-    return activeEvents.filter(event =>
-        event.date instanceof Date && !isNaN(event.date.valueOf()) &&
-        isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
-    ).sort((a,b) => a.date.getTime() - b.date.getTime());
-  }, [activeEvents, selectedDateForDayView]);
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent, isNew: boolean = false) => {
     if (event) {
@@ -683,7 +672,7 @@ export default function DashboardPage() {
                 {selectedDateForDayView ? (
                     <DayTimetableView
                         date={selectedDateForDayView}
-                        events={eventsForDayView}
+                        events={activeEvents}
                         onClose={closeDayTimetableView}
                         onDeleteEvent={handleDeleteTimelineEvent}
                         onEditEvent={handleOpenEditModal}
