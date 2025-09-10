@@ -5,8 +5,8 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
-import { isToday as dfnsIsToday } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO } from 'date-fns';
+import { isToday as dfnsIsToday, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -260,10 +260,10 @@ const PlannerHeader = ({
 
     const headerClasses = viewTheme === 'dark'
         ? 'border-gray-700/50 text-gray-300'
-        : 'border-gray-200 bg-gray-50 text-gray-700';
+        : 'border-gray-200 bg-stone-50 text-gray-700';
     const buttonClasses = viewTheme === 'dark'
         ? 'text-gray-300 hover:bg-gray-700/50'
-        : 'text-gray-600 hover:bg-gray-200';
+        : 'text-gray-600 hover:bg-stone-200';
     const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
 
     return (
@@ -278,7 +278,7 @@ const PlannerHeader = ({
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
                 <Button variant="ghost" className={cn("h-7 px-2 text-xs", buttonClasses)} onClick={onTodayClick}>Today</Button>
             </div>
-            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-200')}>
+            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-stone-200')}>
                 <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'day' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Day</span> : 'Day'}</Button>
                 <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'week' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Week</span> : 'Week'}</Button>
                 <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'month' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Month</span> : 'Month'}</Button>
@@ -311,9 +311,9 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
         { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     
-    const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-gray-50 text-gray-700';
-    const buttonClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/30' : 'hover:bg-gray-200';
-    const activeBtnClasses = viewTheme === 'dark' ? 'bg-gray-700/50 text-white' : 'bg-gray-200 text-gray-900';
+    const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-stone-50 text-gray-700';
+    const buttonClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/30' : 'hover:bg-stone-200';
+    const activeBtnClasses = viewTheme === 'dark' ? 'bg-gray-700/50 text-white' : 'bg-stone-200 text-gray-900';
     const headingClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
     const separatorClasses = viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200';
     const badgeClasses = viewTheme === 'dark' ? 'bg-gray-600 text-gray-200' : 'bg-gray-300 text-gray-600';
@@ -422,10 +422,10 @@ const PlannerTaskList = ({
         }
     }
     
-    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-gray-100 border-r border-gray-200';
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
     const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
     const placeholderClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
-    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-200';
+    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
 
@@ -621,11 +621,11 @@ const PlannerWeeklyTimeline = ({
     }, [timedEventsByDay]);
     
     const themeClasses = {
-      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
-      headerContainer: viewTheme === 'dark' ? 'bg-[#171717]' : 'bg-gray-100',
-      headerCell: viewTheme === 'dark' ? 'border-gray-700/50 text-gray-400' : 'border-gray-200 text-gray-500',
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-stone-50',
+      headerContainer: viewTheme === 'dark' ? 'bg-[#171717]' : 'bg-stone-100',
+      headerCell: viewTheme === 'dark' ? 'border-gray-700/50 text-gray-400' : 'border-stone-200 text-gray-500',
       hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
-      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200',
+      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-stone-200',
       eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
     };
 
@@ -653,7 +653,7 @@ const PlannerWeeklyTimeline = ({
                                         <div
                                             className={cn(
                                                 'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer',
-                                                getEventTypeStyleClasses(event.type),
+                                                'bg-blue-500/80 border-blue-500', // unified color for now
                                                 themeClasses.eventText
                                             )}
                                         >
@@ -706,7 +706,7 @@ const PlannerWeeklyTimeline = ({
                             <div
                             key={hour}
                             className="pr-1 flex items-start justify-end"
-                            style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
+                            style={{ height: `${HOUR_HEIGHT_PX}px` }}
                             >
                             {hour > 0 && <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>}
                             </div>
@@ -745,7 +745,7 @@ const PlannerWeeklyTimeline = ({
                                             <Popover key={event.id}>
                                                 <PopoverTrigger asChild>
                                                     <div
-                                                        className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)}
+                                                        className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)}
                                                         style={event.layout}
                                                     >
                                                         <div className='flex items-center gap-1 text-[10px]'>
@@ -830,11 +830,11 @@ const PlannerDayView = ({
   const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
   
   const themeClasses = {
-      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
-      allDayArea: viewTheme === 'dark' ? 'bg-[#171717] border-b border-gray-700/50' : 'bg-gray-100 border-b border-gray-200',
-      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-gray-400 border-r border-gray-200',
+      container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-stone-50',
+      allDayArea: viewTheme === 'dark' ? 'bg-[#171717] border-b border-gray-700/50' : 'bg-stone-100 border-b border-stone-200',
+      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-gray-400 border-r border-stone-200',
       hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400',
-      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200',
+      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-stone-200',
       eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
     };
 
@@ -861,7 +861,7 @@ const PlannerDayView = ({
                     {allDayEvents.map((event) => (
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
-                                <div className={cn('rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)}>
+                                <div className={cn('rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)}>
                                     {event.title}
                                 </div>
                             </PopoverTrigger>
@@ -907,7 +907,7 @@ const PlannerDayView = ({
                              return (
                                 <Popover key={event.id}>
                                     <PopoverTrigger asChild>
-                                        <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type), themeClasses.eventText)} style={event.layout}>
+                                        <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', 'bg-blue-500/80 border-blue-500', themeClasses.eventText)} style={event.layout}>
                                            {/* Event content */}
                                             <div className='flex items-center gap-1 text-[10px]'>
                                                 {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
