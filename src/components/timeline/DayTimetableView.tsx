@@ -503,10 +503,12 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex-1 w-full bg-black/30 p-2 text-xs flex">
+        <div className="flex-1 w-full bg-black/30 p-2 text-xs flex overflow-auto">
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0">
+                <div className="h-8"></div>
+                <div className="h-[2px]"></div>
                 {hours.map(hour => (
-                    <div key={hour} className="h-[50px] -mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'am' : 'pm'}</div>
+                    <div key={hour} className="h-[50px] -mt-1.5 pr-1">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</div>
                 ))}
             </div>
             <div className="flex-1">
@@ -537,6 +539,12 @@ const PlannerWeeklyTimeline = ({
                                 ))}
                             </div>
                         ))}
+                        
+                        {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                            <div className="absolute w-full h-px bg-purple-500 z-10 col-span-full" style={{ top: `${nowPosition}px`}}>
+                                <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]" style={{left: `${(getDayIndex(now) / 7) * 100}%`}}></div>
+                            </div>
+                        )}
                     </div>
                     <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
                         {timedEvents.map((event, i) => {
@@ -567,11 +575,6 @@ const PlannerWeeklyTimeline = ({
                             </div>
                         )}
                     </div>
-                    {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                        <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1}}>
-                            <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
@@ -826,7 +829,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
 
   useEffect(() => {
-    if (isToday && !isMaximized && nowIndicatorRef.current) {
+    if (dfnsIsToday(initialDate) && !isMaximized && nowIndicatorRef.current) {
         const timer = setTimeout(() => {
             nowIndicatorRef.current?.scrollIntoView({
                 behavior: 'smooth',
@@ -843,7 +846,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             clearInterval(intervalId);
         };
     }
-  }, [isToday, isMaximized]);
+  }, [dfnsIsToday, initialDate, isMaximized]);
   
   const eventsForDayView = useMemo(() => {
     return allEvents.filter(event =>
@@ -900,7 +903,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     return [event.title, timeString, countdownText, statusString, notesString].filter(Boolean).join('\n');
   };
 
-  const currentTimeTopPosition = isToday ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : -1;
+  const currentTimeTopPosition = dfnsIsToday(initialDate) ? (now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60) : -1;
   
   const renderMaximizedView = () => (
      <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
@@ -1093,7 +1096,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       ></div>
                   ))}
 
-                  {isToday && currentTimeTopPosition >= 0 && (
+                  {currentTimeTopPosition >= 0 && (
                       <div
                       ref={nowIndicatorRef}
                       className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
