@@ -6,7 +6,8 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, isToday as dfnsIsToday } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { isToday as dfnsIsToday } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -526,7 +527,7 @@ function calculateWeeklyEventLayouts(timedEvents: TimelineEvent[]): EventWithLay
             width: `${actualColWidth}%`,
             zIndex: 10 + colIdx,
           },
-        });
+        } as EventWithLayout);
       }
     }
     i += currentGroup.length;
@@ -589,7 +590,6 @@ const PlannerWeeklyTimeline = ({
       <div className="flex flex-col flex-1 w-full bg-black/30 text-xs h-full">
         {/* Header and All-Day Events */}
         <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0">
-          {/* Header with day names */}
           <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 font-semibold text-xs">
             <div className="w-12 border-b border-r border-gray-700/50"></div>
               {week.map((day) => (
@@ -598,7 +598,6 @@ const PlannerWeeklyTimeline = ({
                 </div>
               ))}
           </div>
-          {/* All-day events */}
             <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-gray-400 text-xs border-b border-gray-700/50 min-h-[40px]">
                 <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
                 <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
@@ -653,11 +652,9 @@ const PlannerWeeklyTimeline = ({
             </div>
         </div>
   
-        {/* Main Grid: This part will scroll */}
         <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 flex overflow-y-auto">
                 <div className="flex-1 flex relative">
-                    {/* Hour Gutter */}
                     <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
                         <div className="flex-1 relative">
                         {hours.map((hour) => (
@@ -672,9 +669,7 @@ const PlannerWeeklyTimeline = ({
                         </div>
                     </div>
             
-                    {/* Timeline Grid */}
                     <div className="flex-1 relative">
-                        {/* Now indicator line. Positioned relative to the entire grid including the hour gutter */}
                          {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
                             <div className="absolute h-px bg-purple-500 z-30 left-0 right-0" style={{ top: `${nowPosition}px` }}>
                                 <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] -left-1" />
@@ -770,6 +765,114 @@ const PlannerWeeklyTimeline = ({
         </div>
       </div>
     );
+};
+
+const PlannerDayView = ({
+  date,
+  events,
+  onEditEvent,
+  onDeleteEvent,
+}: {
+  date: Date;
+  events: TimelineEvent[];
+  onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
+  onDeleteEvent?: (eventId: string, eventTitle: string) => void;
+}) => {
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const now = new Date();
+  const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
+
+  const { allDayEvents, timedEvents } = useMemo(() => {
+    const dayEvents = events.filter(event => isSameDay(event.date, date));
+    return {
+      allDayEvents: dayEvents.filter(e => e.isAllDay),
+      timedEvents: dayEvents.filter(e => !e.isAllDay),
+    };
+  }, [date, events]);
+  
+  const { eventsWithLayout, maxConcurrentColumns } = useMemo(
+    () => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX),
+    [timedEvents]
+  );
+
+  return (
+    <div className="flex flex-col flex-1 w-full bg-black/30 text-xs h-full">
+        {/* All-Day Events */}
+        <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0 border-b border-gray-700/50">
+            <div className="flex items-center text-gray-400 text-xs min-h-[40px]">
+                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
+                <div className="flex-1 p-1 space-y-0.5">
+                    {allDayEvents.map((event) => (
+                        <Popover key={event.id}>
+                            <PopoverTrigger asChild>
+                                <div className={cn('rounded px-1.5 py-1 text-white font-medium text-[10px] truncate cursor-pointer', getEventTypeStyleClasses(event.type))}>
+                                    {event.title}
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
+                                {/* Popover content for all-day events */}
+                            </PopoverContent>
+                        </Popover>
+                    ))}
+                </div>
+            </div>
+        </div>
+        
+        {/* Main scrollable area */}
+        <div className="flex-1 flex overflow-y-auto">
+             <div className="flex-1 flex relative">
+                {/* Hour Gutter */}
+                <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
+                    <div className="flex-1 relative">
+                        {hours.map((hour) => (
+                            <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
+                                {hour > 0 && <span className="-mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'AM' : 'PM'}</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                {/* Timeline Grid for a single day */}
+                <div className="flex-1 relative">
+                    {isSameDay(date, now) && (
+                        <div className="absolute h-px bg-purple-500 z-30 left-0 right-0" style={{ top: `${nowPosition}px` }}>
+                            <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] -left-1" />
+                        </div>
+                    )}
+                    <div className="h-full">
+                        {hours.map(hour => (
+                            <div key={hour} className="border-t border-gray-700/50" style={{ height: `${HOUR_HEIGHT_PX}px` }}></div>
+                        ))}
+                    </div>
+                    
+                    <div className="absolute inset-0 pointer-events-none">
+                         {eventsWithLayout.map(event => {
+                             const isShort = event.layout.height < 40;
+                             return (
+                                <Popover key={event.id}>
+                                    <PopoverTrigger asChild>
+                                        <div className={cn('absolute p-1 rounded-md text-white font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))} style={event.layout}>
+                                           {/* Event content */}
+                                            <div className='flex items-center gap-1 text-[10px]'>
+                                                {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                                {!isShort && event.icon && <event.icon size={12}/>}
+                                                <span className="truncate">{event.title}</span>
+                                            </div>
+                                            {!isShort && <p className="text-gray-300 text-[10px]">{format(event.date, 'h:mm a')}</p>}
+                                        </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
+                                        {/* Popover content for timed events */}
+                                    </PopoverContent>
+                                </Popover>
+                             )
+                         })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  );
 };
 
 
@@ -1126,7 +1229,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                     {plannerViewMode === 'week' ? (
                        <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} />
                     ) : plannerViewMode === 'day' ? (
-                      <div className="p-4">Day View Component Here</div>
+                      <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} />
                     ) : (
                       <PlannerMonthView month={currentDisplayDate} events={allEvents} />
                     )}
