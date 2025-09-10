@@ -146,7 +146,7 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
 
 
   return (
-    <div className="p-2 bg-white/10 rounded-lg text-xs flex-1 overflow-auto">
+    <div className="p-2 bg-black/30 rounded-lg text-xs flex-1 overflow-auto">
         <div className="grid grid-cols-7 text-center font-semibold text-gray-400">
             {weeks[0].map(day => <div key={day.toISOString()} className="py-2">{format(day, 'E')}</div>)}
         </div>
@@ -158,7 +158,7 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
               }}>
                 <PopoverTrigger asChild>
                     <div className={cn(
-                        "relative bg-gray-900/30 min-h-[90px] p-1 flex flex-col cursor-pointer",
+                        "relative bg-gray-900/40 min-h-[90px] p-1 flex flex-col cursor-pointer",
                         !isSameMonth(day, month) && "bg-gray-800/20 opacity-70"
                     )}>
                         <span className={cn(
