@@ -278,11 +278,31 @@ const PlannerHeader = ({
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
                 <Button variant="ghost" className={cn("h-7 px-2 text-xs", buttonClasses)} onClick={onTodayClick}>Today</Button>
             </div>
-            <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewModeButtonContainer)}>
+            
+            {/* Desktop View Buttons */}
+            <div className={cn("hidden md:flex items-center gap-1 p-0.5 rounded-md", viewModeButtonContainer)}>
                 <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'day' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Day</span> : 'Day'}</Button>
                 <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'week' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Week</span> : 'Week'}</Button>
                 <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">{activeView === 'month' ? <span className="bg-white text-black rounded-md px-2 py-0.5">Month</span> : 'Month'}</Button>
             </div>
+            
+            {/* Mobile Dropdown */}
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className={cn("h-7 px-2 text-xs capitalize", buttonClasses)}>
+                    {activeView}
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="frosted-glass">
+                  <DropdownMenuItem onClick={() => onViewChange('day')}>Day</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onViewChange('week')}>Week</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onViewChange('month')}>Month</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
@@ -1027,13 +1047,13 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
   const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const savedWidthsRef = useRef([18, 22, 60]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
   
-  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
@@ -1624,4 +1644,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
