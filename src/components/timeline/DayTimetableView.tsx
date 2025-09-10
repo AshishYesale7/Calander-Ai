@@ -305,7 +305,7 @@ const PlannerHeader = ({
             
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
                     <Minimize className="h-4 w-4" />
@@ -1048,7 +1048,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Only run on the client
@@ -1376,7 +1376,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
