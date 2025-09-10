@@ -6,7 +6,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -583,8 +583,9 @@ const PlannerWeeklyTimeline = ({
 
     return (
       <div className="flex flex-col flex-1 w-full bg-black/30 text-xs">
-        {/* Header with All-Day Events */}
-        <div className="sticky top-0 bg-[#171717] z-20">
+        {/* Header and All-Day Events */}
+        <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0">
+          {/* Header with day names */}
           <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 font-semibold text-xs">
             <div className="w-12 border-b border-r border-gray-700/50"></div>
               {week.map((day) => (
@@ -593,9 +594,10 @@ const PlannerWeeklyTimeline = ({
                 </div>
               ))}
           </div>
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 text-xs min-h-[2.5rem] border-b border-gray-700/50">
+          {/* All-day events */}
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-gray-400 text-xs border-b border-gray-700/50 min-h-[40px]">
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
-            <div className="grid grid-cols-7 flex-1 p-1 gap-1">
+            <div className="grid grid-cols-7 col-span-7 p-1 gap-1">
               {allDayEventsByDay.map((dayEvents, dayIndex) => (
                 <div key={dayIndex} className="space-y-0.5">
                   {dayEvents.map((event) => (
