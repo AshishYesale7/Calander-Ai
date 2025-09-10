@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isSameDay } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -215,7 +215,7 @@ function calculateEventLayouts(
     i += currentGroup.length; 
   }
   
-  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - b.layout.zIndex);
+  layoutResults.sort((a, b) => a.layout.top - b.layout.top || a.layout.zIndex - a.layout.zIndex);
 
   return { eventsWithLayout: layoutResults, maxConcurrentColumns };
 }
@@ -230,7 +230,9 @@ const PlannerHeader = ({
     onNavigate,
     onTodayClick, 
     onMinimize, 
-    onViewChange 
+    onViewChange,
+    onToggleSidebar,
+    isSidebarOpen,
 }: { 
     activeView: PlannerViewMode;
     date: Date;
@@ -238,6 +240,8 @@ const PlannerHeader = ({
     onTodayClick: () => void;
     onMinimize: () => void;
     onViewChange: (view: PlannerViewMode) => void;
+    onToggleSidebar: () => void;
+    isSidebarOpen: boolean;
 }) => {
     const getTitle = () => {
         switch(activeView) {
@@ -250,6 +254,10 @@ const PlannerHeader = ({
     return (
         <header className="p-1 border-b border-gray-700/50 flex justify-between items-center flex-shrink-0 text-xs">
             <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggleSidebar}>
+                    {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                </Button>
+                <div className="h-5 w-px bg-gray-700/50" />
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('prev')}><ChevronLeft className="h-4 w-4" /></Button>
                 <h2 className="font-semibold text-white px-2 text-sm">{getTitle()}</h2>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onNavigate('next')}><ChevronRight className="h-4 w-4" /></Button>
@@ -287,7 +295,7 @@ const PlannerSidebar = ({ activeView, setActiveView }: { activeView: string, set
         { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     return (
-    <div className="bg-gray-900/50 p-2 flex flex-col gap-4 text-xs">
+    <div className="bg-gray-900/50 p-2 flex flex-col gap-4 text-xs h-full">
         <div>
             <ul className="space-y-0.5 text-gray-300">
                 {mainSections.map(s => (
@@ -387,7 +395,7 @@ const PlannerTaskList = ({
 
 
     return (
-        <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50">
+        <div className="bg-gray-800/60 p-2 flex flex-col border-r border-gray-700/50 h-full">
             <div className="flex justify-between items-center mb-2 px-1">
                 <h1 className="text-sm font-bold text-white flex items-center gap-2">
                     <Inbox size={16} /> {activeList?.title || 'Inbox'}
@@ -600,7 +608,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([20, 25, 55]);
+  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const savedWidthsRef = useRef([18, 22, 60]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
@@ -677,6 +687,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     newWidths[rightPanelIndex] = proposedRightWidth;
 
     setPanelWidths(newWidths);
+    savedWidthsRef.current = newWidths;
   }, []);
 
   const onMouseUp = useCallback(() => {
@@ -791,6 +802,20 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     
     setDraggedTask(null);
   };
+  
+  const handleToggleSidebar = () => {
+    setIsSidebarOpen(prev => {
+        const newIsOpen = !prev;
+        if (newIsOpen) {
+            setPanelWidths(savedWidthsRef.current);
+        } else {
+            const totalWidth = panelWidths.reduce((sum, w) => sum + w, 0);
+            setPanelWidths([0, 0, totalWidth]);
+        }
+        return newIsOpen;
+    });
+  };
+
 
   useEffect(() => {
     if (isToday && !isMaximized && nowIndicatorRef.current) {
@@ -871,25 +896,29 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   
   const renderMaximizedView = () => (
      <div className="fixed inset-0 top-16 z-40 bg-[#171717] text-white flex flex-col">
-        <PlannerHeader activeView={plannerViewMode} date={currentDisplayDate} onNavigate={handleNavigate} onTodayClick={handleTodayClick} onMinimize={() => setIsMaximized(false)} onViewChange={setPlannerViewMode}/>
+        <PlannerHeader activeView={plannerViewMode} date={currentDisplayDate} onNavigate={handleNavigate} onTodayClick={handleTodayClick} onMinimize={() => setIsMaximized(false)} onViewChange={setPlannerViewMode} onToggleSidebar={handleToggleSidebar} isSidebarOpen={isSidebarOpen}/>
         <div className="flex flex-1 min-h-0">
-            <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
-            <Resizer onMouseDown={onMouseDown(0)} />
-            <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
-               {isTasksLoading ? (
-                 <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
-               ) : (
-                  <PlannerTaskList
-                    taskLists={taskLists}
-                    tasks={tasks[activePlannerView] || []}
-                    activeListId={activePlannerView}
-                    onAddTask={handleAddTask}
-                    onDragStart={handleDragStart}
-                  />
-               )}
-            </div>
-            <Resizer onMouseDown={onMouseDown(1)} />
-            <div style={{ width: `${panelWidths[2]}%` }} className="flex-1 overflow-auto">
+            {isSidebarOpen && (
+                <>
+                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} /></div>
+                    <Resizer onMouseDown={onMouseDown(0)} />
+                    <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
+                       {isTasksLoading ? (
+                         <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
+                       ) : (
+                          <PlannerTaskList
+                            taskLists={taskLists}
+                            tasks={tasks[activePlannerView] || []}
+                            activeListId={activePlannerView}
+                            onAddTask={handleAddTask}
+                            onDragStart={handleDragStart}
+                          />
+                       )}
+                    </div>
+                    <Resizer onMouseDown={onMouseDown(1)} />
+                </>
+            )}
+            <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 overflow-auto">
                 {plannerViewMode === 'week' && (
                    <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                 )}
