@@ -593,9 +593,9 @@ const PlannerWeeklyTimeline = ({
                 </div>
               ))}
           </div>
-          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 text-xs">
+          <div className="grid grid-cols-[3rem_repeat(7,1fr)] text-center text-gray-400 text-xs min-h-[2.5rem] border-b border-gray-700/50">
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex items-center justify-center border-r border-gray-700/50 pr-1">All-day</div>
-            <div className="grid grid-cols-7 flex-1 min-h-[2.5rem] p-1 gap-1 border-b border-gray-700/50">
+            <div className="grid grid-cols-7 flex-1 p-1 gap-1">
               {allDayEventsByDay.map((dayEvents, dayIndex) => (
                 <div key={dayIndex} className="space-y-0.5">
                   {dayEvents.map((event) => (
@@ -615,7 +615,7 @@ const PlannerWeeklyTimeline = ({
           </div>
         </div>
   
-        {/* Main Grid */}
+        {/* Main Grid: This part will scroll */}
         <div className="flex-1 flex overflow-y-auto">
           <div className="flex flex-1">
             {/* Hour Gutter */}
@@ -1049,7 +1049,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 </>
             )}
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 flex flex-col">
                     {plannerViewMode === 'week' ? (
                        <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                     ) : plannerViewMode === 'day' ? (
