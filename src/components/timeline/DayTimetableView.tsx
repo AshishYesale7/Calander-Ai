@@ -269,7 +269,7 @@ const PlannerHeader = ({
     return (
         <header className={cn("p-1 border-b flex justify-between items-center flex-shrink-0 text-xs", headerClasses)}>
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:flex", buttonClasses)} onClick={onToggleSidebar}>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleSidebar}>
                     {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
                 </Button>
                 <div className={cn("h-5 w-px", viewTheme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-300')} />
@@ -1048,7 +1048,15 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    // Only run on the client
+    if (typeof window !== 'undefined') {
+        setIsSidebarOpen(window.innerWidth >= 768);
+    }
+  }, []);
+
 
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
