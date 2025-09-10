@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, isToday as dfnsIsToday } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -347,7 +347,7 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
 
 
     return (
-        <div className={cn("p-2 flex flex-col gap-4 text-xs h-full", sidebarClasses)}>
+        <div className={cn("p-2 flex flex-col gap-4 h-full text-xs", sidebarClasses)}>
             <div className="space-y-1">
                 {mainSections.map(s => (
                     <button
@@ -1048,10 +1048,10 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.innerWidth >= 768;
-  });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -1274,30 +1274,23 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
 
   useEffect(() => {
-    if (dfnsIsToday(initialDate) && !isMaximized) {
-        const now = new Date();
-        const intervalId = setInterval(() => {
-            setNow(new Date());
-            if(nowIndicatorRef.current) {
-                const newTop = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
-                nowIndicatorRef.current.style.top = `${newTop}px`;
-            }
-        }, 60000); // Update every minute
+    const now = new Date();
+    const intervalId = setInterval(() => setNow(new Date()), 60000); // Update every minute
+    
+    const timer = setTimeout(() => {
+      if (dfnsIsToday(initialDate) && scrollContainerRef.current) {
+        const newTop = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
+        scrollContainerRef.current.scrollTo({
+            top: newTop - scrollContainerRef.current.offsetHeight / 2,
+            behavior: 'smooth',
+        });
+      }
+    }, 500);
 
-        const timer = setTimeout(() => {
-            if (nowIndicatorRef.current) {
-                nowIndicatorRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                });
-            }
-        }, 500);
-
-        return () => {
-            clearTimeout(timer);
-            clearInterval(intervalId);
-        };
-    }
+    return () => {
+        clearTimeout(timer);
+        clearInterval(intervalId);
+    };
   }, [initialDate, isMaximized]);
   
   const eventsForDayView = useMemo(() => {
@@ -1373,14 +1366,20 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
         <div className="flex flex-1 min-h-0">
-          <div className="flex flex-1 min-h-0">
+            <div
+                className={cn("flex flex-1 min-h-0", {
+                    'md:grid': !isMobile,
+                    'flex': isMobile
+                })}
+                style={!isMobile ? { gridTemplateColumns: `${panelWidths[0]}% auto ${panelWidths[1]}% auto ${panelWidths[2]}%` } : {}}
+            >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : '')}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
-                      <Resizer onMouseDown={onMouseDown(0)} />
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : `w-[${panelWidths[1]}%]`)}>
+                      {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : '')}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1394,7 +1393,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                             />
                          )}
                       </div>
-                      <Resizer onMouseDown={onMouseDown(1)} />
+                      {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
               <div className="flex-1 flex flex-col">
@@ -1526,7 +1525,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
       )}
       
       <div className="flex flex-1 min-h-0">
-        <CardContent ref={scrollContainerRef} className="p-0 flex-1 min-h-0 overflow-auto timetable-main-area">
+        <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto timetable-main-area">
           <div className="flex w-full">
               <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
                   <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
@@ -1565,7 +1564,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
                   <div 
                     className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
-                    ref={nowIndicatorRef}
                     style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
                     >
                     <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
@@ -1646,7 +1644,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                   </div>
               </div>
           </div>
-        </CardContent>
+        </div>
         
         {selectedEvent && (
           <EventOverviewPanel
