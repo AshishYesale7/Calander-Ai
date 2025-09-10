@@ -6,7 +6,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -582,7 +582,7 @@ const PlannerWeeklyTimeline = ({
     
 
     return (
-      <div className="flex flex-col flex-1 w-full bg-black/30 text-xs">
+      <div className="flex flex-col flex-1 w-full bg-black/30 text-xs h-full">
         {/* Header and All-Day Events */}
         <div className="sticky top-0 bg-[#171717] z-20 flex-shrink-0">
           {/* Header with day names */}
@@ -1016,7 +1016,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   }, []);
 
   const getEventTooltip = (event: TimelineEvent): string => {
-    if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return event.title;
+    if (!(event.date instanceof Date) || isNaN(event.valueOf())) return event.title;
     const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
     const statusString = event.status ? `Status: ${event.status.replace(/-/g, ' ')}` : '';
     const countdownText = getCountdownText(event.date);
