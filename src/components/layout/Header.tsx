@@ -168,7 +168,7 @@ export default function Header({
     hoverTimeoutRef.current = setTimeout(() => {
         if (popover === 'streak') setIsStreakPopoverOpen(false);
         if (popover === 'extensions') setIsExtensionsPopoverOpen(false);
-    }, 1500); // 1500ms delay
+    }, 1000); // 1000ms delay
   };
 
   const handlePluginClick = (plugin: (typeof allPlugins)[0]) => {
