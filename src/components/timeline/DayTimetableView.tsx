@@ -328,20 +328,20 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
 
 
     return (
-        <div className={cn("p-2 flex flex-col gap-4 text-sm h-full", sidebarClasses)}>
+        <div className={cn("p-2 flex flex-col gap-4 text-xs h-full", sidebarClasses)}>
             <div className="space-y-1">
                 {mainSections.map(s => (
                     <button
                         key={s.id}
                         onClick={() => setActiveView(s.id)}
                         className={cn(
-                            "w-full flex items-center justify-between gap-3 p-1.5 rounded-md text-sm",
+                            "w-full flex items-center justify-between gap-3 p-1.5 rounded-md",
                             buttonClasses,
                             activeView === s.id && cn('font-semibold', activeBtnClasses)
                         )}
                     >
                         <div className="flex items-center gap-3">
-                           <s.icon size={18} /><span>{s.label}</span>
+                           <s.icon size={16} /><span>{s.label}</span>
                         </div>
                         {s.badge && <span className={cn("text-xs font-bold px-1.5 rounded-full", badgeClasses)}>{s.badge}</span>}
                     </button>
@@ -349,30 +349,30 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
             </div>
 
             <div className="space-y-2">
-                <h3 className={cn("text-xs font-bold px-1.5 mb-1", headingClasses)}>Projects</h3>
+                <h3 className={cn("text-[10px] font-bold px-1.5 mb-1 tracking-wider uppercase", headingClasses)}>Projects</h3>
                  {projectSections.map(p => (
-                     <button key={p.id} onClick={() => setActiveView(p.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md text-sm", buttonClasses, activeView === p.id && cn('font-semibold', activeBtnClasses))}>
-                         <span className={cn("h-3 w-3 rounded-full", p.color)}></span>
+                     <button key={p.id} onClick={() => setActiveView(p.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md", buttonClasses, activeView === p.id && cn('font-semibold', activeBtnClasses))}>
+                         <span className={cn("h-2.5 w-2.5 rounded-full", p.color)}></span>
                          <span>{p.label}</span>
                      </button>
                  ))}
             </div>
 
             <div className="space-y-2">
-                 <h3 className={cn("text-xs font-bold px-1.5 mb-1", headingClasses)}>Tags</h3>
+                 <h3 className={cn("text-[10px] font-bold px-1.5 mb-1 tracking-wider uppercase", headingClasses)}>Tags</h3>
                  {/* Placeholder for tags */}
             </div>
 
             <div className={cn("mt-auto border-t pt-2 space-y-1", separatorClasses)}>
                  {utilitySections.map(u => (
-                    <button key={u.id} onClick={() => setActiveView(u.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md text-sm", buttonClasses, activeView === u.id && cn('font-semibold', activeBtnClasses))}>
-                        <u.icon size={18} /><span>{u.label}</span>
+                    <button key={u.id} onClick={() => setActiveView(u.id)} className={cn("w-full flex items-center gap-3 p-1.5 rounded-md", buttonClasses, activeView === u.id && cn('font-semibold', activeBtnClasses))}>
+                        <u.icon size={16} /><span>{u.label}</span>
                     </button>
                  ))}
             </div>
              <div className="shrink-0">
                 <div className={cn("h-px w-full my-1", separatorClasses)}></div>
-                <div className={cn("flex items-center gap-2 p-1.5 rounded-md text-sm", buttonClasses, "cursor-pointer")}>
+                <div className={cn("flex items-center gap-2 p-1.5 rounded-md", buttonClasses, "cursor-pointer")}>
                     <span className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-xs">!</span>
                     {/* Placeholder for an alert or info section */}
                 </div>
@@ -1624,3 +1624,4 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
