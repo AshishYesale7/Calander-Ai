@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import TodaysPlanCard from '@/components/timeline/TodaysPlanCard';
 import EventCalendarView from '@/components/timeline/EventCalendarView';
 import SlidingTimelineView from '@/components/timeline/SlidingTimelineView';
-import TimelineListView from '@/components/timeline/TimelineListView';
 import DayTimetableView from '@/components/timeline/DayTimetableView';
 import EditEventModal from '@/components/timeline/EditEventModal';
 import { Button } from '@/components/ui/button';
@@ -132,7 +131,7 @@ export default function DashboardPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeDisplayMonth, setActiveDisplayMonth] = useState<Date>(startOfMonth(new Date()));
-  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(null);
+  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
