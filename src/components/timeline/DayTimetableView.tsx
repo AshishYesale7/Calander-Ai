@@ -305,8 +305,8 @@ const PlannerHeader = ({
             
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
                     <Minimize className="h-4 w-4" />
                 </Button>
@@ -1045,10 +1045,10 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
+  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     // Only run on the client
@@ -1058,7 +1058,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   }, []);
 
 
-  const savedWidthsRef = useRef([10, 25, 65]);
+  const savedWidthsRef = useRef([18, 22, 60]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
@@ -1376,7 +1376,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
@@ -1659,4 +1659,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
