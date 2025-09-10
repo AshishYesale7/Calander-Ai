@@ -269,7 +269,7 @@ const PlannerHeader = ({
     return (
         <header className={cn("p-1 border-b flex justify-between items-center flex-shrink-0 text-xs", headerClasses)}>
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleSidebar}>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:flex", buttonClasses)} onClick={onToggleSidebar}>
                     {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
                 </Button>
                 <div className={cn("h-5 w-px", viewTheme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-300')} />
@@ -305,7 +305,7 @@ const PlannerHeader = ({
             
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
                     <Minimize className="h-4 w-4" />
@@ -1048,9 +1048,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : false);
 
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
@@ -1274,7 +1272,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
 
   useEffect(() => {
-    const now = new Date();
     const intervalId = setInterval(() => setNow(new Date()), 60000); // Update every minute
     
     const timer = setTimeout(() => {
@@ -1367,19 +1364,15 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         />
         <div className="flex flex-1 min-h-0">
             <div
-                className={cn("flex flex-1 min-h-0", {
-                    'md:grid': !isMobile,
-                    'flex': isMobile
-                })}
-                style={!isMobile ? { gridTemplateColumns: `${panelWidths[0]}% auto ${panelWidths[1]}% auto ${panelWidths[2]}%` } : {}}
+                className="flex flex-1 min-h-0"
             >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : '')}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : '')}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : `w-[${panelWidths[1]}%]`)}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1563,6 +1556,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                   ))}
 
                   <div 
+                    ref={nowIndicatorRef}
                     className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                     style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
                     >
@@ -1657,3 +1651,4 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
