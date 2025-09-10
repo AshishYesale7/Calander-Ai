@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays } from 'date-fns';
+import { format, isToday as dfnsIsToday, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -506,9 +505,10 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex flex-1 w-full bg-black/30 p-2 text-xs">
+        <div className="flex flex-1 w-full bg-black/30 text-xs">
+            {/* Hour Gutter */}
             <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0 flex flex-col">
-                <div className="h-[2.25rem] border-b border-r border-gray-700/50 flex-shrink-0"></div>
+                <div className="h-[2.25rem] border-b border-r border-gray-700/50 flex-shrink-0"></div> {/* Spacer for day headers */}
                 <div className="flex-1 relative">
                     {hours.map(hour => (
                         <div key={hour} className="pr-1 flex items-start justify-end" style={{ height: `${HOUR_SLOT_HEIGHT}px` }}>
@@ -517,6 +517,8 @@ const PlannerWeeklyTimeline = ({
                     ))}
                 </div>
             </div>
+
+            {/* Main Grid */}
             <div className="flex-1 flex flex-col">
                 <div className="grid grid-cols-7 text-center text-gray-400 font-semibold text-xs sticky top-0 bg-[#171717] z-20">
                     {week.map(day => <div key={day.toISOString()} className="py-2 border-b border-l border-gray-700/50 first:border-l-0">{format(day, 'EEE d')}</div>)}
@@ -538,8 +540,8 @@ const PlannerWeeklyTimeline = ({
                                 </div>
                             ))}
                             
-                            {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                                <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumnStart: getDayIndex(now) + 1, gridColumnEnd: `span 1`}}>
+                           {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
+                                <div className="absolute w-full h-px bg-purple-500 z-10" style={{ top: `${nowPosition}px`, gridColumn: `${getDayIndex(now) + 1} / span 1` }}>
                                     <div className="w-2 h-2 rounded-full bg-purple-500 absolute -left-1 -top-[3px]"></div>
                                 </div>
                             )}
@@ -929,13 +931,15 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 </>
             )}
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 flex flex-col">
-                {plannerViewMode === 'week' ? (
-                   <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
-                ) : plannerViewMode === 'day' ? (
-                  <div className="p-4">Day View Component Here</div>
-                ) : (
-                  <PlannerMonthView month={currentDisplayDate} events={allEvents} />
-                )}
+                 <div className="flex flex-1 min-h-0">
+                    {plannerViewMode === 'week' ? (
+                       <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                    ) : plannerViewMode === 'day' ? (
+                      <div className="p-4">Day View Component Here</div>
+                    ) : (
+                      <PlannerMonthView month={currentDisplayDate} events={allEvents} />
+                    )}
+                </div>
             </div>
         </div>
     </div>
@@ -1193,4 +1197,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
