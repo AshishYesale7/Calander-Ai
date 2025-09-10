@@ -261,11 +261,9 @@ const PlannerHeader = ({
     const headerClasses = viewTheme === 'dark'
         ? 'border-gray-700/50 text-gray-300'
         : 'border-stone-200 bg-[#fff8ed] text-gray-700';
-    const buttonClasses = viewTheme === 'dark'
-        ? 'text-gray-300 hover:bg-gray-700/50'
-        : 'text-gray-600 hover:bg-stone-200';
+    const buttonClasses = viewTheme === 'dark' ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-stone-200';
     const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
-    const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-stone-200';
+    const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-[#faefdd]';
 
 
     return (
@@ -298,19 +296,10 @@ const PlannerHeader = ({
 };
 
 
-const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme }) => {
+const PlannerSidebar = ({ activeView, setActiveView, viewTheme, taskLists }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme, taskLists: GoogleTaskList[] }) => {
     const mainSections = [
-        { id: 'inbox', icon: Inbox, label: 'Inbox', count: 6 },
         { id: 'today', icon: Calendar, label: 'Today' },
         { id: 'upcoming', icon: Star, label: 'Upcoming' },
-        { id: 'all', icon: Columns, label: 'All tasks' },
-    ];
-    const projects = [
-        { id: 'proj-book', color: 'bg-red-500', char: 'B', label: 'Book' },
-        { id: 'proj-news', color: 'bg-green-500', char: 'N', label: 'Newsletter' },
-        { id: 'proj-fit', color: 'bg-yellow-500', char: 'F', label: 'Fitness' },
-        { id: 'proj-work', color: 'bg-purple-500', char: 'W', label: 'Work' },
-        { id: 'proj-film', color: 'bg-blue-500', char: 'F', label: 'Film' },
     ];
     
     const sidebarClasses = viewTheme === 'dark' ? 'bg-gray-900/50 text-gray-300' : 'bg-[#fff8ed] text-gray-700';
@@ -335,7 +324,7 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
                             activeView === s.id && cn('font-semibold', activeBtnClasses)
                           )}
                         >
-                            <s.icon size={16} /><span>{s.label}</span>{s.count && <Badge variant="secondary" className={cn("ml-auto h-5 px-1.5 text-xs", badgeClasses)}>{s.count}</Badge>}
+                            <s.icon size={16} /><span>{s.label}</span>
                         </button>
                     </li>
                 ))}
@@ -343,9 +332,9 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
         </div>
         <div className="flex-1 space-y-3">
              <div>
-                <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Projects</h3>
+                <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Task Lists</h3>
                 <ul className="space-y-0.5">
-                   {projects.map(p => (
+                   {taskLists.map(p => (
                         <li key={p.id}>
                            <button
                              onClick={() => setActiveView(p.id)}
@@ -355,15 +344,12 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
                                activeView === p.id && cn('font-semibold', activeBtnClasses)
                              )}
                            >
-                                <div className={cn("w-4 h-4 rounded text-xs flex items-center justify-center font-bold text-white", p.color)}>{p.char}</div>
-                                <span>{p.label}</span>
+                                <Inbox size={16} />
+                                <span>{p.title}</span>
                             </button>
                         </li>
                    ))}
                 </ul>
-            </div>
-             <div>
-                 <h3 className={cn("text-xs font-semibold px-1.5 mb-1", headingClasses)}>Tags</h3>
             </div>
         </div>
          <div className={cn("border-t pt-2 space-y-0.5", separatorClasses)}>
@@ -717,7 +703,7 @@ const PlannerWeeklyTimeline = ({
             
                     <div className="flex-1 relative">
                          {dfnsIsToday(now) && isWithinInterval(now, {start: week[0], end: endOfWeek(week[6])}) && (
-                            <div className="absolute h-px bg-purple-500 z-30" style={{ top: `${nowPosition}px`, left: 0, right: 0 }}>
+                            <div className="absolute h-px bg-purple-500 z-30 left-0" style={{ top: `${nowPosition}px`, right: `calc(-1 * (${themeClasses.headerCell} - 1px))` }}>
                                 <div className="w-2 h-2 rounded-full bg-purple-500 absolute -top-[3px] -left-1" />
                             </div>
                         )}
@@ -728,7 +714,7 @@ const PlannerWeeklyTimeline = ({
                                     <div 
                                     key={`${day.toISOString()}-${hour}`} 
                                     className={cn("border-t", themeClasses.hourLine)}
-                                    style={{ height: `${HOUR_SLOT_HEIGHT}px` }}
+                                    style={{ height: `${HOUR_HEIGHT_PX}px` }}
                                     onDrop={(e) => onDrop(e, day, hour)}
                                     onDragOver={(e) => onDragOver(e, day, hour)}
                                     ></div>
@@ -867,7 +853,33 @@ const PlannerDayView = ({
                                 </div>
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
-                                {/* Popover content for all-day events */}
+                                <div className="space-y-2">
+                                    <h4 className="font-semibold">{event.title}</h4>
+                                    <p className="text-muted-foreground">All-day event</p>
+                                    {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                    <div className="flex justify-end gap-1 pt-1">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                            <Edit3 className="h-3.5 w-3.5"/>
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                    <Trash2 className="h-3.5 w-3.5"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="frosted-glass">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                    <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </div>
                             </PopoverContent>
                         </Popover>
                     ))}
@@ -909,7 +921,6 @@ const PlannerDayView = ({
                                 <Popover key={event.id}>
                                     <PopoverTrigger asChild>
                                         <div className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))} style={event.layout}>
-                                           {/* Event content */}
                                             <div className='flex items-center gap-1 text-[10px]'>
                                                 {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
                                                 {!isShort && event.icon && <event.icon size={12}/>}
@@ -919,7 +930,33 @@ const PlannerDayView = ({
                                         </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
-                                        {/* Popover content for timed events */}
+                                        <div className="space-y-2">
+                                            <h4 className="font-semibold">{event.title}</h4>
+                                            <p className="text-muted-foreground">{format(event.date, 'h:mm a')} - {event.endDate ? format(event.endDate, 'h:mm a') : ''}</p>
+                                            {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                            <div className="flex justify-end gap-1 pt-1">
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
+                                                    <Edit3 className="h-3.5 w-3.5"/>
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                            <Trash2 className="h-3.5 w-3.5"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="frosted-glass">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                            <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent && onDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </div>
                                     </PopoverContent>
                                 </Popover>
                              )
@@ -944,7 +981,7 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-type ActivePlannerView = 'inbox' | 'today' | 'upcoming' | 'all' | string;
+type ActivePlannerView = 'today' | 'upcoming' | 'all' | string;
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
@@ -977,7 +1014,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
   
-  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
@@ -1288,7 +1325,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         <div className="flex flex-1 min-h-0">
             {isSidebarOpen && (
                 <>
-                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
+                    <div style={{ width: `${panelWidths[0]}%` }} className="flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} taskLists={taskLists} /></div>
                     <Resizer onMouseDown={onMouseDown(0)} />
                     <div style={{ width: `${panelWidths[1]}%` }} className="flex-shrink-0 flex-grow-0">
                        {isTasksLoading ? (
