@@ -460,9 +460,9 @@ const PlannerWeeklyTimeline = ({
   onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
   ghostEvent: { date: Date, hour: number } | null,
 }) => {
-    const hours = Array.from({ length: 20 }, (_, i) => i + 5); 
+    const hours = Array.from({ length: 24 }, (_, i) => i);
     const now = new Date();
-    const nowPosition = (now.getHours() - 5 + now.getMinutes() / 60) * 50; // 50px per hour
+    const nowPosition = (now.getHours() * 60 + now.getMinutes()) / 60 * 50;
 
     const { allDayEvents, timedEvents } = useMemo(() => {
         const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
@@ -482,7 +482,7 @@ const PlannerWeeklyTimeline = ({
     const getEventStyles = (event: TimelineEvent) => {
         const startHour = getHours(event.date);
         const startMinute = getMinutes(event.date);
-        const top = (startHour - 5 + startMinute / 60) * 50; // 50px per hour, starting from 5 AM
+        const top = (startHour + startMinute / 60) * 50; 
 
         let durationHours = 1;
         if (event.endDate) {
@@ -499,27 +499,27 @@ const PlannerWeeklyTimeline = ({
     };
 
     return (
-        <div className="flex-1 w-full bg-black/30 p-2 text-xs">
-            <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
-                {week.map(day => <div key={day.toISOString()}>{format(day, 'EEE d')}</div>)}
+        <div className="flex-1 w-full bg-black/30 p-2 text-xs flex">
+            <div className="w-12 text-right text-gray-500 text-[10px] flex-shrink-0">
+                {hours.map(hour => (
+                    <div key={hour} className="h-[50px] -mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'am' : 'pm'}</div>
+                ))}
             </div>
-             <div className="relative border-b border-gray-700/50 mb-1 pb-1">
-                 <div className="grid grid-cols-7 h-5">
-                    {allDayEvents.map((event, i) => (
-                        <div key={event.id} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", getEventTypeStyleClasses(event.type))}
-                            style={{ gridColumnStart: getDayIndex(event.date) + 1, gridColumnEnd: `span 1`}}>
-                            {event.title}
-                        </div>
-                    ))}
-                 </div>
-            </div>
-            <div className="relative flex">
-                <div className="w-8 text-right text-gray-500 text-[10px] flex-shrink-0">
-                    {hours.map(hour => (
-                        <div key={hour} className="h-[50px] -mt-1.5">{hour % 12 === 0 ? 12 : hour % 12} {hour < 12 || hour === 24 ? 'am' : 'pm'}</div>
-                    ))}
+            <div className="flex-1">
+                <div className="grid grid-cols-7 text-center text-gray-400 font-semibold mb-1 text-xs">
+                    {week.map(day => <div key={day.toISOString()}>{format(day, 'EEE d')}</div>)}
                 </div>
-                <div className="flex-1 relative">
+                <div className="relative border-b border-gray-700/50 mb-1 pb-1">
+                    <div className="grid grid-cols-7 h-5">
+                        {allDayEvents.map((event, i) => (
+                            <div key={event.id} className={cn("text-white p-0.5 rounded-sm text-[9px] font-semibold overflow-hidden whitespace-nowrap", getEventTypeStyleClasses(event.type))}
+                                style={{ gridColumnStart: getDayIndex(event.date) + 1, gridColumnEnd: `span 1`}}>
+                                {event.title}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="relative">
                     <div className="grid grid-cols-7 h-full">
                         {week.map(day => (
                             <div key={day.toISOString()} className="border-r border-gray-700/50 last:border-r-0">
@@ -555,7 +555,7 @@ const PlannerWeeklyTimeline = ({
                                 className="border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
                                 style={{
                                     gridColumnStart: getDayIndex(ghostEvent.date) + 1,
-                                    top: `${(ghostEvent.hour - 5) * 50}px`,
+                                    top: `${ghostEvent.hour * 50}px`,
                                     height: '50px' // 1 hour duration for ghost
                                 }}
                             >
@@ -924,9 +924,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             )}
             <div style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }} className="flex-1 overflow-auto">
                 {plannerViewMode === 'week' ? (
-                   <div className="flex h-full">
-                    <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
-                   </div>
+                   <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                 ) : plannerViewMode === 'day' ? (
                   <div className="p-4">Day View Component Here</div>
                 ) : (
