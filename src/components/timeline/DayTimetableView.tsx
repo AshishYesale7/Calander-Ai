@@ -319,7 +319,6 @@ const PlannerHeader = ({
 
 const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme }) => {
     
-    // Hardcoded structure based on the user's image
     const mainSections = [
         { id: 'inbox', icon: Inbox, label: 'Inbox', badge: 6 },
         { id: 'today', icon: Calendar, label: 'Today' },
@@ -1049,8 +1048,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -1073,10 +1072,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   });
   
   useEffect(() => {
-    // This now runs only on the client
-    if (typeof window !== 'undefined') {
-      setIsSidebarOpen(window.innerWidth >= 768);
-    }
+    const isDesktop = typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+    setIsSidebarOpen(isDesktop);
   }, []);
 
   useEffect(() => {
@@ -1381,7 +1378,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           <div className="flex flex-1 min-h-0">
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-40' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       <Resizer onMouseDown={onMouseDown(0)} />
