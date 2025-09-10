@@ -34,6 +34,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import PlannerMonthView from './PlannerMonthView';
 import { isToday as dfnsIsToday } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -1046,11 +1047,14 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  );
-  const savedWidthsRef = useRef([18, 22, 60]);
+  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 768;
+  });
+
+  const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
@@ -1263,8 +1267,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         if (newIsOpen) {
             setPanelWidths(savedWidthsRef.current);
         } else {
-            const totalWidth = panelWidths.reduce((sum, w) => sum + w, 0);
-            setPanelWidths([0, 0, totalWidth]);
+            savedWidthsRef.current = panelWidths;
+            setPanelWidths([0, 0, 100]); // Collapse by setting widths to 0
         }
         return newIsOpen;
     });
@@ -1364,12 +1368,14 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
         <div className="flex flex-1 min-h-0">
-          <div className={cn("flex flex-1 min-h-0", { 'md:hidden': !isSidebarOpen && typeof window !== 'undefined' && window.innerWidth < 768 })}>
+          <div className="flex flex-1 min-h-0">
               {isSidebarOpen && (
                   <>
-                      <div className="w-48 flex-shrink-0 flex-grow-0"><PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} /></div>
-                      <div className="w-[1px] bg-border/30" />
-                      <div className="w-56 flex-shrink-0 flex-grow-0">
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-48' : 'w-[10%]')}>
+                         <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
+                      </div>
+                      <Resizer onMouseDown={onMouseDown(0)} />
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : 'w-[25%]')}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1383,7 +1389,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                             />
                          )}
                       </div>
-                      <div className="w-[1px] bg-border/30" />
+                      <Resizer onMouseDown={onMouseDown(1)} />
                   </>
               )}
               <div className="flex-1 flex flex-col">
@@ -1648,3 +1654,4 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
