@@ -171,16 +171,28 @@ export default function PlannerMonthView({ month, events }: PlannerMonthViewProp
             ))}
         </div>
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverContent className="w-48 bg-white text-black p-2 rounded-lg shadow-xl" anchorEl={popoverAnchor}>
-                 <div className="text-center font-bold text-sm mb-2">{format(popoverContent.date, 'MMMM d')}</div>
-                 {popoverContent.events.map(event => (
-                     <div key={event.id} className="text-xs mb-1">
-                        <span className="font-semibold">{event.title}</span>
-                         {!event.isAllDay && <p>{format(event.date, 'p')}</p>}
-                     </div>
-                 ))}
-                 <Button className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white h-8 text-xs">Unlock Dates</Button>
-            </PopoverContent>
+          <PopoverTrigger asChild>
+            {/* The Popover still needs a trigger, but we can make it an invisible element that is positioned by our state */}
+            <div
+              style={{
+                position: 'fixed',
+                left: popoverAnchor?.getBoundingClientRect().left ?? 0,
+                top: popoverAnchor?.getBoundingClientRect().top ?? 0,
+                width: popoverAnchor?.getBoundingClientRect().width,
+                height: popoverAnchor?.getBoundingClientRect().height,
+              }}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-48 bg-white text-black p-2 rounded-lg shadow-xl" side="bottom" align="start">
+              <div className="text-center font-bold text-sm mb-2">{format(popoverContent.date, 'MMMM d')}</div>
+              {popoverContent.events.map(event => (
+                  <div key={event.id} className="text-xs mb-1">
+                    <span className="font-semibold">{event.title}</span>
+                      {!event.isAllDay && <p>{format(event.date, 'p')}</p>}
+                  </div>
+              ))}
+              <Button className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white h-8 text-xs">Unlock Dates</Button>
+          </PopoverContent>
         </Popover>
     </div>
   );
