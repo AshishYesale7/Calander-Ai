@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isToday as dfnsIsToday, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,7 @@ import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/ser
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import PlannerMonthView from './PlannerMonthView';
+import { isToday as dfnsIsToday } from 'date-fns';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -983,7 +984,20 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   
   const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
   const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('day');
-  const [maximizedViewTheme, setMaximizedViewTheme] = useState<MaxViewTheme>('dark');
+  
+  const [maximizedViewTheme, setMaximizedViewTheme] = useState<MaxViewTheme>(() => {
+    if (typeof window === 'undefined') {
+        return 'dark';
+    }
+    const savedTheme = localStorage.getItem('planner-view-theme') as MaxViewTheme;
+    return savedTheme || 'dark';
+  });
+  
+  useEffect(() => {
+      if (typeof window !== 'undefined') {
+          localStorage.setItem('planner-view-theme', maximizedViewTheme);
+      }
+  }, [maximizedViewTheme]);
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
   const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
