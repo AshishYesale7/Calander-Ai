@@ -33,7 +33,6 @@ import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/ser
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import PlannerMonthView from './PlannerMonthView';
-import { isToday as dfnsIsToday } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
@@ -1049,7 +1048,10 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 768;
+  });
   const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -1071,11 +1073,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     return savedTheme || 'dark';
   });
   
-  useEffect(() => {
-    const isDesktop = typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
-    setIsSidebarOpen(isDesktop);
-  }, []);
-
   useEffect(() => {
       if (typeof window !== 'undefined') {
           localStorage.setItem('planner-view-theme', maximizedViewTheme);
@@ -1278,6 +1275,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
   useEffect(() => {
     if (dfnsIsToday(initialDate) && !isMaximized) {
+        const now = new Date();
         const intervalId = setInterval(() => {
             setNow(new Date());
             if(nowIndicatorRef.current) {
@@ -1378,7 +1376,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           <div className="flex flex-1 min-h-0">
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-40' : `w-[${panelWidths[0]}%]`)}>
+                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : `w-[${panelWidths[0]}%]`)}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       <Resizer onMouseDown={onMouseDown(0)} />
