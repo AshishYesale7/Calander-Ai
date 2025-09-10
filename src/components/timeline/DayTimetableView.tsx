@@ -1045,7 +1045,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([18, 22, 60]);
+  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
   const isMobile = useIsMobile();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -1058,10 +1058,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   }, []);
 
 
-  const savedWidthsRef = useRef([18, 22, 60]);
+  const savedWidthsRef = useRef([10, 25, 65]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
+  const panelsContainerRef = useRef<HTMLDivElement>(null);
   
   const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
@@ -1119,12 +1120,10 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   };
 
   const onMouseMove = useCallback((e: MouseEvent) => {
-    if (isResizing.current === null) return;
+    if (isResizing.current === null || !panelsContainerRef.current) return;
     
     const dx = e.clientX - startXRef.current;
-    
-    const containerWidth = document.body.clientWidth;
-
+    const containerWidth = panelsContainerRef.current.offsetWidth;
     const dxPercent = (dx / containerWidth) * 100;
     
     const newWidths = [...startWidthsRef.current];
@@ -1370,7 +1369,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           viewTheme={maximizedViewTheme}
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0" ref={panelsContainerRef}>
             <div
                 className="flex flex-1 min-h-0"
             >
@@ -1397,7 +1396,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col" style={{width: isSidebarOpen && !isMobile ? `${panelWidths[2]}%` : '100%'}}>
                   <div className="flex-1 min-h-0 flex flex-col">
                       {plannerViewMode === 'week' ? (
                          <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
