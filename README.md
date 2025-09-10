@@ -22,7 +22,8 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 
 *   **AI-Powered Dashboard & Timeline:** The core of the app. It syncs with your Google Calendar and Tasks to pull in existing events. It features multiple views:
     *   **Calendar View:** A traditional monthly calendar with dots indicating event days.
-    *   **Day Timetable View:** A detailed, hourly breakdown for any selected day, visualizing overlapping events.
+    *   **Day & Week Timetable View:** A detailed, hourly breakdown for any selected day that can be expanded into a full-screen, multi-faceted weekly planner. This view accurately visualizes overlapping events, includes a sticky header for easy navigation, and allows for smooth vertical scrolling through a 24-hour timeline.
+    *   **Interactive Event Popovers:** Hover over any event in the day or week view to see a detailed popover with its full title, notes, and direct buttons to edit or delete the event.
     *   **Sliding Timeline View:** A chronological, vertical feed of upcoming and past events.
     *   **List View:** A simple, scannable list of all events.
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
