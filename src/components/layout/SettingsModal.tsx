@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, PauseCircle } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -71,8 +71,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isSendingTest, setIsSendingTest] = useState(false);
-  const [isTestRunning, setIsTestRunning] = useState(false);
-  const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -87,12 +85,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   useEffect(() => {
     return () => {
-        if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-        }
-        if (testIntervalRef.current) {
-            clearInterval(testIntervalRef.current);
-        }
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, []);
 
@@ -117,11 +110,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
        if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
-       }
-       if (testIntervalRef.current) {
-            clearInterval(testIntervalRef.current);
-            testIntervalRef.current = null;
-            setIsTestRunning(false);
        }
        setIsPolling(false);
        setIsLinkingPhone(false);
@@ -428,40 +416,21 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         toast({ title: 'Error', description: 'You must be logged in to send a notification.', variant: 'destructive' });
         return;
     }
-
-    if (isTestRunning) {
-        if (testIntervalRef.current) {
-            clearInterval(testIntervalRef.current);
-            testIntervalRef.current = null;
-        }
-        setIsTestRunning(false);
-        toast({ title: 'Test Stopped', description: 'Notification test has been stopped.' });
-        return;
+    setIsSendingTest(true);
+    try {
+        await createNotification({
+            userId: user.uid,
+            type: 'system_alert',
+            message: 'This is a test notification from Calendar.ai.',
+            link: '/dashboard'
+        });
+        toast({ title: 'Test Sent', description: 'If permissions are correct, you should receive a notification shortly.' });
+    } catch (error) {
+        console.error("Test notification error:", error);
+        toast({ title: 'Error', description: (error as Error).message || 'Failed to send test notification.', variant: 'destructive' });
+    } finally {
+        setIsSendingTest(false);
     }
-
-    setIsTestRunning(true);
-    toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds. Switch tabs to check background delivery.' });
-
-    const sendAction = async () => {
-        try {
-            await createNotification({
-                userId: user.uid,
-                type: 'system_alert',
-                message: 'This is a test notification from Calendar.ai.',
-                link: '/dashboard'
-            });
-        } catch (error) {
-            console.error("Test notification error:", error);
-            toast({ title: 'Notification Error', description: (error as Error).message || 'Failed to send test notification.', variant: 'destructive' });
-            // Stop the test on error
-            if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-            setIsTestRunning(false);
-        }
-    };
-    
-    // Send one immediately, then set interval
-    sendAction(); 
-    testIntervalRef.current = setInterval(sendAction, 5000);
   };
 
   return (
@@ -503,11 +472,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <Send className="mr-2 h-4 w-4" /> Test Push Notification
                 </Label>
                  <p className="text-sm text-muted-foreground">
-                    Use this to test if you receive notifications when the app is in the background. It will send one notification every 5 seconds.
+                    Use this to test if you receive notifications when the app is in the background.
                 </p>
-                <Button onClick={handleSendTestNotification} variant={isTestRunning ? "destructive" : "outline"} className="w-full" disabled={notificationPermission !== 'granted'}>
-                    {isTestRunning ? <PauseCircle className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />}
-                    {notificationPermission !== 'granted' ? 'Enable Notifications First' : isTestRunning ? 'Stop Test' : 'Start 5-Second Test'}
+                <Button onClick={handleSendTestNotification} variant="outline" className="w-full" disabled={isSendingTest || notificationPermission !== 'granted'}>
+                    {isSendingTest ? <LoadingSpinner size="sm" className="mr-2"/> : <Send className="mr-2 h-4 w-4" />}
+                    {notificationPermission !== 'granted' ? 'Enable Notifications First' : 'Send Test Notification'}
                 </Button>
             </div>
 

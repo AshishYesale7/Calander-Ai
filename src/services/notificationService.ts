@@ -2,12 +2,12 @@
 'use server';
 
 import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin'; // Use adminDb for server-side operations
 import type { AppNotification } from '@/types';
 import {
   collection,
   addDoc,
   query,
-  where,
   getDocs,
   Timestamp,
   orderBy,
@@ -16,10 +16,13 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { sendNotification } from '@/ai/flows/send-notification-flow';
 
 const getNotificationsCollection = (userId: string) => {
   if (!db) throw new Error("Firestore is not initialized.");
+  if (!userId || typeof userId !== 'string') {
+    console.error("Invalid userId passed to getNotificationsCollection:", userId);
+    throw new Error("Invalid userId provided.");
+  }
   return collection(db, 'users', userId, 'notifications');
 };
 
@@ -39,33 +42,50 @@ const fromFirestore = (docData: any): AppNotification => {
 export const createNotification = async (
   notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>
 ): Promise<void> => {
-  // Correctly get the userId from the passed notification object
   const userId = notification.userId;
-  if (!userId) {
-    console.error("Cannot create notification without a userId.");
+  if (!userId || typeof userId !== 'string') {
+    console.error("Cannot create notification without a valid userId.");
     return;
   }
 
   const notificationsCollection = getNotificationsCollection(userId);
   try {
-    // 1. Save the notification to Firestore for the in-app panel
     await addDoc(notificationsCollection, {
       ...notification,
       isRead: false,
       createdAt: Timestamp.now(),
     });
 
-    // 2. After saving, trigger the push notification
-    await sendNotification({
-        userId: userId,
+    // After saving to Firestore, trigger the push notification via FCM
+    const tokensCollectionRef = adminDb.collection('users').doc(userId).collection('fcmTokens');
+    const tokensSnapshot = await tokensCollectionRef.get();
+    
+    if (tokensSnapshot.empty) {
+      console.log(`No FCM tokens found for user ${userId}. Skipping push notification.`);
+      return;
+    }
+
+    const tokens = tokensSnapshot.docs.map(doc => doc.id);
+    
+    const messagePayload = {
+      notification: {
         title: notification.type === 'new_follower' ? 'New Follower!' : 'New Notification',
         body: notification.message,
-        url: notification.link,
-    });
+        icon: notification.imageUrl || '/logos/calendar-ai-logo-192.png',
+      },
+      webpush: {
+        fcm_options: {
+          link: notification.link || '/',
+        },
+      },
+      tokens: tokens,
+    };
 
+    const { getMessaging } = await import('firebase-admin/messaging');
+    await getMessaging().sendMulticast(messagePayload as any);
+    
   } catch (error) {
-    console.error("Failed to create notification and/or send push notification:", error);
-    // We don't throw here as logging is a background task and shouldn't block the UI
+    console.error("Failed to create and send notification:", error);
   }
 };
 
