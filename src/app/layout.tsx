@@ -106,7 +106,20 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       const registerServiceWorker = async () => {
           try {
-              const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+              // Construct the URL with query parameters
+              const firebaseConfig = {
+                  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+                  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+                  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+                  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+                  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+                  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+              };
+
+              const queryParams = new URLSearchParams(firebaseConfig as Record<string, string>).toString();
+              const swUrl = `/firebase-messaging-sw.js?${queryParams}`;
+
+              const registration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
               console.log('Service Worker registration successful, scope is:', registration.scope);
           } catch (err) {
               console.error('Service Worker registration failed:', err);
