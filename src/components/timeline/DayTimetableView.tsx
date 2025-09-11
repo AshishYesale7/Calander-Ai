@@ -136,50 +136,59 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
 
   return (
     <Card className={cn("frosted-glass w-full shadow-xl flex flex-col transition-all duration-300 max-h-[70vh]", isMaximized && "fixed inset-0 top-16 z-40 rounded-none max-h-none")} data-theme={viewTheme}>
-      <CardHeader className="p-4 border-b border-border/30 flex flex-row justify-between items-center">
-        <div>
-          <CardTitle className="font-headline text-xl text-primary">{format(date, 'MMMM d, yyyy')}</CardTitle>
-          <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
-        </div>
-        <div className="flex items-center">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Theme settings">
-                  <Palette className="h-6 w-6 text-muted-foreground hover:text-primary" />
+      <CardHeader className="p-4 border-b border-border/30">
+        <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="font-headline text-xl text-primary">{format(date, 'MMMM d, yyyy')}</CardTitle>
+              <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
+            </div>
+            <div className="flex items-center">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="Theme settings">
+                      <Palette className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 frosted-glass">
+                    <RadioGroup value={viewTheme} onValueChange={(v) => setViewTheme(v as TimetableViewTheme)}>
+                      <div className="space-y-1">
+                        <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="default" id="t-default" />
+                          <span>Default</span>
+                        </Label>
+                         <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="professional" id="t-prof" />
+                          <span>Professional</span>
+                        </Label>
+                        <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="wood" id="t-wood" />
+                          <span>Wood Plank</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </PopoverContent>
+                </Popover>
+                <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
+                    <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 frosted-glass">
-                <RadioGroup value={viewTheme} onValueChange={(v) => setViewTheme(v as TimetableViewTheme)}>
-                  <div className="space-y-1">
-                    <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                      <RadioGroupItem value="default" id="t-default" />
-                      <span>Default</span>
-                    </Label>
-                     <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                      <RadioGroupItem value="professional" id="t-prof" />
-                      <span>Professional</span>
-                    </Label>
-                    <Label className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted cursor-pointer">
-                      <RadioGroupItem value="wood" id="t-wood" />
-                      <span>Wood Plank</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
-                <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
-                <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
-            </Button>
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
+                    <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                </Button>
+            </div>
+        </div>
+        {/* Minute Ruler */}
+        <div className={cn("grid grid-cols-4 border-b border-border/30 text-center text-xs text-muted-foreground timetable-ruler", minuteRulerHeightClass)}>
+            <div className="border-r border-border/30 flex items-center justify-center">00'</div>
+            <div className="border-r border-border/30 flex items-center justify-center">15'</div>
+            <div className="border-r border-border/30 flex items-center justify-center">30'</div>
+            <div className="flex items-center justify-center">45'</div>
         </div>
       </CardHeader>
 
       <div className="flex flex-1 min-h-0 relative">
         <div className="flex flex-1 flex-col">
           {/* All-day events */}
-          <div className="p-2 border-b border-border/30">
+          <div className="p-2 border-b border-border/30 timetable-allday-area">
             <div className="flex gap-2">
               <span className="text-xs font-semibold w-12 text-center">All-day</span>
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
@@ -199,7 +208,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
           </div>
           <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
               <div className="flex h-full">
-                  <div className="w-16 flex-shrink-0 text-right text-xs">
+                  <div className="w-16 flex-shrink-0 text-right text-xs timetable-hours-column">
                       {renderHours()}
                   </div>
                   <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
@@ -216,7 +225,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
                       {timedEventsWithLayout.map(({ layout, ...event }) => (
                           <div
                             key={event.id}
-                            className="absolute p-2 rounded-lg cursor-pointer overflow-hidden bg-card/80 border border-border/50"
+                            className="absolute p-2 rounded-lg cursor-pointer overflow-hidden bg-card/80 border border-border/50 timetable-event-card"
                             style={{
                                 ...layout,
                                 backgroundColor: event.color || undefined,
