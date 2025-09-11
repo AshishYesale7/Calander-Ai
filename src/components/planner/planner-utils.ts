@@ -1,7 +1,6 @@
-
 'use client';
 import type { TimelineEvent } from '@/types';
-import { isSameDay, startOfDay, getDay, differenceInCalendarDays, isWithinInterval, endOfWeek } from 'date-fns';
+import { isSameDay, startOfDay, getDay, differenceInCalendarDays, isWithinInterval, endOfWeek, startOfWeek } from 'date-fns';
 
 export interface EventWithLayout extends TimelineEvent {
   layout: { top: number; height: number; left: string; width: string; zIndex: number; };
@@ -123,9 +122,8 @@ export function calculateEventLayouts(
 }
 
 
-// New utility function for weekly layout
 export function calculateWeeklyEventLayouts(timedEvents: TimelineEvent[]): EventWithLayout[] {
-  const HOUR_SLOT_HEIGHT = 60; // Assuming 60px per hour
+  const HOUR_SLOT_HEIGHT = 60;
   const minuteHeightPx = HOUR_SLOT_HEIGHT / 60;
   
   const events = timedEvents
@@ -139,9 +137,9 @@ export function calculateWeeklyEventLayouts(timedEvents: TimelineEvent[]): Event
       if (endDate && endDate instanceof Date && !isNaN(endDate.valueOf()) && isSameDay(startDate, endDate)) {
         endValue = endDate.getHours() * 60 + endDate.getMinutes();
       } else {
-        endValue = start + 60; // Default to 1 hour if no end date or spans days
+        endValue = start + 60;
       }
-      endValue = Math.max(start + 15, endValue); // Min 15 mins duration
+      endValue = Math.max(start + 15, endValue);
 
       return { ...e, originalIndex: idx, startInMinutes: start, endInMinutes: endValue };
     })
@@ -214,12 +212,23 @@ export interface AllDayEventWithLayout extends TimelineEvent {
   startDay: number;
 }
 export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week: Date[]): AllDayEventWithLayout[] {
-    const weekStart = startOfDay(week[0]);
+    const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
     const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
 
     const eventsInWeek = allDayEvents
-        .filter(e => isWithinInterval(e.date, { start: weekStart, end: weekEnd }))
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
+        .filter(e => {
+            const eventStart = startOfDay(e.date);
+            const eventEnd = startOfDay(e.endDate || e.date);
+            return isWithinInterval(eventStart, { start: weekStart, end: weekEnd }) || 
+                   isWithinInterval(eventEnd, { start: weekStart, end: weekEnd }) ||
+                   (eventStart < weekStart && eventEnd > weekEnd);
+        })
+        .sort((a, b) => {
+            const spanA = differenceInCalendarDays(a.endDate || a.date, a.date);
+            const spanB = differenceInCalendarDays(b.endDate || b.date, b.date);
+            if (spanA !== spanB) return spanB - spanA; // Longer events first
+            return a.date.getTime() - b.date.getTime();
+        });
 
     const layoutGrid: (TimelineEvent | null)[][] = [];
 
@@ -228,9 +237,12 @@ export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week:
     for (const event of eventsInWeek) {
         let row = 0;
         let placed = false;
+        
+        const eventStart = event.date < weekStart ? weekStart : event.date;
+        const eventEnd = event.endDate && event.endDate > weekEnd ? weekEnd : (event.endDate || event.date);
 
-        const eventStartDay = getDay(event.date);
-        const eventSpan = differenceInCalendarDays(event.endDate || event.date, event.date) + 1;
+        const eventStartDay = getDay(eventStart);
+        const eventSpan = Math.max(1, differenceInCalendarDays(eventEnd, eventStart) + 1);
 
         while (!placed) {
             if (!layoutGrid[row]) {
