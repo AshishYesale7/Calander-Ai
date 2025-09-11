@@ -123,13 +123,6 @@ export const saveTimelineEvent = async (
                 userId: userId,
             });
             
-            // Also send a push notification
-            await sendWebPushNotification({
-                userId: userId,
-                title: 'Reminder Set',
-                body: `You'll be reminded for "${event.title}" ${reminderText}.`,
-                url: `/dashboard`
-            });
         } catch (notificationError) {
             console.warn("Failed to send confirmation notification:", notificationError);
             // We don't throw an error here because the event was saved successfully.

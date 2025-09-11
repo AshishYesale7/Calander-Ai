@@ -14,6 +14,7 @@ import {
   doc,
   updateDoc,
   writeBatch,
+  where,
 } from 'firebase/firestore';
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 
@@ -40,7 +41,7 @@ const fromFirestore = (docData: any): AppNotification => {
 };
 
 export const createNotification = async (
-  notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>
+  notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'> & { userId: string }
 ): Promise<void> => {
   const userId = notification.userId;
   if (!userId || typeof userId !== 'string') {
