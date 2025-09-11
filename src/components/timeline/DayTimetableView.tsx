@@ -1,12 +1,12 @@
 
 'use client';
 
-import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
+import type { TimelineEvent, GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, endOfDay, subDays } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +36,9 @@ import PlannerMonthView from './PlannerMonthView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isToday as dfnsIsToday } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { getGoogleGmailMessages, getGoogleGmailLabels } from '@/services/googleGmailService';
+import { summarizeEmail } from '@/ai/flows/summarize-email-flow';
+import { useApiKey } from '@/hooks/use-api-key';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -321,7 +324,7 @@ const PlannerHeader = ({
 const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: string, setActiveView: (view: string) => void, viewTheme: MaxViewTheme }) => {
     
     const mainSections = [
-        { id: 'inbox', icon: Inbox, label: 'Inbox', badge: 6 },
+        { id: 'gmail', icon: Mail, label: 'Gmail', badge: 0 },
         { id: 'today', icon: Calendar, label: 'Today' },
         { id: 'upcoming', icon: Star, label: 'Upcoming' },
         { id: 'all_tasks', icon: Columns, label: 'All tasks' },
@@ -364,7 +367,7 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
                         <div className="flex items-center gap-3">
                            <s.icon size={16} /><span>{s.label}</span>
                         </div>
-                        {s.badge && <span className={cn("text-xs font-bold px-1.5 rounded-full", badgeClasses)}>{s.badge}</span>}
+                        {s.badge > 0 && <span className={cn("text-xs font-bold px-1.5 rounded-full", badgeClasses)}>{s.badge}</span>}
                     </button>
                 ))}
             </div>
@@ -638,7 +641,7 @@ const PlannerWeeklyTimeline = ({
   events: TimelineEvent[],
   onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
   onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void,
-  ghostEvent: { date: Date, hour: number } | null,
+  ghostEvent: { date: Date; hour: number } | null,
   onEditEvent?: (event: TimelineEvent) => void;
   onDeleteEvent?: (eventId: string, eventTitle: string) => void;
   viewTheme: MaxViewTheme;
@@ -1073,7 +1076,7 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | string;
+type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
@@ -1087,6 +1090,106 @@ const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }
 interface TasksByList {
     [key: string]: RawGoogleTask[];
 }
+
+const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void }) => {
+    const { user } = useAuth();
+    const { apiKey } = useApiKey();
+    const { toast } = useToast();
+    const [emails, setEmails] = useState<RawGmailMessage[]>([]);
+    const [labels, setLabels] = useState<GmailLabel[]>([]);
+    const [selectedLabelId, setSelectedLabelId] = useState<string>('IMPORTANT');
+    const [isLoading, setIsLoading] = useState(false);
+    const [summaries, setSummaries] = useState<Record<string, string>>({});
+    const [summarizingId, setSummarizingId] = useState<string | null>(null);
+
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
+    const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
+
+    const fetchLabels = useCallback(async () => {
+        if (!user) return;
+        try {
+            const res = await fetch('/api/google/labels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+            const data = await res.json();
+            if (data.success) setLabels(data.labels);
+        } catch (e) { console.error(e) }
+    }, [user]);
+
+    const fetchEmails = useCallback(async (labelId: string) => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/google/emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid, labelId }) });
+            const data = await res.json();
+            if (data.success) setEmails(data.emails);
+            else throw new Error(data.message);
+        } catch (error: any) {
+            toast({ title: 'Error fetching emails', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, toast]);
+
+    useEffect(() => {
+        fetchLabels();
+        fetchEmails(selectedLabelId);
+    }, [fetchLabels, fetchEmails, selectedLabelId]);
+
+    const handleSummarize = async (email: RawGmailMessage) => {
+        setSummarizingId(email.id);
+        try {
+            const summary = await summarizeEmail({ subject: email.subject, snippet: email.snippet, apiKey });
+            setSummaries(prev => ({ ...prev, [email.id]: summary.summary }));
+        } catch (error: any) {
+            toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+        } finally {
+            setSummarizingId(null);
+        }
+    };
+    
+    return (
+        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
+             <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Mail size={16} /> Gmail</h1>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => fetchEmails(selectedLabelId)}><RefreshCw className={cn("h-4 w-4", isLoading && 'animate-spin')} /></Button>
+            </div>
+            {/* ... rest of the component ... */}
+            <div className="mb-2">
+                {labels.length > 0 && (
+                    <select value={selectedLabelId} onChange={e => setSelectedLabelId(e.target.value)} className="w-full text-xs p-1 rounded-md bg-transparent border border-gray-600">
+                        {labels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                )}
+            </div>
+             <div className="space-y-1 text-xs overflow-y-auto">
+                {isLoading && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
+                {!isLoading && emails.map(email => (
+                    <div 
+                        key={email.id} 
+                        className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, {id: email.id, title: email.subject, notes: email.snippet} as RawGoogleTask)}
+                    >
+                        <p className={cn("text-xs font-bold flex-1", taskTextClasses)}>{email.subject}</p>
+                        <p className="text-[10px] text-gray-400 w-full truncate">{email.snippet}</p>
+                        <div className="flex justify-between w-full items-center mt-1">
+                            <Button variant="link" size="sm" className="p-0 h-auto text-blue-400 text-[10px]" onClick={() => window.open(email.link, '_blank')}>View Email</Button>
+                            <Button size="sm" variant="ghost" className="h-6 px-1 text-xs" onClick={() => handleSummarize(email)} disabled={!!summarizingId}>
+                                {summarizingId === email.id ? <LoadingSpinner size="sm"/> : <Bot size={12}/>}
+                            </Button>
+                        </div>
+                        {summaries[email.id] && (
+                            <div className="mt-1 p-1.5 bg-blue-900/30 rounded-md border border-blue-500/20 text-blue-200 text-[10px]">
+                                {summaries[email.id]}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
@@ -1118,7 +1221,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const startWidthsRef = useRef<number[]>([]);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
   
-  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('inbox');
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
@@ -1465,6 +1568,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '15rem' : `${panelWidths[1]}%` }}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
+                         ) : activePlannerView === 'gmail' ? (
+                            <PlannerGmailList viewTheme={maximizedViewTheme} onDragStart={handleDragStart} />
                          ) : (
                             <PlannerTaskList
                               taskLists={taskLists}
@@ -1487,7 +1592,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       ) : plannerViewMode === 'day' ? (
                         <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       ) : (
-                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver}/>
+                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
                       )}
                   </div>
               </div>
