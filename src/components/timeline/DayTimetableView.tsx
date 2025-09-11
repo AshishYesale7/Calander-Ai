@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
@@ -1574,7 +1575,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                             <PlannerTaskList
                               taskLists={taskLists}
                               allTasks={tasks}
-                              tasks={tasks[activePlannerView] || []}
+                              tasks={activePlannerView === 'all_tasks' ? Object.values(tasks).flat() : tasks[activePlannerView] || []}
                               activeListId={activePlannerView}
                               onAddTask={handleAddTask}
                               onDragStart={handleDragStart}
@@ -1844,4 +1845,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
       );
     }
     
+    
+
     
