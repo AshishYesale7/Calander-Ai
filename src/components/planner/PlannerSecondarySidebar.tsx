@@ -4,12 +4,12 @@ import { useState, useMemo, useCallback } from 'react';
 import type { GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '../ui/checkbox';
-import { Plus, Mail, Inbox, Filter, RefreshCw, Bot } from 'lucide-react';
+import { Plus, Mail, Inbox, Filter, RefreshCw, Bot, Calendar } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
-import type { ActivePlannerView, MaxViewTheme } from './DayTimetableView';
+import type { ActivePlannerView, MaxViewTheme } from '../timeline/DayTimetableView';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
@@ -145,6 +145,8 @@ const PlannerTaskList = ({
     
     const activeViewTitle = useMemo(() => {
         if (activeListId === 'all_tasks') return 'All Tasks';
+        if (activeListId === 'today') return 'Today';
+        if (activeListId === 'upcoming') return 'Upcoming';
         const activeList = taskLists.find(list => list.id === activeListId);
         return activeList?.title || 'Inbox';
     }, [activeListId, taskLists]);
@@ -209,5 +211,24 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <PlannerGmailList viewTheme={props.viewTheme} onDragStart={props.onDragStart} />
   }
 
-  return <PlannerTaskList {...props} />
+  const tasksForActiveView = useMemo(() => {
+    if (props.activeView === 'all_tasks') {
+        // This case is handled inside PlannerTaskList, so we pass an empty array here.
+        return [];
+    }
+    // For specific lists, return the tasks for that list.
+    return props.tasks[props.activeView] || [];
+  }, [props.activeView, props.tasks]);
+  
+  return <PlannerTaskList 
+            taskLists={props.taskLists}
+            tasks={tasksForActiveView}
+            allTasks={props.tasks}
+            activeListId={props.activeView}
+            onAddTask={props.onAddTask}
+            onDragStart={props.onDragStart}
+            viewTheme={props.viewTheme}
+        />
 }
+
+    
