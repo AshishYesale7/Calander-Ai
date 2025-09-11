@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
@@ -34,6 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import PlannerMonthView from './PlannerMonthView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isToday as dfnsIsToday } from 'date-fns';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -1686,3 +1688,5 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
