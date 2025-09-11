@@ -37,19 +37,22 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     const messaging = getMessaging(app);
 
     const messagePayload = {
+      // The webpush config is crucial for telling FCM how to display the notification
+      // when the app is in the background.
+      webpush: {
         notification: {
           title: input.title,
           body: input.body,
+          icon: '/logos/calendar-ai-logo-192.png', // A default icon for the notification
         },
-        webpush: {
-          fcm_options: {
+        fcm_options: {
             link: input.url || process.env.NEXT_PUBLIC_BASE_URL || '/',
-          },
         },
-        tokens: tokens, // Send to all registered tokens for the user
+      },
+      tokens: tokens,
     };
     
-    const response = await messaging.sendEachForMulticast(messagePayload);
+    const response = await messaging.sendEachForMulticast(messagePayload as any); // Cast to any to handle webpush structure
     
     const successfulCount = response.successCount;
     const failureCount = response.failureCount;
