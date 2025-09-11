@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, endOfDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -872,12 +872,18 @@ const PlannerDayView = ({
   onEditEvent,
   onDeleteEvent,
   viewTheme,
+  onDrop,
+  onDragOver,
+  ghostEvent,
 }: {
   date: Date;
   events: TimelineEvent[];
   onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onDeleteEvent?: (eventId: string, eventTitle: string) => void;
   viewTheme: MaxViewTheme;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void;
+  ghostEvent: { date: Date; hour: number } | null;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const now = new Date();
@@ -977,7 +983,13 @@ const PlannerDayView = ({
                     )}
                     <div className="h-full">
                         {hours.map(hour => (
-                            <div key={hour} className={cn("border-t", themeClasses.hourLine)} style={{ height: `${HOUR_HEIGHT_PX}px` }}></div>
+                            <div 
+                                key={hour} 
+                                className={cn("border-t", themeClasses.hourLine)} 
+                                style={{ height: `${HOUR_HEIGHT_PX}px` }}
+                                onDrop={(e) => onDrop(e, date, hour)}
+                                onDragOver={(e) => onDragOver(e, date, hour)}
+                            ></div>
                         ))}
                     </div>
                     
@@ -1028,6 +1040,19 @@ const PlannerDayView = ({
                                 </Popover>
                              )
                          })}
+                        {ghostEvent && isSameDay(date, ghostEvent.date) && (
+                            <div 
+                                className="absolute border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-80"
+                                style={{
+                                    top: `${ghostEvent.hour * HOUR_HEIGHT_PX}px`,
+                                    height: `${HOUR_SLOT_HEIGHT}px`,
+                                    left: '0.125rem',
+                                    right: '0.125rem',
+                                }}
+                            >
+                                <p className="text-[10px] font-semibold">Drop to schedule</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1143,7 +1168,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
     isResizing.current = index;
     startXRef.current = e.clientX;
-    startWidthsRef.current = [...panelWidths];
+    if (panelsContainerRef.current) {
+        startWidthsRef.current = Array.from(panelsContainerRef.current.children)
+            .filter(child => child.classList.contains('flex-shrink-0'))
+            .map(child => child.getBoundingClientRect().width);
+    }
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   };
@@ -1153,32 +1182,37 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     
     const dx = e.clientX - startXRef.current;
     const containerWidth = panelsContainerRef.current.offsetWidth;
-    const dxPercent = (dx / containerWidth) * 100;
     
     const newWidths = [...startWidthsRef.current];
     const leftPanelIndex = isResizing.current;
     const rightPanelIndex = isResizing.current + 1;
 
-    const minWidth = 15;
+    const minWidth = containerWidth * 0.15; // 15% minimum width
 
-    let proposedLeftWidth = newWidths[leftPanelIndex] + dxPercent;
-    let proposedRightWidth = newWidths[rightPanelIndex] - dxPercent;
+    let proposedLeftWidth = newWidths[leftPanelIndex] + dx;
+    let proposedRightWidth = newWidths[rightPanelIndex] - dx;
     
     if (proposedLeftWidth < minWidth) {
-        proposedRightWidth += proposedLeftWidth - minWidth;
+        dx = minWidth - newWidths[leftPanelIndex];
         proposedLeftWidth = minWidth;
+        proposedRightWidth = newWidths[rightPanelIndex] - dx;
     }
     if (proposedRightWidth < minWidth) {
-        proposedLeftWidth += proposedRightWidth - minWidth;
+        dx = newWidths[rightPanelIndex] - minWidth;
         proposedRightWidth = minWidth;
+        proposedLeftWidth = newWidths[leftPanelIndex] + dx;
     }
     
-    newWidths[leftPanelIndex] = proposedLeftWidth;
-    newWidths[rightPanelIndex] = proposedRightWidth;
+    const newPanelWidthsPercent = panelWidths.map((w, i) => {
+        if (i === leftPanelIndex) return (proposedLeftWidth / containerWidth) * 100;
+        if (i === rightPanelIndex) return (proposedRightWidth / containerWidth) * 100;
+        // For the main panel, let it be flexible
+        if (i === 2 && panelWidths.length > 2) return 100 - ((proposedLeftWidth / containerWidth) * 100) - ((proposedRightWidth / containerWidth) * 100);
+        return w;
+    });
 
-    setPanelWidths(newWidths);
-    savedWidthsRef.current = newWidths;
-  }, []);
+    setPanelWidths(newPanelWidthsPercent);
+  }, [panelWidths]);
 
   const onMouseUp = useCallback(() => {
     isResizing.current = null;
@@ -1269,22 +1303,42 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     setGhostEvent(null);
     if (!draggedTask) return;
 
-    const newEventDate = set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 });
+    let newEvent: TimelineEvent;
 
-    const newEvent: TimelineEvent = {
-        id: `custom-${Date.now()}`,
-        title: draggedTask.title,
-        date: newEventDate,
-        endDate: undefined,
-        type: 'custom',
-        notes: draggedTask.notes,
-        isAllDay: false,
-        isDeletable: true,
-        priority: 'None',
-        status: 'pending',
-        icon: CalendarDays,
-        reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
-    };
+    // A dropHour of -1 signifies a drop onto a month view day, creating an all-day event
+    if (dropHour === -1) {
+        newEvent = {
+            id: `custom-${Date.now()}`,
+            title: draggedTask.title,
+            date: dfnsStartOfDay(dropDate),
+            endDate: endOfDay(dropDate),
+            type: 'custom',
+            notes: draggedTask.notes,
+            isAllDay: true,
+            isDeletable: true,
+            priority: 'None',
+            status: 'pending',
+            icon: CalendarDays,
+            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
+        };
+    } else {
+        // Drop onto a specific hour in day/week view
+        const newEventDate = set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 });
+        newEvent = {
+            id: `custom-${Date.now()}`,
+            title: draggedTask.title,
+            date: newEventDate,
+            endDate: undefined,
+            type: 'custom',
+            notes: draggedTask.notes,
+            isAllDay: false,
+            isDeletable: true,
+            priority: 'None',
+            status: 'pending',
+            icon: CalendarDays,
+            reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
+        };
+    }
     
     if (onEditEvent) {
       onEditEvent(newEvent, true);
@@ -1404,11 +1458,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             >
               {isSidebarOpen && (
                   <>
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-36' : '')} style={!isMobile ? { width: `${panelWidths[0]}%` } : {}}>
+                      <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '9rem' : `${panelWidths[0]}%` }}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
                       {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
-                      <div className={cn("flex-shrink-0 flex-grow-0", isMobile ? 'w-60' : '')} style={!isMobile ? { width: `${panelWidths[1]}%` } : {}}>
+                      <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '15rem' : `${panelWidths[1]}%` }}>
                          {isTasksLoading ? (
                            <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>
                          ) : (
@@ -1431,9 +1485,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       {plannerViewMode === 'week' ? (
                          <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
                       ) : plannerViewMode === 'day' ? (
-                        <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme}/>
+                        <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       ) : (
-                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
+                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver}/>
                       )}
                   </div>
               </div>
@@ -1688,5 +1742,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
-    
