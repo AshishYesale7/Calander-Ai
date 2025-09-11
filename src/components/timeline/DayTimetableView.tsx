@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, endOfDay } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, endOfDay, subDays } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -308,7 +308,7 @@ const PlannerHeader = ({
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
                     <Minimize className="h-4 w-4" />
                 </Button>
@@ -914,7 +914,7 @@ const PlannerDayView = ({
   return (
     <div className={cn("flex flex-col flex-1 w-full text-xs h-full", themeClasses.container)}>
         {/* All-Day Events */}
-        <div className={cn("sticky top-0 z-20 flex-shrink-0", themeClasses.allDayArea)}>
+        <div className={cn("sticky top-0 z-20 flex-shrink-0", themeClasses.allDayArea)} onDrop={(e) => onDrop(e, date, -1)} onDragOver={(e) => onDragOver(e, date, -1)}>
             <div className="flex items-center text-xs min-h-[40px]">
                 <div className={cn("w-12 text-right text-[10px] flex-shrink-0 flex items-center justify-center pr-1", themeClasses.allDayGutter)}>All-day</div>
                 <div className="flex-1 p-1 space-y-0.5">
@@ -1141,7 +1141,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   }, [maximizedViewTheme]);
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
-  const [ghostEvent, setGhostEvent] = useState<{ date: Date, hour: number } | null>(null);
+  const [ghostEvent, setGhostEvent] = useState<{ date: Date; hour: number } | null>(null);
 
   const isToday = useMemo(() => dfnsIsToday(currentDisplayDate), [currentDisplayDate]);
   const isDayInPast = useMemo(() => isPast(currentDisplayDate) && !isSameDay(currentDisplayDate, new Date()), [currentDisplayDate]);
@@ -1170,7 +1170,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     startXRef.current = e.clientX;
     if (panelsContainerRef.current) {
         startWidthsRef.current = Array.from(panelsContainerRef.current.children)
-            .filter(child => child.classList.contains('flex-shrink-0'))
+            .filter(child => child.classList.contains('flex-shrink-0') || child.classList.contains('flex-1'))
             .map(child => child.getBoundingClientRect().width);
     }
     document.addEventListener('mousemove', onMouseMove);
@@ -1180,7 +1180,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (isResizing.current === null || !panelsContainerRef.current) return;
     
-    const dx = e.clientX - startXRef.current;
+    let dx = e.clientX - startXRef.current;
     const containerWidth = panelsContainerRef.current.offsetWidth;
     
     const newWidths = [...startWidthsRef.current];
@@ -1206,10 +1206,13 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     const newPanelWidthsPercent = panelWidths.map((w, i) => {
         if (i === leftPanelIndex) return (proposedLeftWidth / containerWidth) * 100;
         if (i === rightPanelIndex) return (proposedRightWidth / containerWidth) * 100;
-        // For the main panel, let it be flexible
-        if (i === 2 && panelWidths.length > 2) return 100 - ((proposedLeftWidth / containerWidth) * 100) - ((proposedRightWidth / containerWidth) * 100);
         return w;
     });
+
+    // Update the flexible panel
+    const fixedWidthsSum = newPanelWidthsPercent.reduce((sum, width, i) => (i < 2 ? sum + width : sum), 0);
+    newPanelWidthsPercent[2] = 100 - fixedWidthsSum;
+
 
     setPanelWidths(newPanelWidthsPercent);
   }, [panelWidths]);
@@ -1453,9 +1456,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
         <div className="flex flex-1 min-h-0" ref={panelsContainerRef}>
-            <div
-                className="flex flex-1 min-h-0"
-            >
               {isSidebarOpen && (
                   <>
                       <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '9rem' : `${panelWidths[0]}%` }}>
@@ -1491,7 +1491,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       )}
                   </div>
               </div>
-          </div>
         </div>
     </div>
   );
