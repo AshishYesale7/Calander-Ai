@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '../ui/checkbox';
@@ -213,11 +213,10 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
 
   const tasksForActiveView = useMemo(() => {
     if (props.activeView === 'all_tasks') {
-        // This case is handled inside PlannerTaskList, so we pass an empty array here.
         return [];
     }
-    // For specific lists, return the tasks for that list.
-    return props.tasks[props.activeView] || [];
+    const tasksForList = props.tasks[props.activeView];
+    return Array.isArray(tasksForList) ? tasksForList : [];
   }, [props.activeView, props.tasks]);
   
   return <PlannerTaskList 
