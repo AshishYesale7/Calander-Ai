@@ -37,9 +37,15 @@ const fromFirestore = (docData: any): AppNotification => {
 };
 
 export const createNotification = async (
-  userId: string,
   notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>
 ): Promise<void> => {
+  // Correctly get the userId from the passed notification object
+  const userId = notification.userId;
+  if (!userId) {
+    console.error("Cannot create notification without a userId.");
+    return;
+  }
+
   const notificationsCollection = getNotificationsCollection(userId);
   try {
     // 1. Save the notification to Firestore for the in-app panel
