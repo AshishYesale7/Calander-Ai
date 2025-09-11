@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Palette, Maximize, CalendarDays } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, CalendarDays, Maximize, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -36,21 +36,9 @@ const minuteRulerHeightClass = 'h-8';
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
 
-const renderHours = () => {
-    const hours = [];
-    for (let i = 0; i < 24; i++) {
-        const time = format(new Date(0, 0, 0, i), 'ha');
-        hours.push(
-            <div key={`hour-${i}`} className="relative h-[60px] text-right pr-2">
-                <span className="relative -top-2 text-xs text-muted-foreground">{time}</span>
-            </div>
-        );
-    }
-    return hours;
-};
 
 const getEventTooltip = (event: TimelineEvent): string => {
-    if (!(event.date instanceof Date) || isNaN(event.valueOf())) return event.title;
+    if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return event.title;
     const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
     const statusString = event.status ? `Status: ${event.status.replace(/-/g, ' ')}` : '';
     const notesString = event.notes ? `Notes: ${event.notes}` : '';
@@ -59,13 +47,13 @@ const getEventTooltip = (event: TimelineEvent): string => {
 
 const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
-    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
-    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
-    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
-    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
-    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
-    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+    case 'exam': return 'bg-red-500/80 border-red-700 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
+    case 'deadline': return 'bg-yellow-500/80 border-yellow-700 text-yellow-900 dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
+    case 'goal': return 'bg-green-500/80 border-green-700 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
+    case 'project': return 'bg-blue-500/80 border-blue-700 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
+    case 'application': return 'bg-purple-500/80 border-purple-700 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
+    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-700 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
+    default: return 'bg-gray-500/80 border-gray-700 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
   }
 };
 
@@ -77,12 +65,12 @@ const getCustomColorStyles = (color?: string) => {
     const g = parseInt(hexMatch[2], 16);
     const b = parseInt(hexMatch[3], 16);
     return {
-      backgroundColor: `rgba(${r},${g},${b},0.8)`, // Increased opacity
+      backgroundColor: `rgba(${r},${g},${b},0.8)`,
       borderColor: color,
-      color: (r * 0.299 + g * 0.587 + b * 0.114) > 186 ? '#333' : '#fff' // Set text color based on background brightness
+      color: (r * 0.299 + g * 0.587 + b * 0.114) > 186 ? '#333' : '#fff'
     };
   }
-  return { backgroundColor: `${color}B3`, borderColor: color }; // B3 is ~70% opacity
+  return { backgroundColor: `${color}B3`, borderColor: color };
 };
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
@@ -101,7 +89,7 @@ interface DayTimetableViewProps {
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
 }
 
-export default function DayTimetableView({ date, events, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
+export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -111,23 +99,22 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
   
-  const isDayInPast = useMemo(() => isPast(date) && !isSameDay(date, new Date()), [date]);
+  const isDayInPast = useMemo(() => isPast(initialDate) && !isSameDay(initialDate, new Date()), [initialDate]);
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  const eventsForDay = useMemo(() => events.filter(event => isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(date))), [events, date]);
+  const eventsForDay = useMemo(() => allEvents.filter(event => isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(initialDate))), [allEvents, initialDate]);
   const allDayEvents = useMemo(() => eventsForDay.filter(e => e.isAllDay), [eventsForDay]);
   const timedEvents = useMemo(() => eventsForDay.filter(e => !e.isAllDay), [eventsForDay]);
   const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX), [timedEvents]);
   
   const minEventGridWidth = useMemo(() => maxConcurrentColumns > 3 ? `${Math.max(100, maxConcurrentColumns * MIN_EVENT_COLUMN_WIDTH_PX)}px` : '100%', [maxConcurrentColumns]);
-  const currentTimeTopPosition = dfnsIsToday(date) ? (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX) : -1;
+  const currentTimeTopPosition = dfnsIsToday(initialDate) ? (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX) : -1;
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 60000); // Update every minute for the 'now' indicator
     
-    // Auto-scroll to current time on mount if it's today
     const timer = setTimeout(() => {
-      if (dfnsIsToday(date) && scrollContainerRef.current) {
+      if (dfnsIsToday(initialDate) && scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({ top: currentTimeTopPosition - scrollContainerRef.current.offsetHeight / 2, behavior: 'smooth' });
       }
     }, 500);
@@ -136,7 +123,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       clearTimeout(timer);
       clearInterval(intervalId);
     };
-  }, [date, currentTimeTopPosition]);
+  }, [initialDate, currentTimeTopPosition]);
   
   const handleDeleteClick = (eventId: string, eventTitle: string) => {
     if (onDeleteEvent) {
@@ -156,7 +143,6 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const handleCheckboxChange = (event: TimelineEvent, checked: boolean) => {
     if (onEventStatusChange) {
       const newStatus = checked ? 'completed' : 'missed';
-      // Log activity if an item is completed
       if (newStatus === 'completed' && user) {
         logUserActivity(user.uid, 'task_completed', { title: event.title });
       }
@@ -165,7 +151,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   };
   
   if (isMaximized) {
-    return <MaximizedPlannerView initialDate={date} allEvents={events} onMinimize={() => setIsMaximized(false)} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} />;
+    return <MaximizedPlannerView initialDate={initialDate} allEvents={allEvents} onMinimize={() => setIsMaximized(false)} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} />;
   }
 
   return (
@@ -173,7 +159,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       <CardHeader className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="font-headline text-xl text-primary">{format(date, 'MMMM d, yyyy')}</CardTitle>
+              <CardTitle className="font-headline text-xl text-primary">{format(initialDate, 'MMMM d, yyyy')}</CardTitle>
               <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
             </div>
             <div className="flex items-center">
