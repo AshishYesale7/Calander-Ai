@@ -71,6 +71,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +87,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (testIntervalRef.current) clearInterval(testIntervalRef.current);
     };
   }, []);
 
@@ -111,11 +113,16 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
        }
+       if (testIntervalRef.current) {
+            clearInterval(testIntervalRef.current);
+            testIntervalRef.current = null;
+       }
        setIsPolling(false);
        setIsLinkingPhone(false);
        setLinkingPhoneState('input');
        setPhoneForLinking(undefined);
        setOtpForLinking('');
+       setIsSendingTest(false);
     } else {
         setApiKeyInput(currentApiKey || '');
         if (user) {
@@ -413,23 +420,46 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   const handleSendTestNotification = async () => {
     if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in to send a notification.', variant: 'destructive' });
-        return;
+      toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
+      return;
     }
-    setIsSendingTest(true);
-    try {
+
+    if (isSendingTest) {
+      // If test is running, stop it
+      if (testIntervalRef.current) {
+        clearInterval(testIntervalRef.current);
+        testIntervalRef.current = null;
+      }
+      setIsSendingTest(false);
+      toast({ title: 'Test Stopped', description: 'Stopped sending test notifications.' });
+    } else {
+      // If test is not running, start it
+      setIsSendingTest(true);
+      toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds. Switch tabs to see them.' });
+
+      // Send the first one immediately
+      await createNotification({
+        userId: user.uid,
+        type: 'system_alert',
+        message: `Test Notification - ${new Date().toLocaleTimeString()}`,
+        link: '/dashboard'
+      });
+      
+      // Then set up the interval
+      testIntervalRef.current = setInterval(async () => {
+        if (!user) {
+            // Stop if user logs out
+            if (testIntervalRef.current) clearInterval(testIntervalRef.current);
+            setIsSendingTest(false);
+            return;
+        }
         await createNotification({
             userId: user.uid,
             type: 'system_alert',
-            message: 'This is a test notification from Calendar.ai.',
+            message: `Test Notification - ${new Date().toLocaleTimeString()}`,
             link: '/dashboard'
         });
-        toast({ title: 'Test Sent', description: 'If permissions are correct, you should receive a notification shortly.' });
-    } catch (error) {
-        console.error("Test notification error:", error);
-        toast({ title: 'Error', description: (error as Error).message || 'Failed to send test notification.', variant: 'destructive' });
-    } finally {
-        setIsSendingTest(false);
+      }, 5000);
     }
   };
 
@@ -474,9 +504,14 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                  <p className="text-sm text-muted-foreground">
                     Use this to test if you receive notifications when the app is in the background.
                 </p>
-                <Button onClick={handleSendTestNotification} variant="outline" className="w-full" disabled={isSendingTest || notificationPermission !== 'granted'}>
+                <Button onClick={handleSendTestNotification} variant={isSendingTest ? 'destructive' : 'outline'} className="w-full" disabled={notificationPermission !== 'granted'}>
                     {isSendingTest ? <LoadingSpinner size="sm" className="mr-2"/> : <Send className="mr-2 h-4 w-4" />}
-                    {notificationPermission !== 'granted' ? 'Enable Notifications First' : 'Send Test Notification'}
+                    {notificationPermission !== 'granted' 
+                        ? 'Enable Notifications First' 
+                        : isSendingTest 
+                            ? 'Stop Test'
+                            : 'Start Test (1 every 5s)'
+                    }
                 </Button>
             </div>
 
@@ -677,5 +712,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
+
+    
 
     
