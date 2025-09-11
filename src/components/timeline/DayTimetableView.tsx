@@ -5,7 +5,7 @@ import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay, isToday as dfnsIsToday, subDays } from 'date-fns';
+import { format, isFuture, isPast, formatDistanceToNowStrict, startOfWeek, endOfWeek, eachDayOfInterval, getHours, getMinutes, addWeeks, subWeeks, set, startOfDay as dfnsStartOfDay, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getDay, isWithinInterval, differenceInCalendarDays, parseISO, isSameDay } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, Info, CalendarDays, Maximize, Minimize, Settings, Palette, Inbox, Calendar, Star, Columns, GripVertical, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Plus, Link as LinkIcon, Lock, Activity, Tag, Flag, MapPin, Hash, Image as ImageIcon, Filter, LayoutGrid, UserPlus, Clock, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import PlannerMonthView from './PlannerMonthView';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isToday as dfnsIsToday } from 'date-fns';
 
 
 const HOUR_HEIGHT_PX = 60;
@@ -306,7 +307,7 @@ const PlannerHeader = ({
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={onMinimize} aria-label="Minimize view" className={cn("h-7 w-7", buttonClasses)}>
                     <Minimize className="h-4 w-4" />
                 </Button>
@@ -417,13 +418,20 @@ const PlannerTaskList = ({
   viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
-    const activeList = taskLists.find(list => list.id === activeListId);
+    
+    // Determine the title of the active view
+    const activeViewTitle = useMemo(() => {
+        if (activeListId === 'all_tasks') return 'All Tasks';
+        const activeList = taskLists.find(list => list.id === activeListId);
+        return activeList?.title || 'Inbox';
+    }, [activeListId, taskLists]);
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault();
         const title = newTaskTitle.trim();
-        if (title && activeList) {
-            onAddTask(activeList.id, title);
+        const listId = taskLists.find(l => l.id === activeListId)?.id || taskLists.find(l => l.title === 'My Tasks')?.id || taskLists[0]?.id;
+        if (title && listId) {
+            onAddTask(listId, title);
             setNewTaskTitle('');
         }
     };
@@ -459,7 +467,7 @@ const PlannerTaskList = ({
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
             <div className="flex justify-between items-center mb-2 px-1">
                 <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}>
-                    <Inbox size={16} /> {activeList?.title || 'Inbox'}
+                    <Inbox size={16} /> {activeViewTitle}
                 </h1>
                 <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
@@ -1385,7 +1393,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                          ) : (
                             <PlannerTaskList
                               taskLists={taskLists}
-                              tasks={tasks[activePlannerView] || []}
+                              tasks={activePlannerView === 'all_tasks' ? Object.values(tasks).flat() : tasks[activePlannerView] || []}
                               activeListId={activePlannerView}
                               onAddTask={handleAddTask}
                               onDragStart={handleDragStart}
@@ -1396,7 +1404,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                       {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col" style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }}>
                   <div className="flex-1 min-h-0 flex flex-col">
                       {plannerViewMode === 'week' ? (
                          <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
