@@ -1,4 +1,3 @@
-
 'use client';
 import type { TimelineEvent } from '@/types';
 import { isSameDay } from 'date-fns';

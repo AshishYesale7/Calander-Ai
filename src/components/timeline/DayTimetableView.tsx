@@ -5,8 +5,8 @@ import type { TimelineEvent } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday, isPast } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Palette, Maximize, CalendarDays, Clock } from 'lucide-react';
+import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
+import { Bot, Trash2, XCircle, Edit3, Palette, Maximize, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,8 +27,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import MaximizedPlannerView from '../planner/MaximizedPlannerView';
 import { calculateEventLayouts } from '../planner/planner-utils';
+import MaximizedPlannerView from '../planner/MaximizedPlannerView';
 
 const HOUR_HEIGHT_PX = 60;
 const MIN_EVENT_COLUMN_WIDTH_PX = 90;
@@ -49,15 +49,48 @@ const renderHours = () => {
     return hours;
 };
 
-const renderHourLines = () => {
-    const lines = [];
-    for (let i = 0; i < 24; i++) {
-        lines.push(
-            <div key={`line-${i}`} className="h-[60px] border-t border-border/30"></div>
-        );
-    }
-    return lines;
+const getEventTooltip = (event: TimelineEvent): string => {
+    if (!(event.date instanceof Date) || isNaN(event.valueOf())) return event.title;
+    const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
+    const statusString = event.status ? `Status: ${event.status.replace(/-/g, ' ')}` : '';
+    const notesString = event.notes ? `Notes: ${event.notes}` : '';
+    return [event.title, timeString, statusString, notesString].filter(Boolean).join('\n');
 };
+
+const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
+    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
+    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
+    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
+    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
+    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
+    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+  }
+};
+
+const getCustomColorStyles = (color?: string) => {
+  if (!color) return {};
+  const hexMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (hexMatch) {
+    const r = parseInt(hexMatch[1], 16);
+    const g = parseInt(hexMatch[2], 16);
+    const b = parseInt(hexMatch[3], 16);
+    return {
+      backgroundColor: `rgba(${r},${g},${b},0.8)`, // Increased opacity
+      borderColor: color,
+      color: (r * 0.299 + g * 0.587 + b * 0.114) > 186 ? '#333' : '#fff' // Set text color based on background brightness
+    };
+  }
+  return { backgroundColor: `${color}B3`, borderColor: color }; // B3 is ~70% opacity
+};
+
+const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
+  if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+  const Icon = event.icon || CalendarDays;
+  return <Icon className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+};
+
 
 interface DayTimetableViewProps {
   date: Date;
@@ -79,6 +112,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
   
   const isDayInPast = useMemo(() => isPast(date) && !isSameDay(date, new Date()), [date]);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const eventsForDay = useMemo(() => events.filter(event => isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(date))), [events, date]);
   const allDayEvents = useMemo(() => eventsForDay.filter(e => e.isAllDay), [eventsForDay]);
@@ -86,6 +120,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX), [timedEvents]);
   
   const minEventGridWidth = useMemo(() => maxConcurrentColumns > 3 ? `${Math.max(100, maxConcurrentColumns * MIN_EVENT_COLUMN_WIDTH_PX)}px` : '100%', [maxConcurrentColumns]);
+  const currentTimeTopPosition = dfnsIsToday(date) ? (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX) : -1;
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 60000); // Update every minute for the 'now' indicator
@@ -93,8 +128,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
     // Auto-scroll to current time on mount if it's today
     const timer = setTimeout(() => {
       if (dfnsIsToday(date) && scrollContainerRef.current) {
-        const newTop = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
-        scrollContainerRef.current.scrollTo({ top: newTop - scrollContainerRef.current.offsetHeight / 2, behavior: 'smooth' });
+        scrollContainerRef.current.scrollTo({ top: currentTimeTopPosition - scrollContainerRef.current.offsetHeight / 2, behavior: 'smooth' });
       }
     }, 500);
 
@@ -102,7 +136,7 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       clearTimeout(timer);
       clearInterval(intervalId);
     };
-  }, [date, now]);
+  }, [date, currentTimeTopPosition]);
   
   const handleDeleteClick = (eventId: string, eventTitle: string) => {
     if (onDeleteEvent) {
@@ -213,49 +247,118 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
           )}
           <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
               <div className="flex h-full">
-                  <div className="w-16 flex-shrink-0 text-right text-xs timetable-hours-column">
-                      {renderHours()}
+                  <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
+                      <div>
+                          {hours.map(hour => (
+                          <div key={`label-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px` }}
+                              className="text-xs text-muted-foreground text-right pr-2 pt-1 border-b border-border/20 last:border-b-0 flex items-start justify-end">
+                              <span className='-translate-y-1/2'>{hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}</span>
+                          </div>
+                          ))}
+                      </div>
                   </div>
-                  <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
-                      {renderHourLines()}
-                      {dfnsIsToday(date) && (
-                          <div
-                              ref={nowIndicatorRef}
-                              className="absolute w-full h-0.5 bg-accent/80 z-20"
-                              style={{ top: `${(now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX/60)}px` }}
-                          >
-                              <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
-                          </div>
-                      )}
-                      {timedEventsWithLayout.map(({ layout, ...event }) => (
-                          <div
-                            key={event.id}
-                            className="absolute p-2 rounded-lg cursor-pointer overflow-hidden bg-card/80 border border-border/50 timetable-event-card"
-                            style={{
-                                ...layout,
-                                backgroundColor: event.color || undefined,
-                                borderColor: event.color || undefined,
-                            }}
-                            onClick={() => handleEventClick(event)}
-                          >
-                            <p className="font-bold text-sm leading-tight truncate">{event.title}</p>
-                            <p className="text-xs text-muted-foreground leading-tight truncate">{event.notes}</p>
-                          </div>
+
+                  <div className="flex-1 relative" style={{ minWidth: 0 }}>
+                      <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px`, minWidth: minEventGridWidth }}> 
+                      {hours.map(hour => (
+                          <div key={`line-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px`, top: `${hour * HOUR_HEIGHT_PX}px` }}
+                              className="border-b border-border/20 last:border-b-0 w-full absolute left-0 right-0 z-0 timetable-hour-line"
+                          ></div>
                       ))}
-                  </div>
-              </div>
+
+                      <div 
+                        ref={nowIndicatorRef}
+                        className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                        style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
+                        >
+                        <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
+                        <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
+                        </div>
+
+                      {timedEventsWithLayout.map(event => {
+                          if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
+                          const isSmallWidth = parseFloat(event.layout.width) < 25;
+                          const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
+
+                          return (
+                          <div
+                              key={event.id}
+                              className={cn(
+                              "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer timetable-event-card",
+                              "focus-within:ring-2 focus-within:ring-ring",
+                              !event.color && getEventTypeStyleClasses(event.type),
+                              isSmallWidth ? "p-0.5" : "p-1",
+                              isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
+                              selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                              )}
+                              style={{
+                                  top: `${event.layout.top}px`,
+                                  height: `${event.layout.height}px`,
+                                  left: event.layout.left,
+                                  width: event.layout.width,
+                                  zIndex: event.layout.zIndex, 
+                                  ...(event.color ? getCustomColorStyles(event.color) : {})
+                              }}
+                              title={getEventTooltip(event)}
+                              onClick={() => handleEventClick(event)}
+                          >
+                              <div className="flex flex-col h-full">
+                                  <div className="flex-grow overflow-hidden">
+                                      <div className="flex items-start gap-1.5">
+                                          {onEventStatusChange && (
+                                              <Checkbox
+                                                  id={`check-${event.id}`}
+                                                  checked={isChecked}
+                                                  onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
+                                                  className="mt-0.5 border-current flex-shrink-0"
+                                              />
+                                          )}
+                                          <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs", event.color ? '' : 'text-current')}>{event.title}</p>
+                                      </div>
+                                      {!isSmallWidth && (
+                                      <p className={cn("opacity-80 truncate text-[10px] pl-5", event.color ? 'text-foreground/80' : '')}>
+                                          {format(event.date, 'h:mm a')}
+                                          {event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) && ` - ${format(event.endDate, 'h:mm a')}`}
+                                      </p>
+                                      )}
+                                  </div>
+                                  <div className={cn("mt-auto flex-shrink-0 flex items-center space-x-0.5", isSmallWidth ? "justify-center" : "justify-end")}>
+                                      {event.isDeletable && onDeleteEvent && (
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive/80 hover:bg-destructive/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                                  <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent className="frosted-glass">
+                                              <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
+                                      )}
+                                  </div>
+                              </div>
+                          </div>
+                          );
+                      })}
+                    </div>
+                </div>
+            </div>
+            </div>
+            
+            {selectedEvent && (
+              <EventOverviewPanel
+                event={selectedEvent}
+                onClose={handleCloseOverview}
+                onEdit={onEditEvent}
+              />
+            )}
           </div>
-        </div>
-        
-        {/* Event Overview Panel */}
-        {selectedEvent && (
-           <EventOverviewPanel
-            event={selectedEvent}
-            onClose={handleCloseOverview}
-            onEdit={onEditEvent}
-          />
-        )}
-      </div>
-    </Card>
-  );
-}
+        </Card>
+      );
+    }
