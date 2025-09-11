@@ -4,14 +4,14 @@
 import type { TimelineEvent } from '@/types';
 import PlannerDayView from './PlannerDayView';
 import type { MaxViewTheme } from './MaximizedPlannerView';
-import { format, isSameDay, startOfDay as dfnsStartOfDay, getDay, isWithinInterval, endOfWeek, isToday } from 'date-fns';
+import { format, isSameDay, startOfDay as dfnsStartOfDay, getDay, isWithinInterval, endOfWeek, isToday, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Edit3, Lock, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
-import { calculateAllDayEventLayouts, calculateWeeklyEventLayouts, type AllDayEventWithLayout } from './planner-utils';
+import { calculateAllDayEventLayouts, type AllDayEventWithLayout, calculateWeeklyEventLayouts } from './planner-utils';
 import { EventWithLayout } from './planner-utils';
 
 const HOUR_HEIGHT_PX = 60;
