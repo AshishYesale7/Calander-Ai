@@ -110,3 +110,22 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
         console.error("Failed to mark all notifications as read:", error);
     }
 }
+
+export const clearAllNotifications = async (userId: string): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const notificationsCollection = getNotificationsCollection(userId);
+    
+    try {
+        const snapshot = await getDocs(notificationsCollection);
+        if (snapshot.empty) return;
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    } catch (error) {
+        console.error("Failed to clear all notifications:", error);
+        throw new Error("Could not clear notifications.");
+    }
+};
