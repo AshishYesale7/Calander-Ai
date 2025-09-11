@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay } from 'date-fns';
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
 
@@ -16,6 +16,7 @@ import PlannerDayView from './PlannerDayView';
 import PlannerWeeklyView from './PlannerWeeklyView';
 import PlannerMonthView from './PlannerMonthView';
 import { GripVertical } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 export type PlannerViewMode = 'day' | 'week' | 'month';
@@ -49,6 +50,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
@@ -56,7 +58,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
   const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
-  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('day');
+  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('week');
   
   const [maximizedViewTheme, setMaximizedViewTheme] = useState<MaxViewTheme>(() => {
     if (typeof window === 'undefined') return 'dark';
@@ -213,8 +215,8 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     if (!draggedTask || !onEditEvent) return;
 
     const newEvent: TimelineEvent = dropHour === -1
-      ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: startOfDay(dropDate), endDate: startOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } }
-      : { id: `custom-${Date.now()}`, title: draggedTask.title, date: new Date(dropDate.setHours(dropHour, 0, 0, 0)), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
+      ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: dfnsStartOfDay(dropDate), endDate: endOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } }
+      : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
     
     onEditEvent(newEvent, true);
     setDraggedTask(null);
@@ -233,7 +235,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   };
 
   return (
-     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-[#fff8ed] text-gray-800')}>
+     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-stone-50 text-gray-800')}>
         <PlannerHeader 
           activeView={plannerViewMode} 
           date={currentDisplayDate} 
@@ -249,11 +251,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
         <div className="flex flex-1 min-h-0" ref={panelsContainerRef}>
               {isSidebarOpen && (
                   <>
-                      <div className="flex-shrink-0 flex-grow-0" style={{ width: `${panelWidths[0]}%` }}>
+                      <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '9rem' : `${panelWidths[0]}%` }}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
                       </div>
-                      <Resizer onMouseDown={onMouseDown(0)} />
-                      <div className="flex-shrink-0 flex-grow-0" style={{ width: `${panelWidths[1]}%` }}>
+                      {!isMobile && <Resizer onMouseDown={onMouseDown(0)} />}
+                      <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '15rem' : `${panelWidths[1]}%` }}>
                          <PlannerSecondarySidebar
                             activeView={activePlannerView}
                             tasks={tasks}
@@ -264,7 +266,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                             viewTheme={maximizedViewTheme}
                           />
                       </div>
-                      <Resizer onMouseDown={onMouseDown(1)} />
+                      {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
               <div className="flex-1 flex flex-col" style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }}>

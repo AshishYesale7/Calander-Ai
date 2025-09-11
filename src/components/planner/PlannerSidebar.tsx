@@ -2,7 +2,7 @@
 'use client';
 import { cn } from '@/lib/utils';
 import { Mail, Calendar, Star, Columns, Clock, Palette } from 'lucide-react';
-import type { ActivePlannerView, MaxViewTheme } from './DayTimetableView';
+import type { ActivePlannerView, MaxViewTheme } from './MaximizedPlannerView';
 
 interface PlannerSidebarProps {
   activeView: ActivePlannerView;

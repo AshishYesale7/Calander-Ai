@@ -14,7 +14,7 @@ import {
   PanelLeftClose,
   ChevronDown
 } from 'lucide-react';
-import type { PlannerViewMode, MaxViewTheme } from './DayTimetableView';
+import type { PlannerViewMode, MaxViewTheme } from './MaximizedPlannerView';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface PlannerHeaderProps {

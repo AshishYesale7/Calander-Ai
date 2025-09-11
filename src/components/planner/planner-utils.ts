@@ -1,18 +1,21 @@
 
 'use client';
 import type { TimelineEvent } from '@/types';
+import { isSameDay } from 'date-fns';
 
-interface EventWithLayout extends TimelineEvent {
+export interface EventWithLayout extends TimelineEvent {
   layout: { top: number; height: number; left: string; width: string; zIndex: number; };
 }
 
-interface LayoutCalculationResult {
+export interface LayoutCalculationResult {
   eventsWithLayout: EventWithLayout[];
   maxConcurrentColumns: number;
 }
 
-export function calculateEventLayouts(timedEvents: TimelineEvent[]): LayoutCalculationResult {
-  const hourHeightPx = 60;
+export function calculateEventLayouts(
+  timedEvents: TimelineEvent[],
+  hourHeightPx: number
+): LayoutCalculationResult {
   const minuteHeightPx = hourHeightPx / 60;
   let maxConcurrentColumns = 1;
 
@@ -20,18 +23,34 @@ export function calculateEventLayouts(timedEvents: TimelineEvent[]): LayoutCalcu
     .map((e, idx) => {
       const startDate = e.date;
       const endDate = e.endDate;
-      if (!(startDate instanceof Date) || isNaN(startDate.valueOf())) return null; 
+      if (!(startDate instanceof Date) || isNaN(startDate.valueOf())) {
+         return null; 
+      }
       const start = startDate.getHours() * 60 + startDate.getMinutes();
       let endValue;
       if (endDate && endDate instanceof Date && !isNaN(endDate.valueOf())) {
-        if (endDate.getDate() !== startDate.getDate()) endValue = 24 * 60; 
-        else endValue = endDate.getHours() * 60 + endDate.getMinutes();
-      } else endValue = start + 60; 
+        if (endDate.getDate() !== startDate.getDate()) {
+          endValue = 24 * 60; 
+        } else {
+          endValue = endDate.getHours() * 60 + endDate.getMinutes();
+        }
+      } else {
+        endValue = start + 60; 
+      }
       endValue = Math.max(start + 15, endValue); 
-      return { ...e, originalIndex: idx, startInMinutes: start, endInMinutes: endValue };
+      return {
+        ...e,
+        originalIndex: idx,
+        startInMinutes: start,
+        endInMinutes: endValue,
+      };
     })
     .filter(e => e !== null) 
-    .sort((a, b) => a!.startInMinutes - b!.startInMinutes || (b!.endInMinutes - b!.startInMinutes) - (a!.endInMinutes - a!.startInMinutes));
+    .sort((a, b) => { 
+      if (!a || !b) return 0;
+      if (a.startInMinutes !== b.startInMinutes) return a.startInMinutes - b.startInMinutes;
+      return (b.endInMinutes - b.startInMinutes) - (a.endInMinutes - a.startInMinutes);
+    });
 
   const layoutResults: EventWithLayout[] = [];
   
@@ -45,7 +64,9 @@ export function calculateEventLayouts(timedEvents: TimelineEvent[]): LayoutCalcu
       if (events[j]!.startInMinutes < maxEndInGroup) {
         currentGroup.push(events[j]!);
         maxEndInGroup = Math.max(maxEndInGroup, events[j]!.endInMinutes);
-      } else break; 
+      } else {
+        break; 
+      }
     }
     
     currentGroup.sort((a,b) => a.originalIndex - b.originalIndex);
@@ -62,7 +83,9 @@ export function calculateEventLayouts(timedEvents: TimelineEvent[]): LayoutCalcu
           break;
         }
       }
-      if (!placed) columns.push([{event, columnOrder: columns.length}]);
+      if (!placed) {
+        columns.push([{event, columnOrder: columns.length}]);
+      }
     }
     
     const numColsInGroup = columns.length;

@@ -1,11 +1,31 @@
 
 'use client';
 
-import type { TimelineEvent, RawGoogleTask } from '@/types';
+import type { TimelineEvent } from '@/types';
 import PlannerDayView from './PlannerDayView';
-import type { MaxViewTheme } from '../timeline/DayTimetableView';
-import { format } from 'date-fns';
+import type { MaxViewTheme } from './MaximizedPlannerView';
+import { format, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Button } from '../ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { Edit3, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
+import { isWithinInterval, startOfDay as dfnsStartOfDay, getDay, endOfWeek } from 'date-fns';
+import { calculateWeeklyEventLayouts } from './planner-utils';
+import { EventWithLayout } from './planner-utils';
+
+const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
+    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
+    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
+    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
+    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
+    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
+    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+  }
+};
 
 interface PlannerWeeklyViewProps {
     week: Date[];
@@ -17,6 +37,9 @@ interface PlannerWeeklyViewProps {
     onDeleteEvent?: (eventId: string) => void;
     ghostEvent: { date: Date; hour: number } | null;
 }
+
+const HOUR_HEIGHT_PX = 60;
+
 
 export default function PlannerWeeklyView({
     week,
@@ -32,6 +55,34 @@ export default function PlannerWeeklyView({
   const rulerClasses = viewTheme === 'dark' ? 'bg-gray-900/80 border-b border-gray-700/50' : 'bg-[#fff8ed] border-b border-gray-200';
   const dayHeaderClasses = viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600';
   const gridContainerClasses = viewTheme === 'dark' ? 'bg-gray-800 divide-x divide-gray-700/50' : 'bg-stone-50 divide-x divide-gray-200';
+  
+  const { allDayEventsByDay, timedEventsByDay } = useMemo(() => {
+    const weekStart = dfnsStartOfDay(week[0]);
+    const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
+    const relevantEvents = events.filter(e => {
+        if (!e.date) return false;
+        const eventDate = dfnsStartOfDay(e.date);
+        return isWithinInterval(eventDate, {start: weekStart, end: weekEnd});
+    });
+
+    const allDay: TimelineEvent[][] = Array.from({ length: 7 }, () => []);
+    const timed: TimelineEvent[][] = Array.from({ length: 7 }, () => []);
+
+    relevantEvents.forEach(e => {
+      const dayIndex = getDay(e.date);
+      if (e.isAllDay) {
+        allDay[dayIndex].push(e);
+      } else {
+        timed[dayIndex].push(e);
+      }
+    });
+    
+    return { allDayEventsByDay: allDay, timedEventsByDay: timed };
+  }, [week, events]);
+
+  const weeklyLayouts = useMemo(() => {
+    return timedEventsByDay.map(dayEvents => calculateWeeklyEventLayouts(dayEvents));
+  }, [timedEventsByDay]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -47,18 +98,68 @@ export default function PlannerWeeklyView({
             </div>
         </div>
         <div className={cn("flex-1 grid grid-cols-7 min-h-0 overflow-hidden", gridContainerClasses)}>
-            {week.map(day => (
-                <PlannerDayView
-                    key={day.toISOString()}
-                    date={day}
-                    events={events}
-                    onEditEvent={onEditEvent}
-                    onDeleteEvent={onDeleteEvent}
-                    viewTheme={viewTheme}
-                    onDrop={onDrop}
-                    onDragOver={onDragOver}
-                    ghostEvent={ghostEvent}
-                />
+            {week.map((day, dayIndex) => (
+                <div key={day.toISOString()} className="flex flex-col border-r border-border/20 last:border-r-0">
+                  <div className={cn("min-h-[60px] p-1 space-y-1 overflow-y-auto border-b border-border/20", viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-stone-100/80' )}>
+                     {allDayEventsByDay[dayIndex].map(event => (
+                        <Popover key={event.id}>
+                            <PopoverTrigger asChild>
+                                <div
+                                    className={cn(
+                                        'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer',
+                                        getEventTypeStyleClasses(event.type),
+                                    )}
+                                >
+                                    {event.title}
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
+                                <div className="space-y-2">
+                                    <h4 className="font-semibold">{event.title}</h4>
+                                    <p className="text-muted-foreground">All-day event</p>
+                                    {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                    <div className="flex justify-end gap-1 pt-1">
+                                        {onEditEvent && (
+                                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent(event)}>
+                                              <Edit3 className="h-3.5 w-3.5"/>
+                                          </Button>
+                                        )}
+                                        {onDeleteEvent && (
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                      <Trash2 className="h-3.5 w-3.5"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent className="frosted-glass">
+                                                  <AlertDialogHeader>
+                                                      <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                      <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                      <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => onDeleteEvent(event.id)}>Delete</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
+                                        )}
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                      ))}
+                  </div>
+                  <PlannerDayView
+                      date={day}
+                      events={timedEventsByDay[dayIndex]}
+                      onEditEvent={onEditEvent}
+                      onDeleteEvent={onDeleteEvent}
+                      viewTheme={viewTheme}
+                      onDrop={onDrop}
+                      onDragOver={onDragOver}
+                      ghostEvent={ghostEvent}
+                  />
+                </div>
             ))}
         </div>
     </div>

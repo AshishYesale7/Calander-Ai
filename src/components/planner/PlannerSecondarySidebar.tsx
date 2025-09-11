@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
-import type { ActivePlannerView, MaxViewTheme } from '../timeline/DayTimetableView';
+import type { ActivePlannerView, MaxViewTheme } from './MaximizedPlannerView';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
@@ -229,5 +229,3 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             viewTheme={props.viewTheme}
         />
 }
-
-    

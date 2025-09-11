@@ -18,12 +18,12 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
-import { Button } from '../ui/button';
+import type { MaxViewTheme } from './MaximizedPlannerView';
 
 interface PlannerMonthViewProps {
   month: Date;
   events: TimelineEvent[];
-  viewTheme: 'light' | 'dark';
+  viewTheme: MaxViewTheme;
 }
 
 interface ProcessedEvent {

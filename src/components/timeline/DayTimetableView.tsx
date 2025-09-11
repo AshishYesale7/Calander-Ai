@@ -5,8 +5,8 @@ import type { TimelineEvent } from '@/types';
 import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { format, isSameDay, startOfDay as dfnsStartOfDay } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, Palette, Maximize } from 'lucide-react';
+import { format, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday, isPast } from 'date-fns';
+import { Bot, Trash2, XCircle, Edit3, Palette, Maximize, CalendarDays, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,14 +27,12 @@ import { useAuth } from '@/context/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { isToday as dfnsIsToday } from 'date-fns';
 import MaximizedPlannerView from '../planner/MaximizedPlannerView';
 import { calculateEventLayouts } from '../planner/planner-utils';
 
-
 const HOUR_HEIGHT_PX = 60;
 const MIN_EVENT_COLUMN_WIDTH_PX = 90;
-const minuteRulerHeightClass = 'h-8';
+const minuteRulerHeightClass = 'h-8'; 
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
 
@@ -66,7 +64,7 @@ interface DayTimetableViewProps {
   events: TimelineEvent[];
   onClose: () => void;
   onDeleteEvent?: (eventId: string) => void;
-  onEditEvent?: (event: TimelineEvent) => void;
+  onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
 }
 
@@ -79,11 +77,13 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
+  
+  const isDayInPast = useMemo(() => isPast(date) && !isSameDay(date, new Date()), [date]);
 
   const eventsForDay = useMemo(() => events.filter(event => isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(date))), [events, date]);
   const allDayEvents = useMemo(() => eventsForDay.filter(e => e.isAllDay), [eventsForDay]);
   const timedEvents = useMemo(() => eventsForDay.filter(e => !e.isAllDay), [eventsForDay]);
-  const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents), [timedEvents]);
+  const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX), [timedEvents]);
   
   const minEventGridWidth = useMemo(() => maxConcurrentColumns > 3 ? `${Math.max(100, maxConcurrentColumns * MIN_EVENT_COLUMN_WIDTH_PX)}px` : '100%', [maxConcurrentColumns]);
 
@@ -188,24 +188,29 @@ export default function DayTimetableView({ date, events, onClose, onDeleteEvent,
       <div className="flex flex-1 min-h-0 relative">
         <div className="flex flex-1 flex-col">
           {/* All-day events */}
-          <div className="p-2 border-b border-border/30 timetable-allday-area">
-            <div className="flex gap-2">
-              <span className="text-xs font-semibold w-12 text-center">All-day</span>
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-                {allDayEvents.map(event => (
-                  <div key={event.id} onClick={() => handleEventClick(event)} className={cn("p-1 rounded-md text-xs cursor-pointer truncate", event.color ? '' : 'bg-muted/50')}>
-                    <Checkbox
-                        checked={event.status === 'completed'}
-                        onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
-                        className="mr-2"
-                        disabled={!onEventStatusChange}
-                    />
-                    {event.title}
-                  </div>
-                ))}
+          {allDayEvents.length > 0 && (
+            <div className="p-2 border-b border-border/30 timetable-allday-area">
+              <div className="flex gap-2">
+                <span className="text-xs font-semibold w-12 text-center">All-day</span>
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                  {allDayEvents.map(event => {
+                    const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
+                    return (
+                        <div key={event.id} onClick={() => handleEventClick(event)} className={cn("p-1 rounded-md text-xs cursor-pointer truncate", event.color ? '' : 'bg-muted/50')}>
+                          <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
+                              className="mr-2"
+                              disabled={!onEventStatusChange}
+                          />
+                          {event.title}
+                        </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
               <div className="flex h-full">
                   <div className="w-16 flex-shrink-0 text-right text-xs timetable-hours-column">

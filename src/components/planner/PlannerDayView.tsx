@@ -1,13 +1,12 @@
 
 'use client';
 
-import type { TimelineEvent, RawGoogleTask } from '@/types';
-import { useMemo, useRef, useEffect, useState } from 'react';
+import type { TimelineEvent } from '@/types';
+import { useMemo, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
-import { Bot, Trash2, Edit3 } from 'lucide-react';
+import { Trash2, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,15 +19,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Checkbox } from '../ui/checkbox';
-import { logUserActivity } from '@/services/activityLogService';
-import { useAuth } from '@/context/AuthContext';
 import { isToday as dfnsIsToday } from 'date-fns';
 import { calculateEventLayouts } from '@/components/planner/planner-utils';
-import type { MaxViewTheme } from './DayTimetableView';
+import type { MaxViewTheme } from './MaximizedPlannerView';
 
 const HOUR_HEIGHT_PX = 60;
-const MIN_EVENT_COLUMN_WIDTH_PX = 90;
 
 const renderHours = (viewTheme: MaxViewTheme) => {
     const hours = [];
@@ -67,8 +62,6 @@ interface PlannerDayViewProps {
 }
 
 export default function PlannerDayView({ date, events, onEditEvent, onDeleteEvent, viewTheme, onDrop, onDragOver, ghostEvent }: PlannerDayViewProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const nowIndicatorRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(new Date());
@@ -76,9 +69,9 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
   const eventsForDay = useMemo(() => events.filter(event => event.date instanceof Date && !isNaN(event.date.valueOf()) && isSameDay(event.date, date)), [events, date]);
   const allDayEvents = useMemo(() => eventsForDay.filter(e => e.isAllDay), [eventsForDay]);
   const timedEvents = useMemo(() => eventsForDay.filter(e => !e.isAllDay), [eventsForDay]);
-  const { eventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents), [timedEvents]);
+  const { eventsWithLayout, maxConcurrentColumns } = useMemo(() => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX), [timedEvents]);
   
-  const minEventGridWidth = useMemo(() => maxConcurrentColumns > 3 ? `${Math.max(100, maxConcurrentColumns * MIN_EVENT_COLUMN_WIDTH_PX)}px` : '100%', [maxConcurrentColumns]);
+  const minEventGridWidth = useMemo(() => maxConcurrentColumns > 3 ? `${Math.max(100, maxConcurrentColumns * 90)}px` : '100%', [maxConcurrentColumns]);
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 60000);
@@ -94,7 +87,6 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
   const handleDeleteClick = (eventId: string, eventTitle: string) => {
     if (onDeleteEvent) {
       onDeleteEvent(eventId);
-      toast({ title: "Event Deleted", description: `"${eventTitle}" has been removed from the timetable.` });
     }
   };
 
@@ -128,17 +120,17 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                     ))}
                 </div>
             </div>
-            {ghostEvent && ghostEvent.hour === -1 && (
+            {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === -1 && (
                 <div className="h-6 mt-1 rounded-md bg-accent/30 animate-pulse"></div>
             )}
         </div>
         <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
             <div className="flex h-full">
                 <div className={cn("w-16 flex-shrink-0 text-right text-xs", hoursColumnClasses)}>
-                    {renderHours(viewTheme)}
+                    {renderHours()}
                 </div>
                 <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
-                    {renderHourLines(viewTheme)}
+                    {renderHourLines()}
                     {dfnsIsToday(date) && (
                         <div
                             ref={nowIndicatorRef}
@@ -189,7 +181,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                             onDragOver={(e) => onDragOver(e, date, hour)}
                             onDrop={(e) => onDrop(e, date, hour)}
                         >
-                            {ghostEvent && ghostEvent.hour === hour && (
+                            {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === hour && (
                                 <div className="h-full w-full rounded-md bg-accent/30 animate-pulse"></div>
                             )}
                         </div>
