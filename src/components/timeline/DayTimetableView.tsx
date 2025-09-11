@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
@@ -405,6 +404,7 @@ const PlannerSidebar = ({ activeView, setActiveView, viewTheme }: { activeView: 
 const PlannerTaskList = ({
   taskLists,
   tasks,
+  allTasks,
   activeListId,
   onAddTask,
   onDragStart,
@@ -412,6 +412,7 @@ const PlannerTaskList = ({
 }: {
   taskLists: GoogleTaskList[];
   tasks: RawGoogleTask[];
+  allTasks: TasksByList; // Now expects all tasks
   activeListId: string;
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
@@ -419,7 +420,6 @@ const PlannerTaskList = ({
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
     
-    // Determine the title of the active view
     const activeViewTitle = useMemo(() => {
         if (activeListId === 'all_tasks') return 'All Tasks';
         const activeList = taskLists.find(list => list.id === activeListId);
@@ -436,7 +436,6 @@ const PlannerTaskList = ({
         }
     };
     
-    // Mock data for pills and durations
     const getMockTaskDetails = (title: string) => {
         const hash = title.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
         const durations = ['1h', '1h 15m', '1h 30m', '45m', '2h'];
@@ -462,6 +461,34 @@ const PlannerTaskList = ({
     const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
+    const renderTaskItem = (task: RawGoogleTask) => {
+      const mockDetails = getMockTaskDetails(task.title);
+      return (
+          <div 
+            key={task.id} 
+            className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
+            draggable
+            onDragStart={(e) => onDragStart(e, task)}
+          >
+              <div className="flex items-start gap-2 w-full">
+                  <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
+                  <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
+                  {mockDetails.duration && (
+                      <span className={cn("text-[10px] font-medium whitespace-nowrap", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>{mockDetails.duration}</span>
+                  )}
+                  {mockDetails.tag && (
+                      <span className={cn("text-white text-[10px] font-bold px-1.5 py-0.5 rounded", mockDetails.tag.color)}>{mockDetails.tag.name}</span>
+                  )}
+              </div>
+               {mockDetails.metadata && (
+                  <div className={cn("pl-6 text-[10px] flex items-center gap-1", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>
+                      <Calendar size={10}/>
+                      <span>{mockDetails.metadata}</span>
+                  </div>
+              )}
+          </div>
+      );
+    }
 
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
@@ -483,34 +510,26 @@ const PlannerTaskList = ({
                 </div>
             </form>
             <div className="space-y-1 text-xs overflow-y-auto">
-                {tasks.map(task => {
-                    const mockDetails = getMockTaskDetails(task.title);
-                    return (
-                        <div 
-                        key={task.id} 
-                        className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, task)}
-                        >
-                            <div className="flex items-start gap-2 w-full">
-                                <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
-                                <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
-                                {mockDetails.duration && (
-                                    <span className={cn("text-[10px] font-medium whitespace-nowrap", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>{mockDetails.duration}</span>
-                                )}
-                                {mockDetails.tag && (
-                                    <span className={cn("text-white text-[10px] font-bold px-1.5 py-0.5 rounded", mockDetails.tag.color)}>{mockDetails.tag.name}</span>
-                                )}
-                            </div>
-                             {mockDetails.metadata && (
-                                <div className={cn("pl-6 text-[10px] flex items-center gap-1", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>
-                                    <Calendar size={10}/>
-                                    <span>{mockDetails.metadata}</span>
-                                </div>
-                            )}
-                        </div>
-                    )
-                })}
+                 {activeListId === 'all_tasks' ? (
+                   <Accordion type="multiple" className="w-full">
+                       {taskLists.map(list => {
+                           const listTasks = allTasks[list.id] || [];
+                           if (listTasks.length === 0) return null;
+                           return (
+                               <AccordionItem value={list.id} key={list.id} className="border-b-0">
+                                   <AccordionTrigger className="text-xs font-semibold hover:no-underline py-1.5">
+                                       {list.title}
+                                   </AccordionTrigger>
+                                   <AccordionContent className="pb-2 space-y-1">
+                                       {listTasks.map(renderTaskItem)}
+                                   </AccordionContent>
+                               </AccordionItem>
+                           )
+                       })}
+                   </Accordion>
+                ) : (
+                    tasks.map(renderTaskItem)
+                )}
             </div>
         </div>
     )
@@ -1053,7 +1072,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const [isMaximized, setIsMaximized] = useState(false);
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
-  const [panelWidths, setPanelWidths] = useState([10, 25, 65]);
+  const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
   const isMobile = useIsMobile();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -1066,7 +1085,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   }, []);
 
 
-  const savedWidthsRef = useRef([10, 25, 65]);
+  const savedWidthsRef = useRef([15, 25, 60]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
@@ -1393,7 +1412,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                          ) : (
                             <PlannerTaskList
                               taskLists={taskLists}
-                              tasks={activePlannerView === 'all_tasks' ? Object.values(tasks).flat() : tasks[activePlannerView] || []}
+                              allTasks={tasks}
+                              tasks={tasks[activePlannerView] || []}
                               activeListId={activePlannerView}
                               onAddTask={handleAddTask}
                               onDragStart={handleDragStart}
@@ -1666,5 +1686,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
-    
