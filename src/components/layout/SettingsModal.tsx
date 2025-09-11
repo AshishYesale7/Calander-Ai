@@ -38,6 +38,7 @@ import {
 import { getToken } from 'firebase/messaging';
 import { sendNotification } from '@/ai/flows/send-notification-flow';
 import { NotionLogo } from '../logo/NotionLogo';
+import { saveUserFCMToken } from '@/services/userService';
 
 
 declare global {
@@ -381,8 +382,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
 
   const handleRequestNotificationPermission = async () => {
-    if (!messaging) {
-      toast({ title: 'Error', description: 'Push notifications are not supported on this browser.', variant: 'destructive' });
+    if (!messaging || !user) {
+      toast({ title: 'Error', description: 'Push notifications are not supported on this browser or you are not signed in.', variant: 'destructive' });
       return;
     }
     try {
@@ -397,9 +398,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             return;
         }
         const fcmToken = await getToken(messaging, { vapidKey });
-        console.log("FCM Token:", fcmToken);
-        // TODO: Send this fcmToken to your server and save it against the user's ID
-        toast({ title: 'Success', description: 'Push notifications have been enabled!' });
+        if (fcmToken) {
+            await saveUserFCMToken(user.uid, fcmToken);
+            toast({ title: 'Success', description: 'Push notifications have been enabled!' });
+        } else {
+            throw new Error("Could not retrieve notification token.");
+        }
       } else {
         toast({ title: 'Notifications Denied', description: 'You can enable notifications from your browser settings later.', variant: 'destructive' });
       }

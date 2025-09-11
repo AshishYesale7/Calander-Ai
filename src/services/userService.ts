@@ -391,5 +391,3 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
-
-    
