@@ -2,7 +2,6 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { adminDb } from '@/lib/firebase-admin'; // Use adminDb for server-side operations
 import type { AppNotification } from '@/types';
 import {
   collection,
@@ -16,6 +15,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
+import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 
 const getNotificationsCollection = (userId: string) => {
   if (!db) throw new Error("Firestore is not initialized.");
@@ -50,42 +50,26 @@ export const createNotification = async (
 
   const notificationsCollection = getNotificationsCollection(userId);
   try {
+    // 1. Create the in-app notification document in Firestore.
     await addDoc(notificationsCollection, {
       ...notification,
       isRead: false,
       createdAt: Timestamp.now(),
     });
 
-    // After saving to Firestore, trigger the push notification via FCM
-    const tokensCollectionRef = adminDb.collection('users').doc(userId).collection('fcmTokens');
-    const tokensSnapshot = await tokensCollectionRef.get();
-    
-    if (tokensSnapshot.empty) {
-      console.log(`No FCM tokens found for user ${userId}. Skipping push notification.`);
-      return;
-    }
-
-    const tokens = tokensSnapshot.docs.map(doc => doc.id);
-    
-    const messagePayload = {
-      notification: {
-        title: notification.type === 'new_follower' ? 'New Follower!' : 'New Notification',
+    // 2. Trigger the web push notification.
+    await sendWebPushNotification({
+        userId: userId,
+        title: notification.type === 'new_follower' ? 'New Follower!' : 'New Reminder',
         body: notification.message,
-        icon: notification.imageUrl || '/logos/calendar-ai-logo-192.png',
-      },
-      webpush: {
-        fcm_options: {
-          link: notification.link || '/',
-        },
-      },
-      tokens: tokens,
-    };
-
-    const { getMessaging } = await import('firebase-admin/messaging');
-    await getMessaging().sendMulticast(messagePayload as any);
+        url: notification.link || '/',
+        icon: notification.imageUrl,
+    });
     
   } catch (error) {
     console.error("Failed to create and send notification:", error);
+    // Don't re-throw here, as creating the in-app notification might have succeeded.
+    // The error is logged on the server.
   }
 };
 

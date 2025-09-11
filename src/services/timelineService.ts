@@ -7,7 +7,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, Timestamp, query, orderBy,
 import { getAuthenticatedClient } from './googleAuthService';
 import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalendarEvent } from './googleCalendarService';
 import { startOfDay, endOfDay } from 'date-fns';
-import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 import { createNotification } from './notificationService';
 
 const getTimelineEventsCollection = (userId: string) => {
@@ -116,14 +116,15 @@ export const saveTimelineEvent = async (
         
         try {
             // Create an in-app notification
-            await createNotification(userId, {
+            await createNotification({
                 type: 'event_reminder',
                 message: notificationMessage,
-                link: '/dashboard'
+                link: '/dashboard',
+                userId: userId,
             });
             
             // Also send a push notification
-            await sendNotification({
+            await sendWebPushNotification({
                 userId: userId,
                 title: 'Reminder Set',
                 body: `You'll be reminded for "${event.title}" ${reminderText}.`,
