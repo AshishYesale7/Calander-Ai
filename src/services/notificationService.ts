@@ -19,7 +19,9 @@ import {
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 
 const getNotificationsCollection = (userId: string) => {
-  if (!db) throw new Error("Firestore is not initialized.");
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   if (!userId || typeof userId !== 'string') {
     console.error("Invalid userId passed to getNotificationsCollection:", userId);
     throw new Error("Invalid userId provided.");
