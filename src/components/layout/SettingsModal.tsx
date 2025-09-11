@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -36,7 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getToken } from 'firebase/messaging';
-import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken } from '@/services/userService';
 
@@ -420,17 +420,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     setIsSendingTest(true);
     try {
-        const result = await sendNotification({
+        await createNotification({
             userId: user.uid,
-            title: 'Test Notification from Calendar.ai',
-            body: 'If you can see this, your push notifications are working correctly!',
-            url: '/dashboard'
+            type: 'system_alert',
+            message: 'This is a test notification from Calendar.ai.',
+            link: '/dashboard'
         });
-        if (result.success) {
-            toast({ title: 'Test Sent!', description: 'Check your device for a notification.' });
-        } else {
-            throw new Error(result.message);
-        }
+        toast({ title: 'Test Sent!', description: 'Check your notifications panel and device.' });
     } catch (error) {
         console.error("Test notification error:", error);
         toast({ title: 'Error', description: (error as Error).message || 'Failed to send test notification.', variant: 'destructive' });

@@ -16,6 +16,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
+import { sendNotification } from '@/ai/flows/send-notification-flow';
 
 const getNotificationsCollection = (userId: string) => {
   if (!db) throw new Error("Firestore is not initialized.");
@@ -31,6 +32,7 @@ const fromFirestore = (docData: any): AppNotification => {
     link: data.link,
     isRead: data.isRead || false,
     createdAt: (data.createdAt as Timestamp).toDate(),
+    imageUrl: data.imageUrl,
   };
 };
 
@@ -40,14 +42,24 @@ export const createNotification = async (
 ): Promise<void> => {
   const notificationsCollection = getNotificationsCollection(userId);
   try {
+    // 1. Save the notification to Firestore for the in-app panel
     await addDoc(notificationsCollection, {
       ...notification,
       isRead: false,
       createdAt: Timestamp.now(),
     });
+
+    // 2. After saving, trigger the push notification
+    await sendNotification({
+        userId: userId,
+        title: notification.type === 'new_follower' ? 'New Follower!' : 'New Notification',
+        body: notification.message,
+        url: notification.link,
+    });
+
   } catch (error) {
-    console.error("Failed to create notification:", error);
-    // Non-critical, so we don't throw
+    console.error("Failed to create notification and/or send push notification:", error);
+    // We don't throw here as logging is a background task and shouldn't block the UI
   }
 };
 
