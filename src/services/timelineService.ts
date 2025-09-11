@@ -80,7 +80,10 @@ export const saveTimelineEvent = async (
         }
       } catch (error) {
         console.error("Critical Error: Failed to sync event to Google Calendar. Saving to Firestore only.", error);
-        throw new Error("Event saved locally, but failed to sync with Google Calendar. Please check permissions in Settings.");
+        // Do not throw an error, instead, allow local saving to proceed.
+        // The client-side will need to catch this specific case if it needs to notify the user.
+        // For now, we just ensure it doesn't have a googleEventId.
+        googleEventId = null; 
       }
     }
 

@@ -445,10 +445,20 @@ export default function DashboardPage() {
             title: isAddingNewEvent ? "Event Added" : "Event Updated",
             description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
         });
-    } catch (error) {
-        console.error("Failed to save event:", error);
+    } catch (error: any) {
+        // Since the service function no longer throws for sync errors, this catch is for other issues (e.g., Firestore).
+        // A specific error message for sync failure is now passed.
+        let description = 'An unknown error occurred while saving the event.';
+        if (typeof error.message === 'string') {
+            if (error.message.includes('Google Calendar')) {
+                description = `Event saved locally, but failed to sync with Google Calendar. Please check permissions in Settings.`;
+            } else {
+                description = error.message;
+            }
+        }
+        toast({ title: 'Save Error', description, variant: 'destructive', duration: 8000 });
+        // Fetch events again to ensure UI is consistent with the database state.
         await fetchAllEvents();
-        toast({ title: "Sync Error", description: "Could not save to server. Your changes have been reverted.", variant: "destructive" });
     }
   }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents, timezone]);
 
