@@ -2,7 +2,8 @@
 'use server';
 
 import { z } from 'genkit';
-import { GoogleAuth } from 'google-auth-library';
+import { getMessaging } from 'firebase-admin/messaging';
+import { app } from '@/lib/firebase-admin'; // Using server-side admin app
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
@@ -14,15 +15,6 @@ const SendNotificationInputSchema = z.object({
 });
 export type SendNotificationInput = z.infer<typeof SendNotificationInputSchema>;
 
-// Helper function to get an access token
-async function getAccessToken() {
-  const auth = new GoogleAuth({
-    scopes: 'https://www.googleapis.com/auth/firebase.messaging',
-  });
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-  return accessToken.token;
-}
 
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string }> {
   try {
@@ -42,17 +34,9 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
       return { success: true, message: 'User has no registered devices for notifications.' };
     }
 
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-        throw new Error("Failed to retrieve access token for FCM.");
-    }
+    const messaging = getMessaging(app);
 
-    const fcmEndpoint = `https://fcm.googleapis.com/v1/projects/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/messages:send`;
-    
-    // We send to the first token found. For a production app, you might loop and send to all.
     const messagePayload = {
-      message: {
-        token: tokens[0],
         notification: {
           title: input.title,
           body: input.body,
@@ -62,28 +46,32 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
             link: input.url || process.env.NEXT_PUBLIC_BASE_URL || '/',
           },
         },
-      },
+        tokens: tokens, // Send to all registered tokens for the user
     };
+    
+    const response = await messaging.sendEachForMulticast(messagePayload);
+    
+    const successfulCount = response.successCount;
+    const failureCount = response.failureCount;
+    
+    console.log(`Successfully sent message to ${successfulCount} device(s).`);
 
-    const response = await fetch(fcmEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(messagePayload),
-    });
-
-    if (response.ok) {
-        const responseData = await response.json();
-        console.log('Successfully sent message:', responseData);
-        return { success: true, message: 'Notification sent successfully.' };
-    } else {
-        const errorData = await response.json();
-        console.error('Error sending push notification:', errorData);
-        const errorMessage = errorData.error?.message || `FCM API responded with status ${response.status}`;
-        throw new Error(errorMessage);
+    if (failureCount > 0) {
+        console.warn(`Failed to send message to ${failureCount} device(s).`);
+        response.responses.forEach(resp => {
+            if (!resp.success) {
+                console.error(`- Failure reason for token: ${resp.error?.message}`);
+            }
+        });
+        // Even if some fail, we can consider it a partial success if at least one worked.
+        if (successfulCount > 0) {
+             return { success: true, message: `Notification sent to ${successfulCount}/${tokens.length} devices.` };
+        } else {
+            throw new Error(`Failed to send notification to any device. Error: ${response.responses[0]?.error?.message || 'Unknown FCM error'}`);
+        }
     }
+    
+    return { success: true, message: 'Notification sent successfully.' };
 
   } catch (error: any) {
     console.error('Error in sendNotification flow:', error);
