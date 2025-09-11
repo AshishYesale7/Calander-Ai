@@ -1382,6 +1382,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         [listId]: prev[listId].map(t => t.id === tempId ? createdTask as RawGoogleTask : t),
       }));
     } catch (error) {
+      // Revert optimistic update on failure
       setTasks(prev => ({
         ...prev,
         [listId]: prev[listId].filter(t => t.id !== tempId),
