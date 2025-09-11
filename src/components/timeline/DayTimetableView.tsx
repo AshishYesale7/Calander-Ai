@@ -36,7 +36,6 @@ const minuteRulerHeightClass = 'h-8';
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
 
-
 const getEventTooltip = (event: TimelineEvent): string => {
     if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return event.title;
     const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
@@ -151,11 +150,19 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   };
   
   if (isMaximized) {
-    return <MaximizedPlannerView initialDate={initialDate} allEvents={allEvents} onMinimize={() => setIsMaximized(false)} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} />;
+    return (
+      <MaximizedPlannerView
+        initialDate={initialDate}
+        allEvents={allEvents}
+        onMinimize={() => setIsMaximized(false)}
+        onEditEvent={onEditEvent}
+        onDeleteEvent={onDeleteEvent}
+      />
+    );
   }
 
   return (
-    <Card className={cn("frosted-glass w-full shadow-xl flex flex-col transition-all duration-300 max-h-[70vh]", isMaximized && "fixed inset-0 top-16 z-40 rounded-none max-h-none")} data-theme={viewTheme}>
+    <Card className={cn("frosted-glass w-full shadow-xl flex flex-col transition-all duration-300 max-h-[70vh]")} data-theme={viewTheme}>
       <CardHeader className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
             <div>
@@ -188,7 +195,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                     </RadioGroup>
                   </PopoverContent>
                 </Popover>
-                <Button variant="ghost" size="icon" onClick={() => setIsMaximized(!isMaximized)} aria-label={isMaximized ? "Minimize view" : "Maximize view"}>
+                <Button variant="ghost" size="icon" onClick={() => setIsMaximized(true)} aria-label="Maximize view">
                     <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
@@ -196,24 +203,13 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 </Button>
             </div>
         </div>
-        {/* Minute Ruler */}
-        <div className={cn("grid grid-cols-4 border-b border-border/30 text-center text-xs text-muted-foreground timetable-ruler", minuteRulerHeightClass)}>
-            <div className="border-r border-border/30 flex items-center justify-center">00'</div>
-            <div className="border-r border-border/30 flex items-center justify-center">15'</div>
-            <div className="border-r border-border/30 flex items-center justify-center">30'</div>
-            <div className="flex items-center justify-center">45'</div>
-        </div>
       </CardHeader>
-
-      <div className="flex flex-1 min-h-0 relative">
-        <div className="flex flex-1 flex-col">
-          {/* All-day events */}
-          {allDayEvents.length > 0 && (
-            <div className="p-2 border-b border-border/30 timetable-allday-area">
-              <div className="flex gap-2">
-                <span className="text-xs font-semibold w-12 text-center">All-day</span>
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-                  {allDayEvents.map(event => {
+      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+          <div className="p-2 border-b border-border/30 timetable-allday-area">
+             <div className="flex gap-2">
+                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
+                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                 {allDayEvents.map(event => {
                     const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
                     return (
                         <div key={event.id} onClick={() => handleEventClick(event)} className={cn("p-1 rounded-md text-xs cursor-pointer truncate", event.color ? '' : 'bg-muted/50')}>
@@ -227,13 +223,14 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                         </div>
                     )
                   })}
-                </div>
-              </div>
+                 </div>
             </div>
-          )}
-          <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
-              <div className="flex h-full">
+          </div>
+          <div className="flex-1 flex min-h-0 relative">
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto timetable-main-area">
+              <div className="flex w-full">
                   <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
+                      <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
                       <div>
                           {hours.map(hour => (
                           <div key={`label-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px` }}
@@ -245,6 +242,21 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                   </div>
 
                   <div className="flex-1 relative" style={{ minWidth: 0 }}>
+                      <div
+                      className={cn(
+                          "sticky top-0 z-30 backdrop-blur-sm flex items-center border-b border-border/30 timetable-ruler",
+                          minuteRulerHeightClass
+                      )}
+                      style={{ minWidth: minEventGridWidth }} 
+                      >
+                          <div className="w-full grid grid-cols-4 items-center h-full px-1 text-center text-[10px] text-muted-foreground">
+                              <div className="text-left">00'</div>
+                              <div className="border-l border-border/40 h-full flex items-center justify-center">15'</div>
+                              <div className="border-l border-border/40 h-full flex items-center justify-center">30'</div>
+                              <div className="border-l border-border/40 h-full flex items-center justify-center">45'</div>
+                          </div>
+                      </div>
+
                       <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px`, minWidth: minEventGridWidth }}> 
                       {hours.map(hour => (
                           <div key={`line-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px`, top: `${hour * HOUR_HEIGHT_PX}px` }}
@@ -322,7 +334,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                                               <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                                               <AlertDialogFooter>
                                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
+                                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(event.id, event.title)}>Delete</AlertDialogAction>
                                               </AlertDialogFooter>
                                               </AlertDialogContent>
                                           </AlertDialog>
@@ -345,6 +357,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
               />
             )}
           </div>
-        </Card>
-      );
-    }
+        </CardContent>
+    </Card>
+  );
+}
