@@ -106,7 +106,7 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       const registerServiceWorker = async () => {
           try {
-              // Construct the URL with query parameters
+              // Construct the URL with query parameters using the correct keys
               const firebaseConfig = {
                   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
                   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
