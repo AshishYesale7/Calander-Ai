@@ -2,7 +2,7 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
 import { Trash2, Edit3 } from 'lucide-react';
