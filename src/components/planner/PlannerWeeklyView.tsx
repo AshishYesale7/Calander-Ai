@@ -3,7 +3,7 @@
 
 import type { TimelineEvent, RawGoogleTask } from '@/types';
 import PlannerDayView from './PlannerDayView';
-import type { MaxViewTheme } from './DayTimetableView';
+import type { MaxViewTheme } from '../timeline/DayTimetableView';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
