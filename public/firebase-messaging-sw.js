@@ -1,45 +1,39 @@
 
-// Import the Firebase app and messaging packages
-import { initializeApp } from "firebase/app";
-import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
+// This is a basic service worker for handling Firebase Cloud Messaging.
+// It will run in the background, even when the app is closed.
+
+// IMPORTANT: Do not import any other files here. This file must be self-contained.
+
+// Firebase SDK scripts
+importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js');
 
 // Your web app's Firebase configuration
+// This must be replaced with your actual Firebase config values
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_API_KEY",
+  authDomain: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+  projectId: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+  storageBucket: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+  appId: "REPLACE_WITH_YOUR_NEXT_PUBLIC_FIREBASE_APP_ID",
 };
 
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+// Initialize Firebase
+if (firebase.apps.length === 0) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// This listener handles messages received when the app is in the background or closed.
-onBackgroundMessage(messaging, (payload) => {
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
-  // Customize the notification here
-  const notificationTitle = payload.notification?.title || 'New Notification';
+  const notificationTitle = payload.notification.title;
   const notificationOptions = {
-    body: payload.notification?.body || '',
-    icon: payload.notification?.icon || '/logo.png', // Fallback icon
-    data: {
-        url: payload.fcmOptions?.link || '/' // Pass URL from the data payload
-    }
+    body: payload.notification.body,
+    icon: '/icons/icon-192x192.png' // Optional: path to an icon
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// Optional: Handle notification click
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    
-    const urlToOpen = event.notification.data.url || '/';
-
-    event.waitUntil(
-        self.clients.openWindow(urlToOpen)
-    );
 });
