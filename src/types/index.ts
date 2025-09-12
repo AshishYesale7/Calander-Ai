@@ -63,6 +63,7 @@ export interface TimelineEvent {
   googleEventId?: string; // ID of the event in Google Calendar
   googleTaskId?: string; // ID of the event in Google Tasks
   deletedAt?: Date; // For soft deletes
+  links?: { title: string; url: string }[];
 }
 
 export interface AppNotification {
@@ -260,6 +261,19 @@ export interface UserDataBackup {
     resources: ResourceLink[];
     timelineEvents: TimelineEvent[];
     streakData: StreakData | null;
+}
+
+export interface CodingActivity {
+    date: Date;
+    count: number;
+}
+
+export interface PlatformStats {
+    id: string;
+    name: 'LeetCode' | 'Codeforces' | 'HackerRank' | 'Other';
+    username: string;
+    problemsSolved: number;
+    contests: number;
 }
 
 export interface ActivityLog {

@@ -211,7 +211,7 @@ export default function CareerGoalsPage() {
               {goal.deadline && (
                 <p className="text-xs text-muted-foreground flex items-center">
                   <CalendarDays className="mr-1 h-3 w-3" />
-                  Deadline: {format(goal.deadline, 'MMM d, yyyy')}
+                  Deadline: {format(new Date(goal.deadline), 'MMM d, yyyy')}
                 </p>
               )}
             </CardHeader>
