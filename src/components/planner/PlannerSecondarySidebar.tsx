@@ -162,13 +162,13 @@ const PlannerTaskList = ({
         if (activeListId === 'today') return 'Today';
         if (activeListId === 'upcoming') return 'Upcoming';
         const activeList = taskLists.find(list => list.id === activeListId);
-        return activeList?.title || 'Inbox';
+        return activeList?.title || ''; // Removed "My Tasks" fallback
     }, [activeListId, taskLists]);
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault();
         const title = newTaskTitle.trim();
-        const listId = taskLists.find(l => l.id === activeListId)?.id || taskLists.find(l => l.title === 'My Tasks')?.id || taskLists[0]?.id;
+        const listId = taskLists.find(l => l.id === activeListId)?.id || taskLists[0]?.id;
         if (title && listId) {
             onAddTask(listId, title);
             setNewTaskTitle('');
@@ -221,12 +221,10 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>;
   }
   
-  // Explicitly check for 'gmail' view first.
   if (props.activeView === 'gmail') {
     return <PlannerGmailList viewTheme={props.viewTheme} onDragStart={props.onDragStart} />
   }
 
-  // Then, check if the active view corresponds to any of the fetched task lists or smart lists.
   const isTaskView = ['today', 'upcoming', 'all_tasks'].includes(props.activeView) || props.taskLists.some(list => list.id === props.activeView);
   
   if (isTaskView) {
@@ -249,6 +247,6 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             />
   }
 
-  // If the view is not 'gmail' and not a valid task view, render nothing.
+  // Render nothing if the view is not gmail and not a valid task list
   return null;
 }
