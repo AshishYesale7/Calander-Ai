@@ -224,19 +224,6 @@ export interface ChatMessage {
     content: string;
 }
 
-export interface CodingActivity {
-    date: Date;
-    count: number;
-}
-
-export interface PlatformStats {
-    id: string;
-    name: 'LeetCode' | 'Codeforces' | 'HackerRank' | 'Other';
-    username: string;
-    problemsSolved: number;
-    contests: number;
-}
-
 export interface ActivityLog {
   id: string;
   userId: string;

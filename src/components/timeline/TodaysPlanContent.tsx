@@ -6,6 +6,9 @@ import { Checkbox } from '../ui/checkbox';
 import { useEffect, useState } from 'react';
 import { isToday as dfnsIsToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { logUserActivity } from '@/services/activityLogService';
+
 
 interface TodaysPlanContentProps {
   plan: DailyPlan;
@@ -16,6 +19,8 @@ interface TodaysPlanContentProps {
 export function TodaysPlanContent({ plan, displayDate, onStatusChange }: TodaysPlanContentProps) {
   const [now, setNow] = useState(new Date());
   const isToday = dfnsIsToday(displayDate);
+  const { user } = useAuth();
+
 
   useEffect(() => {
     if (isToday) {
@@ -96,7 +101,11 @@ export function TodaysPlanContent({ plan, displayDate, onStatusChange }: TodaysP
 
             const handleCheckboxChange = (checked: boolean) => {
                 if (onStatusChange) {
-                    onStatusChange(index, checked ? 'completed' : 'missed');
+                    const newStatus = checked ? 'completed' : 'missed';
+                     if (newStatus === 'completed' && user) {
+                        logUserActivity(user.uid, 'task_completed', { title: item.activity });
+                    }
+                    onStatusChange(index, newStatus);
                 }
             };
 
