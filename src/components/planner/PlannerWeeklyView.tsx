@@ -49,6 +49,7 @@ export default function PlannerWeeklyView({
     onDeleteEvent,
     ghostEvent
 }: PlannerWeeklyViewProps) {
+  const [now, setNow] = useState(new Date());
 
   const rulerClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
   const allDaySectionClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
@@ -93,9 +94,16 @@ export default function PlannerWeeklyView({
     }
   };
 
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const currentTimeTopPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
+
 
   return (
-    <div className={cn("flex flex-col flex-1 min-h-0", gridContainerClasses)}>
+    <div className={cn("flex flex-col flex-1 min-h-0", viewTheme === 'dark' ? 'bg-black' : 'bg-white')}>
         <div className={cn("flex flex-shrink-0", rulerClasses)}>
             <div className="w-16 flex-shrink-0"></div>
             <div className="flex-1 grid grid-cols-7">
@@ -171,18 +179,24 @@ export default function PlannerWeeklyView({
             <div className="flex">
                 <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative -top-2">
-                            {i > 0 && <span className='-translate-y-1/2'>{format(new Date(0,0,0,i), 'ha')}</span>}
+                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative border-t border-border/20 -mt-px">
+                            {i > 0 && <span className='relative -top-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
                         </div>
                     ))}
                 </div>
-                <div className="flex-1 grid grid-cols-7 relative">
+                 <div className={cn("flex-1 grid grid-cols-7 relative", gridContainerClasses)}>
                     {Array.from({ length: 24 * 7 }).map((_, i) => (
                         <div key={i} className="h-[60px] border-t border-l border-border/20"></div>
                     ))}
+                    <div
+                        className="absolute w-full h-0.5 bg-accent/80 z-20 pointer-events-none"
+                        style={{ top: `${currentTimeTopPosition}px` }}
+                    >
+                        <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
+                    </div>
                     {/* Render Timed Events */}
                     {weeklyLayouts.map((dayLayout, dayIndex) => (
-                        <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
+                        <div key={dayIndex} className="absolute h-full" style={{ left: `calc(${(100/7)*dayIndex}%)`, width: `calc(100%/7)` }}>
                             {dayLayout.map((event: EventWithLayout) => {
                                 const isShort = event.layout.height < 40;
                                 return (
