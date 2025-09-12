@@ -224,16 +224,6 @@ export interface ChatMessage {
     content: string;
 }
 
-export interface ActivityLog {
-  id: string;
-  userId: string;
-  type: 'goal_completed' | 'task_completed';
-  timestamp: Date;
-  details: {
-    title: string;
-  }
-}
-
 export interface StreakData {
     currentStreak: number;
     longestStreak: number;
@@ -270,4 +260,14 @@ export interface UserDataBackup {
     resources: ResourceLink[];
     timelineEvents: TimelineEvent[];
     streakData: StreakData | null;
+}
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  type: 'goal_completed' | 'task_completed';
+  timestamp: Date;
+  details: {
+    title: string;
+  }
 }
