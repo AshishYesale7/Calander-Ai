@@ -66,11 +66,12 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   });
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
-  type GhostEvent = { date: Date; hour: number; title?: string; };
+  type GhostEvent = { date: Date; hour: number; title?: string };
   const [ghostEvent, setGhostEvent] = useState<GhostEvent | null>(null);
 
   const ghostEventRef = useRef<GhostEvent | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const [eventToCreate, setEventToCreate] = useState<TimelineEvent | null>(null);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
@@ -81,6 +82,13 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
           localStorage.setItem('planner-view-theme', maximizedViewTheme);
       }
   }, [maximizedViewTheme]);
+
+  useEffect(() => {
+    if (eventToCreate && onEditEvent) {
+        onEditEvent(eventToCreate, true);
+        setEventToCreate(null); // Reset after saving
+    }
+  }, [eventToCreate, onEditEvent]);
 
   const handleNavigate = (direction: 'prev' | 'next') => {
       const newDateFn = (current: Date) => {
@@ -228,22 +236,25 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropDate: Date, dropHour: number) => {
     e.preventDefault();
-    setGhostEvent(null);
-    ghostEventRef.current = null;
-    if (!draggedTask || !onEditEvent) return;
+    if (!draggedTask) return;
 
     const newEvent: TimelineEvent = dropHour === -1
       ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: dfnsStartOfDay(dropDate), endDate: endOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } }
       : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
     
-    onEditEvent(newEvent, true);
-    setDraggedTask(null);
+    setEventToCreate(newEvent);
+    // State is reset in handleDragEnd
   };
   
   const handleDragEnd = (e?: React.DragEvent) => {
+    // This function is called when a drag operation ends, regardless of whether it was successful.
+    // Resetting state here ensures a clean UI.
     setDraggedTask(null);
     setGhostEvent(null);
     ghostEventRef.current = null;
+    if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+    }
   };
   
   const handleToggleSidebar = () => {
@@ -301,7 +312,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                       ) : plannerViewMode === 'day' ? (
                         <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       ) : (
-                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
+                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
                       )}
                   </div>
               </div>
