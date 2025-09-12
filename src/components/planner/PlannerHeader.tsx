@@ -51,7 +51,7 @@ export default function PlannerHeader({
   };
 
   const headerClasses = viewTheme === 'dark'
-    ? 'border-gray-700/50 text-gray-300 bg-[#282828]'
+    ? 'border-gray-700/50 text-gray-300 bg-[#1c1c1c]'
     : 'border-stone-200 bg-[#fff8ed] text-gray-700';
   const buttonClasses = viewTheme === 'dark' ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-stone-200';
   const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
