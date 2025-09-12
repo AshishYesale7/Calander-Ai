@@ -51,6 +51,7 @@ export default function PlannerWeeklyView({
 }: PlannerWeeklyViewProps) {
   const [now, setNow] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const rulerClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
   const allDaySectionClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
@@ -94,6 +95,34 @@ export default function PlannerWeeklyView({
       onDeleteEvent(eventId);
     }
   };
+  
+    const handleGridDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        if (!gridContainerRef.current) return;
+        const rect = gridContainerRef.current.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const x = e.clientX - rect.left;
+
+        const hour = Math.floor(y / HOUR_HEIGHT_PX);
+        const dayIndex = Math.floor(x / (rect.width / 7));
+        
+        if (dayIndex >= 0 && dayIndex < 7) {
+            onDragOver(e, week[dayIndex], hour);
+        }
+    };
+    
+    const handleGridDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        if (!gridContainerRef.current) return;
+        const rect = gridContainerRef.current.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const x = e.clientX - rect.left;
+
+        const hour = Math.floor(y / HOUR_HEIGHT_PX);
+        const dayIndex = Math.floor(x / (rect.width / 7));
+
+        if (dayIndex >= 0 && dayIndex < 7) {
+            onDrop(e, week[dayIndex], hour);
+        }
+    };
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 60000);
@@ -223,7 +252,12 @@ export default function PlannerWeeklyView({
                         </div>
                     ))}
                 </div>
-                 <div className={cn("flex-1 grid grid-cols-7 relative h-full", viewTheme === 'dark' ? 'divide-x divide-gray-700/50' : 'divide-x divide-gray-200')}>
+                 <div
+                    ref={gridContainerRef}
+                    onDragOver={handleGridDragOver}
+                    onDrop={handleGridDrop}
+                    className={cn("flex-1 grid grid-cols-7 relative h-full", viewTheme === 'dark' ? 'divide-x divide-gray-700/50' : 'divide-x divide-gray-200')}
+                >
                     {Array.from({ length: 7 }).map((_, dayIndex) => (
                         <div key={dayIndex} className="relative h-full">
                              {/* The horizontal hour lines */}
@@ -231,8 +265,6 @@ export default function PlannerWeeklyView({
                                 <div
                                 key={`line-${dayIndex}-${hourIndex}`}
                                 className={cn("h-[60px] border-t", viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200')}
-                                onDragOver={(e) => onDragOver(e, week[dayIndex], hourIndex)}
-                                onDrop={(e) => onDrop(e, week[dayIndex], hourIndex)}
                                 >
                                 </div>
                             ))}
