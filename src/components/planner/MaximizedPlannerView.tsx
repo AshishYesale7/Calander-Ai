@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay } from 'date-fns';
+import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay, isSameDay } from 'date-fns';
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
 
@@ -204,7 +205,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
     if (draggedTask) {
         // Optimization: only update state if the target cell changes
-        if (ghostEvent?.date?.getTime() !== date.getTime() || ghostEvent?.hour !== hour) {
+        if (!ghostEvent || !isSameDay(ghostEvent.date, date) || ghostEvent.hour !== hour) {
             setGhostEvent({ date, hour, title: draggedTask.title });
         }
     }
