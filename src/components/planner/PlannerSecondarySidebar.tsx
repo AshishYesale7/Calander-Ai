@@ -73,10 +73,24 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
     const handleSummarize = async (email: RawGmailMessage) => {
         setSummarizingId(email.id);
         try {
-            const summary = await summarizeEmail({ subject: email.subject, snippet: email.snippet, apiKey });
-            setSummaries(prev => ({ ...prev, [email.id]: summary.summary }));
-        } catch (error: any) {
-            toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+            const response = await fetch('/api/ai/summarize-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject: email.subject, snippet: email.snippet, apiKey }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setSummaries(prev => ({ ...prev, [email.id]: data.summary }));
+            } else {
+                throw new Error(data.message || 'Failed to summarize email.');
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+                toast({ title: 'AI Service Unavailable', description: 'The summarization model is temporarily overloaded. Please try again later.', variant: 'destructive' });
+            } else {
+                toast({ title: 'Summarization Error', description: errorMessage, variant: 'destructive' });
+            }
         } finally {
             setSummarizingId(null);
         }
@@ -212,7 +226,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
   }
 
   const tasksForActiveView = useMemo(() => {
-    if (props.activeView === 'all_tasks') {
+    if (props.activeView === 'all_tasks' || props.activeView === 'today' || props.activeView === 'upcoming') {
         return [];
     }
     const tasksForList = props.tasks[props.activeView];
@@ -229,3 +243,5 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             viewTheme={props.viewTheme}
         />
 }
+
+    
