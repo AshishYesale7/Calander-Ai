@@ -52,7 +52,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const panelsContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
-  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('gmail');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<Record<string, RawGoogleTask[]>>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
@@ -235,7 +235,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   };
 
   return (
-     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-black text-white' : 'bg-stone-50 text-gray-800')}>
+     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}>
         <PlannerHeader 
           activeView={plannerViewMode} 
           date={currentDisplayDate} 
