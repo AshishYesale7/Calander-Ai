@@ -9,6 +9,7 @@ import { createGoogleCalendarEvent, updateGoogleCalendarEvent, deleteGoogleCalen
 import { startOfDay, endOfDay } from 'date-fns';
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 import { createNotification } from './notificationService';
+import { logUserActivity } from './activityLogService';
 
 const getTimelineEventsCollection = (userId: string) => {
   if (!db) {
@@ -54,6 +55,10 @@ export const saveTimelineEvent = async (
 ): Promise<void> => {
     const eventsCollection = getTimelineEventsCollection(userId);
     const eventDocRef = doc(eventsCollection, event.id);
+
+    // Determine if this is a new event
+    const docSnap = await getDoc(eventDocRef);
+    const isNewEvent = !docSnap.exists();
 
     let googleEventId = event.googleEventId || null;
     
@@ -113,6 +118,18 @@ export const saveTimelineEvent = async (
     if (!dataToSave.endDate) delete dataToSave.endDate;
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
+    
+    // Log activity only for new events created by the user or synced from Google
+    if (isNewEvent) {
+      let activityType: 'event_created' | 'google_event_synced' | 'google_task_synced' = 'event_created';
+      if(event.id.startsWith('gcal-')) {
+          activityType = 'google_event_synced';
+      } else if (event.id.startsWith('gtask-')) {
+          activityType = 'google_task_synced';
+      }
+      await logUserActivity(userId, activityType, { id: event.id, title: event.title });
+    }
+
 
     // After successfully saving, send a notification if reminders are on.
     if (event.reminder && event.reminder.enabled && event.reminder.earlyReminder !== 'none') {
@@ -155,6 +172,7 @@ export const deleteTimelineEvent = async (userId: string, eventId: string): Prom
             if (eventData.googleEventId) {
                 await deleteGoogleCalendarEvent(userId, eventData.googleEventId);
             }
+            await logUserActivity(userId, 'event_deleted', { id: eventId, title: eventData.title });
         }
     } catch (error) {
         console.error(`Error deleting associated Google Calendar event for event ${eventId}:`, error);

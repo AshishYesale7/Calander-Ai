@@ -17,6 +17,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
+import { logUserActivity } from './activityLogService';
 
 const getNotificationsCollection = (userId: string) => {
   if (!db) {
@@ -54,7 +55,7 @@ export const createNotification = async (
   const notificationsCollection = getNotificationsCollection(userId);
   try {
     // 1. Create the in-app notification document in Firestore.
-    await addDoc(notificationsCollection, {
+    const docRef = await addDoc(notificationsCollection, {
       type,
       message,
       link,
@@ -63,7 +64,13 @@ export const createNotification = async (
       createdAt: Timestamp.now(),
     });
 
-    // 2. Trigger the web push notification.
+    // 2. Log this autonomous activity
+    await logUserActivity(userId, 'notification_sent', {
+        id: docRef.id,
+        title: message,
+    });
+
+    // 3. Trigger the web push notification.
     await sendWebPushNotification({
         userId: userId,
         title: type === 'new_follower' ? 'New Follower!' : 'New Reminder',

@@ -281,7 +281,7 @@ export interface ActivityLog {
     // Goals
     'goal_added' | 
     'goal_updated' | 
-    'goal_completed' | 
+    'goal_completed' |
     'goal_deleted' |
     // Skills
     'skill_added' |
@@ -296,7 +296,11 @@ export interface ActivityLog {
     'resource_deleted' |
     // AI
     'vision_generated' |
-    'plan_generated'
+    'plan_generated' |
+    // Autonomous Events
+    'google_event_synced' |
+    'google_task_synced' |
+    'notification_sent'
   ;
   timestamp: Date;
   details: {
