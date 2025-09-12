@@ -267,7 +267,6 @@ export interface CodingActivity {
     date: Date;
     count: number;
 }
-
 export interface PlatformStats {
     id: string;
     name: 'LeetCode' | 'Codeforces' | 'HackerRank' | 'Other';
@@ -275,13 +274,39 @@ export interface PlatformStats {
     problemsSolved: number;
     contests: number;
 }
-
 export interface ActivityLog {
   id: string;
   userId: string;
-  type: 'goal_completed' | 'task_completed';
+  type: 
+    // Goals
+    'goal_added' | 
+    'goal_updated' | 
+    'goal_completed' | 
+    'goal_deleted' |
+    // Skills
+    'skill_added' |
+    'skill_updated' |
+    'skill_deleted' |
+    // Events
+    'task_completed' |
+    'event_created' |
+    'event_deleted' |
+    // Resources
+    'resource_bookmarked' |
+    'resource_deleted' |
+    // AI
+    'vision_generated' |
+    'plan_generated'
+  ;
   timestamp: Date;
   details: {
-    title: string;
+    // Shared
+    title?: string;
+    id?: string;
+    // Goal/Skill specific
+    progress?: number;
+    proficiency?: string;
+    // Vision specific
+    prompt?: string;
   }
 }

@@ -97,6 +97,9 @@ export default function CareerGoalsPage() {
 
   const handleDeleteGoal = async (goalId: string) => {
     const originalGoals = goals;
+    const goalToDelete = originalGoals.find(g => g.id === goalId);
+    if (!goalToDelete) return;
+    
     const newGoals = goals.filter(goal => goal.id !== goalId);
     setGoals(newGoals); // Optimistic update
     
@@ -107,6 +110,7 @@ export default function CareerGoalsPage() {
     if (user) {
       try {
         await deleteCareerGoal(user.uid, goalId);
+        await logUserActivity(user.uid, 'goal_deleted', { id: goalId, title: goalToDelete.title });
       } catch (error) {
         console.error("Failed to delete goal from Firestore", error);
         // DO NOT REVERT UI. The change is saved locally.
@@ -117,10 +121,10 @@ export default function CareerGoalsPage() {
 
   const handleSaveGoal = async (goalToSave: CareerGoal) => {
     const originalGoals = goals;
-    const goalExists = goals.some(g => g.id === goalToSave.id);
+    const isEditing = goals.some(g => g.id === goalToSave.id);
     let newGoals: CareerGoal[];
 
-    if (goalExists) {
+    if (isEditing) {
       newGoals = goals.map(g => g.id === goalToSave.id ? goalToSave : g);
       toast({ title: "Goal Updated", description: "Your career goal has been successfully updated." });
     } else {
@@ -141,13 +145,17 @@ export default function CareerGoalsPage() {
               deadline: goalToSave.deadline ? goalToSave.deadline.toISOString() : null,
             };
             await saveCareerGoal(user.uid, payload);
-
-            // If goal is completed, log the activity
-            if (goalToSave.progress === 100) {
-              const previousGoal = originalGoals.find(g => g.id === goalToSave.id);
-              if (!previousGoal || previousGoal.progress < 100) {
-                await logUserActivity(user.uid, 'goal_completed', { title: goalToSave.title });
-              }
+            
+            // Activity Logging
+            const previousGoal = originalGoals.find(g => g.id === goalToSave.id);
+            if (isEditing) {
+                if (goalToSave.progress === 100 && (!previousGoal || previousGoal.progress < 100)) {
+                    await logUserActivity(user.uid, 'goal_completed', { id: goalToSave.id, title: goalToSave.title });
+                } else {
+                    await logUserActivity(user.uid, 'goal_updated', { id: goalToSave.id, title: goalToSave.title, progress: goalToSave.progress });
+                }
+            } else {
+                await logUserActivity(user.uid, 'goal_added', { id: goalToSave.id, title: goalToSave.title });
             }
 
         } catch (error) {
