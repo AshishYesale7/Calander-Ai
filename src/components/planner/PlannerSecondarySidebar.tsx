@@ -1,5 +1,7 @@
 
 'use client';
+
+import type { ReactNode } from 'react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,18 +15,8 @@ import type { ActivePlannerView, MaxViewTheme } from './MaximizedPlannerView';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { summarizeEmail } from '@/ai/flows/summarize-email-flow';
 
-interface PlannerSecondarySidebarProps {
-  activeView: ActivePlannerView;
-  tasks: Record<string, RawGoogleTask[]>;
-  taskLists: GoogleTaskList[];
-  isLoading: boolean;
-  onAddTask: (listId: string, title: string) => void;
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
-  viewTheme: MaxViewTheme;
-}
-
+// Gmail Component remains largely the same as its logic was self-contained.
 const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void }) => {
     const { user } = useAuth();
     const { apiKey } = useApiKey();
@@ -138,115 +130,119 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
     );
 };
 
+
+// Rewritten PlannerTaskList to be a simpler, dumber component.
 const PlannerTaskList = ({
-  taskLists,
+  list,
   tasks,
-  allTasks,
-  activeListId,
   onAddTask,
   onDragStart,
   viewTheme,
 }: {
-  taskLists: GoogleTaskList[];
+  list: GoogleTaskList;
   tasks: RawGoogleTask[];
-  allTasks: Record<string, RawGoogleTask[]>;
-  activeListId: string;
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
   viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
-    
-    const activeViewTitle = useMemo(() => {
-        if (activeListId === 'all_tasks') return 'All Tasks';
-        if (activeListId === 'today') return 'Today';
-        if (activeListId === 'upcoming') return 'Upcoming';
-        const activeList = taskLists.find(list => list.id === activeListId);
-        return activeList?.title || ''; // Removed "My Tasks" fallback
-    }, [activeListId, taskLists]);
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault();
         const title = newTaskTitle.trim();
-        const listId = taskLists.find(l => l.id === activeListId)?.id || taskLists[0]?.id;
-        if (title && listId) {
-            onAddTask(listId, title);
+        if (title) {
+            onAddTask(list.id, title);
             setNewTaskTitle('');
         }
     };
     
-    const getMockTaskDetails = (title: string) => {
-        const hash = title.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
-        const durations = ['1h', '1h 15m', '1h 30m', '45m', '2h'];
-        const tags = [ { name: 'Newsletter', color: 'bg-green-500' }, { name: 'Film', color: 'bg-blue-500' }, { name: 'Thumbnails', color: 'bg-purple-500' }, { name: 'Scripts', color: 'bg-orange-500' }, { name: 'Book', color: 'bg-red-500' }];
-        const hasMetadata = Math.abs(hash % 5) > 1;
-        return { duration: hasMetadata ? durations[Math.abs(hash) % durations.length] : null, tag: hasMetadata ? tags[Math.abs(hash) % tags.length] : null, metadata: hasMetadata ? 'Content Calendar' : null };
-    }
-    
+    // UI styling classes based on theme
     const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
     const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
     const placeholderClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
     const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
-    const renderTaskItem = (task: RawGoogleTask) => {
-      const mockDetails = getMockTaskDetails(task.title);
-      return (
-          <div key={task.id} className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)} draggable onDragStart={(e) => onDragStart(e, task)}>
-              <div className="flex items-start gap-2 w-full">
-                  <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
-                  <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
-                  {mockDetails.duration && (<span className={cn("text-[10px] font-medium whitespace-nowrap", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}>{mockDetails.duration}</span>)}
-                  {mockDetails.tag && (<span className={cn("text-white text-[10px] font-bold px-1.5 py-0.5 rounded", mockDetails.tag.color)}>{mockDetails.tag.name}</span>)}
-              </div>
-               {mockDetails.metadata && (<div className={cn("pl-6 text-[10px] flex items-center gap-1", viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500')}><Calendar size={10}/><span>{mockDetails.metadata}</span></div>)}
-          </div>
-      );
-    }
-
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
-            <div className="flex justify-between items-center mb-2 px-1"><h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Inbox size={16} /> {activeViewTitle}</h1><Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button></div>
-            <form onSubmit={handleAddTask}><div className={cn("flex items-center gap-2 mb-2 text-xs h-8 px-1.5", viewTheme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black')}><Plus className="mr-1 h-4 w-4" /><Input value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} placeholder="Add new task" className={cn("bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0", placeholderClasses, headingClasses)} /></div></form>
+            <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}>
+                    <Inbox size={16} /> {list.title}
+                </h1>
+                <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
+            </div>
+            <form onSubmit={handleAddTask}>
+                 <div className={cn("flex items-center gap-2 mb-2 text-xs h-8 px-1.5", viewTheme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black')}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    <Input
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        placeholder="Add new task"
+                        className={cn("bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0", placeholderClasses, headingClasses)}
+                    />
+                </div>
+            </form>
             <div className="space-y-1 text-xs overflow-y-auto">
-                 {activeListId === 'all_tasks' ? (<Accordion type="multiple" className="w-full">{taskLists.map(list => { const listTasks = allTasks[list.id] || []; if (listTasks.length === 0) return null; return (<AccordionItem value={list.id} key={list.id} className="border-b-0"><AccordionTrigger className="text-xs font-semibold hover:no-underline py-1.5">{list.title}</AccordionTrigger><AccordionContent className="pb-2 space-y-1">{listTasks.map(renderTaskItem)}</AccordionContent></AccordionItem>) })}</Accordion>) : (tasks.map(renderTaskItem))}
+                {tasks.map(task => (
+                    <div 
+                      key={task.id} 
+                      className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, task)}
+                    >
+                        <div className="flex items-start gap-2 w-full">
+                           <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
+                           <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
-    )
+    );
 };
 
 
+// Main Component - Completely reformatted logic
+interface PlannerSecondarySidebarProps {
+  activeView: ActivePlannerView;
+  tasks: Record<string, RawGoogleTask[]>;
+  taskLists: GoogleTaskList[];
+  isLoading: boolean;
+  onAddTask: (listId: string, title: string) => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
+  viewTheme: MaxViewTheme;
+}
+
 export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarProps) {
-  if (props.isLoading) {
+  const { activeView, taskLists, tasks, isLoading, onAddTask, onDragStart, viewTheme } = props;
+
+  // 1. Handle loading state
+  if (isLoading) {
     return <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>;
   }
   
-  if (props.activeView === 'gmail') {
-    return <PlannerGmailList viewTheme={props.viewTheme} onDragStart={props.onDragStart} />
+  // 2. Explicitly render Gmail component if activeView is 'gmail'
+  if (activeView === 'gmail') {
+    return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} />
   }
 
-  const isTaskView = ['today', 'upcoming', 'all_tasks'].includes(props.activeView) || props.taskLists.some(list => list.id === props.activeView);
+  // 3. Find the selected task list based on activeView ID
+  const selectedTaskList = taskLists.find(list => list.id === activeView);
   
-  if (isTaskView) {
-      const tasksForActiveView = useMemo(() => {
-        if (props.activeView === 'all_tasks' || props.activeView === 'today' || props.activeView === 'upcoming') {
-            return [];
-        }
-        const tasksForList = props.tasks[props.activeView];
-        return Array.isArray(tasksForList) ? tasksForList : [];
-      }, [props.activeView, props.tasks]);
-      
+  // 4. If a valid task list is selected, render it
+  if (selectedTaskList) {
+      const tasksForSelectedList = tasks[selectedTaskList.id] || [];
       return <PlannerTaskList 
-                taskLists={props.taskLists}
-                tasks={tasksForActiveView}
-                allTasks={props.tasks}
-                activeListId={props.activeView}
-                onAddTask={props.onAddTask}
-                onDragStart={props.onDragStart}
-                viewTheme={props.viewTheme}
+                list={selectedTaskList}
+                tasks={tasksForSelectedList}
+                onAddTask={onAddTask}
+                onDragStart={onDragStart}
+                viewTheme={viewTheme}
             />
   }
 
-  // Render nothing if the view is not gmail and not a valid task list
+  // 5. If it's a special view like "today", "upcoming", or "all_tasks", they don't have a dedicated secondary sidebar view.
+  //    In this case, and for any other unknown view, render nothing.
+  //    This permanently removes any "My Tasks" fallback.
   return null;
 }
