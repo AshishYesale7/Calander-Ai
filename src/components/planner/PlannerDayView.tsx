@@ -51,6 +51,7 @@ interface PlannerDayViewProps {
 export default function PlannerDayView({ date, events, onEditEvent, onDeleteEvent, viewTheme, onDrop, onDragOver, ghostEvent }: PlannerDayViewProps) {
   const nowIndicatorRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(new Date());
 
   const eventsForDay = useMemo(() => events.filter(event => event.date instanceof Date && !isNaN(event.date.valueOf()) && isSameDay(event.date, date)), [events, date]);
@@ -75,6 +76,22 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
     if (onDeleteEvent) {
       onDeleteEvent(eventId, eventTitle);
     }
+  };
+
+  const handleGridDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!gridContainerRef.current) return;
+    const rect = gridContainerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const hour = Math.floor(y / HOUR_HEIGHT_PX);
+    onDragOver(e, date, hour);
+  };
+    
+  const handleGridDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!gridContainerRef.current) return;
+    const rect = gridContainerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const hour = Math.floor(y / HOUR_HEIGHT_PX);
+    onDrop(e, date, hour);
   };
 
   const themeClasses = {
@@ -124,13 +141,17 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                         </div>
                     ))}
                 </div>
-                <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
+                <div 
+                  ref={gridContainerRef}
+                  onDragOver={handleGridDragOver}
+                  onDrop={handleGridDrop}
+                  className="flex-1 relative" 
+                  style={{ minWidth: minEventGridWidth }}
+                >
                     {Array.from({ length: 24 }).map((_, i) => (
                          <div
                             key={`hour-line-${i}`}
                             className={cn("h-[60px] border-t", themeClasses.hourLine)}
-                            onDragOver={(e) => onDragOver(e, date, i)}
-                            onDrop={(e) => onDrop(e, date, i)}
                          >
                          </div>
                     ))}
