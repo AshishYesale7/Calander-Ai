@@ -428,7 +428,7 @@ const PlannerTaskList = ({
     const activeViewTitle = useMemo(() => {
         if (activeListId === 'all_tasks') return 'All Tasks';
         const activeList = taskLists.find(list => list.id === activeListId);
-        return activeList?.title || 'Inbox';
+        return activeList?.title || 'My Tasks';
     }, [activeListId, taskLists]);
 
     const handleAddTask = (e: React.FormEvent) => {
@@ -856,7 +856,7 @@ const PlannerWeeklyTimeline = ({
                                 {hours.map(hour => (
                                     <div 
                                     key={`${day.toISOString()}-${hour}`} 
-                                    className={cn("border-t", themeClasses.hourLine)}
+                                    className={cn("border-t", themeClasses.hourLine)} 
                                     style={{ height: `${HOUR_HEIGHT_PX}px` }}
                                     onDrop={(e) => onDrop(e, day, hour)}
                                     onDragOver={(e) => onDragOver(e, day, hour)}
@@ -942,7 +942,7 @@ const PlannerWeeklyTimeline = ({
     );
 };
 
-const PlannerDayView = ({
+const DayView = ({
   date,
   events,
   onEditEvent,
@@ -1149,7 +1149,6 @@ interface DayTimetableViewProps {
 }
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 
 const Resizer = ({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) => (
   <div
@@ -1212,10 +1211,24 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
     const handleSummarize = async (email: RawGmailMessage) => {
         setSummarizingId(email.id);
         try {
-            const summary = await summarizeEmail({ subject: email.subject, snippet: email.snippet, apiKey });
-            setSummaries(prev => ({ ...prev, [email.id]: summary.summary }));
-        } catch (error: any) {
-            toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+            const response = await fetch('/api/ai/summarize-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject: email.subject, snippet: email.snippet, apiKey }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setSummaries(prev => ({ ...prev, [email.id]: data.summary }));
+            } else {
+                throw new Error(data.message || 'Failed to summarize email.');
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+                toast({ title: 'AI Service Unavailable', description: 'The summarization model is temporarily overloaded. Please try again later.', variant: 'destructive' });
+            } else {
+                toast({ title: 'Summarization Error', description: errorMessage, variant: 'destructive' });
+            }
         } finally {
             setSummarizingId(null);
         }
@@ -1227,7 +1240,6 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
                 <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Mail size={16} /> Gmail</h1>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => fetchEmails(selectedLabelId)}><RefreshCw className={cn("h-4 w-4", isLoading && 'animate-spin')} /></Button>
             </div>
-            {/* ... rest of the component ... */}
             <div className="mb-2">
                 {labels.length > 0 && (
                     <select value={selectedLabelId} onChange={e => setSelectedLabelId(e.target.value)} className="w-full text-xs p-1 rounded-md bg-transparent border border-gray-600">
@@ -1267,26 +1279,20 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
 export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const hours = Array.from({ length: 24 }, (_, i) => i);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const nowIndicatorRef = useRef<HTMLDivElement>(null);
-  const [now, setNow] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
-
+  
   const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
   const isMobile = useIsMobile();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Only run on the client
     if (typeof window !== 'undefined') {
         setIsSidebarOpen(window.innerWidth >= 768);
     }
   }, []);
-
 
   const savedWidthsRef = useRef([15, 25, 60]);
   const isResizing = useRef<number | null>(null);
@@ -1294,7 +1300,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   const startWidthsRef = useRef<number[]>([]);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
   
-  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('today');
+  const [activePlannerView, setActivePlannerView] = useState<ActivePlannerView>('gmail');
   const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
   const [tasks, setTasks] = useState<TasksByList>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
@@ -1405,11 +1411,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     try {
       const lists = await getGoogleTaskLists(user.uid);
       setTaskLists(lists);
-
-      const defaultListId = lists.find(l => l.title.includes('My Tasks'))?.id || lists[0]?.id;
-      if (defaultListId) {
-        setActivePlannerView(defaultListId);
-      }
       
       const tasksPromises = lists.map(list => getAllTasksFromList(user.uid, list.id));
       const tasksResults = await Promise.all(tasksPromises);
@@ -1542,10 +1543,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
 
 
   useEffect(() => {
-    const intervalId = setInterval(() => setNow(new Date()), 60000); // Update every minute
-    
     const timer = setTimeout(() => {
       if (dfnsIsToday(initialDate) && scrollContainerRef.current) {
+        const now = new Date();
         const newTop = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
         scrollContainerRef.current.scrollTo({
             top: newTop - scrollContainerRef.current.offsetHeight / 2,
@@ -1554,10 +1554,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
       }
     }, 500);
 
-    return () => {
-        clearTimeout(timer);
-        clearInterval(intervalId);
-    };
+    return () => clearTimeout(timer);
   }, [initialDate, isMaximized]);
   
   const eventsForDayView = useMemo(() => {
@@ -1567,26 +1564,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     );
   }, [allEvents, initialDate]);
 
-  const allDayEvents = useMemo(() => eventsForDayView.filter(e => e.isAllDay), [eventsForDayView]);
-  const timedEvents = useMemo(() => eventsForDayView.filter(e => !e.isAllDay && e.date instanceof Date && !isNaN(e.date.valueOf())), [eventsForDayView]);
-  
-  const { eventsWithLayout: timedEventsWithLayout, maxConcurrentColumns } = useMemo(
-    () => calculateEventLayouts(timedEvents, HOUR_HEIGHT_PX),
-    [timedEvents]
-  );
-  
-  const minEventGridWidth = useMemo(() => {
-    return maxConcurrentColumns > 3 
-      ? `${Math.max(100, maxConcurrentColumns * MIN_EVENT_COLUMN_WIDTH_PX)}px` 
-      : '100%'; 
-  }, [maxConcurrentColumns]);
-
-  const handleDeleteEvent = (eventId: string, eventTitle: string) => {
-    if (onDeleteEvent) {
-      onDeleteEvent(eventId);
-      toast({ title: "Event Deleted", description: `"${eventTitle}" has been removed from the timetable.` });
-    }
-  };
+  const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
 
   const handleEventClick = useCallback((event: TimelineEvent) => {
     setSelectedEvent(event);
@@ -1614,9 +1592,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     const notesString = event.notes ? `Notes: ${event.notes}` : '';
     return [event.title, timeString, countdownText, statusString, notesString].filter(Boolean).join('\n');
   };
-
-  const nowPosition = (now.getHours() * HOUR_HEIGHT_PX) + (now.getMinutes() / 60 * HOUR_HEIGHT_PX);
-  const currentTimeTopPosition = dfnsIsToday(initialDate) ? nowPosition : -1;
   
   const renderMaximizedView = () => (
      <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#171717] text-white' : 'bg-[#fff8ed] text-gray-800')}>
@@ -1662,9 +1637,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
               <div className="flex-1 flex flex-col" style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }}>
                   <div className="flex-1 min-h-0 flex flex-col">
                       {plannerViewMode === 'week' ? (
-                         <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} />
+                         <PlannerWeeklyTimeline week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} />
                       ) : plannerViewMode === 'day' ? (
-                        <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={handleDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
+                        <DayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       ) : (
                         <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
                       )}
@@ -1727,193 +1702,16 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
             </Button>
         </div>
       </CardHeader>
-
-      {allDayEvents.length > 0 && (
-        <div className="p-3 border-b border-border/30 space-y-1 timetable-allday-area">
-          {allDayEvents.map(event => {
-            if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
-            const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
-
-            return (
-            <Popover key={event.id}>
-              <PopoverTrigger asChild>
-                <div
-                    className={cn(
-                        "rounded-md p-1.5 text-xs flex justify-between items-center transition-opacity cursor-pointer",
-                        "hover:bg-muted/50",
-                        isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
-                         getEventTypeStyleClasses(event.type)
-                    )}
-                    style={event.color ? getCustomColorStyles(event.color) : {}}
-                    title={getEventTooltip(event)}
-                >
-                    <div className="font-medium flex items-center gap-2" onClick={() => handleEventClick(event)}>
-                        {getEventTypeIcon(event)} {event.title}
-                    </div>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2 frosted-glass">
-                    <div className="space-y-2">
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <p className="text-muted-foreground">All-day event</p>
-                        {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
-                        <div className="flex justify-end gap-1 pt-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent && onEditEvent(event)}>
-                                <Edit3 className="h-3.5 w-3.5"/>
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                        <Trash2 className="h-3.5 w-3.5"/>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="frosted-glass">
-                                    <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-              )})}
-            </div>
-          )}
-          
-          <div className="flex flex-1 min-h-0">
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto timetable-main-area">
-              <div className="flex w-full">
-                  <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
-                      <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
-                      <div>
-                          {hours.map(hour => (
-                          <div key={`label-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px` }}
-                              className="text-xs text-muted-foreground text-right pr-2 pt-1 border-b border-border/20 last:border-b-0 flex items-start justify-end">
-                              <span className='-translate-y-1/2'>{hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}</span>
-                          </div>
-                          ))}
-                      </div>
-                  </div>
-
-                  <div className="flex-1 relative" style={{ minWidth: 0 }}>
-                      <div
-                      className={cn(
-                          "sticky top-0 z-30 backdrop-blur-sm flex items-center border-b border-border/30 timetable-ruler",
-                          minuteRulerHeightClass
-                      )}
-                      style={{ minWidth: minEventGridWidth }} 
-                      >
-                          <div className="w-full grid grid-cols-4 items-center h-full px-1 text-center text-[10px] text-muted-foreground">
-                              <div className="text-left">00'</div>
-                              <div className="border-l border-border/40 h-full flex items-center justify-center">15'</div>
-                              <div className="border-l border-border/40 h-full flex items-center justify-center">30'</div>
-                              <div className="border-l border-border/40 h-full flex items-center justify-center">45'</div>
-                          </div>
-                      </div>
-
-                      <div className="relative timetable-grid-bg" style={{ height: `${hours.length * HOUR_HEIGHT_PX}px`, minWidth: minEventGridWidth }}> 
-                      {hours.map(hour => (
-                          <div key={`line-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px`, top: `${hour * HOUR_HEIGHT_PX}px` }}
-                              className="border-b border-border/20 last:border-b-0 w-full absolute left-0 right-0 z-0 timetable-hour-line"
-                          ></div>
-                      ))}
-
-                      <div 
-                        ref={nowIndicatorRef}
-                        className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
-                        style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
-                        >
-                        <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
-                        <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
-                        </div>
-
-                      {timedEventsWithLayout.map(event => {
-                          if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
-                          const isSmallWidth = parseFloat(event.layout.width) < 25;
-                          const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
-
-                          return (
-                          <div
-                              key={event.id}
-                              className={cn(
-                              "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer timetable-event-card",
-                              "focus-within:ring-2 focus-within:ring-ring",
-                              !event.color && getEventTypeStyleClasses(event.type),
-                              isSmallWidth ? "p-0.5" : "p-1",
-                              isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
-                              selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
-                              )}
-                              style={{
-                                  top: `${event.layout.top}px`,
-                                  height: `${event.layout.height}px`,
-                                  left: event.layout.left,
-                                  width: event.layout.width,
-                                  zIndex: event.layout.zIndex, 
-                                  ...(event.color ? getCustomColorStyles(event.color) : {})
-                              }}
-                              title={getEventTooltip(event)}
-                              onClick={() => handleEventClick(event)}
-                          >
-                              <div className="flex flex-col h-full">
-                                  <div className="flex-grow overflow-hidden">
-                                      <div className="flex items-start gap-1.5">
-                                          {onEventStatusChange && (
-                                              <Checkbox
-                                                  id={`check-${event.id}`}
-                                                  checked={isChecked}
-                                                  onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
-                                                  onClick={(e) => e.stopPropagation()}
-                                                  aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
-                                                  className="mt-0.5 border-current flex-shrink-0"
-                                              />
-                                          )}
-                                          <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs", event.color ? '' : 'text-current')}>{event.title}</p>
-                                      </div>
-                                      {!isSmallWidth && (
-                                      <p className={cn("opacity-80 truncate text-[10px] pl-5", event.color ? 'text-foreground/80' : '')}>
-                                          {format(event.date, 'h:mm a')}
-                                          {event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) && ` - ${format(event.endDate, 'h:mm a')}`}
-                                      </p>
-                                      )}
-                                  </div>
-                                  <div className={cn("mt-auto flex-shrink-0 flex items-center space-x-0.5", isSmallWidth ? "justify-center" : "justify-end")}>
-                                      {event.isDeletable && onDeleteEvent && (
-                                          <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive/80 hover:bg-destructive/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                                  <Trash2 className="h-3 w-3" />
-                                              </Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent className="frosted-glass">
-                                              <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                              <AlertDialogFooter>
-                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteEvent(event.id, event.title)}>Delete</AlertDialogAction>
-                                              </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                          </AlertDialog>
-                                      )}
-                                  </div>
-                              </div>
-                          </div>
-                          );
-                      })}
-                    </div>
-                </div>
-            </div>
-            </div>
-            
-            {selectedEvent && (
-              <EventOverviewPanel
-                event={selectedEvent}
-                onClose={handleCloseOverview}
-                onEdit={onEditEvent}
-              />
-            )}
-          </div>
-        </Card>
-      );
-    }
+      <DayView
+        date={initialDate}
+        events={allEvents}
+        onEditEvent={onEditEvent}
+        onDeleteEvent={onDeleteEvent}
+        viewTheme={maximizedViewTheme}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        ghostEvent={ghostEvent}
+      />
+    </Card>
+  );
+}
