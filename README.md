@@ -23,7 +23,7 @@ FutureSight is a web application built with a modern tech stack, designed to be 
 *   **AI-Powered Dashboard & Timeline:** The core of the app. It syncs with your Google Calendar and Tasks to pull in existing events. It features multiple views:
     *   **Calendar View:** A traditional monthly calendar with dots indicating event days.
     *   **Day & Week Timetable View:** A detailed, hourly breakdown for any selected day that can be expanded into a full-screen, multi-faceted weekly planner. This view accurately visualizes overlapping events, includes a sticky header for easy navigation, and allows for smooth vertical scrolling through a 24-hour timeline.
-    *   **Interactive Event Popovers:** Hover over any event in the day or week view to see a detailed popover with its full title, notes, and direct buttons to edit or delete the event.
+    *   **Interactive Event Popovers:** Hovering over any event in the day or week view to see a detailed popover with its full title, notes, and direct buttons to edit or delete the event.
     *   **Sliding Timeline View:** A chronological, vertical feed of upcoming and past events.
     *   **List View:** A simple, scannable list of all events.
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
@@ -162,6 +162,7 @@ You can also deploy this application to Heroku with a single click using the but
 
 For comprehensive information about this repository, please refer to these detailed documentation files:
 
+- **[Update Catalog](./updates-catalog.md)** - A summary of all recent features, enhancements, and bug fixes.
 - **[Repository Summary](./REPOSITORY_SUMMARY.md)** - Quick overview and key highlights
 - **[Complete Explanation](./REPOSITORY_EXPLANATION.md)** - Comprehensive project documentation
 - **[Technical Architecture](./TECHNICAL_ARCHITECTURE.md)** - Detailed technical specifications and architecture diagrams
