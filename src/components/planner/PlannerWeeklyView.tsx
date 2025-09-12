@@ -50,9 +50,9 @@ export default function PlannerWeeklyView({
     ghostEvent
 }: PlannerWeeklyViewProps) {
 
-  const rulerClasses = viewTheme === 'dark' ? 'bg-gray-900/80 border-b border-gray-700/50' : 'bg-[#fff8ed] border-b border-gray-200';
+  const rulerClasses = viewTheme === 'dark' ? 'bg-black/80 border-b border-gray-700/50' : 'bg-[#fff8ed] border-b border-gray-200';
   const dayHeaderClasses = viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600';
-  const gridContainerClasses = viewTheme === 'dark' ? 'bg-gray-800 divide-x divide-gray-700/50' : 'bg-stone-50 divide-x divide-gray-200';
+  const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-stone-50 divide-x divide-gray-200';
   
   const { allDayEvents, timedEventsByDay } = useMemo(() => {
     const weekStart = dfnsStartOfDay(week[0]);

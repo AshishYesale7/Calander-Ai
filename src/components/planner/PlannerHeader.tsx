@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -54,7 +55,7 @@ export default function PlannerHeader({
     : 'border-stone-200 bg-[#fff8ed] text-gray-700';
   const buttonClasses = viewTheme === 'dark' ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-stone-200';
   const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
-  const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-gray-800/50' : 'bg-[#faefdd]';
+  const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-black/50' : 'bg-[#faefdd]';
 
   return (
     <header className={cn("p-1 border-b flex justify-between items-center flex-shrink-0 text-xs", headerClasses)}>
