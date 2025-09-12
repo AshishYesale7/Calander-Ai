@@ -225,21 +225,32 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <PlannerGmailList viewTheme={props.viewTheme} onDragStart={props.onDragStart} />
   }
 
-  const tasksForActiveView = useMemo(() => {
-    if (props.activeView === 'all_tasks' || props.activeView === 'today' || props.activeView === 'upcoming') {
-        return [];
-    }
-    const tasksForList = props.tasks[props.activeView];
-    return Array.isArray(tasksForList) ? tasksForList : [];
-  }, [props.activeView, props.tasks]);
+  // Check if the activeView is one of the task-related views
+  const isTaskView = ['today', 'upcoming', 'all_tasks'].includes(props.activeView) || props.taskLists.some(list => list.id === props.activeView);
   
-  return <PlannerTaskList 
-            taskLists={props.taskLists}
-            tasks={tasksForActiveView}
-            allTasks={props.tasks}
-            activeListId={props.activeView}
-            onAddTask={props.onAddTask}
-            onDragStart={props.onDragStart}
-            viewTheme={props.viewTheme}
-        />
+  if (isTaskView) {
+      const tasksForActiveView = useMemo(() => {
+        if (props.activeView === 'all_tasks' || props.activeView === 'today' || props.activeView === 'upcoming') {
+            // These views are logical and don't correspond to a single list.
+            // You might want to add logic here to filter all tasks for 'today' or 'upcoming'.
+            // For now, 'all_tasks' will show all tasks grouped by list.
+            return [];
+        }
+        const tasksForList = props.tasks[props.activeView];
+        return Array.isArray(tasksForList) ? tasksForList : [];
+      }, [props.activeView, props.tasks]);
+      
+      return <PlannerTaskList 
+                taskLists={props.taskLists}
+                tasks={tasksForActiveView}
+                allTasks={props.tasks}
+                activeListId={props.activeView}
+                onAddTask={props.onAddTask}
+                onDragStart={props.onDragStart}
+                viewTheme={props.viewTheme}
+            />
+  }
+
+  // If the view is not 'gmail' and not a valid task view, render nothing.
+  return null;
 }
