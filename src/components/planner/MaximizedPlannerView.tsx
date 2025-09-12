@@ -164,6 +164,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
         tasksByListId[list.id] = tasksResults[index];
       });
       setTasks(tasksByListId);
+
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to fetch tasks.", variant: "destructive" });
     } finally {
