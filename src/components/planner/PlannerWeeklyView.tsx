@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { TimelineEvent } from '@/types';
@@ -36,7 +35,7 @@ interface PlannerWeeklyViewProps {
     onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void;
     onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
     onDeleteEvent?: (eventId: string) => void;
-    ghostEvent: { date: Date; hour: number } | null;
+    ghostEvent: { date: Date; hour: number; title?: string; } | null;
 }
 
 export default function PlannerWeeklyView({
@@ -234,9 +233,6 @@ export default function PlannerWeeklyView({
                                 onDragOver={(e) => onDragOver(e, week[dayIndex], hourIndex)}
                                 onDrop={(e) => onDrop(e, week[dayIndex], hourIndex)}
                                 >
-                                {ghostEvent && isSameDay(week[dayIndex], ghostEvent.date) && ghostEvent.hour === hourIndex && (
-                                    <div className="h-full w-full rounded-md bg-accent/30 animate-pulse"></div>
-                                )}
                                 </div>
                             ))}
                             {/* Events for this day */}
@@ -292,6 +288,17 @@ export default function PlannerWeeklyView({
                                 </Popover>
                                 )
                             })}
+                              {ghostEvent && getDay(ghostEvent.date) === dayIndex && ghostEvent.hour !== -1 && (
+                                <div
+                                    className="absolute left-1 right-1 border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-90 z-50 pointer-events-none"
+                                    style={{
+                                    top: `${ghostEvent.hour * HOUR_HEIGHT_PX}px`,
+                                    height: `${HOUR_HEIGHT_PX}px`,
+                                    }}
+                                >
+                                    <p className="text-[10px] font-semibold truncate">{ghostEvent.title ?? 'Drop to schedule'}</p>
+                                </div>
+                            )}
                         </div>
                     ))}
                     {/* Current Time Indicator */}
@@ -320,5 +327,3 @@ export default function PlannerWeeklyView({
     </div>
   );
 }
-
-    

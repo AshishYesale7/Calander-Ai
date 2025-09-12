@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -66,7 +65,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   });
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
-  const [ghostEvent, setGhostEvent] = useState<{ date: Date; hour: number } | null>(null);
+  const [ghostEvent, setGhostEvent] = useState<{ date: Date; hour: number; title?: string; } | null>(null);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
@@ -202,10 +201,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
     if (draggedTask) {
-        // Performance optimization: only update state if the target cell changes
+        // Optimization: only update state if the target cell changes
         if (ghostEvent?.date?.getTime() !== date.getTime() || ghostEvent?.hour !== hour) {
-            setGhostEvent({ date, hour });
+            setGhostEvent({ date, hour, title: draggedTask.title });
         }
     }
   };
@@ -221,6 +221,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     
     onEditEvent(newEvent, true);
     setDraggedTask(null);
+  };
+  
+  const handleDragEnd = (e?: React.DragEvent) => {
+    setDraggedTask(null);
+    setGhostEvent(null);
   };
   
   const handleToggleSidebar = () => {
@@ -264,6 +269,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                             isLoading={isTasksLoading}
                             onAddTask={handleAddTask}
                             onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
                             viewTheme={maximizedViewTheme}
                           />
                       </div>
@@ -285,5 +291,3 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
-
-    

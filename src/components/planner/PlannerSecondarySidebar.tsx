@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -17,7 +16,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 
 // Gmail Component remains largely the same as its logic was self-contained.
-const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void }) => {
+const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void, onDragEnd: (e?: React.DragEvent) => void }) => {
     const { user } = useAuth();
     const { apiKey } = useApiKey();
     const { toast } = useToast();
@@ -109,6 +108,7 @@ const PlannerGmailList = ({ viewTheme, onDragStart }: { viewTheme: MaxViewTheme,
                         className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
                         draggable
                         onDragStart={(e) => onDragStart(e, {id: email.id, title: email.subject, notes: email.snippet} as RawGoogleTask)}
+                        onDragEnd={onDragEnd}
                     >
                         <p className={cn("text-xs font-bold flex-1", taskTextClasses)}>{email.subject}</p>
                         <p className="text-[10px] text-gray-400 w-full truncate">{email.snippet}</p>
@@ -137,12 +137,14 @@ const PlannerTaskList = ({
   tasks,
   onAddTask,
   onDragStart,
+  onDragEnd,
   viewTheme,
 }: {
   list: GoogleTaskList;
   tasks: RawGoogleTask[];
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
+  onDragEnd: (e?: React.DragEvent) => void;
   viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -189,6 +191,7 @@ const PlannerTaskList = ({
                       className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
                       draggable
                       onDragStart={(e) => onDragStart(e, task)}
+                      onDragEnd={onDragEnd}
                     >
                         <div className="flex items-start gap-2 w-full">
                            <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
@@ -210,11 +213,12 @@ interface PlannerSecondarySidebarProps {
   isLoading: boolean;
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
+  onDragEnd: (e?: React.DragEvent) => void;
   viewTheme: MaxViewTheme;
 }
 
 export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarProps) {
-  const { activeView, taskLists, tasks, isLoading, onAddTask, onDragStart, viewTheme } = props;
+  const { activeView, taskLists, tasks, isLoading, onAddTask, onDragStart, onDragEnd, viewTheme } = props;
 
   // 1. Handle loading state
   if (isLoading) {
@@ -223,7 +227,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
   
   // 2. Explicitly render Gmail component if activeView is 'gmail'
   if (activeView === 'gmail') {
-    return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} />
+    return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd}/>
   }
 
   // 3. Find the selected task list based on activeView ID
@@ -237,6 +241,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                 tasks={tasksForSelectedList}
                 onAddTask={onAddTask}
                 onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
                 viewTheme={viewTheme}
             />
   }
@@ -246,5 +251,3 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
   //    This permanently removes any "My Tasks" fallback.
   return null;
 }
-
-    
