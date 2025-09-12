@@ -205,7 +205,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         </div>
       </CardHeader>
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border/30 timetable-allday-area">
+          <div className="p-2 border-b border-border/30 timetable-allday-area" style={{ backgroundColor: viewTheme === 'professional' ? '#1c1c1c' : undefined }}>
              <div className="flex gap-2">
                  <span className="text-xs font-semibold w-12 text-center">All-day</span>
                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
