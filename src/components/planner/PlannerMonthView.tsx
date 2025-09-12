@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -24,6 +23,9 @@ interface PlannerMonthViewProps {
   month: Date;
   events: TimelineEvent[];
   viewTheme: MaxViewTheme;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => void;
+  ghostEvent: { date: Date; hour: number; title?: string; } | null;
 }
 
 interface ProcessedEvent {
@@ -47,7 +49,7 @@ const getEventColor = (type: TimelineEvent['type']) => {
   }
 };
 
-export default function PlannerMonthView({ month, events, viewTheme }: PlannerMonthViewProps) {
+export default function PlannerMonthView({ month, events, viewTheme, onDrop, onDragOver, ghostEvent }: PlannerMonthViewProps) {
   const [popoverDay, setPopoverDay] = useState<Date | null>(null);
 
   const weekStartsOn = 0; // Sunday
@@ -145,6 +147,28 @@ export default function PlannerMonthView({ month, events, viewTheme }: PlannerMo
     });
   }, [popoverDay, events]);
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const dayCell = target.closest('[data-day-iso]') as HTMLElement | null;
+    if (dayCell) {
+        const isoDate = dayCell.dataset.dayIso;
+        if (isoDate) {
+            onDragOver(e, new Date(isoDate), -1);
+        }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const dayCell = target.closest('[data-day-iso]') as HTMLElement | null;
+    if (dayCell) {
+        const isoDate = dayCell.dataset.dayIso;
+        if (isoDate) {
+            onDrop(e, new Date(isoDate), -1);
+        }
+    }
+  };
+
   const themeClasses = {
       container: viewTheme === 'dark' ? 'bg-black/30' : 'bg-gray-50',
       headerText: viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500',
@@ -161,17 +185,25 @@ export default function PlannerMonthView({ month, events, viewTheme }: PlannerMo
         <div className="grid grid-cols-7 text-center font-semibold">
             {weeks[0].map(day => <div key={day.toISOString()} className={cn("py-2", themeClasses.headerText)}>{format(day, 'E')}</div>)}
         </div>
-        <div className={cn("grid grid-cols-7 grid-rows-5 gap-px", themeClasses.gridLines)}>
+        <div 
+          className={cn("grid grid-cols-7 grid-rows-5 gap-px", themeClasses.gridLines)}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
             {days.map((day, dayIndex) => (
               <Popover key={day.toISOString()} onOpenChange={(open) => {
                   if (open) setPopoverDay(day);
                   else setPopoverDay(null);
               }}>
                 <PopoverTrigger asChild>
-                    <div className={cn(
+                    <div 
+                      data-day-iso={day.toISOString()}
+                      className={cn(
                         "relative min-h-[90px] p-1 flex flex-col cursor-pointer",
-                        isSameMonth(day, month) ? themeClasses.dayCell : themeClasses.otherMonthCell
-                    )}>
+                        isSameMonth(day, month) ? themeClasses.dayCell : themeClasses.otherMonthCell,
+                        ghostEvent && isSameDay(day, ghostEvent.date) && 'bg-accent/20'
+                      )}
+                    >
                         <span className={cn(
                             "font-semibold",
                             isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText
@@ -191,6 +223,11 @@ export default function PlannerMonthView({ month, events, viewTheme }: PlannerMo
                                     </div>
                                 </div>
                             ))}
+                             {ghostEvent && isSameDay(day, ghostEvent.date) && ghostEvent.hour === -1 && (
+                                <div className="h-6 rounded-md bg-accent/30 animate-pulse col-span-full mt-1 flex items-center justify-center text-accent font-semibold text-[10px]">
+                                  {ghostEvent.title}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </PopoverTrigger>

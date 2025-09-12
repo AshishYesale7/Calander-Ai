@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -66,7 +65,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   });
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
-  type GhostEvent = { date: Date; hour: number; title?: string };
+  type GhostEvent = { date: Date; hour: number; title?: string; };
   const [ghostEvent, setGhostEvent] = useState<GhostEvent | null>(null);
 
   const ghostEventRef = useRef<GhostEvent | null>(null);
@@ -301,7 +300,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                       ) : plannerViewMode === 'day' ? (
                         <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       ) : (
-                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme}/>
+                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
                       )}
                   </div>
               </div>
@@ -309,4 +308,3 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
-
