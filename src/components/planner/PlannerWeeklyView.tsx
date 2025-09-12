@@ -50,7 +50,8 @@ export default function PlannerWeeklyView({
     ghostEvent
 }: PlannerWeeklyViewProps) {
 
-  const rulerClasses = viewTheme === 'dark' ? 'bg-black/80 border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
+  const rulerClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
+  const allDaySectionClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
   const dayHeaderClasses = viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600';
   const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-white divide-x divide-gray-200';
   
@@ -106,7 +107,7 @@ export default function PlannerWeeklyView({
                 ))}
             </div>
         </div>
-         <div className={cn("flex flex-shrink-0 p-1 border-b", rulerClasses)} style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}>
+         <div className={cn("flex flex-shrink-0 p-1", allDaySectionClasses)} style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}>
             <div className="w-16 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground">
                 All-day
             </div>
