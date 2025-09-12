@@ -32,7 +32,7 @@ interface UserDataBackup {
  */
 export const exportUserData = async (userId: string): Promise<UserDataBackup> => {
     const [
-        profile,
+        profileData,
         careerGoals,
         skills,
         careerVisions,
@@ -51,6 +51,9 @@ export const exportUserData = async (userId: string): Promise<UserDataBackup> =>
         getStreakData(userId),
     ]);
     
+    // Explicitly remove the uid from the profile object before exporting.
+    const { uid, ...profile } = profileData || {};
+
     // Filter out non-native timeline events to avoid syncing issues
     const nativeTimelineEvents = timelineEvents.filter(event => !event.googleEventId);
 
