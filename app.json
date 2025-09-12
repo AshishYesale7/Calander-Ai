@@ -78,6 +78,18 @@
     "NEXT_PUBLIC_RAZORPAY_KEY_ID": {
       "description": "The public Razorpay Key ID, same as RAZORPAY_KEY_ID.",
       "required": true
+    },
+    "FIREBASE_PROJECT_ID": {
+      "description": "Firebase Project ID, used for the Admin SDK on the server.",
+      "required": false
+    },
+    "FIREBASE_CLIENT_EMAIL": {
+      "description": "Firebase Client Email from your service account, for the Admin SDK.",
+      "required": false
+    },
+    "FIREBASE_PRIVATE_KEY": {
+      "description": "Firebase Private Key from your service account, for the Admin SDK.",
+      "required": false
     }
   }
 }
