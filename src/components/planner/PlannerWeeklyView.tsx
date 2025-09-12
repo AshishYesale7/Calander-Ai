@@ -4,7 +4,7 @@
 import type { TimelineEvent } from '@/types';
 import PlannerDayView from './PlannerDayView';
 import type { MaxViewTheme } from './MaximizedPlannerView';
-import { format, isSameDay, startOfDay as dfnsStartOfDay, getDay, isWithinInterval, endOfWeek, isToday, startOfDay, addDays } from 'date-fns';
+import { format, isSameDay, isToday, getDay, isWithinInterval, endOfWeek, startOfDay as dfnsStartOfDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -57,12 +57,12 @@ export default function PlannerWeeklyView({
   const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-white divide-x divide-gray-200';
   
   const { allDayEvents, timedEventsByDay } = useMemo(() => {
-    const weekStart = startOfDay(week[0]);
+    const weekStart = dfnsStartOfDay(week[0]);
     const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
     const relevantEvents = events.filter(e => {
         if (!e.date) return false;
-        const eventStart = startOfDay(e.date);
-        const eventEnd = startOfDay(e.endDate || e.date);
+        const eventStart = dfnsStartOfDay(e.date);
+        const eventEnd = dfnsStartOfDay(e.endDate || e.date);
         return isWithinInterval(eventStart, {start: weekStart, end: weekEnd}) || 
                isWithinInterval(eventEnd, {start: weekStart, end: weekEnd}) ||
                (eventStart < weekStart && eventEnd > weekEnd);
@@ -176,17 +176,17 @@ export default function PlannerWeeklyView({
             </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-            <div className="flex">
-                <div className="w-16 flex-shrink-0">
+            <div className="flex h-full">
+                 <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative border-t border-border/20 -mt-px">
+                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative">
                             {i > 0 && <span className='relative -top-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
                         </div>
                     ))}
                 </div>
                  <div className={cn("flex-1 grid grid-cols-7 relative", gridContainerClasses)}>
-                    {Array.from({ length: 24 * 7 }).map((_, i) => (
-                        <div key={i} className="h-[60px] border-t border-l border-border/20"></div>
+                    {Array.from({ length: 24 }).map((_, i) => (
+                       <div key={`hour-line-${i}`} className="col-span-7 h-[60px] border-t border-border/20 -mt-px"></div>
                     ))}
                     <div
                         className="absolute w-full h-0.5 bg-accent/80 z-20 pointer-events-none"
