@@ -13,11 +13,11 @@ import { getTrackedKeywords, saveTrackedKeyword } from './deadlineTrackerService
 import { getBookmarkedResources, saveBookmarkedResource } from './resourcesService';
 import { getTimelineEvents, saveTimelineEvent } from './timelineService';
 import { getStreakData, updateStreakData } from './streakService';
-import { getUserProfile, updateUserProfile } from './userService';
+import { getUserProfile, saveUserPreferences } from './userService';
 
 // Define the structure of the backup file
 interface UserDataBackup {
-    profile: any; // Using 'any' because getUserProfile returns a complex object
+    profile: Partial<UserPreferences>; 
     careerGoals: CareerGoal[];
     skills: Skill[];
     careerVisions: CareerVisionHistoryItem[];
@@ -51,11 +51,11 @@ export const exportUserData = async (userId: string): Promise<UserDataBackup> =>
         getStreakData(userId),
     ]);
     
-    // Filter out non-native timeline events
+    // Filter out non-native timeline events to avoid syncing issues
     const nativeTimelineEvents = timelineEvents.filter(event => !event.googleEventId);
 
     return {
-        profile,
+        profile: profile || {},
         careerGoals,
         skills,
         careerVisions,
@@ -73,7 +73,7 @@ export const exportUserData = async (userId: string): Promise<UserDataBackup> =>
 export const importUserData = async (userId: string, data: UserDataBackup): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized.");
 
-    // --- NEW: Clear existing data before import ---
+    // --- Clear existing data before import ---
     const collectionsToClear = [
         'careerGoals', 'skills', 'careerVisions', 
         'trackedKeywords', 'resources', 'timelineEvents'
@@ -86,17 +86,12 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
         snapshot.docs.forEach(doc => clearBatch.delete(doc.ref));
     }
     await clearBatch.commit();
-    // --- END NEW ---
-
+    
     const importPromises = [];
 
-    // Import Profile (excluding fields managed by other services)
-    if (data.profile) {
-        const { routine, ...profileData } = data.profile;
-        importPromises.push(updateUserProfile(userId, profileData));
-        if (routine) {
-            importPromises.push(updateUserProfile(userId, { preferences: { routine } } as any));
-        }
+    // --- Selectively import only the weekly routine from preferences, not the whole profile ---
+    if (data.profile && data.profile.routine) {
+        importPromises.push(saveUserPreferences(userId, { routine: data.profile.routine }));
     }
 
     // Import Career Goals
@@ -145,7 +140,7 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
                 endDate: event.endDate ? new Date(event.endDate).toISOString() : null,
                 deletedAt: event.deletedAt ? new Date(event.deletedAt).toISOString() : null,
             };
-            // Assuming the user doesn't want to sync imported events to Google by default
+            // Sync to Google is false by default for imports to prevent conflicts
             importPromises.push(saveTimelineEvent(userId, eventToSave as any, { syncToGoogle: false, timezone: 'UTC' }));
         });
     }
