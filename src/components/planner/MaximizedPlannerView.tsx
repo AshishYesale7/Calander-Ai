@@ -66,7 +66,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   });
   
   const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
-  const [ghostEvent, setGhostEvent] = useState<{ date: Date; hour: number; title?: string; } | null>(null);
+  type GhostEvent = { date: Date; hour: number; title?: string };
+  const [ghostEvent, setGhostEvent] = useState<GhostEvent | null>(null);
+
+  const ghostEventRef = useRef<GhostEvent | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
@@ -200,13 +204,24 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     }
   };
 
+  const throttledSetGhostEvent = useCallback(() => {
+    if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+    }
+    animationFrameRef.current = requestAnimationFrame(() => {
+        setGhostEvent(ghostEventRef.current);
+    });
+  }, []);
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+
     if (draggedTask) {
-        // Optimization: only update state if the target cell changes
-        if (!ghostEvent || !isSameDay(ghostEvent.date, date) || ghostEvent.hour !== hour) {
-            setGhostEvent({ date, hour, title: draggedTask.title });
+        const currentGhost = ghostEventRef.current;
+        if (!currentGhost || !isSameDay(currentGhost.date, date) || currentGhost.hour !== hour) {
+            ghostEventRef.current = { date, hour, title: draggedTask.title };
+            throttledSetGhostEvent();
         }
     }
   };
@@ -214,6 +229,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropDate: Date, dropHour: number) => {
     e.preventDefault();
     setGhostEvent(null);
+    ghostEventRef.current = null;
     if (!draggedTask || !onEditEvent) return;
 
     const newEvent: TimelineEvent = dropHour === -1
@@ -227,6 +243,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const handleDragEnd = (e?: React.DragEvent) => {
     setDraggedTask(null);
     setGhostEvent(null);
+    ghostEventRef.current = null;
   };
   
   const handleToggleSidebar = () => {
@@ -292,3 +309,5 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
+
+    
