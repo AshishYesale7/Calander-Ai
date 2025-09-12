@@ -221,19 +221,17 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>;
   }
   
+  // Explicitly check for 'gmail' view first.
   if (props.activeView === 'gmail') {
     return <PlannerGmailList viewTheme={props.viewTheme} onDragStart={props.onDragStart} />
   }
 
-  // Check if the activeView is one of the task-related views
+  // Then, check if the active view corresponds to any of the fetched task lists or smart lists.
   const isTaskView = ['today', 'upcoming', 'all_tasks'].includes(props.activeView) || props.taskLists.some(list => list.id === props.activeView);
   
   if (isTaskView) {
       const tasksForActiveView = useMemo(() => {
         if (props.activeView === 'all_tasks' || props.activeView === 'today' || props.activeView === 'upcoming') {
-            // These views are logical and don't correspond to a single list.
-            // You might want to add logic here to filter all tasks for 'today' or 'upcoming'.
-            // For now, 'all_tasks' will show all tasks grouped by list.
             return [];
         }
         const tasksForList = props.tasks[props.activeView];
