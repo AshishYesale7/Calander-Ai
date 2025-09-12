@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -39,7 +39,7 @@ import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken } from '@/services/userService';
-import { exportUserData, importUserData } from '@/services/dataBackupService';
+import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 
 
@@ -78,6 +78,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isFormatting, setIsFormatting] = useState(false);
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -431,7 +432,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
 
     if (isSendingTest) {
-      // If test is running, stop it
       if (testIntervalRef.current) {
         clearInterval(testIntervalRef.current);
         testIntervalRef.current = null;
@@ -439,22 +439,16 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       setIsSendingTest(false);
       toast({ title: 'Test Stopped', description: 'Stopped sending test notifications.' });
     } else {
-      // If test is not running, start it
       setIsSendingTest(true);
       toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds. Switch tabs to see them.' });
-
-      // Send the first one immediately
       await createNotification({
         userId: user.uid,
         type: 'system_alert',
         message: `Test Notification - ${new Date().toLocaleTimeString()}`,
         link: '/dashboard'
       });
-      
-      // Then set up the interval
       testIntervalRef.current = setInterval(async () => {
         if (!user) {
-            // Stop if user logs out
             if (testIntervalRef.current) clearInterval(testIntervalRef.current);
             setIsSendingTest(false);
             return;
@@ -509,7 +503,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             const dataToImport = JSON.parse(content);
             await importUserData(user.uid, dataToImport);
             toast({ title: 'Import Successful', description: 'Your data has been imported. The app will now reload.' });
-            // Reload to reflect changes everywhere
             setTimeout(() => window.location.reload(), 2000);
         } catch (error: any) {
             toast({ title: 'Import Failed', description: `Invalid file or data format. ${error.message}`, variant: 'destructive' });
@@ -519,6 +512,31 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         }
     };
     reader.readAsText(file);
+  };
+
+  const handleFormatData = async () => {
+    if (!user) return;
+    setIsFormatting(true);
+    toast({ title: 'Formatting...', description: 'Clearing your account data. This may take a moment.' });
+    try {
+        await formatUserData(user.uid);
+        
+        if (typeof window !== 'undefined') {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('futureSight')) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        
+        toast({ title: 'Format Complete', description: 'Your account data has been cleared. The app will now reload.' });
+        setTimeout(() => window.location.reload(), 2000);
+
+    } catch (error: any) {
+        setIsFormatting(false);
+        console.error("Format error:", error);
+        toast({ title: 'Format Failed', description: 'Could not format your data. Please try again.', variant: 'destructive' });
+    }
   };
 
   return (
@@ -762,12 +780,35 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 <Label className="font-semibold text-base flex items-center text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" /> Danger Zone
                 </Label>
-                <p className="text-sm text-muted-foreground">
-                    This action is irreversible. Deleting your account will permanently remove all your data, including goals, skills, and timeline events.
-                </p>
+                 <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full" disabled={isFormatting}>
+                       {isFormatting ? <LoadingSpinner size="sm" className="mr-2" /> : <Eraser className="mr-2 h-4 w-4" />}
+                       {isFormatting ? 'Formatting...' : 'Format All Data'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="frosted-glass">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Format all account data?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all your goals, skills, custom events, and other content. Your account and subscription will NOT be deleted. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive hover:bg-destructive/90"
+                        onClick={handleFormatData}
+                      >
+                        Yes, format my data
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete My Account
                     </Button>
                   </AlertDialogTrigger>

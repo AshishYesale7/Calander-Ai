@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import type { CareerGoal, Skill, CareerVisionHistoryItem, TrackedKeyword, ResourceLink, TimelineEvent, UserPreferences, StreakData } from '@/types';
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 
 // Import all necessary service functions
 import { getCareerGoals, saveCareerGoal } from './careerGoalsService';
@@ -92,7 +92,7 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
     
     const importPromises = [];
 
-    // --- Selectively import only the weekly routine from preferences, not the whole profile ---
+    // Selectively import only the weekly routine from preferences, not the whole profile
     if (data.profile && data.profile.routine) {
         importPromises.push(saveUserPreferences(userId, { routine: data.profile.routine }));
     }
@@ -156,3 +156,56 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
 
     await Promise.all(importPromises);
 };
+
+
+/**
+ * Deletes all user-generated content from subcollections and resets specific user document fields,
+ * but preserves the user account and subscription status.
+ */
+export async function formatUserData(userId: string): Promise<void> {
+    if (!db) throw new Error("Firestore not initialized.");
+
+    const batch = writeBatch(db);
+
+    const collectionsToClear = [
+        'activityLogs',
+        'careerGoals',
+        'careerVisions',
+        'dailyPlans',
+        'fcmTokens',
+        'notifications',
+        'resources',
+        'skills',
+        'timelineEvents',
+        'trackedKeywords',
+    ];
+
+    // 1. Delete all documents in subcollections
+    for (const collectionName of collectionsToClear) {
+        const collectionRef = collection(db, 'users', userId, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    }
+
+    // 2. Delete the separate streak document
+    const streakDocRef = doc(db, 'streaks', userId);
+    batch.delete(streakDocRef);
+
+    // 3. Reset fields on the main user document
+    const userDocRef = doc(db, 'users', userId);
+    batch.update(userDocRef, {
+        bio: '',
+        'socials.github': '',
+        'socials.linkedin': '',
+        'socials.twitter': '',
+        statusEmoji: null,
+        countryCode: null,
+        coverPhotoURL: null,
+        geminiApiKey: null,
+        installedPlugins: [],
+        'preferences.routine': [],
+        codingUsernames: {},
+    });
+
+    await batch.commit();
+}
