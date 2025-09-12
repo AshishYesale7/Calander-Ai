@@ -243,5 +243,3 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             viewTheme={props.viewTheme}
         />
 }
-
-    
