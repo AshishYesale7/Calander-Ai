@@ -131,8 +131,18 @@ export default function PlannerWeeklyView({
          <div 
             className={cn("flex flex-shrink-0 p-1 relative", allDaySectionClasses)} 
             style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}
-            onDragOver={(e) => onDragOver(e, e.currentTarget.getBoundingClientRect().x > e.clientX ? week[0] : week[Math.floor((e.clientX - e.currentTarget.getBoundingClientRect().x) / (e.currentTarget.getBoundingClientRect().width / 7))], -1)}
-            onDrop={(e) => onDrop(e, e.currentTarget.getBoundingClientRect().x > e.clientX ? week[0] : week[Math.floor((e.clientX - e.currentTarget.getBoundingClientRect().x) / (e.currentTarget.getBoundingClientRect().width / 7))], -1)}
+            onDragOver={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / 7));
+                const targetDate = week[dayIndex];
+                if (targetDate) onDragOver(e, targetDate, -1);
+            }}
+            onDrop={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const dayIndex = Math.floor((e.clientX - rect.left) / (rect.width / 7));
+                const targetDate = week[dayIndex];
+                if (targetDate) onDrop(e, targetDate, -1);
+            }}
           >
             <div className="w-16 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground">
                 All-day
@@ -310,3 +320,5 @@ export default function PlannerWeeklyView({
     </div>
   );
 }
+
+    

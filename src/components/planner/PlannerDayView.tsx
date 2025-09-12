@@ -78,7 +78,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
   };
 
   const themeClasses = {
-      container: viewTheme === 'dark' ? 'bg-[#101010]' : 'bg-[#fff8ed]',
+      container: viewTheme === 'dark' ? 'bg-[#101010]' : 'bg-stone-50',
       allDayArea: viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-100/80 border-b border-gray-200',
       allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-stone-400 border-r border-stone-200',
       hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-stone-400',
@@ -188,3 +188,5 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
     </div>
   );
 }
+
+    
