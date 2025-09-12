@@ -5,7 +5,7 @@ import type { TimelineEvent } from '@/types';
 import { useMemo, useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
-import { Trash2, Edit3 } from 'lucide-react';
+import { Trash2, Edit3, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -20,34 +20,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { isToday as dfnsIsToday } from 'date-fns';
-import { calculateEventLayouts } from '@/components/planner/planner-utils';
+import { calculateEventLayouts, type EventWithLayout } from '@/components/planner/planner-utils';
 import type { MaxViewTheme } from './MaximizedPlannerView';
 
 const HOUR_HEIGHT_PX = 60;
 
-const renderHours = (viewTheme: MaxViewTheme) => {
-    const hours = [];
-    const hourClasses = viewTheme === 'dark' ? 'text-gray-400' : 'text-gray-500';
-    for (let i = 0; i < 24; i++) {
-        const time = format(new Date(0, 0, 0, i), 'ha');
-        hours.push(
-            <div key={`hour-${i}`} className="relative h-[60px] text-right pr-2">
-                <span className={cn("relative -top-2 text-xs", hourClasses)}>{time}</span>
-            </div>
-        );
-    }
-    return hours;
-};
-
-const renderHourLines = (viewTheme: MaxViewTheme) => {
-    const lines = [];
-    const lineClasses = viewTheme === 'dark' ? 'border-gray-700/70' : 'border-gray-300';
-    for (let i = 0; i < 24; i++) {
-        lines.push(
-            <div key={`line-${i}`} className={cn("h-[60px] border-t", lineClasses)}></div>
-        );
-    }
-    return lines;
+const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
+    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
+    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
+    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
+    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
+    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
+    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+  }
 };
 
 interface PlannerDayViewProps {
@@ -90,25 +77,29 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
     }
   };
 
-  const mainAreaClasses = viewTheme === 'dark' ? 'bg-gray-800' : 'bg-stone-50';
-  const hoursColumnClasses = viewTheme === 'dark' ? 'bg-gray-900/80 border-r border-gray-700/50' : 'bg-[#fff8ed] border-r border-gray-200';
-  const allDayAreaClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-100/80 border-b border-gray-200';
-  const eventCardClasses = viewTheme === 'dark' ? 'bg-gray-700/50 border-gray-600/80 text-gray-100' : 'bg-white/80 border-gray-300/80 text-gray-800';
+  const themeClasses = {
+      container: viewTheme === 'dark' ? 'bg-[#101010]' : 'bg-[#fff8ed]',
+      allDayArea: viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-100/80 border-b border-gray-200',
+      allDayGutter: viewTheme === 'dark' ? 'text-gray-500 border-r border-gray-700/50' : 'text-stone-400 border-r border-stone-200',
+      hourGutter: viewTheme === 'dark' ? 'text-gray-500' : 'text-stone-400',
+      hourLine: viewTheme === 'dark' ? 'border-gray-700/50' : 'border-stone-200',
+      eventText: viewTheme === 'dark' ? 'text-white' : 'text-gray-900',
+    };
 
   return (
-    <div className={cn("flex flex-col flex-1 min-h-0", mainAreaClasses)} onDragOver={(e) => e.preventDefault()}>
+    <div className={cn("flex flex-col flex-1 min-h-0", themeClasses.container)} onDragOver={(e) => e.preventDefault()}>
         <div 
-            className={cn("p-2 flex-shrink-0", allDayAreaClasses)}
+            className={cn("p-2 flex-shrink-0", themeClasses.allDayArea)}
             onDragOver={(e) => onDragOver(e, date, -1)}
             onDrop={(e) => onDrop(e, date, -1)}
         >
             <div className="flex gap-2">
-                <span className="text-xs font-semibold w-16 text-center">All-day</span>
+                <span className="text-xs font-semibold w-16 text-center flex-shrink-0">All-day</span>
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
                     {allDayEvents.map(event => (
                         <Popover key={event.id}>
                           <PopoverTrigger asChild>
-                              <div className={cn("p-1 rounded-md text-xs cursor-pointer truncate", eventCardClasses)} style={event.color ? { backgroundColor: event.color, borderColor: event.color } : {}}>
+                              <div className={cn("p-1 rounded-md text-xs cursor-pointer truncate", getEventTypeStyleClasses(event.type))} style={event.color ? { backgroundColor: event.color, borderColor: event.color } : {}}>
                                   {event.title}
                               </div>
                           </PopoverTrigger>
@@ -118,19 +109,34 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                           </PopoverContent>
                         </Popover>
                     ))}
+                     {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === -1 && (
+                        <div className="h-6 rounded-md bg-accent/30 animate-pulse col-span-full"></div>
+                    )}
                 </div>
             </div>
-            {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === -1 && (
-                <div className="h-6 mt-1 rounded-md bg-accent/30 animate-pulse"></div>
-            )}
         </div>
         <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
             <div className="flex h-full">
-                <div className={cn("w-16 flex-shrink-0 text-right text-xs", hoursColumnClasses)}>
-                    {renderHours(viewTheme)}
+                <div className={cn("w-16 flex-shrink-0 text-right text-xs", themeClasses.hourGutter)}>
+                    {Array.from({ length: 24 }).map((_, i) => (
+                        <div key={`hour-label-${i}`} className="relative" style={{ height: `${HOUR_HEIGHT_PX}px` }}>
+                            {i > 0 && <span className='relative -top-2.5 pr-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
+                        </div>
+                    ))}
                 </div>
                 <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
-                    {renderHourLines(viewTheme)}
+                    {Array.from({ length: 24 }).map((_, i) => (
+                         <div
+                            key={`hour-line-${i}`}
+                            className={cn("h-[60px] border-t", themeClasses.hourLine)}
+                            onDragOver={(e) => onDragOver(e, date, i)}
+                            onDrop={(e) => onDrop(e, date, i)}
+                         >
+                             {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === i && (
+                                <div className="h-full w-full rounded-md bg-accent/30 animate-pulse"></div>
+                            )}
+                         </div>
+                    ))}
                     {dfnsIsToday(date) && (
                         <div
                             ref={nowIndicatorRef}
@@ -144,15 +150,18 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
                                 <div
-                                    className={cn("absolute p-2 rounded-lg cursor-pointer overflow-hidden", eventCardClasses)}
+                                    className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
                                     style={{
                                         ...layout,
                                         backgroundColor: event.color || undefined,
                                         borderColor: event.color || undefined,
                                     }}
                                 >
-                                    <p className="font-bold text-sm leading-tight truncate">{event.title}</p>
-                                    <p className="text-xs text-muted-foreground leading-tight truncate">{event.notes}</p>
+                                    <div className='flex items-center gap-1 text-[10px]'>
+                                        {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
+                                        <span className="truncate">{event.title}</span>
+                                    </div>
+                                    {layout.height > 25 && <p className={cn("opacity-80 text-[10px]")}>{format(event.date, 'h:mm a')}</p>}
                                 </div>
                             </PopoverTrigger>
                              <PopoverContent className="w-64 frosted-glass" side="right" align="start">
@@ -172,19 +181,6 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                                  </div>
                              </PopoverContent>
                         </Popover>
-                    ))}
-                    {Array.from({ length: 24 }).map((_, hour) => (
-                        <div 
-                            key={`dropzone-${hour}`}
-                            className="absolute w-full"
-                            style={{ top: `${hour * HOUR_HEIGHT_PX}px`, height: `${HOUR_HEIGHT_PX}px` }}
-                            onDragOver={(e) => onDragOver(e, date, hour)}
-                            onDrop={(e) => onDrop(e, date, hour)}
-                        >
-                            {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === hour && (
-                                <div className="h-full w-full rounded-md bg-accent/30 animate-pulse"></div>
-                            )}
-                        </div>
                     ))}
                 </div>
             </div>
