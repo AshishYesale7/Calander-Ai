@@ -15,10 +15,13 @@ function timelineEventToGoogleEvent(event: TimelineEvent, timezone: string) {
 
   if (event.isAllDay) {
     googleEvent.start = { date: format(startOfDay(event.date), 'yyyy-MM-dd') };
+    // For all-day events, Google's API expects the end date to be exclusive.
+    // So, if an event is for the 15th, the end date should be the 16th.
     const endDateForGoogle = event.endDate ? addDays(startOfDay(event.endDate), 1) : addDays(startOfDay(event.date), 1);
     googleEvent.end = { date: format(endDateForGoogle, 'yyyy-MM-dd') };
   } else {
     googleEvent.start = { dateTime: event.date.toISOString(), timeZone: timezone };
+    // If no end date, default to 1 hour after the start.
     const endDate = event.endDate || addHours(event.date, 1);
     googleEvent.end = { dateTime: endDate.toISOString(), timeZone: timezone };
   }

@@ -56,33 +56,38 @@ export const saveTimelineEvent = async (
     const eventDocRef = doc(eventsCollection, event.id);
 
     let googleEventId = event.googleEventId || null;
-    const client = await getAuthenticatedClient(userId);
     
     let eventDate = new Date(event.date);
     let eventEndDate = event.endDate ? new Date(event.endDate) : undefined;
     
     // This block handles the Google Calendar sync logic.
-    if (client && options.syncToGoogle) {
-      try {
-        const eventPayloadForGoogle: TimelineEvent = {
-          ...event,
-          date: eventDate,
-          endDate: eventEndDate,
-        } as TimelineEvent;
+    if (options.syncToGoogle) {
+      const client = await getAuthenticatedClient(userId);
+      if (client) {
+        try {
+          const eventPayloadForGoogle: TimelineEvent = {
+            ...event,
+            date: eventDate,
+            endDate: eventEndDate,
+          } as TimelineEvent;
 
-        if (googleEventId) {
-          await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle, options.timezone);
-        } else {
-          const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle, options.timezone);
-          if (newGoogleEvent && newGoogleEvent.id) {
-            googleEventId = newGoogleEvent.id;
+          if (googleEventId) {
+            await updateGoogleCalendarEvent(userId, googleEventId, eventPayloadForGoogle, options.timezone);
+          } else {
+            const newGoogleEvent = await createGoogleCalendarEvent(userId, eventPayloadForGoogle, options.timezone);
+            if (newGoogleEvent && newGoogleEvent.id) {
+              googleEventId = newGoogleEvent.id;
+            }
           }
+        } catch (error) {
+          console.error("Critical Error: Failed to sync event to Google Calendar. Saving to Firestore only.", error);
+          // Do not throw an error, instead, allow local saving to proceed.
+          // For now, we just ensure it doesn't have a googleEventId.
+          googleEventId = null; 
         }
-      } catch (error) {
-        console.error("Critical Error: Failed to sync event to Google Calendar. Saving to Firestore only.", error);
-        // Do not throw an error, instead, allow local saving to proceed.
-        // For now, we just ensure it doesn't have a googleEventId.
-        googleEventId = null; 
+      } else {
+         console.warn(`User ${userId} opted to sync to Google, but is not authenticated. Saving locally only.`);
+         googleEventId = null;
       }
     }
 
