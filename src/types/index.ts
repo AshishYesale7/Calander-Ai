@@ -300,7 +300,9 @@ export interface ActivityLog {
     // Autonomous Events
     'google_event_synced' |
     'google_task_synced' |
-    'notification_sent'
+    'notification_sent' |
+    // Plugin Events
+    'codefolio_stats_fetched'
   ;
   timestamp: Date;
   details: {
@@ -312,5 +314,7 @@ export interface ActivityLog {
     proficiency?: string;
     // Vision specific
     prompt?: string;
+    // Codefolio specific
+    platforms?: string[];
   }
 }

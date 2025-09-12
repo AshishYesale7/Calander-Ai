@@ -18,6 +18,7 @@ import { saveTimelineEvent } from "@/services/timelineService";
 import { useTimezone } from "@/hooks/use-timezone";
 import CodefolioContributionGraph from "./CodefolioContributionGraph";
 import { usePlugin } from "@/hooks/use-plugin";
+import { logUserActivity } from '@/services/activityLogService';
 
 export default function CodefolioDashboard() {
   const [userData, setUserData] = useState<AllPlatformsUserData | null>(null);
@@ -37,6 +38,10 @@ export default function CodefolioDashboard() {
         if (usernames && Object.values(usernames).some(u => u)) {
           const stats = await fetchCodingStats({ ...usernames, apiKey });
           setUserData(stats);
+          // Log the successful fetch
+          logUserActivity(user.uid, 'codefolio_stats_fetched', {
+              platforms: Object.keys(stats).filter(p => stats[p as keyof typeof stats] && !stats[p as keyof typeof stats]?.error)
+          });
         } else {
           // If no usernames are set, open the login/settings modal.
           openLoginView();
