@@ -103,9 +103,14 @@ export const saveTimelineEvent = async (
     } else {
         dataToSave.googleEventId = deleteField();
     }
+    
+    if (event.deletedAt) {
+        dataToSave.deletedAt = Timestamp.fromDate(new Date(event.deletedAt));
+    } else {
+        dataToSave.deletedAt = deleteField();
+    }
 
     if (!dataToSave.endDate) delete dataToSave.endDate;
-    if (!dataToSave.deletedAt) delete dataToSave.deletedAt;
 
     await setDoc(eventDocRef, dataToSave, { merge: true });
 
