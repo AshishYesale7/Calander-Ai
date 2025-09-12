@@ -58,7 +58,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
   const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
-  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('day');
+  const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('week');
   
   const [maximizedViewTheme, setMaximizedViewTheme] = useState<MaxViewTheme>(() => {
     if (typeof window === 'undefined') return 'dark';

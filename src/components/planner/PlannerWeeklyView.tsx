@@ -128,7 +128,12 @@ export default function PlannerWeeklyView({
                 ))}
             </div>
         </div>
-         <div className={cn("flex flex-shrink-0 p-1", allDaySectionClasses)} style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}>
+         <div 
+            className={cn("flex flex-shrink-0 p-1 relative", allDaySectionClasses)} 
+            style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}
+            onDragOver={(e) => onDragOver(e, e.currentTarget.getBoundingClientRect().x > e.clientX ? week[0] : week[Math.floor((e.clientX - e.currentTarget.getBoundingClientRect().x) / (e.currentTarget.getBoundingClientRect().width / 7))], -1)}
+            onDrop={(e) => onDrop(e, e.currentTarget.getBoundingClientRect().x > e.clientX ? week[0] : week[Math.floor((e.clientX - e.currentTarget.getBoundingClientRect().x) / (e.currentTarget.getBoundingClientRect().width / 7))], -1)}
+          >
             <div className="w-16 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground">
                 All-day
             </div>
@@ -186,6 +191,15 @@ export default function PlannerWeeklyView({
                         </PopoverContent>
                     </Popover>
                 ))}
+                {ghostEvent && ghostEvent.hour === -1 && (
+                    <div 
+                        className="absolute h-full bg-accent/30 animate-pulse rounded-md"
+                        style={{
+                            left: `calc(${(100 / 7) * getDay(ghostEvent.date)}%)`,
+                            width: `calc(${100 / 7}%)`,
+                        }}
+                    ></div>
+                )}
             </div>
         </div>
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
@@ -207,7 +221,13 @@ export default function PlannerWeeklyView({
                                 <div
                                 key={`line-${dayIndex}-${hourIndex}`}
                                 className={cn("h-[60px] border-t", viewTheme === 'dark' ? 'border-gray-700/50' : 'border-gray-200')}
-                                ></div>
+                                onDragOver={(e) => onDragOver(e, week[dayIndex], hourIndex)}
+                                onDrop={(e) => onDrop(e, week[dayIndex], hourIndex)}
+                                >
+                                {ghostEvent && isSameDay(week[dayIndex], ghostEvent.date) && ghostEvent.hour === hourIndex && (
+                                    <div className="h-full w-full rounded-md bg-accent/30 animate-pulse"></div>
+                                )}
+                                </div>
                             ))}
                             {/* Events for this day */}
                             {weeklyLayouts[dayIndex]?.map((event: EventWithLayout) => {
@@ -265,18 +285,28 @@ export default function PlannerWeeklyView({
                         </div>
                     ))}
                     {/* Current Time Indicator */}
-                    <div
-                        className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
-                        style={{ top: `${currentTimeTopPosition}px` }}
-                    >
-                        <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
-                        <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
-                    </div>
+                    {isWithinInterval(now, {start: week[0], end: addDays(week[6], 1)}) && (
+                        <div
+                            className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                            style={{ top: `${currentTimeTopPosition}px` }}
+                        >
+                            <div 
+                                className="absolute -top-1 h-3 w-3 rounded-full bg-accent border-2 border-background shadow-md"
+                                style={{ left: `calc(${getDay(now) * (100/7)}% - 6px)`}}
+                            ></div>
+                            <div 
+                                className="h-[2px] bg-accent opacity-80 shadow"
+                                style={{
+                                    position: 'absolute',
+                                    left: `calc(${getDay(now) * (100/7)}%)`,
+                                    width: `calc(${100 - getDay(now) * (100/7)}%)`,
+                                }}
+                            ></div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     </div>
   );
 }
-
-    
