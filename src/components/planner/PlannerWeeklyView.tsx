@@ -118,7 +118,7 @@ export default function PlannerWeeklyView({
   return (
     <div className={cn("flex flex-col flex-1 min-h-0", gridContainerClasses)}>
         <div className={cn("flex flex-shrink-0", rulerClasses)}>
-            <div className="w-16 flex-shrink-0 text-xs flex items-center justify-center font-semibold text-muted-foreground">GMT{format(now, 'XXX')}</div>
+            <div className="w-16 flex-shrink-0"></div>
             <div className="flex-1 grid grid-cols-7">
                 {week.map(day => (
                     <div key={day.toISOString()} className={cn("p-2 text-center", dayHeaderClasses)}>
@@ -192,8 +192,8 @@ export default function PlannerWeeklyView({
             <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT_PX}px` }}>
                  <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative">
-                          {i > 0 && <span className='absolute -top-2 right-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
+                         <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative border-t border-border/20 -mt-px first:mt-0 first:border-t-0">
+                          {i > 0 && <span className='relative -top-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
                         </div>
                     ))}
                 </div>
@@ -210,7 +210,7 @@ export default function PlannerWeeklyView({
                             {Array.from({ length: 24 }).map((_, hourIndex) => (
                                 <div
                                 key={`line-${dayIndex}-${hourIndex}`}
-                                className="h-[60px] border-t border-border/20"
+                                className="h-[60px] border-t border-border/20 first:border-t-0"
                                 ></div>
                             ))}
                             {/* Events for this day */}

@@ -231,11 +231,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
               <div className="flex w-full">
                   <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
                       <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
-                      <div>
+                      <div className="relative">
                           {hours.map(hour => (
                           <div key={`label-${hour}`} style={{ height: `${HOUR_HEIGHT_PX}px` }}
-                              className="text-xs text-muted-foreground text-right pr-2 pt-1 border-b border-border/20 last:border-b-0 flex items-start justify-end">
-                              <span className='-translate-y-1/2'>{hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}</span>
+                              className="text-xs text-muted-foreground text-right pr-2 border-t border-border/20 -mt-px first:border-t-0 flex items-start justify-end">
+                              <span className='relative -top-2'>{hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}</span>
                           </div>
                           ))}
                       </div>
