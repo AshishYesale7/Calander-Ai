@@ -50,9 +50,9 @@ export default function PlannerWeeklyView({
     ghostEvent
 }: PlannerWeeklyViewProps) {
 
-  const rulerClasses = viewTheme === 'dark' ? 'bg-black/80 border-b border-gray-700/50' : 'bg-[#fff8ed] border-b border-gray-200';
+  const rulerClasses = viewTheme === 'dark' ? 'bg-black/80 border-b border-gray-700/50' : 'bg-stone-50 border-b border-gray-200';
   const dayHeaderClasses = viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-600';
-  const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-stone-50 divide-x divide-gray-200';
+  const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-white divide-x divide-gray-200';
   
   const { allDayEvents, timedEventsByDay } = useMemo(() => {
     const weekStart = dfnsStartOfDay(week[0]);
@@ -106,12 +106,70 @@ export default function PlannerWeeklyView({
                 ))}
             </div>
         </div>
+         <div className={cn("flex flex-shrink-0 p-1 border-b", rulerClasses)} style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}>
+            <div className="w-16 flex-shrink-0"></div>
+            <div className="flex-1 grid grid-cols-7 relative">
+               {allDayLayouts.events.map((event) => (
+                     <Popover key={event.id}>
+                        <PopoverTrigger asChild>
+                            <div
+                                className={cn(
+                                    'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer absolute',
+                                    getEventTypeStyleClasses(event.type),
+                                )}
+                                style={{
+                                  top: `${event.row * 24}px`,
+                                  left: `calc(${(100 / 7) * event.startDay}% + 2px)`,
+                                  width: `calc(${(100/7) * event.span}% - 4px)`,
+                                  height: '22px'
+                                }}
+                            >
+                                {event.title}
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
+                             <div className="space-y-2">
+                                <h4 className="font-semibold">{event.title}</h4>
+                                <p className="text-muted-foreground">All-day event</p>
+                                {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
+                                <div className="flex justify-end gap-1 pt-1">
+                                    {onEditEvent && (
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent(event)}>
+                                        <Edit3 className="h-3.5 w-3.5"/>
+                                    </Button>
+                                    )}
+                                    {onDeleteEvent && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                <Trash2 className="h-3.5 w-3.5"/>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="frosted-glass">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
+                                                <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(event.id, event.title)}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    )}
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                ))}
+            </div>
+        </div>
         <div className="flex-1 overflow-y-auto">
             <div className="flex">
                 <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative">
-                            <span className="absolute -top-2">{format(new Date(0,0,0,i), 'ha')}</span>
+                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative -top-2">
+                            {i > 0 && <span className='-translate-y-1/2'>{format(new Date(0,0,0,i), 'ha')}</span>}
                         </div>
                     ))}
                 </div>
@@ -119,58 +177,7 @@ export default function PlannerWeeklyView({
                     {Array.from({ length: 24 * 7 }).map((_, i) => (
                         <div key={i} className="h-[60px] border-t border-l border-border/20"></div>
                     ))}
-                    {/* Render All Day Events */}
-                    <div className="absolute top-[-40px] left-0 right-0 h-[40px] grid grid-cols-7 p-1 gap-1 border-b border-border/20">
-                        {allDayLayouts.map((event) => (
-                             <Popover key={event.id}>
-                                <PopoverTrigger asChild>
-                                    <div
-                                        className={cn(
-                                            'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer',
-                                            getEventTypeStyleClasses(event.type),
-                                        )}
-                                        style={{ gridColumnStart: event.startDay + 1, gridColumnEnd: `span ${event.span}`, gridRow: event.row + 1 }}
-                                    >
-                                        {event.title}
-                                    </div>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
-                                     <div className="space-y-2">
-                                        <h4 className="font-semibold">{event.title}</h4>
-                                        <p className="text-muted-foreground">All-day event</p>
-                                        {event.notes && <p className="text-xs text-foreground/80">{event.notes}</p>}
-                                        <div className="flex justify-end gap-1 pt-1">
-                                            {onEditEvent && (
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditEvent(event)}>
-                                                <Edit3 className="h-3.5 w-3.5"/>
-                                            </Button>
-                                            )}
-                                            {onDeleteEvent && (
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-3.5 w-3.5"/>
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="frosted-glass">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle>
-                                                        <AlertDialogDescription>This action is permanent.</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(event.id, event.title)}>Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                            )}
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                        ))}
-                    </div>
-                     {/* Render Timed Events */}
+                    {/* Render Timed Events */}
                     {weeklyLayouts.map((dayLayout, dayIndex) => (
                         <div key={dayIndex} className="relative" style={{ gridColumnStart: dayIndex + 1 }}>
                             {dayLayout.map((event: EventWithLayout) => {

@@ -1,3 +1,4 @@
+
 'use client';
 import type { TimelineEvent } from '@/types';
 import { isSameDay, startOfDay, getDay, differenceInCalendarDays, isWithinInterval, endOfWeek, startOfWeek } from 'date-fns';
@@ -211,23 +212,22 @@ export interface AllDayEventWithLayout extends TimelineEvent {
   span: number;
   startDay: number;
 }
-export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week: Date[]): AllDayEventWithLayout[] {
+export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week: Date[]): { events: AllDayEventWithLayout[], maxRows: number } {
     const weekStart = startOfWeek(week[0], { weekStartsOn: 0 });
     const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
 
     const eventsInWeek = allDayEvents
+        .map(e => ({...e, start: startOfDay(e.date), end: startOfDay(e.endDate || e.date)}))
         .filter(e => {
-            const eventStart = startOfDay(e.date);
-            const eventEnd = startOfDay(e.endDate || e.date);
-            return isWithinInterval(eventStart, { start: weekStart, end: weekEnd }) || 
-                   isWithinInterval(eventEnd, { start: weekStart, end: weekEnd }) ||
-                   (eventStart < weekStart && eventEnd > weekEnd);
+            return isWithinInterval(e.start, { start: weekStart, end: weekEnd }) || 
+                   isWithinInterval(e.end, { start: weekStart, end: weekEnd }) ||
+                   (e.start < weekStart && e.end > weekEnd);
         })
         .sort((a, b) => {
-            const spanA = differenceInCalendarDays(a.endDate || a.date, a.date);
-            const spanB = differenceInCalendarDays(b.endDate || b.date, b.date);
+            const spanA = differenceInCalendarDays(a.end, a.start);
+            const spanB = differenceInCalendarDays(b.end, b.start);
             if (spanA !== spanB) return spanB - spanA; // Longer events first
-            return a.date.getTime() - b.date.getTime();
+            return a.start.getTime() - b.start.getTime();
         });
 
     const layoutGrid: (TimelineEvent | null)[][] = [];
@@ -238,8 +238,8 @@ export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week:
         let row = 0;
         let placed = false;
         
-        const eventStart = event.date < weekStart ? weekStart : event.date;
-        const eventEnd = event.endDate && event.endDate > weekEnd ? weekEnd : (event.endDate || event.date);
+        const eventStart = event.start < weekStart ? weekStart : event.start;
+        const eventEnd = event.end > weekEnd ? weekEnd : event.end;
 
         const eventStartDay = getDay(eventStart);
         const eventSpan = Math.max(1, differenceInCalendarDays(eventEnd, eventStart) + 1);
@@ -259,7 +259,9 @@ export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week:
 
             if (canPlace) {
                 for (let i = 0; i < eventSpan; i++) {
-                    layoutGrid[row][eventStartDay + i] = event;
+                    if (eventStartDay + i < 7) {
+                      layoutGrid[row][eventStartDay + i] = event;
+                    }
                 }
                 placedEvents.push({ ...event, row, span: eventSpan, startDay: eventStartDay });
                 placed = true;
@@ -268,5 +270,5 @@ export function calculateAllDayEventLayouts(allDayEvents: TimelineEvent[], week:
             }
         }
     }
-    return placedEvents;
+    return { events: placedEvents, maxRows: layoutGrid.length };
 }
