@@ -1,13 +1,12 @@
 
 'use client';
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
-import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStreak } from "@/context/StreakContext";
@@ -15,8 +14,6 @@ import { useStreak } from "@/context/StreakContext";
 const ContributionGraphCard = () => {
     const { user } = useAuth();
     const { streakData, isLoading: isStreakLoading } = useStreak();
-    const [activity, setActivity] = useState<ActivityLog[]>([]);
-    const [isActivityLoading, setIsActivityLoading] = useState(true);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     const { startDate, endDate } = useMemo(() => {
@@ -24,25 +21,19 @@ const ContributionGraphCard = () => {
         const start = startOfDay(subYears(today, 1));
         return { startDate: start, endDate: today };
     }, []);
-
-    useEffect(() => {
-        if (user) {
-            setIsActivityLoading(true);
-            getUserActivity(user.uid, startDate, endDate)
-                .then(setActivity)
-                .catch(err => console.error("Failed to fetch user activity", err))
-                .finally(() => setIsActivityLoading(false));
-        }
-    }, [user, startDate, endDate]);
-
+    
+    // The contributions map is now derived directly from the streakData's completedDays array
     const contributions = useMemo(() => {
+        if (!streakData?.completedDays) {
+            return new Map<string, number>();
+        }
+        // For this graph, we just care if a day was completed (count of 1)
         const map = new Map<string, number>();
-        activity.forEach(log => {
-            const dateString = format(startOfDay(new Date(log.timestamp)), 'yyyy-MM-dd');
-            map.set(dateString, (map.get(dateString) || 0) + 1);
+        streakData.completedDays.forEach(dateString => {
+            map.set(dateString, 1); // Set count to 1 for each completed day
         });
         return map;
-    }, [activity]);
+    }, [streakData?.completedDays]);
     
     const { weeks, monthLabels } = useMemo(() => {
         const weeks: (Date | null)[][] = [];
@@ -88,22 +79,15 @@ const ContributionGraphCard = () => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
         }
-    }, [isActivityLoading, weeks]);
+    }, [isStreakLoading, weeks]);
 
 
     const totalContributions = useMemo(() => {
-        if (activity.length === 0) return 0;
-        const contributionDates = new Set(
-            activity.map(log => format(startOfDay(new Date(log.timestamp)), 'yyyy-MM-dd'))
-        );
-        return contributionDates.size;
-    }, [activity]);
+        return contributions.size; // Total contributions is just the number of unique days
+    }, [contributions]);
 
     const getLevelColor = (level: number) => {
-        if (level >= 4) return 'bg-cyan-500/90';
-        if (level === 3) return 'bg-cyan-500/70';
-        if (level === 2) return 'bg-cyan-500/50';
-        if (level === 1) return 'bg-cyan-500/30';
+        if (level >= 1) return 'bg-cyan-500/70'; // Simplified: any contribution is one color
         return 'bg-muted/30';
     };
 
@@ -116,7 +100,7 @@ const ContributionGraphCard = () => {
                     </div>
                     <div>
                         <CardTitle className="text-md font-semibold">App Activity</CardTitle>
-                        <CardDescription className="text-xs mt-1">{totalContributions} contributions in the last year</CardDescription>
+                        <CardDescription className="text-xs mt-1">{totalContributions} active days in the last year</CardDescription>
                     </div>
                 </div>
                 <Badge variant="outline" className="bg-background/80">
@@ -124,7 +108,7 @@ const ContributionGraphCard = () => {
                 </Badge>
             </CardHeader>
             <CardContent className="p-0 mt-4">
-                {isActivityLoading ? (
+                {isStreakLoading ? (
                     <div className="h-36 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
@@ -165,7 +149,7 @@ const ContributionGraphCard = () => {
                                                                     </div>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent className="p-2">
-                                                                    <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
+                                                                    <p className="text-sm font-semibold">{level > 0 ? 'Active' : 'No activity'} on</p>
                                                                     <p className="text-sm text-muted-foreground">{format(new Date(dateString), 'EEEE, MMM d, yyyy')}</p>
                                                                 </TooltipContent>
                                                             </Tooltip>
