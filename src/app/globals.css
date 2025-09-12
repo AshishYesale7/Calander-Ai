@@ -466,7 +466,8 @@ body {
   @apply bg-gray-900/80 border-b-gray-700;
 }
 [data-theme='professional'] .timetable-allday-area {
-  @apply bg-gray-800/50 border-b-gray-700;
+  background-color: #1c1c1c;
+  @apply border-b-gray-700;
 }
 [data-theme='professional'] .timetable-event-card {
   @apply shadow-lg border-2;
@@ -502,3 +503,5 @@ body {
 [data-theme='wood'] .timetable-event-card .text-accent {
   color: #8c6a4d !important;
 }
+
+    
