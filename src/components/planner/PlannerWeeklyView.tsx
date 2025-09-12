@@ -189,7 +189,7 @@ export default function PlannerWeeklyView({
             </div>
         </div>
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-            <div className="flex h-full">
+            <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT_PX}px` }}>
                  <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
                         <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative border-t border-border/20 -mt-px first:border-t-0">
@@ -198,22 +198,24 @@ export default function PlannerWeeklyView({
                     ))}
                 </div>
                  <div className={cn("flex-1 grid grid-cols-7 relative h-full", viewTheme === 'dark' ? 'divide-x divide-gray-700/50' : 'divide-x divide-gray-200')}>
-                    <div className="absolute inset-0 pointer-events-none" style={{ height: `${24 * HOUR_HEIGHT_PX}px` }}>
-                        {Array.from({ length: 24 }).map((_, i) => (
-                           <div key={`hour-line-${i}`} className="h-[60px] border-t border-border/20"></div>
-                        ))}
-                    </div>
-
                     <div
                         className="absolute w-full h-0.5 bg-accent/80 z-20 pointer-events-none"
                         style={{ top: `${currentTimeTopPosition}px` }}
                     >
                         <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
                     </div>
-
-                    {weeklyLayouts.map((dayLayout, dayIndex) => (
-                        <div key={dayIndex} className="relative h-full" style={{ height: `${24 * HOUR_HEIGHT_PX}px` }}>
-                            {dayLayout.map((event: EventWithLayout) => {
+                    {Array.from({ length: 7 }).map((_, dayIndex) => (
+                        <div key={dayIndex} className="relative h-full">
+                             {/* The horizontal hour lines */}
+                            {Array.from({ length: 24 }).map((_, hourIndex) => (
+                                <div
+                                key={`line-${dayIndex}-${hourIndex}`}
+                                className="h-[60px] border-t border-border/20"
+                                style={{ top: `${hourIndex * HOUR_HEIGHT_PX}px` }}
+                                ></div>
+                            ))}
+                            {/* Events for this day */}
+                            {weeklyLayouts[dayIndex]?.map((event: EventWithLayout) => {
                                 const isShort = event.layout.height < 40;
                                 return (
                                 <Popover key={event.id}>
