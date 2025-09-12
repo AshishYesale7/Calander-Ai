@@ -200,12 +200,6 @@ export default function PlannerWeeklyView({
                     ))}
                 </div>
                  <div className={cn("flex-1 grid grid-cols-7 relative h-full", viewTheme === 'dark' ? 'divide-x divide-gray-700/50' : 'divide-x divide-gray-200')}>
-                    <div
-                        className="absolute w-full h-0.5 bg-accent/80 z-20 pointer-events-none"
-                        style={{ top: `${currentTimeTopPosition}px` }}
-                    >
-                        <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
-                    </div>
                     {Array.from({ length: 7 }).map((_, dayIndex) => (
                         <div key={dayIndex} className="relative h-full">
                              {/* The horizontal hour lines */}
@@ -270,9 +264,19 @@ export default function PlannerWeeklyView({
                             })}
                         </div>
                     ))}
+                    {/* Current Time Indicator */}
+                    <div
+                        className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                        style={{ top: `${currentTimeTopPosition}px` }}
+                    >
+                        <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
+                        <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
   );
 }
+
+    
