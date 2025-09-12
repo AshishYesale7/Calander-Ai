@@ -92,7 +92,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
 
   const mainAreaClasses = viewTheme === 'dark' ? 'bg-gray-800' : 'bg-stone-50';
   const hoursColumnClasses = viewTheme === 'dark' ? 'bg-gray-900/80 border-r border-gray-700/50' : 'bg-[#fff8ed] border-r border-gray-200';
-  const allDayAreaClasses = viewTheme === 'dark' ? 'bg-gray-800/50 border-b border-gray-700/50' : 'bg-stone-100/80 border-b border-gray-200';
+  const allDayAreaClasses = viewTheme === 'dark' ? 'bg-[#1c1c1c] border-b border-gray-700/50' : 'bg-stone-100/80 border-b border-gray-200';
   const eventCardClasses = viewTheme === 'dark' ? 'bg-gray-700/50 border-gray-600/80 text-gray-100' : 'bg-white/80 border-gray-300/80 text-gray-800';
 
   return (
@@ -127,10 +127,10 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
         <div ref={scrollContainerRef} className="flex-1 overflow-auto relative">
             <div className="flex h-full">
                 <div className={cn("w-16 flex-shrink-0 text-right text-xs", hoursColumnClasses)}>
-                    {renderHours()}
+                    {renderHours(viewTheme)}
                 </div>
                 <div className="flex-1 relative" style={{ minWidth: minEventGridWidth }}>
-                    {renderHourLines()}
+                    {renderHourLines(viewTheme)}
                     {dfnsIsToday(date) && (
                         <div
                             ref={nowIndicatorRef}
