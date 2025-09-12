@@ -4,13 +4,13 @@
 import type { TimelineEvent } from '@/types';
 import PlannerDayView from './PlannerDayView';
 import type { MaxViewTheme } from './MaximizedPlannerView';
-import { format, isSameDay, startOfDay as dfnsStartOfDay, getDay, isWithinInterval, endOfWeek, isToday, startOfDay } from 'date-fns';
+import { format, isSameDay, startOfDay as dfnsStartOfDay, getDay, isWithinInterval, endOfWeek, isToday, startOfDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Edit3, Lock, Trash2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { calculateAllDayEventLayouts, type AllDayEventWithLayout, calculateWeeklyEventLayouts, type EventWithLayout } from './planner-utils';
 
 const HOUR_HEIGHT_PX = 60;
@@ -55,7 +55,7 @@ export default function PlannerWeeklyView({
   const gridContainerClasses = viewTheme === 'dark' ? 'bg-black divide-x divide-gray-700/50' : 'bg-white divide-x divide-gray-200';
   
   const { allDayEvents, timedEventsByDay } = useMemo(() => {
-    const weekStart = dfnsStartOfDay(week[0]);
+    const weekStart = startOfDay(week[0]);
     const weekEnd = endOfWeek(week[0], { weekStartsOn: 0 });
     const relevantEvents = events.filter(e => {
         if (!e.date) return false;
@@ -70,7 +70,7 @@ export default function PlannerWeeklyView({
     const timed: TimelineEvent[][] = Array.from({ length: 7 }, () => []);
 
     relevantEvents.forEach(e => {
-        if (e.isAllDay) return;
+        if (e.isAllDay || !e.date) return;
         const startDayIndex = getDay(e.date);
         if (startDayIndex >= 0 && startDayIndex < 7 && isWithinInterval(e.date, { start: weekStart, end: weekEnd })) {
             timed[startDayIndex].push(e);
@@ -107,7 +107,9 @@ export default function PlannerWeeklyView({
             </div>
         </div>
          <div className={cn("flex flex-shrink-0 p-1 border-b", rulerClasses)} style={{ minHeight: `${(allDayLayouts.maxRows + 1) * 24}px`}}>
-            <div className="w-16 flex-shrink-0"></div>
+            <div className="w-16 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                All-day
+            </div>
             <div className="flex-1 grid grid-cols-7 relative">
                {allDayLayouts.events.map((event) => (
                      <Popover key={event.id}>
