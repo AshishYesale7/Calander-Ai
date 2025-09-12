@@ -202,7 +202,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date, hour: number) => {
     e.preventDefault();
-    if(draggedTask) {
+    if (draggedTask) {
         // Performance optimization: only update state if the target cell changes
         if (ghostEvent?.date?.getTime() !== date.getTime() || ghostEvent?.hour !== hour) {
             setGhostEvent({ date, hour });
