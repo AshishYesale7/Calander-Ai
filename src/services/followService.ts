@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { getUserProfile } from './userService';
-import { sendNotification } from '@/ai/flows/send-notification-flow';
+import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 import { createNotification } from './notificationService';
 
 
@@ -52,15 +52,16 @@ export async function followUser(currentUserId: string, targetUserId: string) {
   const followerName = currentUserProfile?.displayName || 'A new user';
   
   // Create an in-app notification
-  await createNotification(targetUserId, {
+  await createNotification({
     type: 'new_follower',
     message: `${followerName} started following you.`,
     link: `/profile/${currentUserProfile?.username || ''}`,
     imageUrl: currentUserProfile?.photoURL,
+    userId: targetUserId,
   });
 
   // Send a push notification
-  await sendNotification({
+  await sendWebPushNotification({
     userId: targetUserId,
     title: 'New Follower!',
     body: `${followerName} started following you.`,

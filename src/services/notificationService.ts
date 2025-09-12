@@ -45,7 +45,7 @@ const fromFirestore = (docData: any): AppNotification => {
 export const createNotification = async (
   notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'> & { userId: string }
 ): Promise<void> => {
-  const userId = notification.userId;
+  const { userId, type, message, link, imageUrl } = notification;
   if (!userId || typeof userId !== 'string') {
     console.error("Cannot create notification without a valid userId.");
     return;
@@ -55,7 +55,10 @@ export const createNotification = async (
   try {
     // 1. Create the in-app notification document in Firestore.
     await addDoc(notificationsCollection, {
-      ...notification,
+      type,
+      message,
+      link,
+      imageUrl,
       isRead: false,
       createdAt: Timestamp.now(),
     });
@@ -63,10 +66,10 @@ export const createNotification = async (
     // 2. Trigger the web push notification.
     await sendWebPushNotification({
         userId: userId,
-        title: notification.type === 'new_follower' ? 'New Follower!' : 'New Reminder',
-        body: notification.message,
-        url: notification.link || '/',
-        icon: notification.imageUrl,
+        title: type === 'new_follower' ? 'New Follower!' : 'New Reminder',
+        body: message,
+        url: link || '/',
+        icon: imageUrl || undefined,
     });
     
   } catch (error) {
