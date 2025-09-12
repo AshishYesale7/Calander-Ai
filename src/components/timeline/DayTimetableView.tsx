@@ -361,3 +361,5 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
