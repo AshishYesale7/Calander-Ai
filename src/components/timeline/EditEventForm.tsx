@@ -114,7 +114,7 @@ const editEventFormSchema = z.object({
     repeat: z.enum(['none', 'daily', 'weekly', 'monthly', 'yearly']),
     repeatEndDate: z.string().optional().nullable(),
   }),
-  syncToGoogle: z.boolean().default(false),
+  syncToGoogle: z.boolean().default(true),
 }).refine(data => {
   if (data.startDateTime && data.endDateTime) {
     return new Date(data.endDateTime) >= new Date(data.startDateTime);
@@ -182,7 +182,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
         repeat: 'none',
         repeatEndDate: null,
       },
-      syncToGoogle: false,
+      syncToGoogle: true,
     },
   });
 
@@ -213,7 +213,7 @@ const EditEventForm: FC<EditEventFormProps> = ({
         repeat: 'none',
         repeatEndDate: null,
       },
-      syncToGoogle: isAddingNewEvent ? isGoogleConnected : !!eventToEdit.googleEventId,
+      syncToGoogle: isAddingNewEvent ? true : !!eventToEdit.googleEventId,
     });
   }, [eventToEdit, form, isAddingNewEvent, isGoogleConnected]);
   
