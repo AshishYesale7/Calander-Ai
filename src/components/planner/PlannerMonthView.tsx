@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -247,3 +248,5 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -232,8 +233,8 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     if (!draggedTask || !onEditEvent) return;
 
     const newEvent: TimelineEvent = dropHour === -1
-      ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: dfnsStartOfDay(dropDate), endDate: endOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none', repeatEndDate: null } }
-      : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none', repeatEndDate: null } };
+      ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: dfnsStartOfDay(dropDate), endDate: endOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } }
+      : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
     
     onEditEvent(newEvent, true);
     setDraggedTask(null);
@@ -308,3 +309,5 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
+
+    
