@@ -192,8 +192,8 @@ export default function PlannerWeeklyView({
             <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT_PX}px` }}>
                  <div className="w-16 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative border-t border-border/20 -mt-px first:border-t-0">
-                            {i > 0 && <span className='relative -top-2'>{format(new Date(0,0,0,i), 'ha')}</span>}
+                        <div key={i} className="h-[60px] text-right pr-2 text-xs text-muted-foreground relative flex items-start justify-end -mt-px border-t border-border/20 first:border-t-0">
+                          {i > 0 && <span className='-translate-y-1/2'>{format(new Date(0,0,0,i), 'ha')}</span>}
                         </div>
                     ))}
                 </div>
