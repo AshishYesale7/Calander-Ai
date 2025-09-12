@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +39,8 @@ import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken } from '@/services/userService';
+import { exportUserData, importUserData } from '@/services/dataBackupService';
+import { saveAs } from 'file-saver';
 
 
 declare global {
@@ -72,6 +74,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isSendingTest, setIsSendingTest] = useState(false);
   const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -463,6 +469,58 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
+  const handleExportData = async () => {
+    if (!user) return;
+    setIsExporting(true);
+    toast({ title: 'Exporting...', description: 'Gathering your data. This may take a moment.' });
+    try {
+        const data = await exportUserData(user.uid);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+        saveAs(blob, `futuresight-backup-${new Date().toISOString().split('T')[0]}.json`);
+        toast({ title: 'Export Complete', description: 'Your data has been downloaded.' });
+    } catch (error) {
+        console.error("Export error:", error);
+        toast({ title: 'Export Failed', description: 'Could not export your data.', variant: 'destructive' });
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsImporting(true);
+    toast({ title: 'Importing...', description: 'Reading and parsing your data file.' });
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        if (!content) {
+            toast({ title: 'Error', description: 'Could not read file content.', variant: 'destructive' });
+            setIsImporting(false);
+            return;
+        }
+        try {
+            const dataToImport = JSON.parse(content);
+            await importUserData(user.uid, dataToImport);
+            toast({ title: 'Import Successful', description: 'Your data has been imported. The app will now reload.' });
+            // Reload to reflect changes everywhere
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error: any) {
+            toast({ title: 'Import Failed', description: `Invalid file or data format. ${error.message}`, variant: 'destructive' });
+        } finally {
+            setIsImporting(false);
+            if (event.target) event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg frosted-glass">
@@ -672,6 +730,34 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
             <Separator />
 
+             <div className="space-y-3 px-2">
+                <Label className="font-semibold text-base flex items-center text-primary">
+                    <Download className="mr-2 h-4 w-4" /> Data Management
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Export all your app data to a JSON file, or import a backup to restore your account.
+                </p>
+                <div className="flex gap-2">
+                    <Button onClick={handleExportData} variant="outline" className="w-full" disabled={isExporting}>
+                        {isExporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Download className="mr-2 h-4 w-4" />}
+                        {isExporting ? 'Exporting...' : 'Export My Data'}
+                    </Button>
+                    <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isImporting}>
+                        {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
+                        {isImporting ? 'Importing...' : 'Import from Backup'}
+                    </Button>
+                     <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        accept=".json"
+                        className="hidden"
+                    />
+                </div>
+            </div>
+
+            <Separator />
+
             <div className="space-y-3 px-2">
                 <Label className="font-semibold text-base flex items-center text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" /> Danger Zone
@@ -712,7 +798,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-    
-
-    

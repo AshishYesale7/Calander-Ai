@@ -273,3 +273,14 @@ export interface LeaderboardUser {
     statusEmoji?: string;
     countryCode?: string;
 }
+
+export interface UserDataBackup {
+    profile: Partial<UserPreferences>;
+    careerGoals: CareerGoal[];
+    skills: Skill[];
+    careerVisions: CareerVisionHistoryItem[];
+    trackedKeywords: TrackedKeyword[];
+    resources: ResourceLink[];
+    timelineEvents: TimelineEvent[];
+    streakData: StreakData | null;
+}
