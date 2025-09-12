@@ -1,19 +1,22 @@
+
 'use client';
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Droplet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears, getMonth, lastDayOfMonth } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, getDay, isSameDay, startOfDay, endOfDay, subYears } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
 import { getUserActivity, type ActivityLog } from "@/services/activityLogService";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useStreak } from "@/context/StreakContext";
 
 const ContributionGraphCard = () => {
     const { user } = useAuth();
+    const { streakData, isLoading: isStreakLoading } = useStreak();
     const [activity, setActivity] = useState<ActivityLog[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isActivityLoading, setIsActivityLoading] = useState(true);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     const { startDate, endDate } = useMemo(() => {
@@ -24,18 +27,18 @@ const ContributionGraphCard = () => {
 
     useEffect(() => {
         if (user) {
-            setIsLoading(true);
+            setIsActivityLoading(true);
             getUserActivity(user.uid, startDate, endDate)
                 .then(setActivity)
                 .catch(err => console.error("Failed to fetch user activity", err))
-                .finally(() => setIsLoading(false));
+                .finally(() => setIsActivityLoading(false));
         }
     }, [user, startDate, endDate]);
 
     const contributions = useMemo(() => {
         const map = new Map<string, number>();
         activity.forEach(log => {
-            const dateString = format(startOfDay(log.timestamp), 'yyyy-MM-dd');
+            const dateString = format(startOfDay(new Date(log.timestamp)), 'yyyy-MM-dd');
             map.set(dateString, (map.get(dateString) || 0) + 1);
         });
         return map;
@@ -55,7 +58,7 @@ const ContributionGraphCard = () => {
 
         days.forEach((day) => {
             const dayOfWeek = (getDay(day) + 6) % 7; // Monday is 0
-            const month = getMonth(day);
+            const month = day.getMonth();
 
             if (month !== currentMonth) {
                 currentMonth = month;
@@ -85,30 +88,15 @@ const ContributionGraphCard = () => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
         }
-    }, [isLoading, weeks]);
+    }, [isActivityLoading, weeks]);
 
 
-    const { currentStreak, totalContributions } = useMemo(() => {
-        if (activity.length === 0) return { currentStreak: 0, totalContributions: 0 };
-    
+    const totalContributions = useMemo(() => {
+        if (activity.length === 0) return 0;
         const contributionDates = new Set(
-            activity.map(log => format(startOfDay(log.timestamp), 'yyyy-MM-dd'))
+            activity.map(log => format(startOfDay(new Date(log.timestamp)), 'yyyy-MM-dd'))
         );
-        const total = contributionDates.size;
-    
-        let streak = 0;
-        let currentDate = startOfDay(new Date());
-        
-        if (!contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
-            currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
-        }
-
-        while (contributionDates.has(format(currentDate, 'yyyy-MM-dd'))) {
-            streak++;
-            currentDate = startOfDay(new Date(currentDate.setDate(currentDate.getDate() - 1)));
-        }
-    
-        return { currentStreak: streak, totalContributions: total };
+        return contributionDates.size;
     }, [activity]);
 
     const getLevelColor = (level: number) => {
@@ -131,10 +119,12 @@ const ContributionGraphCard = () => {
                         <CardDescription className="text-xs mt-1">{totalContributions} contributions in the last year</CardDescription>
                     </div>
                 </div>
-                <Badge variant="outline" className="bg-background/80">{currentStreak} Day{currentStreak === 1 ? '' : 's'} streak</Badge>
+                <Badge variant="outline" className="bg-background/80">
+                    {isStreakLoading ? <LoadingSpinner size="sm" /> : `${streakData?.currentStreak || 0} Day Streak`}
+                </Badge>
             </CardHeader>
             <CardContent className="p-0 mt-4">
-                {isLoading ? (
+                {isActivityLoading ? (
                     <div className="h-36 flex items-center justify-center"><LoadingSpinner /></div>
                 ) : (
                     <TooltipProvider>
@@ -176,7 +166,7 @@ const ContributionGraphCard = () => {
                                                                 </TooltipTrigger>
                                                                 <TooltipContent className="p-2">
                                                                     <p className="text-sm font-semibold">{level} contribution{level !== 1 && 's'} on</p>
-                                                                    <p className="text-sm text-muted-foreground">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                                                                    <p className="text-sm text-muted-foreground">{format(new Date(dateString), 'EEEE, MMM d, yyyy')}</p>
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         );
