@@ -211,7 +211,6 @@ export default function PlannerWeeklyView({
                                 <div
                                 key={`line-${dayIndex}-${hourIndex}`}
                                 className="h-[60px] border-t border-border/20"
-                                style={{ top: `${hourIndex * HOUR_HEIGHT_PX}px` }}
                                 ></div>
                             ))}
                             {/* Events for this day */}
