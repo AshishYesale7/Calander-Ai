@@ -3,6 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import type { CareerGoal, Skill, CareerVisionHistoryItem, TrackedKeyword, ResourceLink, TimelineEvent, UserPreferences, StreakData } from '@/types';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
 
 // Import all necessary service functions
 import { getCareerGoals, saveCareerGoal } from './careerGoalsService';
@@ -70,7 +71,23 @@ export const exportUserData = async (userId: string): Promise<UserDataBackup> =>
  * This will overwrite existing data.
  */
 export const importUserData = async (userId: string, data: UserDataBackup): Promise<void> => {
-    // We'll wrap these in Promise.all to run them concurrently.
+    if (!db) throw new Error("Firestore not initialized.");
+
+    // --- NEW: Clear existing data before import ---
+    const collectionsToClear = [
+        'careerGoals', 'skills', 'careerVisions', 
+        'trackedKeywords', 'resources', 'timelineEvents'
+    ];
+    
+    const clearBatch = writeBatch(db);
+    for (const collectionName of collectionsToClear) {
+        const collectionRef = collection(db, 'users', userId, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        snapshot.docs.forEach(doc => clearBatch.delete(doc.ref));
+    }
+    await clearBatch.commit();
+    // --- END NEW ---
+
     const importPromises = [];
 
     // Import Profile (excluding fields managed by other services)
