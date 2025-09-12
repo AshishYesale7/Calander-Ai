@@ -48,7 +48,7 @@ export default function PlannerSidebar({ activeView, setActiveView, viewTheme }:
                     className={cn(
                         "w-full flex items-center justify-between gap-3 p-1.5 rounded-md",
                         buttonClasses,
-                        activeView === s.id && cn('font-semibold border-l-2 border-accent', activeBtnClasses)
+                        activeView === s.id && cn('font-semibold', activeBtnClasses)
                     )}
                 >
                     <div className="flex items-center gap-3">

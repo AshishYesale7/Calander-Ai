@@ -155,11 +155,6 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     try {
       const lists = await getGoogleTaskLists(user.uid);
       setTaskLists(lists);
-
-      const defaultListId = lists.find(l => l.title.includes('My Tasks'))?.id || lists[0]?.id;
-      if (defaultListId && activePlannerView === 'today') {
-        setActivePlannerView(defaultListId);
-      }
       
       const tasksPromises = lists.map(list => getAllTasksFromList(user.uid, list.id));
       const tasksResults = await Promise.all(tasksPromises);
@@ -174,7 +169,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     } finally {
       setIsTasksLoading(false);
     }
-  }, [user, toast, activePlannerView]);
+  }, [user, toast]);
   
   useEffect(() => {
     fetchTaskData();
