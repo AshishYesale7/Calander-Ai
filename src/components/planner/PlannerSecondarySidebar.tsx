@@ -139,6 +139,7 @@ const PlannerTaskList = ({
   onAddTask,
   onDragStart,
   onDragEnd,
+  onStatusChange,
   viewTheme,
 }: {
   list: Pick<GoogleTaskList, 'id' | 'title'> & { icon?: React.ElementType }; // Allow for a generic list object
@@ -146,6 +147,7 @@ const PlannerTaskList = ({
   onAddTask?: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
   onDragEnd: (e?: React.DragEvent) => void;
+  onStatusChange: (listId: string, taskId: string) => void;
   viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -168,6 +170,29 @@ const PlannerTaskList = ({
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
     const Icon = list.icon || Inbox;
 
+    const pendingTasks = tasks.filter(t => t.status !== 'completed');
+    const completedTasks = tasks.filter(t => t.status === 'completed');
+
+    const renderTask = (task: RawGoogleTask) => (
+        <div 
+          key={task.id} 
+          className={cn("p-1.5 rounded-md flex items-start cursor-grab", taskItemClasses)}
+          draggable
+          onDragStart={(e) => onDragStart(e, task)}
+          onDragEnd={onDragEnd}
+        >
+            <Checkbox 
+              id={task.id} 
+              className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} 
+              checked={task.status === 'completed'}
+              onCheckedChange={() => onStatusChange(list.id, task.id)}
+            />
+            <label htmlFor={task.id} className={cn("text-xs flex-1", task.status === 'completed' && 'line-through text-gray-500', taskTextClasses)}>
+                {task.title}
+            </label>
+        </div>
+    );
+
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
             <div className="flex justify-between items-center mb-2 px-1">
@@ -189,27 +214,24 @@ const PlannerTaskList = ({
                 </form>
             )}
             <div className="space-y-1 text-xs overflow-y-auto">
-                {tasks.map(task => (
-                    <div 
-                      key={task.id} 
-                      className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, task)}
-                      onDragEnd={onDragEnd}
-                    >
-                        <div className="flex items-start gap-2 w-full">
-                           <Checkbox id={task.id} className={cn("h-3.5 w-3.5 mt-0.5", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
-                           <label htmlFor={task.id} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
-                        </div>
-                    </div>
-                ))}
+                {pendingTasks.map(renderTask)}
+                {completedTasks.length > 0 && (
+                     <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="completed" className="border-t border-gray-700/50 mt-2 pt-2">
+                             <AccordionTrigger className="text-xs text-gray-500 hover:no-underline py-1">Completed ({completedTasks.length})</AccordionTrigger>
+                             <AccordionContent className="pb-0 space-y-1">
+                                {completedTasks.map(renderTask)}
+                             </AccordionContent>
+                        </AccordionItem>
+                     </Accordion>
+                )}
             </div>
         </div>
     );
 };
 
 
-// Main Component - Completely reformatted logic
+// Main Component
 interface PlannerSecondarySidebarProps {
   activeView: ActivePlannerView;
   tasks: Record<string, RawGoogleTask[]>;
@@ -218,11 +240,12 @@ interface PlannerSecondarySidebarProps {
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
   onDragEnd: (e?: React.DragEvent) => void;
+  onStatusChange: (listId: string, taskId: string) => void;
   viewTheme: MaxViewTheme;
 }
 
 export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarProps) {
-  const { activeView, taskLists, tasks, isLoading, onAddTask, onDragStart, onDragEnd, viewTheme } = props;
+  const { activeView, taskLists, tasks, isLoading, onAddTask, onDragStart, onDragEnd, onStatusChange, viewTheme } = props;
 
   // 1. Handle loading state
   if (isLoading) {
@@ -268,7 +291,12 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                                           onDragStart={(e) => onDragStart(e, task)}
                                           onDragEnd={onDragEnd}
                                         >
-                                            <Checkbox id={`all-${task.id}`} className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
+                                            <Checkbox 
+                                                id={`all-${task.id}`} 
+                                                className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
+                                                onCheckedChange={() => onStatusChange(list.id, task.id)}
+                                                checked={task.status === 'completed'}
+                                            />
                                             <label htmlFor={`all-${task.id}`} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
                                         </div>
                                     ))}
@@ -294,6 +322,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                 onAddTask={onAddTask}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
+                onStatusChange={onStatusChange}
                 viewTheme={viewTheme}
             />
   }
