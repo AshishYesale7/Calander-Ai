@@ -46,30 +46,22 @@ const getEventTooltip = (event: TimelineEvent): string => {
 
 const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'exam': return 'bg-red-500/80 border-red-700 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
-    case 'deadline': return 'bg-yellow-500/80 border-yellow-700 text-yellow-900 dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
-    case 'goal': return 'bg-green-500/80 border-green-700 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
-    case 'project': return 'bg-blue-500/80 border-blue-700 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
-    case 'application': return 'bg-purple-500/80 border-purple-700 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
-    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-700 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
-    default: return 'bg-gray-500/80 border-gray-700 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+    case 'exam': return { bg: 'bg-red-900/50', border: 'border-red-400' };
+    case 'deadline': return { bg: 'bg-yellow-900/50', border: 'border-yellow-400' };
+    case 'goal': return { bg: 'bg-green-900/50', border: 'border-green-400' };
+    case 'project': return { bg: 'bg-blue-900/50', border: 'border-blue-400' };
+    case 'application': return { bg: 'bg-purple-900/50', border: 'border-purple-400' };
+    case 'ai_suggestion': return { bg: 'bg-teal-900/50', border: 'border-teal-400' };
+    default: return { bg: 'bg-slate-800/60', border: 'border-slate-400' };
   }
 };
 
 const getCustomColorStyles = (color?: string) => {
-  if (!color) return {};
-  const hexMatch = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-  if (hexMatch) {
-    const r = parseInt(hexMatch[1], 16);
-    const g = parseInt(hexMatch[2], 16);
-    const b = parseInt(hexMatch[3], 16);
-    return {
-      backgroundColor: `rgba(${r},${g},${b},0.8)`,
-      borderColor: color,
-      color: (r * 0.299 + g * 0.587 + b * 0.114) > 186 ? '#333' : '#fff'
-    };
-  }
-  return { backgroundColor: `${color}B3`, borderColor: color };
+  if (!color) return null;
+  return {
+    backgroundColor: `${color}33`, // Add alpha transparency
+    borderLeftColor: color,
+  };
 };
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
@@ -212,7 +204,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                  {allDayEvents.map(event => {
                     const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
                     return (
-                        <div key={event.id} onClick={() => handleEventClick(event)} className={cn("p-1 rounded-md text-xs cursor-pointer truncate", event.color ? '' : 'bg-muted/50')}>
+                        <div key={event.id} onClick={() => handleEventClick(event)} className="p-1 rounded-md text-xs cursor-pointer truncate bg-muted/50">
                           <Checkbox
                               checked={isChecked}
                               onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
@@ -277,30 +269,31 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                           if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
                           const isSmallWidth = parseFloat(event.layout.width) < 25;
                           const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
+                          const typeStyle = getEventTypeStyleClasses(event.type);
+                          const customStyle = getCustomColorStyles(event.color);
 
                           return (
                           <div
                               key={event.id}
                               className={cn(
-                              "absolute rounded border text-xs overflow-hidden shadow-sm transition-opacity cursor-pointer timetable-event-card",
-                              "focus-within:ring-2 focus-within:ring-ring",
-                              !event.color && getEventTypeStyleClasses(event.type),
-                              isSmallWidth ? "p-0.5" : "p-1",
-                              isDayInPast && "opacity-60 hover:opacity-100 focus-within:opacity-100",
-                              selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                                "absolute rounded-md text-xs overflow-hidden shadow-md transition-all cursor-pointer border-l-4",
+                                "focus-within:ring-2 focus-within:ring-ring",
+                                !customStyle && cn(typeStyle.bg, typeStyle.border),
+                                isDayInPast && "opacity-70 hover:opacity-100 focus-within:opacity-100",
+                                selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
                               )}
                               style={{
                                   top: `${event.layout.top}px`,
                                   height: `${event.layout.height}px`,
                                   left: event.layout.left,
                                   width: event.layout.width,
-                                  zIndex: event.layout.zIndex, 
-                                  ...(event.color ? getCustomColorStyles(event.color) : {})
+                                  zIndex: event.layout.zIndex,
+                                  ...customStyle
                               }}
                               title={getEventTooltip(event)}
                               onClick={() => handleEventClick(event)}
                           >
-                              <div className="flex flex-col h-full">
+                              <div className={cn("p-1 h-full flex flex-col text-white", customStyle?.color && `!text-[${customStyle.color}]`)}>
                                   <div className="flex-grow overflow-hidden">
                                       <div className="flex items-start gap-1.5">
                                           {onEventStatusChange && (
@@ -310,13 +303,13 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                                                   onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
                                                   onClick={(e) => e.stopPropagation()}
                                                   aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
-                                                  className="mt-0.5 border-current flex-shrink-0"
+                                                  className="mt-0.5 border-white/50 flex-shrink-0"
                                               />
                                           )}
-                                          <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs", event.color ? '' : 'text-current')}>{event.title}</p>
+                                          <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs")}>{event.title}</p>
                                       </div>
                                       {!isSmallWidth && (
-                                      <p className={cn("opacity-80 truncate text-[10px] pl-5", event.color ? 'text-foreground/80' : '')}>
+                                      <p className={cn("opacity-80 truncate text-[10px] pl-5")}>
                                           {format(event.date, 'h:mm a')}
                                           {event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) && ` - ${format(event.endDate, 'h:mm a')}`}
                                       </p>
@@ -326,7 +319,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                                       {event.isDeletable && onDeleteEvent && (
                                           <AlertDialog>
                                               <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive/80 hover:bg-destructive/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                              <Button variant="ghost" size="icon" className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                                                   <Trash2 className="h-3 w-3" />
                                               </Button>
                                               </AlertDialogTrigger>

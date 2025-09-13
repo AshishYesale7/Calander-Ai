@@ -27,14 +27,22 @@ const HOUR_HEIGHT_PX = 60;
 
 const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
-    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
-    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
-    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
-    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
-    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
-    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
+    case 'exam': return { bg: 'bg-red-900/50', border: 'border-red-400' };
+    case 'deadline': return { bg: 'bg-yellow-900/50', border: 'border-yellow-400' };
+    case 'goal': return { bg: 'bg-green-900/50', border: 'border-green-400' };
+    case 'project': return { bg: 'bg-blue-900/50', border: 'border-blue-400' };
+    case 'application': return { bg: 'bg-purple-900/50', border: 'border-purple-400' };
+    case 'ai_suggestion': return { bg: 'bg-teal-900/50', border: 'border-teal-400' };
+    default: return { bg: 'bg-slate-800/60', border: 'border-slate-400' };
   }
+};
+
+const getCustomColorStyles = (color?: string) => {
+  if (!color) return null;
+  return {
+    backgroundColor: `${color}33`, // Add alpha transparency
+    borderLeftColor: color,
+  };
 };
 
 interface PlannerDayViewProps {
@@ -116,7 +124,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                     {allDayEvents.map(event => (
                         <Popover key={event.id}>
                           <PopoverTrigger asChild>
-                              <div className={cn("p-1 rounded-md text-xs cursor-pointer truncate", getEventTypeStyleClasses(event.type))} style={event.color ? { backgroundColor: event.color, borderColor: event.color } : {}}>
+                              <div className={cn("p-1 rounded-md text-xs cursor-pointer truncate", getEventTypeStyleClasses(event.type).bg)} style={event.color ? { backgroundColor: `${event.color}BF` } : {}}>
                                   {event.title}
                               </div>
                           </PopoverTrigger>
@@ -164,22 +172,27 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                             <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
                         </div>
                     )}
-                    {eventsWithLayout.map(({ layout, ...event }) => (
+                    {eventsWithLayout.map(({ layout, ...event }) => {
+                       const typeStyle = getEventTypeStyleClasses(event.type);
+                       const customStyle = getCustomColorStyles(event.color);
+                       return (
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
                                 <div
-                                    className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
+                                    className={cn(
+                                        'absolute p-1.5 rounded-md font-medium text-[11px] overflow-hidden pointer-events-auto cursor-pointer border-l-4 shadow-md',
+                                        !customStyle && cn(typeStyle.bg, typeStyle.border)
+                                    )}
                                     style={{
                                         ...layout,
-                                        backgroundColor: event.color || undefined,
-                                        borderColor: event.color || undefined,
+                                        ...customStyle,
                                     }}
                                 >
-                                    <div className='flex items-center gap-1 text-[10px]'>
+                                    <div className={cn('flex items-center gap-1.5', customStyle?.color && `!text-[${customStyle.color}]`)}>
                                         {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                        <span className="truncate">{event.title}</span>
+                                        <span className="truncate font-semibold">{event.title}</span>
                                     </div>
-                                    {layout.height > 25 && <p className={cn("opacity-80 text-[10px]")}>{format(event.date, 'h:mm a')}</p>}
+                                    {layout.height > 25 && <p className={cn("opacity-80 text-[10px]", customStyle?.color && `!text-[${customStyle.color}]`)}>{format(event.date, 'h:mm a')}</p>}
                                 </div>
                             </PopoverTrigger>
                              <PopoverContent className="w-64 frosted-glass" side="right" align="start">
@@ -199,7 +212,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                                  </div>
                              </PopoverContent>
                         </Popover>
-                    ))}
+                    )})}
                      {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour !== -1 && (
                         <div
                             className="absolute left-1 right-1 border-2 border-dashed border-purple-500 bg-purple-900/30 p-1 rounded-md text-purple-300 opacity-90 z-50 pointer-events-none"
