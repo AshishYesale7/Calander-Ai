@@ -164,7 +164,7 @@ For comprehensive information about this repository, please refer to these detai
 
 - **[Update Catalog](./updates-catalog.md)** - A summary of all recent features, enhancements, and bug fixes.
 - **[Repository Summary](./REPOSITORY_SUMMARY.md)** - Quick overview and key highlights
-- **[Complete Explanation](./REPOSITORY_EXPLANATION.md)** - Comprehensive project documentation
+- **[Repository Explanation](./REPOSITORY_EXPLANATION.md)** - Comprehensive project documentation
 - **[Technical Architecture](./TECHNICAL_ARCHITECTURE.md)** - Detailed technical specifications and architecture diagrams
 
 These documents provide in-depth coverage of the project's architecture, features, development guidelines, and deployment strategies.
