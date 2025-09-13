@@ -101,21 +101,19 @@ export async function updateGoogleTask(
 
   const tasksService = google.tasks({ version: 'v1', auth: client });
 
-  // The API requires a `completed` timestamp when status is 'completed'.
-  const requestBody: { 
-    status?: 'needsAction' | 'completed'; 
-    title?: string;
-    completed?: string | null;
-  } = {};
+  // Fetch the existing task to merge properties
+  const existingTaskResponse = await tasksService.tasks.get({ tasklist, task: taskId });
+  if (!existingTaskResponse.data) {
+      throw new Error("Task not found.");
+  }
+  
+  const requestBody = { ...existingTaskResponse.data };
 
   if (taskData.status) {
     requestBody.status = taskData.status;
     if (taskData.status === 'completed') {
-      // Set the completion timestamp to now.
       requestBody.completed = new Date().toISOString();
     } else {
-      // The API requires the 'completed' field to be explicitly set to null
-      // when un-completing a task.
       requestBody.completed = null;
     }
   }
