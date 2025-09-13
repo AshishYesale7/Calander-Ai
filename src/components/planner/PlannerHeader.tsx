@@ -87,9 +87,9 @@ export default function PlannerHeader({
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => onViewChange('day')}>Day</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewChange('week')}>Week</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onViewChange('month')}>Month</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('day')}>D</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('week')}>W</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('month')}>M</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
