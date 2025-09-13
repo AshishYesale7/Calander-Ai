@@ -11,11 +11,14 @@ This document provides a comprehensive overview of all new features, enhancement
 The primary timeline and calendar views have been significantly upgraded for better usability and interactivity.
 
 - **Maximized Weekly Planner:** The daily timetable can now be expanded into a full-screen weekly planner. This view provides a comprehensive overview of the entire week.
+- **Interactive Drag-and-Drop**: Events in the planner can now be interactively moved and resized.
+  - **Drag to Move & Resize**: In both Day and Week views, you can now click and drag an event to change its time or drag the bottom handle to adjust its duration.
+  - **Visual Feedback**: During drag operations, a semi-transparent "ghost" preview of the event appears, showing its new position and size in real-time.
+  - **Sidebar Integration**: Tasks can be dragged from the sidebar directly onto the planner grid to create new events.
 - **Accurate Event Rendering:** The layout logic has been completely re-engineered to accurately position events in their correct time slots, with robust handling for overlapping events to prevent visual glitches.
-- **Sticky Headers & Scrolling:** The week view now features a "sticky" day header that stays visible while the user scrolls vertically through the 24-hour timeline, ensuring context is never lost. The vertical scrolling has also been fixed to be smooth and reliable.
+- **Sticky Headers & Scrolling:** The week view now features a "sticky" day header that stays visible while the user scrolls vertically through the 24-hour timeline, ensuring context is never lost.
 - **Interactive Event Popovers:** Hovering over any event in the day or week view now displays a detailed popover with the full event title, notes, and one-click buttons to either **Edit** or **Delete** the event, streamlining schedule management.
 - **All-Day Events Area:** A dedicated "All-day" section has been added to the top of the weekly planner, ensuring that all-day events are clearly visible and separated from the hourly schedule.
-- **Full-Width Time Indicator:** The visual line indicating the current time now correctly spans the entire width of the weekly view, including the hour labels, for better readability.
 
 ### 1.2. Plugin System & Extension Marketplace
 
@@ -61,17 +64,15 @@ The command palette (`Ctrl+K`) has been transformed into a central navigation an
 
 ## 3. Bug Fixes & Refinements
 
-### 3.1. Calendar & Timeline Bug Fixes
+### 3.1. Planner Stability Fixes
+
+- **Drag-and-Drop Logic**: Resolved a critical issue where drag-and-drop operations were not being correctly handled in the Day View, making events unmovable.
+- **Missing Drag Previews**: Fixed a bug where the "ghost" preview was not appearing when dragging items from the sidebar onto the planner.
+- **Planner Crash (AlertDialogTrigger)**: Corrected a runtime error caused by a missing `AlertDialogTrigger` import in `PlannerDayView.tsx`, which prevented the delete confirmation dialog from working.
+- **Planner Crash (onDragOver)**: Fixed a crash in the Weekly View by correctly passing the `onDragOver` prop, which was previously named incorrectly.
+
+### 3.2. General Stability
 
 - **Event Positioning:** Corrected a critical bug where timed events in the weekly view were not being placed in their correct hourly slots.
-- **Layout & Scrolling:** Fixed issues in the weekly planner where the all-day events section was collapsed and vertical scrolling was disabled.
-- **Runtime Errors:** Resolved multiple `isSameDay is not defined` and `isToday is not defined` errors by correcting the import statements in `DayTimetableView.tsx`, preventing component crashes.
-
-### 3.2. User Search Functionality
-
-- **Definitive Fix:** A dedicated `searchableIndex` field was added to user profiles in Firestore to enable efficient, case-insensitive searching via the command palette.
-
-### 3.3. Plugin System Fixes
-
-- **Layout & Import Errors:** Fixed a bug causing the Contribution Graph to be missing from the Codefolio dashboard and resolved an import error for the `usePlugin` hook.
-- **Placeholder Correction:** Corrected a bug where uninstalled plugins incorrectly displayed the Bookshelf UI, now showing a generic "Under Construction" placeholder.
+- **User Search Functionality:** A dedicated `searchableIndex` field was added to user profiles in Firestore to enable efficient, case-insensitive searching via the command palette.
+- **Plugin System Fixes:** Fixed layout and import errors related to the Codefolio Ally plugin and corrected a bug with placeholder UIs for uninstalled plugins.
