@@ -70,16 +70,28 @@ export default function PlannerHeader({
             <Button variant="ghost" className={cn("h-7 px-2 text-xs", buttonClasses)} onClick={onTodayClick}>Today</Button>
         </div>
         
-        <div className={cn("flex items-center gap-1 p-0.5 rounded-md", viewModeButtonContainer)}>
-            <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">
-                {activeView === 'day' ? <span className="bg-white text-black rounded-md px-2 py-0.5"><span className="md:hidden">D</span><span className="hidden md:inline">Day</span></span> : <><span className="md:hidden">D</span><span className="hidden md:inline">Day</span></>}
-            </Button>
-            <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">
-                {activeView === 'week' ? <span className="bg-white text-black rounded-md px-2 py-0.5"><span className="md:hidden">W</span><span className="hidden md:inline">Week</span></span> : <><span className="md:hidden">W</span><span className="hidden md:inline">Week</span></>}
-            </Button>
-            <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs">
-                 {activeView === 'month' ? <span className="bg-white text-black rounded-md px-2 py-0.5"><span className="md:hidden">M</span><span className="hidden md:inline">Month</span></span> : <><span className="md:hidden">M</span><span className="hidden md:inline">Month</span></>}
-            </Button>
+        {/* Desktop View Mode Buttons */}
+        <div className={cn("hidden md:flex items-center gap-1 p-0.5 rounded-md", viewModeButtonContainer)}>
+            <Button onClick={() => onViewChange('day')} variant={activeView === 'day' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs capitalize">Day</Button>
+            <Button onClick={() => onViewChange('week')} variant={activeView === 'week' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs capitalize">Week</Button>
+            <Button onClick={() => onViewChange('month')} variant={activeView === 'month' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2 text-xs capitalize">Month</Button>
+        </div>
+        
+        {/* Mobile Dropdown */}
+        <div className="md:hidden">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs capitalize">
+                        {activeView}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onViewChange('day')}>Day</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('week')}>Week</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onViewChange('month')}>Month</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         
         <div className="flex items-center gap-1">
