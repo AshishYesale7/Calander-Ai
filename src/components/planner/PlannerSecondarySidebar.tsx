@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -5,7 +6,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { GoogleTaskList, RawGoogleTask, RawGmailMessage, GmailLabel } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '../ui/checkbox';
-import { Plus, Mail, Inbox, Filter, RefreshCw, Bot, Calendar } from 'lucide-react';
+import { Plus, Mail, Inbox, Filter, RefreshCw, Bot, Calendar, Columns } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -140,19 +141,20 @@ const PlannerTaskList = ({
   onDragEnd,
   viewTheme,
 }: {
-  list: GoogleTaskList;
+  list: Pick<GoogleTaskList, 'id' | 'title'> & { icon?: React.ElementType }; // Allow for a generic list object
   tasks: RawGoogleTask[];
-  onAddTask: (listId: string, title: string) => void;
+  onAddTask?: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
   onDragEnd: (e?: React.DragEvent) => void;
   viewTheme: MaxViewTheme;
 }) => {
     const [newTaskTitle, setNewTaskTitle] = useState('');
+    const canAddTask = !!onAddTask;
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault();
         const title = newTaskTitle.trim();
-        if (title) {
+        if (title && onAddTask) {
             onAddTask(list.id, title);
             setNewTaskTitle('');
         }
@@ -164,26 +166,28 @@ const PlannerTaskList = ({
     const placeholderClasses = viewTheme === 'dark' ? 'text-gray-500' : 'text-gray-400';
     const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
+    const Icon = list.icon || Inbox;
 
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
             <div className="flex justify-between items-center mb-2 px-1">
                 <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}>
-                    <Inbox size={16} /> {list.title}
+                    <Icon size={16} /> {list.title}
                 </h1>
-                <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
             </div>
-            <form onSubmit={handleAddTask}>
-                 <div className={cn("flex items-center gap-2 mb-2 text-xs h-8 px-1.5", viewTheme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black')}>
-                    <Plus className="mr-1 h-4 w-4" />
-                    <Input
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        placeholder="Add new task"
-                        className={cn("bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0", placeholderClasses, headingClasses)}
-                    />
-                </div>
-            </form>
+            {canAddTask && (
+                <form onSubmit={handleAddTask}>
+                     <div className={cn("flex items-center gap-2 mb-2 text-xs h-8 px-1.5", viewTheme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black')}>
+                        <Plus className="mr-1 h-4 w-4" />
+                        <Input
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            placeholder="Add new task"
+                            className={cn("bg-transparent border-none h-auto p-0 text-xs focus-visible:ring-0", placeholderClasses, headingClasses)}
+                        />
+                    </div>
+                </form>
+            )}
             <div className="space-y-1 text-xs overflow-y-auto">
                 {tasks.map(task => (
                     <div 
@@ -230,10 +234,25 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd}/>
   }
 
-  // 3. Find the selected task list based on activeView ID
+  // 3. Handle the "All tasks" view
+  if (activeView === 'all_tasks') {
+    const allPendingTasks = Object.values(tasks).flat().filter(task => task.status !== 'completed');
+    return (
+        <PlannerTaskList
+            list={{ id: 'all_tasks', title: 'All Tasks', icon: Columns }}
+            tasks={allPendingTasks}
+            // No onAddTask for this view
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            viewTheme={viewTheme}
+        />
+    )
+  }
+
+  // 4. Find the selected task list based on activeView ID
   const selectedTaskList = taskLists.find(list => list.id === activeView);
   
-  // 4. If a valid task list is selected, render it
+  // 5. If a valid task list is selected, render it
   if (selectedTaskList) {
       const tasksForSelectedList = tasks[selectedTaskList.id] || [];
       return <PlannerTaskList 
@@ -246,8 +265,6 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             />
   }
 
-  // 5. If it's a special view like "today", "upcoming", or "all_tasks", they don't have a dedicated secondary sidebar view.
-  //    In this case, and for any other unknown view, render nothing.
-  //    This permanently removes any "My Tasks" fallback.
+  // 6. If it's a special view like "today" or "upcoming", or any other unknown view, render nothing.
   return null;
 }
