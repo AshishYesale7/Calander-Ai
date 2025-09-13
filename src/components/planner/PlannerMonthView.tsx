@@ -42,12 +42,13 @@ interface ProcessedEvent {
 
 const getEventColor = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'exam': return '#EF4444'; // red-500
-    case 'deadline': return '#F97316'; // orange-500
-    case 'application': return '#8B5CF6'; // violet-500
-    case 'project': return '#3B82F6'; // blue-500
-    case 'goal': return '#22C55E'; // green-500
-    default: return '#6B7280'; // gray-500
+    case 'exam': return 'hsl(0 84% 67%)'; // Red
+    case 'deadline': return 'hsl(38 92% 50%)'; // Orange
+    case 'application': return 'hsl(255 82% 70%)'; // Violet
+    case 'project': return 'hsl(214 90% 64%)'; // Blue
+    case 'goal': return 'hsl(142 64% 52%)'; // Green
+    case 'ai_suggestion': return 'hsl(173 80% 40%)'; // Teal
+    default: return 'hsl(220 13% 69%)'; // Gray
   }
 };
 
@@ -209,21 +210,25 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
                         <span className={cn(
                             "font-semibold h-6 w-6 flex items-center justify-center rounded-full",
                             isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText,
-                            isToday(day) && "ring-2 ring-red-500 text-red-500 font-bold"
+                            isToday(day) && "bg-accent text-accent-foreground ring-2 ring-accent/50"
                         )}>
                             {format(day, 'd')}
                         </span>
-                        <div className="mt-1 space-y-0.5 flex-1">
+                        <div className="mt-1 space-y-0.5 flex-1 relative">
                             {processedEventsByDay[dayIndex]
                                 .sort((a,b) => a.row - b.row)
                                 .map(event => (
-                                <div key={event.id} style={{ gridRowStart: event.row + 1, gridColumnEnd: `span ${event.span}` }}>
-                                    <div
-                                        className="h-5 rounded text-white text-[10px] font-semibold px-1.5 flex items-center overflow-hidden truncate"
-                                        style={{ backgroundColor: event.color }}
-                                    >
-                                        {event.title}
-                                    </div>
+                                <div 
+                                    key={event.id}
+                                    className="h-5 rounded text-black font-semibold px-1.5 flex items-center overflow-hidden truncate text-[11px] mb-0.5"
+                                    style={{ 
+                                      backgroundColor: `${event.color}40`, // Add transparency
+                                      gridRow: `${event.row + 1} / span 1`,
+                                      gridColumn: `${(getDay(event.start) % 7) + 1} / span ${event.span}`,
+                                    }}
+                                >
+                                  <div className="w-1 h-3 rounded-full mr-1.5" style={{ backgroundColor: event.color }}></div>
+                                  <span>{event.title}</span>
                                 </div>
                             ))}
                              {ghostEvent && isSameDay(day, ghostEvent.date) && ghostEvent.hour === -1 && (
@@ -237,9 +242,9 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
                 <PopoverContent className="w-48 bg-background text-foreground p-2 rounded-lg shadow-xl" side="bottom" align="start">
                     <div className="text-center font-bold text-sm mb-2">{format(popoverDay || new Date(), 'MMMM d')}</div>
                     {popoverEvents.map(event => (
-                        <div key={event.id} className="text-xs mb-1">
-                          <span className="font-semibold">{event.title}</span>
-                            {!event.isAllDay && <p>{format(event.date, 'p')}</p>}
+                        <div key={event.id} className="text-xs mb-1 flex items-center">
+                            <div className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: event.color || getEventColor(event.type) }}></div>
+                            <span className="font-semibold truncate">{event.title}</span>
                         </div>
                     ))}
                     {popoverEvents.length === 0 && <p className="text-xs text-muted-foreground text-center">No events.</p>}
@@ -250,5 +255,3 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
     </div>
   );
 }
-
-    
