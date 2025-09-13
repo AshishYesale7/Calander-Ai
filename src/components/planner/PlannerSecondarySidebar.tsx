@@ -15,9 +15,9 @@ import type { ActivePlannerView, MaxViewTheme } from './MaximizedPlannerView';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
+import { getGoogleGmailMessages } from '@/services/googleGmailService';
 
-// Gmail Component remains largely the same as its logic was self-contained.
-const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void, onDragEnd: (e?: React.DragEvent) => void }) => {
+const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd, dateQuery }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void, onDragEnd: (e?: React.DragEvent) => void, dateQuery?: 'today' }) => {
     const { user } = useAuth();
     const { apiKey } = useApiKey();
     const { toast } = useToast();
@@ -27,6 +27,7 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: Ma
     const [isLoading, setIsLoading] = useState(false);
     const [summaries, setSummaries] = useState<Record<string, string>>({});
     const [summarizingId, setSummarizingId] = useState<string | null>(null);
+    const [nextPageToken, setNextPageToken] = useState<string | null | undefined>(null);
 
     const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
     const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
@@ -42,25 +43,32 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: Ma
         } catch (e) { console.error(e) }
     }, [user]);
 
-    const fetchEmails = useCallback(async (labelId: string) => {
+    const fetchEmails = useCallback(async (labelId: string, pageToken?: string) => {
         if (!user) return;
         setIsLoading(true);
         try {
-            const res = await fetch('/api/google/emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid, labelId }) });
-            const data = await res.json();
-            if (data.success) setEmails(data.emails);
-            else throw new Error(data.message);
+            const { emails: fetchedEmails, nextPageToken: newNextPageToken } = await getGoogleGmailMessages(user.uid, labelId, pageToken, dateQuery);
+            setEmails(prev => pageToken ? [...prev, ...fetchedEmails] : fetchedEmails);
+            setNextPageToken(newNextPageToken);
         } catch (error: any) {
             toast({ title: 'Error fetching emails', description: error.message, variant: 'destructive' });
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast]);
+    }, [user, toast, dateQuery]);
 
     useEffect(() => {
-        fetchLabels();
-        fetchEmails(selectedLabelId);
-    }, [fetchLabels, fetchEmails, selectedLabelId]);
+        if (dateQuery) {
+            setEmails([]);
+            setNextPageToken(null);
+            fetchEmails(selectedLabelId);
+        } else {
+             fetchLabels();
+             setEmails([]);
+             setNextPageToken(null);
+             fetchEmails(selectedLabelId);
+        }
+    }, [fetchLabels, fetchEmails, selectedLabelId, dateQuery]);
 
     const handleSummarize = async (email: RawGmailMessage) => {
         setSummarizingId(email.id);
@@ -91,19 +99,20 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: Ma
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
              <div className="flex justify-between items-center mb-2 px-1">
-                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Mail size={16} /> Gmail</h1>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => fetchEmails(selectedLabelId)}><RefreshCw className={cn("h-4 w-4", isLoading && 'animate-spin')} /></Button>
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Mail size={16} /> {dateQuery === 'today' ? 'Today\'s Emails' : 'Gmail'}</h1>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEmails([]); setNextPageToken(null); fetchEmails(selectedLabelId); }}><RefreshCw className={cn("h-4 w-4", isLoading && !nextPageToken && 'animate-spin')} /></Button>
             </div>
-            <div className="mb-2">
-                {labels.length > 0 && (
+            {!dateQuery && labels.length > 0 && (
+                 <div className="mb-2">
                     <select value={selectedLabelId} onChange={e => setSelectedLabelId(e.target.value)} className="w-full text-xs p-1 rounded-md bg-transparent border border-gray-600">
                         {labels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
-                )}
-            </div>
-             <div className="space-y-1 text-xs overflow-y-auto">
-                {isLoading && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
-                {!isLoading && emails.map(email => (
+                </div>
+            )}
+             <div className="space-y-1 text-xs overflow-y-auto flex-1">
+                {isLoading && emails.length === 0 && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
+                {!isLoading && emails.length === 0 && <div className="text-center p-4 text-xs text-gray-400">No emails for this view.</div>}
+                {emails.map(email => (
                     <div 
                         key={email.id} 
                         className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", taskItemClasses)}
@@ -127,8 +136,73 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd }: { viewTheme: Ma
                     </div>
                 ))}
             </div>
+            {nextPageToken && (
+                <div className="pt-2 mt-2 border-t border-gray-700/50">
+                    <Button variant="outline" className="w-full h-8 text-xs" onClick={() => fetchEmails(selectedLabelId, nextPageToken)} disabled={isLoading}>
+                         {isLoading ? <LoadingSpinner size="sm" /> : 'Load More'}
+                    </Button>
+                </div>
+            )}
         </div>
     );
+};
+
+const PlannerTodayView = ({
+  tasks,
+  taskLists,
+  onStatusChange,
+  onDragStart,
+  onDragEnd,
+  viewTheme,
+}: {
+  tasks: Record<string, RawGoogleTask[]>;
+  taskLists: GoogleTaskList[];
+  onStatusChange: (listId: string, taskId: string) => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
+  onDragEnd: (e?: React.DragEvent) => void;
+  viewTheme: MaxViewTheme;
+}) => {
+  const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+  const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+
+  const todaysTasks = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return Object.values(tasks).flat().filter(task => task.due && task.due.startsWith(todayStr));
+  }, [tasks]);
+
+  return (
+    <div className={cn("flex flex-col h-full", taskListClasses)}>
+        <div className="p-2 flex-shrink-0">
+            <h1 className={cn("text-sm font-bold flex items-center gap-2 mb-2 px-1", headingClasses)}>
+                <Calendar size={16} /> Today's Focus
+            </h1>
+            <div className="space-y-1 text-xs">
+                {todaysTasks.length > 0 ? todaysTasks.map(task => {
+                   const list = taskLists.find(l => tasks[l.id]?.some(t => t.id === task.id));
+                   if (!list) return null;
+                   return (
+                     <div 
+                        key={task.id} 
+                        className={cn("p-1.5 rounded-md flex items-start cursor-grab", viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200')}
+                        draggable onDragStart={(e) => onDragStart(e, task)} onDragEnd={onDragEnd}
+                      >
+                         <Checkbox 
+                            id={`today-${task.id}`} 
+                            className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
+                            checked={task.status === 'completed'}
+                            onCheckedChange={() => onStatusChange(list.id, task.id)}
+                         />
+                         <label htmlFor={`today-${task.id}`} className={cn("text-xs flex-1", task.status === 'completed' && 'line-through text-gray-500', viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700')}>{task.title}</label>
+                     </div>
+                   )
+                }) : <p className="text-xs text-gray-400 text-center p-4">No tasks due today.</p>}
+            </div>
+        </div>
+        <div className="flex-1 min-h-0 border-t border-gray-700/50">
+             <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd} dateQuery="today" />
+        </div>
+    </div>
+  );
 };
 
 
@@ -252,6 +326,10 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <div className="h-full flex items-center justify-center"><LoadingSpinner /></div>;
   }
   
+  if (activeView === 'today') {
+    return <PlannerTodayView {...props} />;
+  }
+
   // 2. Explicitly render Gmail component if activeView is 'gmail'
   if (activeView === 'gmail') {
     return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd}/>
@@ -314,23 +392,27 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
 
                 {allCompletedTasks.length > 0 && (
                     <div className="mt-4">
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible className="w-full" defaultValue='completed'>
                             <AccordionItem value="completed" className="border-t border-gray-700/50 pt-2">
                                 <AccordionTrigger className="text-xs text-gray-500 hover:no-underline py-1">
                                     Completed ({allCompletedTasks.length})
                                 </AccordionTrigger>
                                 <AccordionContent className="pb-0 space-y-1">
-                                    {allCompletedTasks.map(task => (
-                                         <div key={task.id} className={cn("p-1.5 rounded-md flex items-start", taskItemClasses)}>
-                                            <Checkbox 
-                                                id={`all-completed-${task.id}`} 
-                                                className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
-                                                onCheckedChange={() => onStatusChange(taskLists.find(l => tasks[l.id]?.some(t => t.id === task.id))!.id, task.id)}
-                                                checked={true}
-                                            />
-                                            <label htmlFor={`all-completed-${task.id}`} className="text-xs flex-1 line-through text-gray-500">{task.title}</label>
-                                        </div>
-                                    ))}
+                                    {allCompletedTasks.map(task => {
+                                        const list = taskLists.find(l => tasks[l.id]?.some(t => t.id === task.id));
+                                        if (!list) return null;
+                                        return (
+                                             <div key={task.id} className={cn("p-1.5 rounded-md flex items-start", taskItemClasses)}>
+                                                <Checkbox 
+                                                    id={`all-completed-${task.id}`} 
+                                                    className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
+                                                    onCheckedChange={() => onStatusChange(list.id, task.id)}
+                                                    checked={true}
+                                                />
+                                                <label htmlFor={`all-completed-${task.id}`} className="text-xs flex-1 line-through text-gray-500">{task.title}</label>
+                                            </div>
+                                        )
+                                    })}
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
@@ -358,6 +440,6 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
             />
   }
 
-  // 6. If it's a special view like "today" or "upcoming", or any other unknown view, render nothing.
+  // 6. If it's a special view like "upcoming", or any other unknown view, render nothing.
   return null;
 }

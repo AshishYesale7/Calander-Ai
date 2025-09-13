@@ -4,17 +4,17 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, labelId } = await request.json();
+        const { userId, labelId, pageToken } = await request.json();
 
         if (!userId) {
             return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
         }
         
         // This route now only fetches the raw messages.
-        const gmailMessages = await getGoogleGmailMessages(userId, labelId);
+        const result = await getGoogleGmailMessages(userId, labelId, pageToken);
 
         // Return the raw messages directly.
-        return NextResponse.json({ success: true, emails: gmailMessages });
+        return NextResponse.json({ success: true, ...result });
 
     } catch (error) {
         console.error('Error fetching Google Gmail messages:', error);

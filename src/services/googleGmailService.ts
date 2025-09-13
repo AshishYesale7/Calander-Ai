@@ -4,7 +4,7 @@
 import { google } from 'googleapis';
 import { getAuthenticatedClient } from './googleAuthService';
 import type { RawGmailMessage, GmailLabel } from '@/types';
-import { subDays } from 'date-fns';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
 
 export async function getGoogleGmailLabels(userId: string): Promise<GmailLabel[]> {
   const client = await getAuthenticatedClient(userId);
@@ -31,42 +31,54 @@ export async function getGoogleGmailLabels(userId: string): Promise<GmailLabel[]
   }
 }
 
-export async function getGoogleGmailMessages(userId: string, labelId?: string): Promise<RawGmailMessage[]> {
+export async function getGoogleGmailMessages(userId: string, labelId?: string, pageToken?: string, dateQuery?: 'today'): Promise<{ emails: RawGmailMessage[], nextPageToken?: string | null }> {
   const client = await getAuthenticatedClient(userId);
   if (!client) {
     console.log(`Not authenticated with Google for user ${userId}. Cannot fetch Gmail messages.`);
-    return [];
+    return { emails: [], nextPageToken: null };
   }
 
   const gmail = google.gmail({ version: 'v1', auth: client });
-  const twoWeeksAgo = Math.floor(subDays(new Date(), 14).getTime() / 1000);
+  
+  let queryString = '';
+  if (dateQuery === 'today') {
+      const todayStart = Math.floor(startOfDay(new Date()).getTime() / 1000);
+      const todayEnd = Math.floor(endOfDay(new Date()).getTime() / 1000);
+      queryString = `in:inbox after:${todayStart} before:${todayEnd}`;
+  } else {
+      const twoWeeksAgo = Math.floor(subDays(new Date(), 14).getTime() / 1000);
+      queryString = `(is:important OR is:starred) after:${twoWeeksAgo}`;
+  }
 
   const listOptions: {
     userId: string;
     maxResults: number;
     q?: string;
     labelIds?: string[];
+    pageToken?: string;
   } = {
     userId: 'me',
-    maxResults: 100,
+    maxResults: 100, // Fetch up to 100 emails
   };
   
-  if (labelId) {
-    // If a specific label is requested, use it exclusively.
-    // This is more reliable than combining with a 'q' parameter which can have unpredictable interactions.
+  if (pageToken) {
+    listOptions.pageToken = pageToken;
+  }
+  
+  if (labelId && !dateQuery) { // Do not use labelIds if it's a date query for simplicity
     listOptions.labelIds = [labelId];
   } else {
-    // Fallback behavior if no label is selected.
-    // We'll search for important/starred emails from the last two weeks.
-    listOptions.q = `(is:important OR is:starred) after:${twoWeeksAgo}`;
+    listOptions.q = queryString;
   }
   
   try {
     const listResponse = await gmail.users.messages.list(listOptions);
 
     const messages = listResponse.data.messages;
+    const nextPageToken = listResponse.data.nextPageToken;
+
     if (!messages || messages.length === 0) {
-      return [];
+      return { emails: [], nextPageToken: null };
     }
 
     const messagePromises = messages.map(async (message) => {
@@ -109,7 +121,7 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string): 
         return !securityKeywordsRegex.test(combinedText);
     });
 
-    return secureMessages;
+    return { emails: secureMessages, nextPageToken };
 
   } catch (error) {
     console.error(`Error fetching Gmail messages for user ${userId}:`, error);
