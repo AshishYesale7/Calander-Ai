@@ -98,9 +98,10 @@ export function calculateEventLayouts(
         const colIdx = item.columnOrder;
         
         const colWidthPercentage = 100 / numColsInGroup;
-        const gapPercentage = numColsInGroup > 1 ? 0.5 : 0; 
-        const actualColWidth = colWidthPercentage - (gapPercentage * (numColsInGroup - 1) / numColsInGroup);
-        const leftOffset = colIdx * (actualColWidth + gapPercentage);
+        // Introduce a small gap between events.
+        const gapPercentage = numColsInGroup > 1 ? 1 : 5; // 5% gap from the right edge if only one event
+        const actualColWidth = colWidthPercentage - gapPercentage;
+        const leftOffset = colIdx * colWidthPercentage;
 
         layoutResults.push({
           ...event,
