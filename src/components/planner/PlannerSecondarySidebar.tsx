@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { getGoogleGmailMessages } from '@/services/googleGmailService';
+import PlannerUpcomingView from './PlannerUpcomingView';
 
 const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd, dateQuery }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void, onDragEnd: (e?: React.DragEvent) => void, dateQuery?: 'today' }) => {
     const { user } = useAuth();
@@ -314,7 +315,7 @@ interface PlannerSecondarySidebarProps {
   onAddTask: (listId: string, title: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => void;
   onDragEnd: (e?: React.DragEvent) => void;
-  onStatusChange: (listId: string, taskId: string) => void;
+  onStatusChange: (listId: string, taskId: string, taskData: { status: 'needsAction' | 'completed' }) => void;
   viewTheme: MaxViewTheme;
 }
 
@@ -327,19 +328,29 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
   }
   
   if (activeView === 'today') {
-    return <PlannerTodayView {...props} />;
+    const handleStatusChangeForToday = (listId: string, taskId: string) => {
+        const task = tasks[listId]?.find(t => t.id === taskId);
+        if (task) {
+            onStatusChange(listId, taskId, { status: task.status === 'completed' ? 'needsAction' : 'completed' });
+        }
+    };
+    return <PlannerTodayView {...props} onStatusChange={handleStatusChangeForToday} />;
   }
 
-  // 2. Explicitly render Gmail component if activeView is 'gmail'
+  // 2. Handle the "Upcoming" view
+  if (activeView === 'upcoming') {
+    return <PlannerUpcomingView viewTheme={viewTheme} />;
+  }
+
+  // 3. Explicitly render Gmail component if activeView is 'gmail'
   if (activeView === 'gmail') {
     return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd}/>
   }
 
-  // 3. Handle the "All tasks" view
+  // 4. Handle the "All tasks" view
   if (activeView === 'all_tasks') {
     const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
     const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
-    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
     const allCompletedTasks = useMemo(() => 
@@ -369,7 +380,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                                         {pendingTasks.map(task => (
                                             <div 
                                               key={task.id} 
-                                              className={cn("p-1.5 rounded-md flex items-start cursor-grab", taskItemClasses)}
+                                              className={cn("p-1.5 rounded-md flex items-start cursor-grab", viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200')}
                                               draggable
                                               onDragStart={(e) => onDragStart(e, task)}
                                               onDragEnd={onDragEnd}
@@ -377,7 +388,7 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                                                 <Checkbox 
                                                     id={`all-${task.id}`} 
                                                     className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
-                                                    onCheckedChange={() => onStatusChange(list.id, task.id)}
+                                                    onCheckedChange={() => onStatusChange(list.id, task.id, { status: task.status === 'completed' ? 'needsAction' : 'completed' })}
                                                     checked={task.status === 'completed'}
                                                 />
                                                 <label htmlFor={`all-${task.id}`} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
@@ -402,11 +413,11 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                                         const list = taskLists.find(l => tasks[l.id]?.some(t => t.id === task.id));
                                         if (!list) return null;
                                         return (
-                                             <div key={task.id} className={cn("p-1.5 rounded-md flex items-start", taskItemClasses)}>
+                                             <div key={task.id} className={cn("p-1.5 rounded-md flex items-start", viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200')}>
                                                 <Checkbox 
                                                     id={`all-completed-${task.id}`} 
                                                     className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
-                                                    onCheckedChange={() => onStatusChange(list.id, task.id)}
+                                                    onCheckedChange={() => onStatusChange(list.id, task.id, { status: 'needsAction' })}
                                                     checked={true}
                                                 />
                                                 <label htmlFor={`all-completed-${task.id}`} className="text-xs flex-1 line-through text-gray-500">{task.title}</label>
@@ -423,23 +434,29 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     );
   }
 
-  // 4. Find the selected task list based on activeView ID
+  // 5. Find the selected task list based on activeView ID
   const selectedTaskList = taskLists.find(list => list.id === activeView);
   
-  // 5. If a valid task list is selected, render it
+  // 6. If a valid task list is selected, render it
   if (selectedTaskList) {
       const tasksForSelectedList = tasks[selectedTaskList.id] || [];
+      const handleStatusChangeForList = (listId: string, taskId: string) => {
+        const task = tasks[listId]?.find(t => t.id === taskId);
+        if(task) {
+          onStatusChange(listId, taskId, { status: task.status === 'completed' ? 'needsAction' : 'completed' });
+        }
+      };
       return <PlannerTaskList 
                 list={selectedTaskList}
                 tasks={tasksForSelectedList}
                 onAddTask={onAddTask}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
-                onStatusChange={onStatusChange}
+                onStatusChange={handleStatusChangeForList}
                 viewTheme={viewTheme}
             />
   }
 
-  // 6. If it's a special view like "upcoming", or any other unknown view, render nothing.
+  // 7. If it's any other unknown view, render nothing.
   return null;
 }
