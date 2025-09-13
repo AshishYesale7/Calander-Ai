@@ -222,7 +222,7 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
                                     key={event.id}
                                     className="h-5 rounded text-black font-semibold px-1.5 flex items-center overflow-hidden truncate text-[11px] mb-0.5"
                                     style={{ 
-                                      backgroundColor: `${event.color}40`, // Add transparency
+                                      backgroundColor: `${event.color}40`,
                                       gridRow: `${event.row + 1} / span 1`,
                                       gridColumn: `${(getDay(event.start) % 7) + 1} / span ${event.span}`,
                                     }}
