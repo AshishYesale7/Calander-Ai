@@ -236,17 +236,50 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
 
   // 3. Handle the "All tasks" view
   if (activeView === 'all_tasks') {
-    const allPendingTasks = Object.values(tasks).flat().filter(task => task.status !== 'completed');
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+    const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
+    const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
+
     return (
-        <PlannerTaskList
-            list={{ id: 'all_tasks', title: 'All Tasks', icon: Columns }}
-            tasks={allPendingTasks}
-            // No onAddTask for this view
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            viewTheme={viewTheme}
-        />
-    )
+        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
+            <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}>
+                    <Columns size={16} /> All Tasks
+                </h1>
+            </div>
+            <Accordion type="multiple" className="w-full space-y-1 overflow-y-auto">
+                {taskLists.map(list => {
+                    const pendingTasks = tasks[list.id]?.filter(t => t.status !== 'completed') || [];
+                    if (pendingTasks.length === 0) return null;
+                    
+                    return (
+                        <AccordionItem value={list.id} key={list.id} className="border-none">
+                            <AccordionTrigger className="p-1.5 rounded-md text-xs font-semibold hover:no-underline hover:bg-gray-700/50">
+                                {list.title}
+                            </AccordionTrigger>
+                            <AccordionContent className="pl-2 pt-1 pb-0">
+                                <div className="space-y-1 text-xs">
+                                    {pendingTasks.map(task => (
+                                        <div 
+                                          key={task.id} 
+                                          className={cn("p-1.5 rounded-md flex items-start cursor-grab", taskItemClasses)}
+                                          draggable
+                                          onDragStart={(e) => onDragStart(e, task)}
+                                          onDragEnd={onDragEnd}
+                                        >
+                                            <Checkbox id={`all-${task.id}`} className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')} />
+                                            <label htmlFor={`all-${task.id}`} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )
+                })}
+            </Accordion>
+        </div>
+    );
   }
 
   // 4. Find the selected task list based on activeView ID
