@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay, isSameDay } from 'date-fns';
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
-import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask } from '@/services/googleTasksService';
+import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask, updateGoogleTask } from '@/services/googleTasksService';
 
 import PlannerHeader from './PlannerHeader';
 import PlannerSidebar from './PlannerSidebar';
@@ -269,6 +269,32 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     });
   };
 
+  const handleTaskStatusChange = async (listId: string, taskId: string) => {
+    if (!user) return;
+    
+    const taskToUpdate = tasks[listId]?.find(t => t.id === taskId);
+    if (!taskToUpdate) return;
+    
+    const newStatus = taskToUpdate.status === 'completed' ? 'needsAction' : 'completed';
+    
+    // Optimistic UI update
+    setTasks(prev => ({
+      ...prev,
+      [listId]: prev[listId].map(t => t.id === taskId ? { ...t, status: newStatus } : t)
+    }));
+
+    try {
+      await updateGoogleTask(user.uid, listId, taskId, { status: newStatus });
+    } catch (error) {
+      toast({ title: "Sync Error", description: "Failed to update task in Google.", variant: 'destructive' });
+      // Revert UI on failure
+      setTasks(prev => ({
+        ...prev,
+        [listId]: prev[listId].map(t => t.id === taskId ? { ...t, status: taskToUpdate.status } : t)
+      }));
+    }
+  };
+
   return (
      <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}>
         <PlannerHeader 
@@ -299,6 +325,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                             onAddTask={handleAddTask}
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
+                            onStatusChange={handleTaskStatusChange}
                             viewTheme={maximizedViewTheme}
                           />
                       </div>
@@ -320,5 +347,3 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
-
-    
