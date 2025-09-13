@@ -48,7 +48,7 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string): 
     labelIds?: string[];
   } = {
     userId: 'me',
-    maxResults: 20,
+    maxResults: 100,
   };
   
   if (labelId) {
