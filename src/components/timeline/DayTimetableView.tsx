@@ -226,8 +226,8 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                  </div>
             </div>
           </div>
-          <div className="flex-1 flex min-h-0 relative">
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto timetable-main-area">
+          <div className="flex flex-1 min-h-0 relative">
+            <div ref={scrollContainerRef} className={cn("flex-1 min-h-0 overflow-auto timetable-main-area transition-[width] duration-300", selectedEvent ? "w-[calc(100%-20rem)]" : "w-full")}>
               <div className="flex w-full">
                   <div className="w-16 md:w-20 border-r border-border/30 timetable-hours-column">
                       <div className={cn("border-b border-border/30", minuteRulerHeightClass)}></div>
