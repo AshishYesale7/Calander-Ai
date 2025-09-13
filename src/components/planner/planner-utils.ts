@@ -98,8 +98,8 @@ export function calculateEventLayouts(
         const colIdx = item.columnOrder;
         
         const colWidthPercentage = 100 / numColsInGroup;
-        // Introduce a small gap between events.
-        const gapPercentage = numColsInGroup > 1 ? 1 : 5; // 5% gap from the right edge if only one event
+        // Introduce a larger gap for a narrower look.
+        const gapPercentage = numColsInGroup > 1 ? 1 : 25; // 25% gap if it's a single event in its slot
         const actualColWidth = colWidthPercentage - gapPercentage;
         const leftOffset = colIdx * colWidthPercentage;
 
