@@ -6,7 +6,7 @@ import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
-import { Bot, Trash2, XCircle, Edit3, CalendarDays, Maximize, Palette } from 'lucide-react';
+import { Bot, Trash2, XCircle, Edit3, CalendarDays, Maximize, Palette, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,25 +44,22 @@ const getEventTooltip = (event: TimelineEvent): string => {
     return [event.title, timeString, statusString, notesString].filter(Boolean).join('\n');
 };
 
-const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
-  switch (type) {
-    case 'exam': return { bg: 'bg-red-900/50', border: 'border-red-400' };
-    case 'deadline': return { bg: 'bg-yellow-900/50', border: 'border-yellow-400' };
-    case 'goal': return { bg: 'bg-green-900/50', border: 'border-green-400' };
-    case 'project': return { bg: 'bg-blue-900/50', border: 'border-blue-400' };
-    case 'application': return { bg: 'bg-purple-900/50', border: 'border-purple-400' };
-    case 'ai_suggestion': return { bg: 'bg-teal-900/50', border: 'border-teal-400' };
-    default: return { bg: 'bg-slate-800/60', border: 'border-slate-400' };
-  }
+const getEventColorStyle = (event: TimelineEvent) => {
+    if (event.color) {
+        return { '--event-color': event.color } as React.CSSProperties;
+    }
+    const typeColors = {
+        exam: '#ef4444', // red-500
+        deadline: '#f97316', // orange-500
+        goal: '#22c55e', // green-500
+        project: '#3b82f6', // blue-500
+        application: '#8b5cf6', // violet-500
+        ai_suggestion: '#14b8a6', // teal-500
+        custom: '#6b7280', // gray-500
+    };
+    return { '--event-color': typeColors[event.type] || typeColors.custom } as React.CSSProperties;
 };
 
-const getCustomColorStyles = (color?: string) => {
-  if (!color) return null;
-  return {
-    backgroundColor: `${color}33`, // Add alpha transparency
-    borderLeftColor: color,
-  };
-};
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
   if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
@@ -269,71 +266,45 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                           if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;
                           const isSmallWidth = parseFloat(event.layout.width) < 25;
                           const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
-                          const typeStyle = getEventTypeStyleClasses(event.type);
-                          const customStyle = getCustomColorStyles(event.color);
 
                           return (
                           <div
                               key={event.id}
                               className={cn(
-                                "absolute rounded-md text-xs overflow-hidden shadow-md transition-all cursor-pointer border-l-4",
-                                "focus-within:ring-2 focus-within:ring-ring",
-                                !customStyle && cn(typeStyle.bg, typeStyle.border),
+                                "absolute rounded-lg text-xs overflow-hidden shadow-md transition-all cursor-pointer",
+                                "focus-within:ring-2 focus-within:ring-ring bg-card",
                                 isDayInPast && "opacity-70 hover:opacity-100 focus-within:opacity-100",
-                                selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                                selectedEvent?.id === event.id && "ring-2 ring-accent ring-offset-2 ring-offset-background",
                               )}
                               style={{
-                                  top: `${event.layout.top}px`,
-                                  height: `${event.layout.height}px`,
-                                  left: event.layout.left,
-                                  width: event.layout.width,
-                                  zIndex: event.layout.zIndex,
-                                  ...customStyle
+                                  ...event.layout,
+                                  ...getEventColorStyle(event)
                               }}
                               title={getEventTooltip(event)}
                               onClick={() => handleEventClick(event)}
                           >
-                              <div className={cn("p-1 h-full flex flex-col text-white", customStyle?.color && `!text-[${customStyle.color}]`)}>
-                                  <div className="flex-grow overflow-hidden">
-                                      <div className="flex items-start gap-1.5">
-                                          {onEventStatusChange && (
-                                              <Checkbox
-                                                  id={`check-${event.id}`}
-                                                  checked={isChecked}
-                                                  onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
-                                                  onClick={(e) => e.stopPropagation()}
-                                                  aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
-                                                  className="mt-0.5 border-white/50 flex-shrink-0"
-                                              />
-                                          )}
-                                          <p className={cn("font-semibold truncate", isSmallWidth ? "text-[10px]" : "text-xs")}>{event.title}</p>
-                                      </div>
-                                      {!isSmallWidth && (
-                                      <p className={cn("opacity-80 truncate text-[10px] pl-5")}>
+                            <div className="relative h-full w-full p-1.5 pl-2.5">
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[--event-color] rounded-l-lg"></div>
+                                <div className="flex items-start gap-1.5 h-full">
+                                   {onEventStatusChange && (
+                                        <Checkbox
+                                            id={`check-${event.id}`}
+                                            checked={isChecked}
+                                            onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            aria-label={`Mark ${event.title} as ${isChecked ? 'missed' : 'completed'}`}
+                                            className="mt-0.5 border-white/50 flex-shrink-0"
+                                        />
+                                    )}
+                                  <div className="flex flex-col flex-grow overflow-hidden">
+                                      <p className="font-semibold truncate text-foreground">{event.title}</p>
+                                      <p className="text-muted-foreground truncate">
                                           {format(event.date, 'h:mm a')}
                                           {event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) && ` - ${format(event.endDate, 'h:mm a')}`}
                                       </p>
-                                      )}
                                   </div>
-                                  <div className={cn("mt-auto flex-shrink-0 flex items-center space-x-0.5", isSmallWidth ? "justify-center" : "justify-end")}>
-                                      {event.isDeletable && onDeleteEvent && (
-                                          <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="h-5 w-5 text-white/70 hover:text-white hover:bg-white/10 opacity-70 hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                                  <Trash2 className="h-3 w-3" />
-                                              </Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent className="frosted-glass">
-                                              <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                              <AlertDialogFooter>
-                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(event.id, event.title)}>Delete</AlertDialogAction>
-                                              </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                          </AlertDialog>
-                                      )}
-                                  </div>
-                              </div>
+                                </div>
+                            </div>
                           </div>
                           );
                       })}

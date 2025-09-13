@@ -15,16 +15,20 @@ import { calculateAllDayEventLayouts, type AllDayEventWithLayout, calculateWeekl
 
 const HOUR_HEIGHT_PX = 60;
 
-const getEventTypeStyleClasses = (type: TimelineEvent['type']) => {
-  switch (type) {
-    case 'exam': return 'bg-red-500/80 border-red-500 text-white dark:bg-red-700/80 dark:border-red-600 dark:text-red-100';
-    case 'deadline': return 'bg-yellow-500/80 border-yellow-500 text-white dark:bg-yellow-600/80 dark:border-yellow-500 dark:text-yellow-100';
-    case 'goal': return 'bg-green-500/80 border-green-500 text-white dark:bg-green-700/80 dark:border-green-600 dark:text-green-100';
-    case 'project': return 'bg-blue-500/80 border-blue-500 text-white dark:bg-blue-700/80 dark:border-blue-600 dark:text-blue-100';
-    case 'application': return 'bg-purple-500/80 border-purple-500 text-white dark:bg-purple-700/80 dark:border-purple-600 dark:text-purple-100';
-    case 'ai_suggestion': return 'bg-teal-500/80 border-teal-500 text-white dark:bg-teal-700/80 dark:border-teal-600 dark:text-teal-100';
-    default: return 'bg-gray-500/80 border-gray-500 text-white dark:bg-gray-600/80 dark:border-gray-500 dark:text-gray-100';
-  }
+const getEventColorStyle = (event: TimelineEvent) => {
+    if (event.color) {
+        return { '--event-color': event.color } as React.CSSProperties;
+    }
+    const typeColors = {
+        exam: '#ef4444', // red-500
+        deadline: '#f97316', // orange-500
+        goal: '#22c55e', // green-500
+        project: '#3b82f6', // blue-500
+        application: '#8b5cf6', // violet-500
+        ai_suggestion: '#14b8a6', // teal-500
+        custom: '#6b7280', // gray-500
+    };
+    return { '--event-color': typeColors[event.type] || typeColors.custom } as React.CSSProperties;
 };
 
 
@@ -181,18 +185,17 @@ export default function PlannerWeeklyView({
                      <Popover key={event.id}>
                         <PopoverTrigger asChild>
                             <div
-                                className={cn(
-                                    'rounded px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer absolute',
-                                    getEventTypeStyleClasses(event.type),
-                                )}
+                                className={cn('rounded-md px-1.5 py-1 font-medium text-[10px] truncate cursor-pointer absolute bg-card')}
                                 style={{
+                                  ...getEventColorStyle(event),
                                   top: `${event.row * 24}px`,
                                   left: `calc(${(100 / 7) * event.startDay}% + 2px)`,
                                   width: `calc(${(100/7) * event.span}% - 4px)`,
                                   height: '22px'
                                 }}
                             >
-                                {event.title}
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[--event-color] rounded-l-md"></div>
+                                <span className="pl-1.5 text-foreground">{event.title}</span>
                             </div>
                         </PopoverTrigger>
                         <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="bottom" align="start">
@@ -275,14 +278,14 @@ export default function PlannerWeeklyView({
                                 <Popover key={event.id}>
                                     <PopoverTrigger asChild>
                                         <div
-                                            className={cn('absolute p-1 rounded-md font-medium m-0.5 text-[10px] overflow-hidden pointer-events-auto cursor-pointer', getEventTypeStyleClasses(event.type))}
-                                            style={event.layout}
+                                            className={cn('absolute p-1.5 pl-2.5 rounded-lg font-medium text-[10px] overflow-hidden pointer-events-auto cursor-pointer shadow-md bg-card')}
+                                            style={{...event.layout, ...getEventColorStyle(event)}}
                                         >
-                                            <div className='flex items-center gap-1 text-[10px]'>
-                                                {event.reminder.repeat !== 'none' && <Lock size={10} className="shrink-0"/>}
-                                                <span className="truncate">{event.title}</span>
-                                            </div>
-                                            {!isShort && <p className={cn("opacity-80 text-[10px]")}>{format(event.date, 'h:mm a')}</p>}
+                                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[--event-color] rounded-l-lg"></div>
+                                           <div className="flex flex-col justify-center h-full overflow-hidden">
+                                              <p className="truncate font-semibold text-foreground">{event.title}</p>
+                                              {!isShort && <p className="text-muted-foreground truncate">{format(event.date, 'h:mm a')}</p>}
+                                           </div>
                                         </div>
                                     </PopoverTrigger>
                                      <PopoverContent className="w-56 p-2 frosted-glass text-xs" side="right" align="start">
