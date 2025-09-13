@@ -120,15 +120,28 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
                     {allDayEvents.map(event => (
                         <Popover key={event.id}>
-                          <PopoverTrigger asChild>
-                              <div className={cn("p-1 rounded-md text-xs cursor-pointer truncate bg-slate-800/60 border border-slate-400")} style={event.color ? { backgroundColor: `${event.color}BF` } : {}}>
-                                  {event.title}
-                              </div>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-64 frosted-glass">
-                            <p className="font-bold">{event.title}</p>
-                            <p className="text-sm text-muted-foreground">{event.notes}</p>
-                          </PopoverContent>
+                            <PopoverTrigger asChild>
+                                <div className={cn("relative p-1.5 pl-2.5 rounded-lg text-xs cursor-pointer truncate bg-card shadow-md")} style={getEventColorStyle(event)}>
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[--event-color] rounded-l-lg"></div>
+                                    <span className="pl-1 text-foreground">{event.title}</span>
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 frosted-glass">
+                               <p className="font-bold">{event.title}</p>
+                               <p className="text-sm text-muted-foreground mt-1">{event.notes}</p>
+                               <div className="mt-4 flex gap-2">
+                                   {onEditEvent && <Button size="sm" variant="outline" onClick={() => onEditEvent(event)}><Edit3 className="h-4 w-4 mr-2"/>Edit</Button>}
+                                   {onDeleteEvent && event.isDeletable && (
+                                       <AlertDialog>
+                                           <AlertDialogTrigger asChild><Button size="sm" variant="destructive"><Trash2 className="h-4 w-4 mr-2"/>Delete</Button></AlertDialogTrigger>
+                                           <AlertDialogContent className="frosted-glass">
+                                               <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                               <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteClick(event.id, event.title)} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter>
+                                           </AlertDialogContent>
+                                       </AlertDialog>
+                                   )}
+                               </div>
+                            </PopoverContent>
                         </Popover>
                     ))}
                      {ghostEvent && isSameDay(date, ghostEvent.date) && ghostEvent.hour === -1 && (
