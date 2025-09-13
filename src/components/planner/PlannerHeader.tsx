@@ -81,9 +81,9 @@ export default function PlannerHeader({
         <div className="md:hidden">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 px-3 text-xs capitalize">
-                        {activeView}
-                        <ChevronDown className="ml-2 h-4 w-4" />
+                    <Button variant="outline" size="sm" className="h-7 w-9 px-0 text-xs capitalize flex items-center justify-center">
+                        <span>{activeView.charAt(0).toUpperCase()}</span>
+                        <ChevronDown className="ml-1 h-3 w-3" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
