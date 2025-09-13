@@ -264,6 +264,10 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     const taskItemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
     const taskTextClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
 
+    const allCompletedTasks = useMemo(() => 
+        Object.values(tasks).flat().filter(t => t.status === 'completed'), 
+    [tasks]);
+
     return (
         <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
             <div className="flex justify-between items-center mb-2 px-1">
@@ -271,41 +275,68 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
                     <Columns size={16} /> All Tasks
                 </h1>
             </div>
-            <Accordion type="multiple" className="w-full space-y-1 overflow-y-auto">
-                {taskLists.map(list => {
-                    const pendingTasks = tasks[list.id]?.filter(t => t.status !== 'completed') || [];
-                    if (pendingTasks.length === 0) return null;
-                    
-                    return (
-                        <AccordionItem value={list.id} key={list.id} className="border-none">
-                            <AccordionTrigger className="p-1.5 rounded-md text-xs font-semibold hover:no-underline hover:bg-gray-700/50">
-                                {list.title}
-                            </AccordionTrigger>
-                            <AccordionContent className="pl-2 pt-1 pb-0">
-                                <div className="space-y-1 text-xs">
-                                    {pendingTasks.map(task => (
-                                        <div 
-                                          key={task.id} 
-                                          className={cn("p-1.5 rounded-md flex items-start cursor-grab", taskItemClasses)}
-                                          draggable
-                                          onDragStart={(e) => onDragStart(e, task)}
-                                          onDragEnd={onDragEnd}
-                                        >
+            <div className="flex-1 overflow-y-auto">
+                <Accordion type="multiple" className="w-full space-y-1">
+                    {taskLists.map(list => {
+                        const pendingTasks = tasks[list.id]?.filter(t => t.status !== 'completed') || [];
+                        if (pendingTasks.length === 0) return null;
+                        
+                        return (
+                            <AccordionItem value={list.id} key={list.id} className="border-none">
+                                <AccordionTrigger className="p-1.5 rounded-md text-xs font-semibold hover:no-underline hover:bg-gray-700/50">
+                                    {list.title}
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-2 pt-1 pb-0">
+                                    <div className="space-y-1 text-xs">
+                                        {pendingTasks.map(task => (
+                                            <div 
+                                              key={task.id} 
+                                              className={cn("p-1.5 rounded-md flex items-start cursor-grab", taskItemClasses)}
+                                              draggable
+                                              onDragStart={(e) => onDragStart(e, task)}
+                                              onDragEnd={onDragEnd}
+                                            >
+                                                <Checkbox 
+                                                    id={`all-${task.id}`} 
+                                                    className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
+                                                    onCheckedChange={() => onStatusChange(list.id, task.id)}
+                                                    checked={task.status === 'completed'}
+                                                />
+                                                <label htmlFor={`all-${task.id}`} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
+
+                {allCompletedTasks.length > 0 && (
+                    <div className="mt-4">
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="completed" className="border-t border-gray-700/50 pt-2">
+                                <AccordionTrigger className="text-xs text-gray-500 hover:no-underline py-1">
+                                    Completed ({allCompletedTasks.length})
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-0 space-y-1">
+                                    {allCompletedTasks.map(task => (
+                                         <div key={task.id} className={cn("p-1.5 rounded-md flex items-start", taskItemClasses)}>
                                             <Checkbox 
-                                                id={`all-${task.id}`} 
+                                                id={`all-completed-${task.id}`} 
                                                 className={cn("h-3.5 w-3.5 mt-0.5 mr-2", viewTheme === 'dark' ? 'border-gray-500' : 'border-gray-400')}
-                                                onCheckedChange={() => onStatusChange(list.id, task.id)}
-                                                checked={task.status === 'completed'}
+                                                onCheckedChange={() => onStatusChange(taskLists.find(l => tasks[l.id]?.some(t => t.id === task.id))!.id, task.id)}
+                                                checked={true}
                                             />
-                                            <label htmlFor={`all-${task.id}`} className={cn("text-xs flex-1", taskTextClasses)}>{task.title}</label>
+                                            <label htmlFor={`all-completed-${task.id}`} className="text-xs flex-1 line-through text-gray-500">{task.title}</label>
                                         </div>
                                     ))}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )
-                })}
-            </Accordion>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
+                )}
+            </div>
         </div>
     );
   }
