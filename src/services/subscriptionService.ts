@@ -50,9 +50,9 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
         }
         
         // User exists but has no subscription, or user doc doesn't exist yet.
-        // Create a new 7-day trial subscription.
+        // Create a new 30-day trial subscription.
         const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
 
         const newTrialSubscription: UserSubscription = {
             status: 'trial',
@@ -70,3 +70,4 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
         return newTrialSubscription;
     }
 };
+
