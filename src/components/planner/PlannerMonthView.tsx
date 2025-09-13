@@ -15,6 +15,7 @@ import {
   getDay,
   differenceInCalendarDays,
   startOfDay,
+  isToday,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
@@ -206,8 +207,9 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
                       )}
                     >
                         <span className={cn(
-                            "font-semibold",
-                            isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText
+                            "font-semibold h-6 w-6 flex items-center justify-center rounded-full",
+                            isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText,
+                            isToday(day) && "ring-2 ring-red-500 text-red-500 font-bold"
                         )}>
                             {format(day, 'd')}
                         </span>
