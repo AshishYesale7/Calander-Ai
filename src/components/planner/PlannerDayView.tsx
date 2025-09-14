@@ -176,10 +176,10 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                     {dfnsIsToday(date) && (
                         <div
                             ref={nowIndicatorRef}
-                            className="absolute w-full h-0.5 bg-accent/80 z-20"
+                            className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                             style={{ top: `${(now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60)}px` }}
                         >
-                            <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent"></div>
+                            <div className="h-[3px] w-full bg-purple-500 opacity-80 shadow-lg"></div>
                         </div>
                     )}
                     {eventsWithLayout.map(({ layout, ...event }) => (

@@ -195,24 +195,40 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
       </CardHeader>
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
           <div className="p-2 border-b border-border/30 timetable-allday-area" style={{ backgroundColor: viewTheme === 'professional' ? '#1c1c1c' : undefined }}>
-             <div className="flex gap-2">
-                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
-                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-                 {allDayEvents.map(event => {
+            <div className="flex gap-2">
+                <span className="text-xs font-semibold w-12 text-center">All-day</span>
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                {allDayEvents.map(event => {
                     const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
                     return (
-                        <div key={event.id} onClick={() => handleEventClick(event)} className="p-1 rounded-md text-xs cursor-pointer truncate bg-muted/50">
-                          <Checkbox
-                              checked={isChecked}
-                              onCheckedChange={(checked) => handleCheckboxChange(event, !!checked)}
-                              className="mr-2"
-                              disabled={!onEventStatusChange}
-                          />
-                          {event.title}
-                        </div>
+                        <Popover key={event.id}>
+                            <PopoverTrigger asChild>
+                                <div className="relative p-1.5 pl-2.5 rounded-lg text-xs cursor-pointer truncate bg-card shadow-md" style={getEventColorStyle(event)}>
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[--event-color] rounded-l-lg"></div>
+                                    <span className="pl-1 text-foreground">{event.title}</span>
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 frosted-glass">
+                               <p className="font-bold">{event.title}</p>
+                               <p className="text-sm text-muted-foreground mt-1">{event.notes}</p>
+                               <div className="mt-4 flex gap-2">
+                                   {onEditEvent && <Button size="sm" variant="outline" onClick={() => onEditEvent(event)}><Edit3 className="h-4 w-4 mr-2"/>Edit</Button>}
+                                   {onDeleteEvent && event.isDeletable && (
+                                       <AlertDialog>
+                                           <AlertDialogTrigger asChild><Button size="sm" variant="destructive"><Trash2 className="h-4 w-4 mr-2"/>Delete</Button></AlertDialogTrigger>
+                                           <AlertDialogContent className="frosted-glass">
+                                               <AlertDialogHeader><AlertDialogTitle>Delete "{event.title}"?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                               <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteClick(event.id, event.title)} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter>
+                                           </AlertDialogContent>
+                                       </AlertDialog>
+                                   )}
+                                   {!event.isDeletable && <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2"/>Cannot Delete</Button>}
+                               </div>
+                            </PopoverContent>
+                        </Popover>
                     )
                   })}
-                 </div>
+                </div>
             </div>
           </div>
           <div className="flex flex-1 min-h-0 relative">
@@ -258,8 +274,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                         className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                         style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
                         >
-                        <div className="flex-shrink-0 w-3 h-3 -ml-[7px] rounded-full bg-accent border-2 border-background shadow-md"></div>
-                        <div className="flex-1 h-[2px] bg-accent opacity-80 shadow"></div>
+                        <div className="flex-1 h-[3px] bg-purple-500 opacity-80 shadow-lg"></div>
                         </div>
 
                       {timedEventsWithLayout.map(event => {

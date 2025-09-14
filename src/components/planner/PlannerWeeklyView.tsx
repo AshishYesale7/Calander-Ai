@@ -344,11 +344,11 @@ export default function PlannerWeeklyView({
                             style={{ top: `${currentTimeTopPosition}px` }}
                         >
                             <div 
-                                className="absolute -top-1 h-3 w-3 rounded-full bg-accent border-2 border-background shadow-md"
-                                style={{ left: `calc(${getDay(now) * (100/7)}% - 6px)`}}
+                                className="absolute -top-1.5 h-4 w-4 rounded-full bg-purple-500 border-2 border-background shadow-md"
+                                style={{ left: `calc(${getDay(now) * (100/7)}% - 8px)`}}
                             ></div>
                             <div 
-                                className="h-[2px] bg-accent opacity-80 shadow"
+                                className="h-[3px] bg-purple-500 opacity-80 shadow"
                                 style={{
                                     position: 'absolute',
                                     left: `calc(${getDay(now) * (100/7)}%)`,
