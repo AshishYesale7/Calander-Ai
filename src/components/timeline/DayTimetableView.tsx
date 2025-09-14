@@ -45,19 +45,7 @@ const getEventTooltip = (event: TimelineEvent): string => {
 };
 
 const getEventColorStyle = (event: TimelineEvent) => {
-    if (event.color) {
-        return { '--event-color': event.color } as React.CSSProperties;
-    }
-    const typeColors = {
-        exam: '#ef4444', // red-500
-        deadline: '#f97316', // orange-500
-        goal: '#22c55e', // green-500
-        project: '#3b82f6', // blue-500
-        application: '#8b5cf6', // violet-500
-        ai_suggestion: '#14b8a6', // teal-500
-        custom: '#6b7280', // gray-500
-    };
-    return { '--event-color': typeColors[event.type] || typeColors.custom } as React.CSSProperties;
+    return { '--event-color': event.color || '#64748b' } as React.CSSProperties;
 };
 
 
@@ -199,7 +187,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
                 {allDayEvents.map(event => {
-                    const isChecked = event.status === 'completed' || (event.status !== 'missed' && isDayInPast);
                     return (
                         <Popover key={event.id}>
                             <PopoverTrigger asChild>
@@ -247,12 +234,12 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                   </div>
 
                   <div className="flex-1 relative" style={{ minWidth: 0 }}>
-                      <div
-                      className={cn(
+                      <div 
+                        className={cn(
                           "sticky top-0 z-30 backdrop-blur-sm flex items-center border-b border-border/30 timetable-ruler",
                           minuteRulerHeightClass
-                      )}
-                      style={{ minWidth: minEventGridWidth }} 
+                        )}
+                        style={{ minWidth: minEventGridWidth }} 
                       >
                           <div className="w-full grid grid-cols-4 items-center h-full px-1 text-center text-[10px] text-muted-foreground">
                               <div className="text-left">00'</div>
@@ -274,8 +261,9 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                         className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                         style={{ top: `${currentTimeTopPosition}px`, display: currentTimeTopPosition < 0 ? 'none' : 'flex' }}
                         >
+                        <div className="h-2 w-2 rounded-full bg-purple-500 border-2 border-background shadow-md -ml-1"></div>
                         <div className="flex-1 h-[3px] bg-purple-500 opacity-80 shadow-lg"></div>
-                        </div>
+                      </div>
 
                       {timedEventsWithLayout.map(event => {
                           if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return null;

@@ -26,19 +26,7 @@ import type { MaxViewTheme } from './MaximizedPlannerView';
 const HOUR_HEIGHT_PX = 60;
 
 const getEventColorStyle = (event: TimelineEvent) => {
-    if (event.color) {
-        return { '--event-color': event.color } as React.CSSProperties;
-    }
-    const typeColors = {
-        exam: '#ef4444', // red-500
-        deadline: '#f97316', // orange-500
-        goal: '#22c55e', // green-500
-        project: '#3b82f6', // blue-500
-        application: '#8b5cf6', // violet-500
-        ai_suggestion: '#14b8a6', // teal-500
-        custom: '#6b7280', // gray-500
-    };
-    return { '--event-color': typeColors[event.type] || typeColors.custom } as React.CSSProperties;
+    return { '--event-color': event.color || '#64748b' } as React.CSSProperties;
 };
 
 
@@ -140,6 +128,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                                            </AlertDialogContent>
                                        </AlertDialog>
                                    )}
+                                   {!event.isDeletable && <Button size="sm" variant="outline" disabled><Lock className="h-4 w-4 mr-2"/>Cannot Delete</Button>}
                                </div>
                             </PopoverContent>
                         </Popover>
@@ -179,6 +168,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                             className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                             style={{ top: `${(now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60)}px` }}
                         >
+                            <div className="h-2 w-2 rounded-full bg-purple-500 border-2 border-background shadow-md -ml-1"></div>
                             <div className="h-[3px] w-full bg-purple-500 opacity-80 shadow-lg"></div>
                         </div>
                     )}
