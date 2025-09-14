@@ -146,8 +146,8 @@ export default function RootLayout({
         <title>Calendar.ai</title>
         <meta name="description" content="Your AI-powered calendar and planning assistant." />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg" type="image/x-icon" />
-        <link rel="shortcut icon" href="https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg" type="image/x-icon" />
+        <link rel="icon" href="https://img.freepik.com/premium-vector/modern-letter-c-colorful-logo-design_67734-143.jpg" type="image/x-icon" />
+        <link rel="shortcut icon" href="https://img.freepik.com/premium-vector/modern-letter-c-colorful-logo-design_67734-143.jpg" type="image/x-icon" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
