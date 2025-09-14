@@ -168,7 +168,7 @@ export default function PlannerDayView({ date, events, onEditEvent, onDeleteEven
                             className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                             style={{ top: `${(now.getHours() * 60 + now.getMinutes()) * (HOUR_HEIGHT_PX / 60)}px` }}
                         >
-                            <div className="h-2 w-2 rounded-full bg-purple-500 border-2 border-background shadow-md -ml-1"></div>
+                            <div className="h-3 w-3 rounded-full bg-purple-500 border-2 border-background shadow-md -ml-1.5"></div>
                             <div className="h-[3px] w-full bg-purple-500 opacity-80 shadow-lg"></div>
                         </div>
                     )}
