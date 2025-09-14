@@ -210,7 +210,7 @@ export default function PlannerMonthView({ month, events, viewTheme, onDrop, onD
                         <span className={cn(
                             "font-semibold h-6 w-6 flex items-center justify-center rounded-full",
                             isSameMonth(day, month) ? themeClasses.dayText : themeClasses.otherMonthText,
-                            isToday(day) && "bg-accent text-accent-foreground ring-2 ring-accent/50"
+                            isToday(day) && "bg-transparent border-2 border-red-500 text-red-500"
                         )}>
                             {format(day, 'd')}
                         </span>
