@@ -103,26 +103,14 @@ export default function SignInForm() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
-    // Add all necessary scopes at the beginning.
     provider.addScope('https://www.googleapis.com/auth/calendar.events');
     provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
     provider.addScope('https://www.googleapis.com/auth/tasks');
 
     try {
         if (!auth) throw new Error("Firebase Auth is not initialized.");
-
-        // The single popup handles both sign-in and permission granting.
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        // After successful sign-in, we just need to ensure the user profile and tokens are handled.
-        // The authorization code grant flow is implicitly handled by `signInWithPopup` when scopes are requested.
-        // We can save the tokens server-side if needed, which is handled by the API callback.
-        
+        await signInWithPopup(auth, provider);
         toast({ title: 'Success!', description: 'Signed in with Google successfully.' });
-        // No second window needed. The user is now signed in and has granted permissions.
-        // The app will redirect to the dashboard.
-        
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
             console.log("Sign-in popup closed by user.");
@@ -392,3 +380,5 @@ export default function SignInForm() {
     </Card>
   );
 }
+
+    
