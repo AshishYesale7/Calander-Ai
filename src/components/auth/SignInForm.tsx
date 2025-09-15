@@ -230,7 +230,13 @@ export default function SignInForm() {
       router.push('/dashboard');
     } catch (error: any) {
        console.error(error);
-       toast({ title: 'Error', description: error.message || 'Invalid OTP. Please try again.', variant: 'destructive' });
+       let errorMessage = 'An unknown error occurred. Please try again.';
+       if (error.code === 'auth/invalid-verification-code') {
+           errorMessage = 'The verification code is invalid. Please double-check the code or send a new one.';
+       } else if (error.message) {
+           errorMessage = error.message;
+       }
+       toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
         setLoading(false);
     }
@@ -388,3 +394,5 @@ export default function SignInForm() {
     </Card>
   );
 }
+
+    
