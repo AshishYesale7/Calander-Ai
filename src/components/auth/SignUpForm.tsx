@@ -204,14 +204,20 @@ export default function SignUpForm() {
       toast({ title: 'Success', description: 'Account created successfully. Welcome!' });
       router.push('/dashboard');
     } catch (error: any) {
-       console.error(error);
-       let errorMessage = 'An unknown error occurred. Please try again.';
        if (error.code === 'auth/invalid-verification-code') {
-           errorMessage = 'The verification code is invalid. Please double-check the code or send a new one.';
-       } else if (error.message) {
-           errorMessage = error.message;
+           toast({
+               title: 'Invalid Code',
+               description: 'The verification code is incorrect. Please try again.',
+               variant: 'destructive',
+           });
+       } else {
+           console.error("OTP Verification Error:", error);
+           toast({
+               title: 'Error',
+               description: error.message || 'An unknown error occurred during verification.',
+               variant: 'destructive',
+           });
        }
-       toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
         setLoading(false);
     }
@@ -393,5 +399,3 @@ export default function SignUpForm() {
     </Card>
   );
 }
-
-    
