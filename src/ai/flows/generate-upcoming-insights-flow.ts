@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview An AI agent for generating smart, prioritized insights about the upcoming week.
