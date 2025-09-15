@@ -140,14 +140,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
+  const faviconSvg = `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color: rgba(255,255,255,0.4)" />
+          <stop offset="100%" style="stop-color: rgba(200,200,255,0.1)" />
+        </linearGradient>
+        <linearGradient id="topBarGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color: rgba(255,160,122,0.8)" />
+          <stop offset="100%" style="stop-color: rgba(255,140,105,0.6)" />
+        </linearGradient>
+      </defs>
+      <rect x="10" y="10" width="80" height="80" rx="15" fill="rgba(40, 40, 60, 0.8)"/>
+      <rect x="10" y="10" width="80" height="80" rx="15" fill="url(#glassGradient)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1.5"/>
+      <path d="M10 25 C10 16.7157 16.7157 10 25 10 H 75 C 83.2843 10 90 16.7157 90 25 V 30 H 10 Z" fill="url(#topBarGradient)"/>
+      <circle cx="25" cy="20" r="3" fill="rgba(255,255,255,0.5)" />
+      <circle cx="75" cy="20" r="3" fill="rgba(255,255,255,0.5)" />
+      <text x="50" y="68" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">24</text>
+    </svg>
+  `;
+  const faviconDataUrl = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <title>Calendar.ai</title>
         <meta name="description" content="Your AI-powered calendar and planning assistant." />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="https://img.freepik.com/premium-vector/modern-letter-c-colorful-logo-design_67734-143.jpg" type="image/x-icon" />
-        <link rel="shortcut icon" href="https://img.freepik.com/premium-vector/modern-letter-c-colorful-logo-design_67734-143.jpg" type="image/x-icon" />
+        <link rel="icon" href={faviconDataUrl} />
+        <link rel="shortcut icon" href={faviconDataUrl} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
