@@ -1,4 +1,4 @@
-[![wakatime](https://wakatime.com/badge/user/d1ca8a6d-192f-4863-8ce8-0faf66511e19/project/9e9e6fd5-45b6-4927-b14e-b8f6f50df53d.svg)](https://wakatime.com/badge/user/d1ca8a6d-192f-4863-8ce8-0faf66511e19/project/9e9e6fd5-45b6-4927-b14e-b8f6f50df53d)
+[![wakatime](https://wakatime.com/badge/github/AshishYesale7/FutureSight.svg)](https://wakatime.com/badge/github/AshishYesale7/FutureSight)
 
 
 # FutureSight: Your AI-Powered Career Calendar
