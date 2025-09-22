@@ -116,8 +116,7 @@ The Calendar.ai application is conceptualized and will be built upon a modern, f
 
 6.  **Extensible and Modular Architecture:** Recognizing that every organization's toolchain is unique, the application will be designed with a modular plugin architecture. Each third-party integration (e.g., Jira, Slack, Notion) will be developed as a self-contained module with its own authentication flow, data-fetching logic, and UI components. A central service, managed in Firestore, will handle the state of installed and configured plugins for each user or organization. The main application UI will then dynamically render components and trigger workflows from these different extensions, ensuring a maintainable and future-proof design that can evolve to support a wide array of enterprise tools.
 
-
-**AI feedback loop on work files + emails** inside this Calendar AI ecosystem.  
+  
 ---
 
 ## AI Feedback on Files & Emails (Work-Attached Intelligence)
