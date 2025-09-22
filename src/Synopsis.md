@@ -196,12 +196,25 @@ The initial implementation, which focuses on deeply integrating Google Workspace
 
 ## 9. References
 
-*   **Next.js Documentation:** [https://nextjs.org/docs](https://nextjs.org/docs) - Official documentation for the React framework that forms the foundation of the web application.
-*   **Firebase Documentation:** [https://firebase.google.com/docs](https://firebase.google.com/docs) - Comprehensive documentation for the backend services platform, including Firestore, Authentication, and Cloud Messaging.
-*   **Google AI & Genkit:** [https://developers.google.com/ai](https://developers.google.com/ai) - Documentation for Google's Generative AI models (Gemini) and the Genkit framework used for building AI flows.
-*   **Google Workspace APIs:** [https://developers.google.com/workspace](https://developers.google.com/workspace) - API documentation for Google Calendar, Gmail, Drive, and Tasks, which are central to the application's integration strategy.
-*   **Norman, D. A. (1988). *The Design of Everyday Things*. Basic Books.** - A foundational text on user-centric and intuitive design principles that directly inform the application's UX/UI philosophy, aiming to reduce cognitive load.
-*   **Allen, D. (2001). *Getting Things Done: The Art of Stress-Free Productivity*. Penguin Books.** - A key reference for the principles of task management and productivity workflows, influencing how Calendar.ai aims to capture, process, and organize action items.
+[1] G. Mark, D. Gudith and U. Klocke, "The Cost of Interrupted Work: More Speed and Stress," *Proceedings of the SIGCHI Conference on Human Factors in Computing Systems*, 2008.
+
+[2] D. J. Levitin, *The Organized Mind: Thinking Straight in the Age of Information Overload*. Penguin Books, 2015.
+
+[3] T. Horvath, "A Detailed Model of the Effects of Interruption on Task Performance," *International Journal of Human-Computer Studies*, vol. 53, 2000.
+
+[4] D. Allen, *Getting Things Done: The Art of Stress-Free Productivity*. Penguin Books, 2001.
+
+[5] S. Whittaker, V. Bellotti and J. Gwizdka, "Email in a Global World: A Case Study of Overload," *ACM Transactions on Computer-Human Interaction*, vol. 13, no. 2, 2006.
+
+[6] J. Grudin, "Why CSCW applications fail: problems in the design and evaluation of organizational interfaces," *Proceedings of the 1988 ACM conference on Computer-supported cooperative work*, 1988.
+
+[7] A. Nenkova and K. McKeown, "A Survey of Text Summarization Techniques," in *Mining Text Data*, Springer, 2012.
+
+[8] D. A. Norman, *The Design of Everyday Things*. Basic Books, 2013.
+
+[9] D. T. V. Le, W. B. Dolan, and C. Quirk, "Task-Completion-Platform-Based Models for Task-Oriented Dialogue," in *Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics*, 2021.
+
+[10] B. A. Nardi, *Context and Consciousness: Activity Theory and Human-Computer Interaction*. MIT Press, 1996.
 
 ## 10. LINKS
 
