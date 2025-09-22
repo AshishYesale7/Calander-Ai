@@ -196,25 +196,25 @@ The initial implementation, which focuses on deeply integrating Google Workspace
 
 ## 9. References
 
-[1] G. Mark, D. Gudith and U. Klocke, "The Cost of Interrupted Work: More Speed and Stress," *Proceedings of the SIGCHI Conference on Human Factors in Computing Systems*, 2008.
+[1] G. Mark, D. Gudith and U. Klocke, "The Cost of Interrupted Work: More Speed and Stress," *Proceedings of the SIGCHI Conference on Human Factors in Computing Systems*, 2008, pp. 107-110, doi: 10.1145/1357054.1357072.
 
-[2] D. J. Levitin, *The Organized Mind: Thinking Straight in the Age of Information Overload*. Penguin Books, 2015.
+[2] D. J. Levitin, *The Organized Mind: Thinking Straight in the Age of Information Overload*. Penguin Books, 2015. ISBN: 978-0143127812.
 
-[3] T. Horvath, "A Detailed Model of the Effects of Interruption on Task Performance," *International Journal of Human-Computer Studies*, vol. 53, 2000.
+[3] T. Horvath, "A Detailed Model of the Effects of Interruption on Task Performance," *International Journal of Human-Computer Studies*, vol. 53, no. 3, 2000, pp. 219-244, doi: 10.1006/ijhc.2000.0392.
 
-[4] D. Allen, *Getting Things Done: The Art of Stress-Free Productivity*. Penguin Books, 2001.
+[4] D. Allen, *Getting Things Done: The Art of Stress-Free Productivity*. Penguin Books, 2001. ISBN: 978-0142000281.
 
-[5] S. Whittaker, V. Bellotti and J. Gwizdka, "Email in a Global World: A Case Study of Overload," *ACM Transactions on Computer-Human Interaction*, vol. 13, no. 2, 2006.
+[5] S. Whittaker and V. Bellotti, "Email in a Global World: A Case Study of Overload," *ACM Transactions on Computer-Human Interaction*, vol. 13, no. 2, 2006, pp. 234-273, doi: 10.1145/1165734.1165739.
 
-[6] J. Grudin, "Why CSCW applications fail: problems in the design and evaluation of organizational interfaces," *Proceedings of the 1988 ACM conference on Computer-supported cooperative work*, 1988.
+[6] J. Grudin, "Why CSCW applications fail: problems in the design and evaluation of organizational interfaces," *Proceedings of the 1988 ACM conference on Computer-supported cooperative work*, 1988, pp. 85-93, doi: 10.1145/62266.62273.
 
-[7] A. Nenkova and K. McKeown, "A Survey of Text Summarization Techniques," in *Mining Text Data*, Springer, 2012.
+[7] A. Nenkova and K. McKeown, "A Survey of Text Summarization Techniques," in *Mining Text Data*, C. C. Aggarwal and C. Zhai, Eds. Springer, 2012, pp. 43-76, doi: 10.1007/978-1-4614-3223-4_3.
 
-[8] D. A. Norman, *The Design of Everyday Things*. Basic Books, 2013.
+[8] D. A. Norman, *The Design of Everyday Things*. Basic Books, 2013. ISBN: 978-0465050659.
 
-[9] D. T. V. Le, W. B. Dolan, and C. Quirk, "Task-Completion-Platform-Based Models for Task-Oriented Dialogue," in *Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics*, 2021.
+[9] D. T. V. Le, W. B. Dolan, and C. Quirk, "Task-Completion-Platform-Based Models for Task-Oriented Dialogue," *Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies*, 2021, pp. 2977-2989, doi: 10.18653/v1/2021.naacl-main.233.
 
-[10] B. A. Nardi, *Context and Consciousness: Activity Theory and Human-Computer Interaction*. MIT Press, 1996.
+[10] B. A. Nardi, *Context and Consciousness: Activity Theory and Human-Computer Interaction*. MIT Press, 1996. ISBN: 978-0262140584.
 
 ## 10. LINKS
 
