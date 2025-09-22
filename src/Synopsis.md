@@ -220,3 +220,7 @@ The initial implementation, which focuses on deeply integrating Google Workspace
 
 *   **Live Prototype:** [http://futuresight-8ebba4468907.herokuapp.com](http://futuresight-8ebba4468907.herokuapp.com)
 *   **Project Repository:** [https://github.com/AshishYesale7/FutureSight](https://github.com/AshishYesale7/FutureSight)
+*   **Next.js Documentation:** [https://nextjs.org/docs](https://nextjs.org/docs) - Official documentation for the React framework that forms the foundation of the web application.
+*   **Firebase Documentation:** [https://firebase.google.com/docs](https://firebase.google.com/docs) - Comprehensive documentation for the backend services platform, including Firestore, Authentication, and Cloud Messaging.
+*   **Google AI & Genkit:** [https://developers.google.com/ai](https://developers.google.com/ai) - Documentation for Google's Generative AI models (Gemini) and the Genkit framework used for building AI flows.
+*   **Google Workspace APIs:** [https://developers.google.com/workspace](https://developers.google.com/workspace) - API documentation for Google Calendar, Gmail, Drive, and Tasks, which are central to the application's integration strategy.
