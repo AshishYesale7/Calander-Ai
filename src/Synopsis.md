@@ -61,51 +61,49 @@ The Calendar.ai application is conceptualized and will be built upon a modern, f
     
     We didn’t just stop at **Calendar AI**, we also explored how it could extend into a **full AI-powered work automation hub** by integrating with **Google Drive, Gmail, Slack, and other company tools**.  
     
-    2  **Extended AI Automation Beyond Calendar**
+2.  **Extended AI Automation Beyond Calendar**
     
-    * **Google Drive + Docs Integration**
+  * **Google Drive + Docs Integration**
     
     * AI auto-organizes files into projects/folders based on meetings or tasks.
     * Smart search and summarization of long docs (no need to open everything).
     * Auto-attach relevant files to calendar events (e.g., design doc for design review).
     * AI detects duplicates and merges/suggests clean file structures.
     
-    * **Gmail + Email Automation**
+  * **Gmail + Email Automation**
+  
+    * AI summarizes incoming emails and links them to related calendar events.
+    * Auto-drafts meeting invites based on email threads.
+    * Converts action items from emails into tasks/events in the calendar.
 
-* AI summarizes incoming emails and links them to related calendar events.
-* Auto-drafts meeting invites based on email threads.
-* Converts action items from emails into tasks/events in the calendar.
+  * **Slack / Teams Integration**
 
-* **Slack / Teams Integration**
+    * Meeting reminders + AI summaries directly in chat.
+    * Converts Slack threads into scheduled meetings or follow-up tasks.
+    * AI detects when async updates are enough → reduces meeting load.
 
-* Meeting reminders + AI summaries directly in chat.
-* Converts Slack threads into scheduled meetings or follow-up tasks.
-* AI detects when async updates are enough → reduces meeting load.
+  * **Project Management Tools (Jira, Notion, Trello, Asana)**
 
-* **Project Management Tools (Jira, Notion, Trello, Asana)**
+    * AI links tasks to scheduled work sessions in the calendar.
+    * Tracks deadlines and reschedules automatically if priorities shift.
+    * Generates sprint planning schedules automatically.
 
-* AI links tasks to scheduled work sessions in the calendar.
-* Tracks deadlines and reschedules automatically if priorities shift.
-* Generates sprint planning schedules automatically.
+  * **AI-Driven Personal Assistant Layer**
 
-* **AI-Driven Personal Assistant Layer**
-
-* Context-Aware Suggestions:** If you’re preparing for a client call, AI pulls the latest docs, emails, and notes into one view.
-* Proactive Alerts:** Warns you if you’re overbooked or if two meetings cover the same topic.
-* Decision Memory:** Logs decisions made across meetings, linking them to relevant files and tasks.
+    * Context-Aware Suggestions:** If you’re preparing for a client call, AI pulls the latest docs, emails, and notes into one view.
+    * Proactive Alerts:** Warns you if you’re overbooked or if two meetings cover the same topic.
+    * Decision Memory:** Logs decisions made across meetings, linking them to relevant files and tasks.
 
 
 
-3 **Impact for Tech Companies**
+ 3. **Impact for Tech Companies**
 
-* **No More Information Silos:** Calendar, docs, tasks, and chat all connected.
-* **Higher Efficiency:** Teams don’t waste time hunting for files or repeating discussions.
-* **Smart Knowledge Hub:** Every decision and document linked contextually to events.
-* **Scalable Automation:** Reduces overhead for growing companies handling massive workflows.
+    * **No More Information Silos:** Calendar, docs, tasks, and chat all connected.
+    * **Higher Efficiency:** Teams don’t waste time hunting for files or repeating discussions.
+    * **Smart Knowledge Hub:** Every decision and document linked contextually to events.
+    * **Scalable Automation:** Reduces overhead for growing companies handling massive workflows.
 
  
-
-
 4.  **Model Context Protocol (MCP) Implementation:** The application's core intelligence is achieved through the MCP. This is not a single component, but a strategic, multi-stage process that occurs before any call is made to a generative AI model. When a user requests an AI-driven task (e.g., "prepare me for my next meeting"), the system will execute a context-gathering sequence. This sequence involves:
     *   Fetching the calendar event's details: title, attendees, time, and any existing description.
     *   Querying the Gmail API for relevant email threads involving the meeting's attendees and keywords from the title.
