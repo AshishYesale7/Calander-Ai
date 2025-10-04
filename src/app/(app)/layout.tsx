@@ -9,7 +9,7 @@ import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-import { Command, PanelLeft } from 'lucide-react';
+import { Command } from 'lucide-react';
 import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
@@ -27,7 +27,7 @@ import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
-
+import { saveUserFCMToken } from '@/services/userService';
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -50,7 +50,7 @@ function AppContent({ children }: { children: ReactNode }) {
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
-      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard') {
+      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && pathname !== '/profile/[username]') {
         router.push('/subscription');
       }
     }
@@ -134,7 +134,7 @@ function AppContent({ children }: { children: ReactNode }) {
   
   const { isMobile, state: sidebarState } = useSidebar();
 
-  if (loading || !user || (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard')) {
+  if (loading || !user || (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile'))) {
     return (
       <div className="flex h-screen w-full items-center justify-center preloader-background">
         <Preloader />

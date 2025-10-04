@@ -269,33 +269,18 @@ export default function UserProfilePage() {
             const userDocRef = doc(db, 'users', profileUserId);
             const followerDocRef = doc(collection(db, 'users', profileUserId, 'followers'), currentUserId);
 
-            const unsubUser = onSnapshot(userDocRef, (docSnap) => {
+            const unsubUser = onSnapshot(userDocRef, async (docSnap) => {
                 const data = docSnap.data();
-                getDoc(followerDocRef).then(followerSnap => {
-                    callback({
-                        followersCount: data?.followersCount || 0,
-                        followingCount: data?.followingCount || 0,
-                        isCurrentUserFollowing: followerSnap.exists(),
-                    });
-                });
-            });
-            
-            const unsubFollower = onSnapshot(followerDocRef, () => {
-                getDoc(userDocRef).then(docSnap => {
-                    const data = docSnap.data();
-                    getDoc(followerDocRef).then(followerSnap => {
-                        callback({
-                           followersCount: data?.followersCount || 0,
-                           followingCount: data?.followingCount || 0,
-                           isCurrentUserFollowing: followerSnap.exists(),
-                        });
-                    });
+                const followerSnap = await getDoc(followerDocRef);
+                callback({
+                    followersCount: data?.followersCount || 0,
+                    followingCount: data?.followingCount || 0,
+                    isCurrentUserFollowing: followerSnap.exists(),
                 });
             });
 
             return () => {
                 unsubUser();
-                unsubFollower();
             };
         };
 
@@ -636,5 +621,3 @@ export default function UserProfilePage() {
         </div>
     )
 }
-
-    

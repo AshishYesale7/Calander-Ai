@@ -109,5 +109,3 @@ export default function ChatPanel({ user, onClose }: ChatPanelProps) {
     </div>
   );
 }
-
-    
