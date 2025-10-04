@@ -6,7 +6,7 @@ import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getMessages } from '@/services/chatService';
-import { sendMessage } from '@/actions/chatActions'; // UPDATED IMPORT
+import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputMessage.trim() || !currentUser) return;
+    if (!inputMessage.trim() || !currentUser || !otherUser) return;
     
     const messageToSend = inputMessage;
     setInputMessage(''); // Optimistically clear input
