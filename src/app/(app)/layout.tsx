@@ -154,7 +154,11 @@ function AppContent({ children }: { children: ReactNode }) {
         { hue1: 320, hue2: 280 }, // Pink / Purple
         { hue1: 280, hue2: 240 }, // Purple / Blue
         { hue1: 240, hue2: 180 }, // Blue / Teal
-        { hue1: 180, hue2: 320 }, // Teal / Pink
+        { hue1: 180, hue2: 140 }, // Teal / Green
+        { hue1: 140, hue2: 60 },  // Green / Yellow
+        { hue1: 60, hue2: 30 },   // Yellow / Orange
+        { hue1: 30, hue2: 0 },    // Orange / Red
+        { hue1: 0, hue2: 320 },   // Red / Pink
     ];
     let currentIndex = 0;
 
