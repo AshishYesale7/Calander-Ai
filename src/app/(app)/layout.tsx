@@ -165,7 +165,7 @@ function AppContent({ children }: { children: ReactNode }) {
         root.style.setProperty('--hue2', String(nextColor.hue2));
 
         currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 1000); // Change every second
+    }, 3000); // Change every 3 seconds
 
     return () => clearInterval(colorInterval);
   }, []);
