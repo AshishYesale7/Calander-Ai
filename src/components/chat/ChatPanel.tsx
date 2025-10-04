@@ -58,8 +58,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   }, [messages]);
 
   const handleSend = async () => {
-    // Double-check currentUser and otherUser exist before sending.
-    if (!inputMessage.trim() || !currentUser || !otherUser) return;
+    // Definitive guard clause to prevent sending without both user IDs.
+    if (!currentUser || !otherUser || !inputMessage.trim()) {
+      return;
+    }
     
     const messageToSend = inputMessage;
     setInputMessage(''); // Optimistically clear input
@@ -141,10 +143,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            // Add a final, definitive check here before calling handleSend
-            if (currentUser && otherUser) {
-              handleSend();
-            }
+            handleSend();
           }}
           className="flex items-center gap-2"
         >
