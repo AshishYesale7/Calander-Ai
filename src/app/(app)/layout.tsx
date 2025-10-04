@@ -43,7 +43,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   
   // Chat state is now managed by the context
-  const { chattingWith, setChattingWith } = useChat();
+  const { chattingWith, setChattingWith, isChatSidebarOpen } = useChat();
 
   // Lifted state for modals
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
@@ -163,9 +163,9 @@ function AppContent({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
         <div className={cn(
-          "flex flex-1 flex-col transition-[padding] duration-300 ease-in-out",
+          "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          "lg:pr-20" // Add padding to make space for the new right sidebar
+          isChatSidebarOpen && 'lg:pr-[25rem]' // Adjust padding for the new chat sidebar width
         )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">

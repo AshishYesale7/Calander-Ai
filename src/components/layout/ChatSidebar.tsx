@@ -1,77 +1,51 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users } from "lucide-react";
+import { Users, Search, MessageSquare, PanelRightOpen, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { useChat } from '@/context/ChatContext';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
+import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
+import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
+import type { ChatMessage } from '@/types';
 
-// Define a more detailed type for a followed user with presence
-type FollowedUserWithPresence = {
-    id: string;
-    displayName: string;
-    photoURL?: string | null;
-    username: string;
+
+type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
-    notification?: boolean; // You can use this for unread messages later
+    notification?: boolean; 
+    lastMessage?: string;
+    lastMessageTimestamp?: Date | null;
 }
 
-const ChatAvatar = ({ user, onClick }: { user: FollowedUserWithPresence; onClick: () => void }) => {
-    const statusColor = {
-        online: 'bg-green-500',
-        offline: 'bg-gray-500',
-        'in-game': 'bg-yellow-500',
-    };
-
-    return (
-        <TooltipProvider delayDuration={0}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button onClick={onClick} className="relative group">
-                        <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
-                            <AvatarImage src={user.photoURL || ''} alt={user.displayName} />
-                            <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${statusColor[user.status || 'offline']}`}></div>
-                        {user.notification && (
-                             <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
-                        )}
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="frosted-glass">
-                    <p className="font-semibold">{user.displayName}</p>
-                    <p className="capitalize text-muted-foreground">{user.status?.replace('-', ' ') || 'Offline'}</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    )
+const getRelativeTime = (timestamp?: Date | null) => {
+    if (!timestamp) return '';
+    if (isToday(timestamp)) return format(timestamp, 'h:mm a');
+    if (isYesterday(timestamp)) return 'Yesterday';
+    return format(timestamp, 'MMM d');
 }
-
-const GroupIcon = ({ icon: Icon, name }: { icon: React.ElementType, name: string }) => (
-    <TooltipProvider delayDuration={0}>
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="h-10 w-10 flex items-center justify-center">
-                    <Icon className="h-6 w-6 text-muted-foreground/80" />
-                </div>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="frosted-glass">
-                <p>{name}</p>
-            </TooltipContent>
-        </Tooltip>
-    </TooltipProvider>
-)
 
 export function ChatSidebar() {
     const { user } = useAuth();
-    const { setChattingWith } = useChat();
+    const { setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('All');
+
+    const filteredFollowing = useMemo(() => {
+        return following.filter(friend => 
+            friend.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [following, searchTerm]);
 
     useEffect(() => {
         if (!user || !db) {
@@ -83,56 +57,148 @@ export function ChatSidebar() {
         const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const userDocPromises = snapshot.docs.map(docSnapshot => {
+            const userPromises = snapshot.docs.map(async (docSnapshot) => {
                 const targetUserId = docSnapshot.id;
-                return getDoc(doc(db, 'users', targetUserId));
+                const userDocSnap = await getDoc(doc(db, 'users', targetUserId));
+                if (!userDocSnap.exists()) return null;
+
+                const data = userDocSnap.data();
+
+                // Fetch last message
+                const chatRoomId = [user.uid, targetUserId].sort().join('_');
+                const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
+                const lastMessageQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(1));
+                const lastMessageSnapshot = await getDocs(lastMessageQuery);
+                const lastMessageDoc = lastMessageSnapshot.docs[0];
+
+                return {
+                    id: userDocSnap.id,
+                    uid: userDocSnap.id,
+                    displayName: data.displayName || 'Anonymous User',
+                    photoURL: data.photoURL || null,
+                    username: data.username || `user_${userDocSnap.id.substring(0,5)}`,
+                    status: data.status || 'offline',
+                    bio: data.bio || '',
+                    socials: data.socials || null,
+                    coverPhotoURL: data.coverPhotoURL || null,
+                    followersCount: data.followersCount || 0,
+                    followingCount: data.followingCount || 0,
+                    statusEmoji: data.statusEmoji || null,
+                    countryCode: data.countryCode || null,
+                    lastMessage: lastMessageDoc ? lastMessageDoc.data().text : 'No messages yet',
+                    lastMessageTimestamp: lastMessageDoc ? (lastMessageDoc.data().timestamp as Timestamp).toDate() : null,
+                } as FollowedUserWithPresence;
             });
 
-            const userDocs = await Promise.all(userDocPromises);
-            
-            const followedUsers: FollowedUserWithPresence[] = userDocs
-                .filter(docSnap => docSnap.exists())
-                .map(docSnap => {
-                    const data = docSnap.data();
-                    return {
-                        id: docSnap.id,
-                        uid: docSnap.id, // Ensure uid is present for the PublicUserProfile type
-                        displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL || null,
-                        username: data.username || `user_${docSnap.id.substring(0,5)}`,
-                        status: data.status || 'offline',
-                        bio: data.bio || '',
-                        socials: data.socials || null,
-                        coverPhotoURL: data.coverPhotoURL || null,
-                        followersCount: data.followersCount || 0,
-                        followingCount: data.followingCount || 0,
-                        statusEmoji: data.statusEmoji || null,
-                        countryCode: data.countryCode || null,
-                    };
-                });
-            
+            const followedUsers = (await Promise.all(userPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
             setFollowing(followedUsers);
-        }, (error) => {
-            console.error("Error fetching real-time following list:", error);
         });
 
         return () => unsubscribe();
     }, [user]);
 
+    const renderChatListItem = (friend: FollowedUserWithPresence) => (
+         <button 
+            key={friend.id}
+            className="w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted"
+            onClick={() => setChattingWith(friend)}
+        >
+            <Avatar className="h-12 w-12">
+                <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
+                    <p className="text-xs text-muted-foreground">{getRelativeTime(friend.lastMessageTimestamp)}</p>
+                </div>
+                <div className="flex justify-between items-start">
+                    <p className="text-xs text-muted-foreground truncate">{friend.lastMessage}</p>
+                    {friend.notification && <Badge className="h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-accent">3</Badge>}
+                </div>
+            </div>
+        </button>
+    )
+
+    if (isChatSidebarOpen) {
+        return (
+             <aside className={cn(
+                "fixed top-0 right-0 h-screen z-40 transition-all duration-300 ease-in-out hidden lg:flex flex-col",
+                isChatSidebarOpen ? 'w-[25rem]' : 'w-20'
+            )}>
+                 <div className="flex-shrink-0 p-4 border-b border-border/30 h-16 flex justify-between items-center bg-card/60 backdrop-blur-xl">
+                    <h2 className="font-bold text-xl text-primary">Chats</h2>
+                    <div>
+                        <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}><X className="h-5 w-5"/></Button>
+                    </div>
+                </div>
+                <div className="p-4 border-b border-border/30 bg-card/60 backdrop-blur-xl">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search or start a new chat" 
+                            className="pl-10" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                        {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
+                            <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)}>
+                                {filter}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
+                <ScrollArea className="flex-1 bg-card/30 backdrop-blur-xl">
+                    <div className="p-2 space-y-1">
+                        {filteredFollowing.map(renderChatListItem)}
+                    </div>
+                </ScrollArea>
+             </aside>
+        );
+    }
+
     return (
         <aside className="fixed top-0 right-0 h-screen w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-40 hidden lg:flex flex-col items-center py-4 space-y-4">
-            {/* Following Section */}
+            <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
+                            <PanelRightOpen className="h-6 w-6" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="frosted-glass">
+                        <p>Open Chats</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+
+            <Separator className="w-10/12 my-2 bg-border/50" />
+
             <div className="flex flex-col items-center space-y-4">
-                <GroupIcon icon={Users} name="Following" />
-                {following.map(friend => (
-                   <ChatAvatar 
-                        key={friend.id} 
-                        user={friend} 
-                        onClick={() => setChattingWith(friend as PublicUserProfile)} 
-                    />
+                {following.slice(0, 7).map(friend => (
+                   <TooltipProvider key={friend.id} delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => setChattingWith(friend)} className="relative group">
+                                    <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
+                                        <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                                        <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    {friend.notification && (
+                                        <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
+                                    )}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="frosted-glass">
+                                <p className="font-semibold">{friend.displayName}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 ))}
             </div>
-            {following.length > 0 && <Separator className="w-10/12 my-4 bg-border/50" />}
         </aside>
     )
 }
