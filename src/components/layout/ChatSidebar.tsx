@@ -16,18 +16,22 @@ import { Input } from '../ui/input';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
+
 
 type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
     notification?: boolean; 
 }
 
-export function ChatSidebar() {
+const ChatListContent = () => {
     const { user } = useAuth();
     const { setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
+    const isMobile = useIsMobile();
 
     const filteredFollowing = useMemo(() => {
         return following.filter(friend => 
@@ -65,12 +69,19 @@ export function ChatSidebar() {
 
         return () => unsubscribe();
     }, [user]);
+    
+    const handleUserClick = (friend: FollowedUserWithPresence) => {
+        setChattingWith(friend);
+        if (isMobile) {
+            setIsChatSidebarOpen(false); // Close sheet on selection in mobile
+        }
+    };
 
     const renderChatListItem = (friend: FollowedUserWithPresence) => (
          <button 
             key={friend.id}
             className="w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted"
-            onClick={() => setChattingWith(friend)}
+            onClick={() => handleUserClick(friend)}
         >
             <Avatar className="h-12 w-12">
                 <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
@@ -89,6 +100,87 @@ export function ChatSidebar() {
         </button>
     )
 
+    return (
+        <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl">
+             <div className="p-4 border-b border-border/30">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search or start a new chat" 
+                        className="pl-10" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
+                        <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)} className="shrink-0">
+                            {filter}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
+            <ScrollArea className="flex-1">
+                <div className="p-2 space-y-1">
+                    {filteredFollowing.map(renderChatListItem)}
+                </div>
+            </ScrollArea>
+        </div>
+    );
+};
+
+
+export function ChatSidebar() {
+    const { user } = useAuth();
+    const { setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+    const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+    const isMobile = useIsMobile();
+
+    useEffect(() => {
+        if (!user || !db) return;
+
+        const followingCollectionRef = collection(db, 'users', user.uid, 'following');
+        const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
+
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
+                const userId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', userId));
+                if (userDocSnap.exists()) {
+                    const data = userDocSnap.data();
+                    return {
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: data.displayName || 'Anonymous User',
+                        photoURL: data.photoURL || null,
+                        username: data.username || `user_${userId.substring(0,5)}`,
+                        status: 'online', 
+                        notification: Math.random() > 0.8,
+                    } as FollowedUserWithPresence;
+                }
+                return null;
+            });
+            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
+            setFollowing(followedUsers);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    if (isMobile) {
+        return (
+            <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
+                <SheetContent side="right" className="p-0 border-l-0 w-full max-w-sm">
+                    <SheetHeader className="p-4 border-b border-border/30">
+                       <SheetTitle className="text-primary font-bold text-xl">Chats</SheetTitle>
+                    </SheetHeader>
+                    <ChatListContent />
+                </SheetContent>
+            </Sheet>
+        );
+    }
+    
     if (isChatSidebarOpen) {
         return (
              <aside className={cn(
@@ -101,30 +193,7 @@ export function ChatSidebar() {
                         <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}><X className="h-5 w-5"/></Button>
                     </div>
                 </div>
-                <div className="p-4 border-b border-border/30 bg-card/60 backdrop-blur-xl">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search or start a new chat" 
-                            className="pl-10" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="mt-4 flex gap-2">
-                        {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
-                            <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)}>
-                                {filter}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-
-                <ScrollArea className="flex-1 bg-card/30 backdrop-blur-xl">
-                    <div className="p-2 space-y-1">
-                        {filteredFollowing.map(renderChatListItem)}
-                    </div>
-                </ScrollArea>
+                <ChatListContent />
              </aside>
         );
     }
