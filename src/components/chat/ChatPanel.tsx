@@ -2,9 +2,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { PublicUserProfile, ChatMessage } from '@/services/userService';
+import type { PublicUserProfile } from '@/services/userService';
+import type { ChatMessage } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { getMessages, sendMessage } from '@/services/chatService';
+import { getMessages } from '@/services/chatService';
+import { sendMessage } from '@/actions/chatActions'; // UPDATED IMPORT
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

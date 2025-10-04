@@ -1,9 +1,7 @@
-'use server';
 
 import { db } from '@/lib/firebase';
 import {
   collection,
-  addDoc,
   query,
   orderBy,
   onSnapshot,
@@ -23,27 +21,8 @@ export const getChatRoomId = (userId1: string, userId2: string): string => {
 };
 
 /**
- * Sends a message from one user to another.
- * @param senderId The ID of the user sending the message.
- * @param receiverId The ID of the user receiving the message.
- * @param text The content of the message.
- */
-export const sendMessage = async (senderId: string, receiverId: string, text: string): Promise<void> => {
-  if (!db) throw new Error("Firestore is not initialized.");
-  if (!text.trim()) return;
-
-  const chatRoomId = getChatRoomId(senderId, receiverId);
-  const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
-
-  await addDoc(messagesCollection, {
-    text: text,
-    senderId: senderId,
-    timestamp: Timestamp.now(),
-  });
-};
-
-/**
  * Listens for real-time messages in a chat room.
+ * This function is intended to be called from client-side components.
  * @param currentUserId The ID of the current user.
  * @param otherUserId The ID of the other user in the chat.
  * @param callback A function to be called with the array of messages whenever they update.
@@ -71,6 +50,9 @@ export const getMessages = (
       timestamp: (doc.data().timestamp as Timestamp).toDate(),
     }));
     callback(messages);
+  }, (error) => {
+      console.error("Error listening to chat messages:", error);
+      // You might want to handle this error in the UI
   });
 
   return unsubscribe;
