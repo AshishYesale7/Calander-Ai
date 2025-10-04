@@ -1,5 +1,6 @@
 
 'use client';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
