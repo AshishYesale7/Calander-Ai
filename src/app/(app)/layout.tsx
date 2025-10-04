@@ -4,13 +4,13 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-import { Command } from 'lucide-react';
+import { Command, MessageSquare } from 'lucide-react';
 import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
@@ -32,6 +32,8 @@ import { saveUserFCMToken } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { ChatProvider, useChat } from '@/context/ChatContext';
+import { motion, AnimatePresence } from 'framer-motion';
+
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -39,19 +41,22 @@ function AppContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   
-  // Chat state is now managed by the context
-  const { chattingWith, setChattingWith, isChatSidebarOpen } = useChat();
+  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
 
-  // Lifted state for modals
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     if (!loading) {
@@ -92,7 +97,6 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   };
 
-  // Logic to show modals once per session, ONLY on the dashboard
   useEffect(() => {
     if (!loading && user && isSubscribed && pathname === '/dashboard') {
       const alreadyShown = sessionStorage.getItem('planModalShown');
@@ -102,13 +106,11 @@ function AppContent({ children }: { children: ReactNode }) {
       }
       
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-          // Show our custom modal instead of directly calling the browser prompt
           setTimeout(() => setIsNotificationModalOpen(true), 3000);
       }
     }
   }, [user, loading, isSubscribed, pathname, toast]);
 
-  // Keyboard shortcut for command palette
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -120,13 +122,30 @@ function AppContent({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Fullscreen effect
   useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFullScreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  }, []);
+  
+  useEffect(() => {
+    const mainEl = mainScrollRef.current;
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      const currentScrollY = mainEl.scrollTop;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsBottomNavVisible(false); // Scrolling down
+      } else {
+        setIsBottomNavVisible(true); // Scrolling up
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    mainEl.addEventListener('scroll', handleScroll);
+    return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleToggleFullScreen = () => {
@@ -165,10 +184,10 @@ function AppContent({ children }: { children: ReactNode }) {
         <div className={cn(
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          isChatSidebarOpen && 'lg:pr-[25rem]' // Adjust padding for the new chat sidebar width
+          isChatSidebarOpen && 'md:pr-[25rem]'
         )}>
           <Header {...modalProps} />
-          <main className="flex-1 overflow-auto p-6 pb-24">
+          <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
             {children}
           </main>
         </div>
@@ -183,20 +202,39 @@ function AppContent({ children }: { children: ReactNode }) {
         onOpenChange={setIsCommandPaletteOpen}
         {...modalProps}
       />
-      {/* Mobile Spotlight Trigger (Dynamic Island) */}
-      <button
-        onClick={() => setIsCommandPaletteOpen(true)}
-        className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border border-border/30 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md transition-all hover:scale-105 active:scale-95 md:hidden"
-        aria-label="Open command palette"
-      >
-        <Command className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Search...</span>
-        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </button>
+      
+      <AnimatePresence>
+        {isBottomNavVisible && isMobile && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: "0%" }}
+            exit={{ y: "100%" }}
+            transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+            className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
+          >
+            <div className="flex items-center justify-around rounded-full border border-border/30 bg-background/50 p-2 shadow-lg backdrop-blur-md">
+              <button
+                onClick={() => setIsCommandPaletteOpen(true)}
+                className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20"
+                aria-label="Open command palette"
+              >
+                <Command className="h-5 w-5" />
+                <span className="text-xs">Search</span>
+              </button>
+              <button
+                onClick={() => setIsChatSidebarOpen(true)}
+                className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20"
+                aria-label="Open chat"
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span className="text-xs">Chats</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Render Modals Here */}
+
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
       <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
@@ -211,7 +249,6 @@ function AppContent({ children }: { children: ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  // We wrap the content in the providers so they can be used within AppContent
   return (
     <SidebarProvider>
       <PluginProvider>

@@ -1,37 +1,25 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Users, Search, MessageSquare, PanelRightOpen, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
-import { onSnapshot, collection, query, orderBy, doc, getDoc, getDocs, limit, type Timestamp } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { useChat } from '@/context/ChatContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
-import { Badge } from '../ui/badge';
-import type { ChatMessage } from '@/types';
-
 
 type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
     notification?: boolean; 
-    lastMessage?: string;
-    lastMessageTimestamp?: Date | null;
-}
-
-const getRelativeTime = (timestamp?: Date | null) => {
-    if (!timestamp) return '';
-    if (isToday(timestamp)) return format(timestamp, 'h:mm a');
-    if (isYesterday(timestamp)) return 'Yesterday';
-    return format(timestamp, 'MMM d');
 }
 
 export function ChatSidebar() {
@@ -48,49 +36,30 @@ export function ChatSidebar() {
     }, [following, searchTerm]);
 
     useEffect(() => {
-        if (!user || !db) {
-            setFollowing([]);
-            return;
-        };
+        if (!user || !db) return;
 
         const followingCollectionRef = collection(db, 'users', user.uid, 'following');
         const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const userPromises = snapshot.docs.map(async (docSnapshot) => {
-                const targetUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', targetUserId));
-                if (!userDocSnap.exists()) return null;
-
-                const data = userDocSnap.data();
-
-                // Fetch last message
-                const chatRoomId = [user.uid, targetUserId].sort().join('_');
-                const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
-                const lastMessageQuery = query(messagesCollection, orderBy('timestamp', 'desc'), limit(1));
-                const lastMessageSnapshot = await getDocs(lastMessageQuery);
-                const lastMessageDoc = lastMessageSnapshot.docs[0];
-
-                return {
-                    id: userDocSnap.id,
-                    uid: userDocSnap.id,
-                    displayName: data.displayName || 'Anonymous User',
-                    photoURL: data.photoURL || null,
-                    username: data.username || `user_${userDocSnap.id.substring(0,5)}`,
-                    status: data.status || 'offline',
-                    bio: data.bio || '',
-                    socials: data.socials || null,
-                    coverPhotoURL: data.coverPhotoURL || null,
-                    followersCount: data.followersCount || 0,
-                    followingCount: data.followingCount || 0,
-                    statusEmoji: data.statusEmoji || null,
-                    countryCode: data.countryCode || null,
-                    lastMessage: lastMessageDoc ? lastMessageDoc.data().text : 'No messages yet',
-                    lastMessageTimestamp: lastMessageDoc ? (lastMessageDoc.data().timestamp as Timestamp).toDate() : null,
-                } as FollowedUserWithPresence;
+            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
+                const userId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', userId));
+                if (userDocSnap.exists()) {
+                    const data = userDocSnap.data();
+                    return {
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: data.displayName || 'Anonymous User',
+                        photoURL: data.photoURL || null,
+                        username: data.username || `user_${userId.substring(0,5)}`,
+                        status: 'online', // This would come from presence system
+                        notification: Math.random() > 0.8, // Mock notifications
+                    } as FollowedUserWithPresence;
+                }
+                return null;
             });
-
-            const followedUsers = (await Promise.all(userPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
+            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
             setFollowing(followedUsers);
         });
 
@@ -110,11 +79,11 @@ export function ChatSidebar() {
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
-                    <p className="text-xs text-muted-foreground">{getRelativeTime(friend.lastMessageTimestamp)}</p>
+                    <p className="text-xs text-muted-foreground">2m</p>
                 </div>
                 <div className="flex justify-between items-start">
-                    <p className="text-xs text-muted-foreground truncate">{friend.lastMessage}</p>
-                    {friend.notification && <Badge className="h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-accent">3</Badge>}
+                    <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
+                    {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
                 </div>
             </div>
         </button>
@@ -123,7 +92,7 @@ export function ChatSidebar() {
     if (isChatSidebarOpen) {
         return (
              <aside className={cn(
-                "fixed top-0 right-0 h-screen z-40 transition-all duration-300 ease-in-out hidden lg:flex flex-col",
+                "fixed top-0 right-0 h-screen z-40 transition-all duration-300 ease-in-out hidden md:flex flex-col",
                 isChatSidebarOpen ? 'w-[25rem]' : 'w-20'
             )}>
                  <div className="flex-shrink-0 p-4 border-b border-border/30 h-16 flex justify-between items-center bg-card/60 backdrop-blur-xl">
@@ -161,7 +130,7 @@ export function ChatSidebar() {
     }
 
     return (
-        <aside className="fixed top-0 right-0 h-screen w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-40 hidden lg:flex flex-col items-center py-4 space-y-4">
+        <aside className="fixed top-0 right-0 h-screen w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-40 hidden md:flex flex-col items-center py-4 space-y-4">
             <TooltipProvider delayDuration={0}>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -198,6 +167,20 @@ export function ChatSidebar() {
                         </Tooltip>
                     </TooltipProvider>
                 ))}
+            </div>
+             <div className="mt-auto">
+                 <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
+                                <MessageSquare className="h-6 w-6" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="frosted-glass">
+                            <p>All Chats</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
         </aside>
     )
