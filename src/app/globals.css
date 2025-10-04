@@ -460,8 +460,8 @@ body {
 
 /* NEW: Styles for Glowing Bottom Nav Bar */
 .bottom-nav-glow {
-  --hue1: 255;
-  --hue2: 222;
+  --hue1: var(--hue1);
+  --hue2: var(--hue2);
   --radius: 22px;
   --border: 1px;
   --border-color: hsl(var(--hue2), 12%, 20%);
@@ -476,7 +476,7 @@ body {
   padding: 0.5rem; /* Adjusted padding */
   background: linear-gradient(235deg, hsl(var(--hue1) 50% 10% / 0.8), hsl(var(--hue1) 50% 10% / 0) 33%), 
               linear-gradient(45deg, hsl(var(--hue2) 50% 10% / 0.8), hsl(var(--hue2) 50% 10% / 0) 33%), 
-              linear-gradient(hsl(220deg 25% 4.8% / 0.8)); /* Increased opacity */
+              hsl(220deg 25% 4.8% / 0.8);
   backdrop-filter: blur(16px); /* Increased blur */
   box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px;
 }
