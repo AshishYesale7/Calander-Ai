@@ -112,11 +112,6 @@ export function ChatSidebar() {
         return () => unsubscribe();
     }, [user]);
 
-    const handleAvatarClick = (userToChat: PublicUserProfile) => {
-        setChattingWith(userToChat);
-    };
-
-
     return (
         <aside className="fixed top-0 right-0 h-screen w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-40 hidden lg:flex flex-col items-center py-4 space-y-4">
             {/* Following Section */}
@@ -126,7 +121,7 @@ export function ChatSidebar() {
                    <ChatAvatar 
                         key={friend.id} 
                         user={friend} 
-                        onClick={() => handleAvatarClick(friend as PublicUserProfile)} 
+                        onClick={() => setChattingWith(friend as PublicUserProfile)} 
                     />
                 ))}
             </div>
