@@ -43,11 +43,11 @@ function AppContent({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   
+  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   
-  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -184,7 +184,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <div className={cn(
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          !isMobile && 'md:pr-20' // Space for the new compact chat rail
+          isChatSidebarOpen ? 'md:pr-[25rem]' : 'md:pr-20'
         )}>
           <Header {...modalProps} />
           <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
@@ -212,7 +212,7 @@ function AppContent({ children }: { children: ReactNode }) {
             transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
             className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
           >
-            <div className="flex items-center justify-around rounded-full border border-border/30 bg-background/50 p-2 shadow-lg backdrop-blur-md">
+            <div className="flex items-center justify-around rounded-full border border-white/20 bg-black/70 p-2 shadow-lg backdrop-blur-lg">
               <button
                 onClick={() => setIsCommandPaletteOpen(true)}
                 className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20"
