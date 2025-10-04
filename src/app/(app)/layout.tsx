@@ -42,6 +42,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
 
@@ -158,14 +159,14 @@ function AppContent({ children }: { children: ReactNode }) {
     let currentIndex = 0;
 
     const colorInterval = setInterval(() => {
-        const root = document.documentElement;
-        const nextColor = colorPairs[currentIndex];
-        
-        root.style.setProperty('--hue1', String(nextColor.hue1));
-        root.style.setProperty('--hue2', String(nextColor.hue2));
-
-        currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 3000); // Change every 3 seconds
+        const navElement = bottomNavRef.current;
+        if (navElement) {
+            const nextColor = colorPairs[currentIndex];
+            navElement.style.setProperty('--hue1', String(nextColor.hue1));
+            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+            currentIndex = (currentIndex + 1) % colorPairs.length;
+        }
+    }, 3000); 
 
     return () => clearInterval(colorInterval);
   }, []);
@@ -234,7 +235,7 @@ function AppContent({ children }: { children: ReactNode }) {
             transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
             className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
           >
-            <div className="bottom-nav-glow open">
+            <div ref={bottomNavRef} className="bottom-nav-glow open">
                 <span className="shine shine-top"></span>
                 <span className="shine shine-bottom"></span>
                 <span className="glow glow-top"></span>
