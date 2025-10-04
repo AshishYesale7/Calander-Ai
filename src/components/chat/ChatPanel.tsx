@@ -59,7 +59,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
 
   const handleSend = async () => {
     // Definitive guard clause to prevent sending without both user IDs.
-    if (!currentUser || !otherUser || !inputMessage.trim()) {
+    if (!currentUser?.uid || !otherUser?.uid || !inputMessage.trim()) {
       return;
     }
     
