@@ -147,20 +147,21 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
           }}
           className="flex items-center gap-2"
         >
-          <Button variant="ghost" size="icon" type="button">
-            <Paperclip className="h-5 w-5 text-muted-foreground" />
-          </Button>
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 bg-background/50"
-            autoComplete="off"
-            disabled={!currentUser}
-          />
-          <Button type="submit" size="icon" disabled={!inputMessage.trim() || !currentUser}>
-            <Send className="h-5 w-5" />
-          </Button>
+          <fieldset disabled={!currentUser || !otherUser} className="w-full flex items-center gap-2">
+            <Button variant="ghost" size="icon" type="button">
+              <Paperclip className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Input
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 bg-background/50"
+              autoComplete="off"
+            />
+            <Button type="submit" size="icon" disabled={!inputMessage.trim()}>
+              <Send className="h-5 w-5" />
+            </Button>
+          </fieldset>
         </form>
       </footer>
     </div>
