@@ -31,6 +31,7 @@ import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { saveUserFCMToken } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
+import { ChatProvider, useChat } from '@/context/ChatContext';
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -40,6 +41,9 @@ function AppContent({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  
+  // Chat state is now managed by the context
+  const { chattingWith, setChattingWith } = useChat();
 
   // Lifted state for modals
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
@@ -48,7 +52,6 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -166,10 +169,10 @@ function AppContent({ children }: { children: ReactNode }) {
         )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">
-            {React.cloneElement(children as React.ReactElement, { setChattingWith })}
+            {children}
           </main>
         </div>
-        <ChatSidebar setChattingWith={setChattingWith} />
+        <ChatSidebar />
       </div>
       {chattingWith && (
         <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
@@ -213,7 +216,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <PluginProvider>
         <StreakProvider>
-          <AppContent>{children}</AppContent>
+          <ChatProvider>
+            <AppContent>{children}</AppContent>
+          </ChatProvider>
         </StreakProvider>
       </PluginProvider>
     </SidebarProvider>

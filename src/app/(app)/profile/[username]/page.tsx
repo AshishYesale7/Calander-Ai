@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTheme } from '@/hooks/use-theme';
+import { useChat } from '@/context/ChatContext';
 
 // Define a type for the editable fields to manage them in a single state
 type EditableProfileState = {
@@ -183,14 +184,10 @@ const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerT
 };
 
 
-interface UserProfilePageProps {
-  setChattingWith: (user: PublicUserProfile | null) => void;
-}
-
-
-export default function UserProfilePage({ setChattingWith }: UserProfilePageProps) {
+export default function UserProfilePage() {
     const { user: currentUser, refreshUser } = useAuth();
     const { setBackgroundImage } = useTheme();
+    const { setChattingWith } = useChat();
     const params = useParams();
     const { toast } = useToast();
     const username = Array.isArray(params.username) ? params.username[0] : params.username as string;

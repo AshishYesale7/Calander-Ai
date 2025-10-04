@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
+import { useChat } from '@/context/ChatContext';
 
 // Define a more detailed type for a followed user with presence
 type FollowedUserWithPresence = {
@@ -67,12 +68,9 @@ const GroupIcon = ({ icon: Icon, name }: { icon: React.ElementType, name: string
     </TooltipProvider>
 )
 
-interface ChatSidebarProps {
-  setChattingWith: (user: PublicUserProfile | null) => void;
-}
-
-export function ChatSidebar({ setChattingWith }: ChatSidebarProps) {
+export function ChatSidebar() {
     const { user } = useAuth();
+    const { setChattingWith } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
 
     useEffect(() => {
