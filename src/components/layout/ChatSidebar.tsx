@@ -83,8 +83,8 @@ export function ChatSidebar() {
         const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const userDocPromises = snapshot.docs.map(doc => {
-                const targetUserId = doc.id;
+            const userDocPromises = snapshot.docs.map(docSnapshot => {
+                const targetUserId = docSnapshot.id;
                 const userDocRef = collection(db, 'users');
                 return getDoc(doc(userDocRef, targetUserId));
             });
