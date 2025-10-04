@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTheme } from '@/hooks/use-theme';
+import ChatPanel from '@/components/chat/ChatPanel';
 
 // Define a type for the editable fields to manage them in a single state
 type EditableProfileState = {
@@ -207,6 +208,8 @@ export default function UserProfilePage() {
     const [followingCount, setFollowingCount] = useState(0);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
+    const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
+
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
     
@@ -458,7 +461,7 @@ export default function UserProfilePage() {
     }
     
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="relative max-w-4xl mx-auto">
             <Card className="frosted-glass p-0">
                  <ProfileHeader 
                     profile={{ ...profile, photoURL: isEditing ? editableState.photoURL : profile.photoURL, coverPhotoURL: isEditing ? editableState.coverPhotoURL : profile.coverPhotoURL }}
@@ -474,7 +477,7 @@ export default function UserProfilePage() {
                  >
                      {!isOwnProfile && (
                         <div className="flex gap-2">
-                           <Button variant="outline"><MessageSquare className="mr-2 h-4 w-4" /> Message</Button>
+                           <Button variant="outline" onClick={() => setChattingWith(profile)}><MessageSquare className="mr-2 h-4 w-4" /> Message</Button>
                            <Button onClick={handleFollowToggle} disabled={isFollowLoading}>
                                 {isFollowLoading ? <LoadingSpinner size="sm" className="mr-2"/> : (
                                     isFollowing ? <UserCheck className="mr-2 h-4 w-4"/> : <UserPlus className="mr-2 h-4 w-4"/>
@@ -623,6 +626,15 @@ export default function UserProfilePage() {
                      )}
                 </div>
             </div>
+
+            {chattingWith && (
+                <ChatPanel
+                    user={chattingWith}
+                    onClose={() => setChattingWith(null)}
+                />
+            )}
         </div>
     )
 }
+
+    
