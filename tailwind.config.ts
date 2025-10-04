@@ -92,12 +92,17 @@ export default {
         'aura-glow': {
           '0%': { backgroundPosition: '0 100%' },
           '100%': { backgroundPosition: '0 300%' },
-        }
+        },
+        'slide-in-from-right-20': {
+          '0%': { transform: 'translateX(20%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'aura-glow': 'aura-glow 5s infinite linear',
+        'slide-in-from-right-20': 'slide-in-from-right-20 0.3s ease-out',
       },
       mixBlendMode: {
           'plus-lighter': 'plus-lighter',

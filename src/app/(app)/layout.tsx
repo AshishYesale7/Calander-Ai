@@ -26,6 +26,7 @@ import NotificationPermissionModal from '@/components/layout/NotificationPermiss
 import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
+import { ChatSidebar } from '@/components/layout/ChatSidebar';
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -155,14 +156,16 @@ function AppContent({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
         <div className={cn(
-          "flex flex-1 flex-col transition-[padding-left] duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
+          "flex flex-1 flex-col transition-[padding] duration-300 ease-in-out",
+          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
+          "lg:pr-20" // Add padding to make space for the new right sidebar
         )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">
             {children}
           </main>
         </div>
+        <ChatSidebar />
       </div>
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette 
