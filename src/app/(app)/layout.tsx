@@ -28,6 +28,8 @@ import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { saveUserFCMToken } from '@/services/userService';
+import type { PublicUserProfile } from '@/services/userService';
+import ChatPanel from '@/components/chat/ChatPanel';
 
 function AppContent({ children }: { children: ReactNode }) {
   const { user, loading, isSubscribed } = useAuth();
@@ -45,12 +47,13 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
 
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
-      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && pathname !== '/profile/[username]') {
+      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
         router.push('/subscription');
       }
     }
@@ -162,11 +165,14 @@ function AppContent({ children }: { children: ReactNode }) {
         )}>
           <Header {...modalProps} />
           <main className="flex-1 overflow-auto p-6 pb-24">
-            {children}
+            {React.cloneElement(children as React.ReactElement, { setChattingWith })}
           </main>
         </div>
-        <ChatSidebar />
+        <ChatSidebar setChattingWith={setChattingWith} />
       </div>
+      {chattingWith && (
+        <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+      )}
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette 
         isOpen={isCommandPaletteOpen} 

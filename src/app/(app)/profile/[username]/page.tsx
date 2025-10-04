@@ -33,7 +33,6 @@ import Link from 'next/link';
 import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTheme } from '@/hooks/use-theme';
-import ChatPanel from '@/components/chat/ChatPanel';
 
 // Define a type for the editable fields to manage them in a single state
 type EditableProfileState = {
@@ -184,7 +183,12 @@ const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerT
 };
 
 
-export default function UserProfilePage() {
+interface UserProfilePageProps {
+  setChattingWith: (user: PublicUserProfile | null) => void;
+}
+
+
+export default function UserProfilePage({ setChattingWith }: UserProfilePageProps) {
     const { user: currentUser, refreshUser } = useAuth();
     const { setBackgroundImage } = useTheme();
     const params = useParams();
@@ -208,7 +212,6 @@ export default function UserProfilePage() {
     const [followingCount, setFollowingCount] = useState(0);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
-    const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
 
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
@@ -611,13 +614,6 @@ export default function UserProfilePage() {
                      )}
                 </div>
             </div>
-
-            {chattingWith && (
-                <ChatPanel
-                    user={chattingWith}
-                    onClose={() => setChattingWith(null)}
-                />
-            )}
         </div>
     )
 }
