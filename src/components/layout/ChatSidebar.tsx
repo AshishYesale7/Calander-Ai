@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Users, Search, MessageSquare, PanelRightOpen, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
-import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, doc, getDoc, getDocs, limit, type Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { useChat } from '@/context/ChatContext';
