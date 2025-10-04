@@ -465,6 +465,7 @@ body {
   color: #737985;
   
   position: relative;
+  overflow: hidden; /* This is the key change */
   border-radius: var(--radius);
   border: var(--border) solid var(--border-color);
   padding: 0.5rem; /* Adjusted padding */
