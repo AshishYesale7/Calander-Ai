@@ -85,8 +85,7 @@ export function ChatSidebar() {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const userDocPromises = snapshot.docs.map(docSnapshot => {
                 const targetUserId = docSnapshot.id;
-                const usersCollectionRef = collection(db, 'users');
-                return getDoc(doc(usersCollectionRef, targetUserId));
+                return getDoc(doc(db, 'users', targetUserId));
             });
 
             const userDocs = await Promise.all(userDocPromises);
@@ -97,10 +96,18 @@ export function ChatSidebar() {
                     const data = docSnap.data();
                     return {
                         id: docSnap.id,
+                        uid: docSnap.id, // Ensure uid is present for the PublicUserProfile type
                         displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL,
-                        username: data.username,
+                        photoURL: data.photoURL || null,
+                        username: data.username || `user_${docSnap.id.substring(0,5)}`,
                         status: data.status || 'offline',
+                        bio: data.bio || '',
+                        socials: data.socials || null,
+                        coverPhotoURL: data.coverPhotoURL || null,
+                        followersCount: data.followersCount || 0,
+                        followingCount: data.followingCount || 0,
+                        statusEmoji: data.statusEmoji || null,
+                        countryCode: data.countryCode || null,
                     };
                 });
             

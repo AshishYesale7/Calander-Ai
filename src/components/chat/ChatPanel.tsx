@@ -40,7 +40,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   };
 
   useEffect(() => {
-    if (!currentUser || !otherUser) return;
+    if (!currentUser || !otherUser) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     const unsubscribe = getMessages(currentUser.uid, otherUser.uid, (newMessages) => {
