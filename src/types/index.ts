@@ -221,8 +221,10 @@ export interface TrackedKeyword {
 }
 
 export interface ChatMessage {
-    role: 'user' | 'model' | 'tool';
-    content: string;
+  id: string;
+  text: string;
+  senderId: string;
+  timestamp: Date;
 }
 
 export interface StreakData {
