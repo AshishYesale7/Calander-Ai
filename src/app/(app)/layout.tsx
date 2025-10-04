@@ -149,12 +149,22 @@ function AppContent({ children }: { children: ReactNode }) {
   }, []);
   
   useEffect(() => {
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, // Pink / Purple
+        { hue1: 280, hue2: 240 }, // Purple / Blue
+        { hue1: 240, hue2: 180 }, // Blue / Teal
+        { hue1: 180, hue2: 320 }, // Teal / Pink
+    ];
+    let currentIndex = 0;
+
     const colorInterval = setInterval(() => {
         const root = document.documentElement;
-        const newHue1 = (parseFloat(root.style.getPropertyValue('--hue1') || '255') + 1) % 360;
-        const newHue2 = (parseFloat(root.style.getPropertyValue('--hue2') || '222') + 1) % 360;
-        root.style.setProperty('--hue1', String(newHue1));
-        root.style.setProperty('--hue2', String(newHue2));
+        const nextColor = colorPairs[currentIndex];
+        
+        root.style.setProperty('--hue1', String(nextColor.hue1));
+        root.style.setProperty('--hue2', String(nextColor.hue2));
+
+        currentIndex = (currentIndex + 1) % colorPairs.length;
     }, 1000); // Change every second
 
     return () => clearInterval(colorInterval);
