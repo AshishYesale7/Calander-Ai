@@ -4,10 +4,10 @@
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users, MessageSquare } from "lucide-react";
+import { Users } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
-import { onSnapshot, collection, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ChatPanel from '../chat/ChatPanel';
 import type { PublicUserProfile } from '@/services/userService';
@@ -22,7 +22,7 @@ type FollowedUserWithPresence = {
     notification?: boolean; // You can use this for unread messages later
 }
 
-const ChatAvatar = ({ user, onClick }: { user: FollowedUserWithPresence, onClick: () => void }) => {
+const ChatAvatar = ({ user }: { user: FollowedUserWithPresence }) => {
     const statusColor = {
         online: 'bg-green-500',
         offline: 'bg-gray-500',
@@ -33,7 +33,7 @@ const ChatAvatar = ({ user, onClick }: { user: FollowedUserWithPresence, onClick
         <TooltipProvider delayDuration={0}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <button onClick={onClick} className="relative group">
+                    <div className="relative group">
                         <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName} />
                             <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
@@ -42,7 +42,7 @@ const ChatAvatar = ({ user, onClick }: { user: FollowedUserWithPresence, onClick
                         {user.notification && (
                              <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
                         )}
-                    </button>
+                    </div>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="frosted-glass">
                     <p className="font-semibold">{user.displayName}</p>
@@ -85,22 +85,22 @@ export function ChatSidebar() {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const userDocPromises = snapshot.docs.map(docSnapshot => {
                 const targetUserId = docSnapshot.id;
-                const userDocRef = collection(db, 'users');
-                return getDoc(doc(userDocRef, targetUserId));
+                const usersCollectionRef = collection(db, 'users');
+                return getDoc(doc(usersCollectionRef, targetUserId));
             });
 
             const userDocs = await Promise.all(userDocPromises);
             
             const followedUsers: FollowedUserWithPresence[] = userDocs
-                .filter(doc => doc.exists())
-                .map(doc => {
-                    const data = doc.data();
+                .filter(docSnap => docSnap.exists())
+                .map(docSnap => {
+                    const data = docSnap.data();
                     return {
-                        id: doc.id,
+                        id: docSnap.id,
                         displayName: data.displayName || 'Anonymous User',
                         photoURL: data.photoURL,
                         username: data.username,
-                        status: data.status || 'offline', // Assume a 'status' field exists
+                        status: data.status || 'offline',
                     };
                 });
             
@@ -128,7 +128,9 @@ export function ChatSidebar() {
                 <div className="flex flex-col items-center space-y-4">
                     <GroupIcon icon={Users} name="Following" />
                     {following.map(friend => (
-                        <ChatAvatar key={friend.id} user={friend} onClick={() => handleAvatarClick(friend as PublicUserProfile)} />
+                       <button key={friend.id} onClick={() => handleAvatarClick(friend as PublicUserProfile)}>
+                         <ChatAvatar user={friend} />
+                       </button>
                     ))}
                 </div>
                 {following.length > 0 && <Separator className="w-10/12 my-4 bg-border/50" />}
