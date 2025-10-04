@@ -184,7 +184,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <div className={cn(
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          isChatSidebarOpen && 'md:pr-[25rem]'
+          !isMobile && 'md:pr-20' // Space for the new compact chat rail
         )}>
           <Header {...modalProps} />
           <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
