@@ -60,7 +60,7 @@ body {
 
   /* "Dark Theme" - A more neutral, sophisticated dark theme */
   .dark {
-    --background: hsl(220 15% 10%);
+    --background: hsl(0 0% 0%);
     --foreground: hsl(210 25% 90%);
     --card: hsla(220, 15%, 15%, 0.65);
     --card-foreground: hsl(210 25% 90%);
@@ -187,6 +187,42 @@ body {
     0 0 80px rgba(0, 255, 255, 0.15), 
     0 0 30px rgba(0, 255, 128, 0.15);
 }
+
+.cmdk-dialog-glass[data-dialog-content-wrapper] {
+    border-radius: inherit;
+    overflow: hidden;
+}
+
+.cmdk-dialog-border-glow {
+    position: relative;
+}
+
+.cmdk-dialog-border-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit; 
+    padding: 1px; /* border-width */
+    background: conic-gradient(
+        from var(--border-angle),
+        hsl(var(--hue1) 100% 80% / 0.7),
+        hsl(var(--hue2) 100% 80% / 0.8),
+        hsl(var(--hue1) 100% 80% / 0.7)
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: border-spin 3s linear infinite;
+    z-index: -1;
+}
+
+@keyframes border-spin {
+    from { --border-angle: 0deg; }
+    to { --border-angle: 360deg; }
+}
+
 
 .cmdk-dialog-glass [cmdk-input-wrapper] {
   @apply border-white/10;
