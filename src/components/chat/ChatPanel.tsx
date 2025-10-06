@@ -104,9 +104,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
           </div>
         </div>
         <div className="flex items-center gap-2 text-white">
-            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Video className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Info className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon"><Video className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose}><X className="h-6 w-6" /></Button>
         </div>
       </header>
