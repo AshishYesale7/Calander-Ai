@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen } from "lucide-react";
+import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -207,6 +207,19 @@ export function ChatSidebar() {
                     </TooltipTrigger>
                     <TooltipContent side="left" className="frosted-glass">
                         <p>Open Chats</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-12 w-12">
+                            <UserPlus className="h-6 w-6" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="frosted-glass">
+                        <p>New Contact</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
