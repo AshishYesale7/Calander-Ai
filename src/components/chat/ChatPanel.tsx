@@ -93,7 +93,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
+            <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
             <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div>
@@ -114,7 +114,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         <div className="p-4 space-y-4">
             <div className="flex flex-col items-center pt-8 pb-4">
                 <Avatar className="h-24 w-24">
-                    <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
+                    <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
                     <AvatarFallback className="text-4xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <h2 className="mt-4 text-xl font-bold text-white">{otherUser.displayName}</h2>
@@ -144,7 +144,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                           {!isMe && !isLastInBlock && <div className="w-8 h-8"></div> /* Spacer */}
                           {!isMe && isLastInBlock && (
                             <Avatar className="h-8 w-8 self-end">
-                              <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
+                              <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
                               <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
                             </Avatar>
                           )}
