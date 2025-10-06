@@ -102,8 +102,8 @@ const ChatListContent = () => {
 
     return (
         <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30">
-             <div className="p-4 border-b border-border/30">
-                <div className="relative">
+             <div className="p-4 border-b border-border/30 flex items-center justify-between">
+                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input 
                         placeholder="Search or start a new chat" 
@@ -112,7 +112,12 @@ const ChatListContent = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                <Button variant="ghost" size="icon" className="ml-2 h-10 w-10" onClick={() => setIsChatSidebarOpen(false)}>
+                    <PanelRightOpen className="h-6 w-6"/>
+                </Button>
+            </div>
+            <div className="p-4 border-b border-border/30">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                     {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
                         <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)} className="shrink-0">
                             {filter}
