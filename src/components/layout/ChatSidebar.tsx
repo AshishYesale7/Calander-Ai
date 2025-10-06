@@ -211,19 +211,6 @@ export function ChatSidebar() {
                 </Tooltip>
             </TooltipProvider>
 
-            <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-12 w-12">
-                            <UserPlus className="h-6 w-6" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="frosted-glass">
-                        <p>New Contact</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-
             <Separator className="w-10/12 my-2 bg-border/50" />
 
             <ScrollArea className="flex-1 w-full">
@@ -250,7 +237,19 @@ export function ChatSidebar() {
                     ))}
                 </div>
             </ScrollArea>
-             <div className="mt-auto">
+             <div className="mt-auto flex flex-col items-center space-y-4">
+                 <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-12 w-12">
+                                <UserPlus className="h-6 w-6" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="frosted-glass">
+                            <p>New Contact</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                         <TooltipTrigger asChild>
