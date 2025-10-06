@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users, Search, MessageSquare, PanelRightOpen, X } from "lucide-react";
+import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -101,7 +101,7 @@ const ChatListContent = () => {
     )
 
     return (
-        <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl">
+        <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30">
              <div className="p-4 border-b border-border/30">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -182,9 +182,9 @@ export function ChatSidebar() {
     }
     
     // Desktop view
-    if (chattingWith) { // If a chat is open, show the full list sidebar
+    if (isChatSidebarOpen) { // If chat list is open, show the full list sidebar
       return (
-        <aside className="w-[25rem] z-30 flex-col border-l border-border/30 hidden md:flex">
+        <aside className="w-[25rem] flex-shrink-0 z-30 flex-col border-l border-border/30 hidden md:flex">
           <ChatListContent />
         </aside>
       );
@@ -196,9 +196,8 @@ export function ChatSidebar() {
             <TooltipProvider delayDuration={0}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                         {/* This button toggles the full list when no chat is active, which is not in the design. We will make it open the first chat. */}
-                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setChattingWith(following[0] || null)}>
-                            <PanelRightOpen className="h-6 w-6" />
+                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
+                            <PanelLeftOpen className="h-6 w-6" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left" className="frosted-glass">
@@ -209,34 +208,35 @@ export function ChatSidebar() {
 
             <Separator className="w-10/12 my-2 bg-border/50" />
 
-            <div className="flex flex-col items-center space-y-4">
-                {following.slice(0, 7).map(friend => (
-                   <TooltipProvider key={friend.id} delayDuration={0}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button onClick={() => setChattingWith(friend)} className="relative group">
-                                    <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
-                                        <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                                        <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    {friend.notification && (
-                                        <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
-                                    )}
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="frosted-glass">
-                                <p className="font-semibold">{friend.displayName}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                ))}
-            </div>
+            <ScrollArea className="flex-1 w-full">
+                <div className="flex flex-col items-center space-y-4">
+                    {following.slice(0, 7).map(friend => (
+                       <TooltipProvider key={friend.id} delayDuration={0}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button onClick={() => setChattingWith(friend)} className="relative group">
+                                        <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
+                                            <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                                            <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        {friend.notification && (
+                                            <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
+                                        )}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="frosted-glass">
+                                    <p className="font-semibold">{friend.displayName}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ))}
+                </div>
+            </ScrollArea>
              <div className="mt-auto">
                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            {/* This button should open the full list in a sheet/modal, but for now we just open first chat */}
-                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setChattingWith(following[0] || null)}>
+                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
                                 <MessageSquare className="h-6 w-6" />
                             </Button>
                         </TooltipTrigger>

@@ -150,27 +150,6 @@ function AppContent({ children }: { children: ReactNode }) {
     mainEl.addEventListener('scroll', handleScroll);
     return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  const nextColor = useCallback(() => {
-    const colorPairs = [
-        { hue1: 320, hue2: 280 }, // Pink / Purple
-        { hue1: 280, hue2: 240 }, // Purple / Blue
-        { hue1: 240, hue2: 180 }, // Blue / Teal
-        { hue1: 180, hue2: 140 }, // Teal / Green
-        { hue1: 140, hue2: 60 },  // Green / Yellow
-        { hue1: 60, hue2: 30 },   // Yellow / Orange
-        { hue1: 30, hue2: 0 },    // Orange / Red
-        { hue1: 0, hue2: 320 },   // Red / Pink
-    ];
-    let currentIndex = 0;
-
-    return () => {
-      const color = colorPairs[currentIndex];
-      currentIndex = (currentIndex + 1) % colorPairs.length;
-      return color;
-    };
-  }, [])();
-
 
   useEffect(() => {
     let currentIndex = 0;
@@ -187,12 +166,20 @@ function AppContent({ children }: { children: ReactNode }) {
     
     const colorInterval = setInterval(() => {
         const navElement = bottomNavRef.current;
+        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+
+        const nextColor = colorPairs[currentIndex];
+
         if (navElement) {
-            const nextColor = colorPairs[currentIndex];
             navElement.style.setProperty('--hue1', String(nextColor.hue1));
             navElement.style.setProperty('--hue2', String(nextColor.hue2));
-            currentIndex = (currentIndex + 1) % colorPairs.length;
         }
+        if (cmdkElement) {
+            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
+            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+
+        currentIndex = (currentIndex + 1) % colorPairs.length;
     }, 3000); 
 
     return () => clearInterval(colorInterval);
@@ -209,6 +196,10 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   const { isMobile, state: sidebarState } = useSidebar();
+  
+  // Calculate the width of the right sidebar area based on chat state
+  const rightSidebarWidth = chattingWith ? 'calc(20rem + 25rem)' : isChatSidebarOpen ? '25rem' : '5rem';
+
 
   if (loading || !user) {
     return (
@@ -238,12 +229,13 @@ function AppContent({ children }: { children: ReactNode }) {
   
   return (
     <>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen w-full">
         <SidebarNav {...modalProps} />
         
         <div className={cn(
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
+          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
+          !isMobile && `md:pr-[${rightSidebarWidth}]`
         )}>
             <div className="flex-1 flex flex-col">
               <Header {...modalProps} />
@@ -253,17 +245,18 @@ function AppContent({ children }: { children: ReactNode }) {
             </div>
         </div>
         
-        {chattingWith && !isMobile ? (
-             <div className="fixed top-16 right-0 h-[calc(100%-4rem)] w-[calc(20rem+25rem)] flex z-30">
-                <div className="w-[25rem] border-l border-border/30">
-                    <ChatSidebar />
-                </div>
-                <div className="w-[20rem] flex-1">
-                    <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
-                </div>
-             </div>
-        ) : (
-             <ChatSidebar />
+        {!isMobile && (
+          <div 
+            className="fixed top-0 right-0 h-full flex flex-shrink-0 z-30 transition-all duration-300 ease-in-out"
+            style={{ width: rightSidebarWidth }}
+          >
+            <ChatSidebar />
+            {chattingWith && (
+              <div className="w-[20rem] flex-1">
+                  <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+              </div>
+            )}
+          </div>
         )}
 
         {isMobile && chattingWith && (
