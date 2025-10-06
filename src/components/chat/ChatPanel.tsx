@@ -88,9 +88,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   };
 
   return (
-    <div className="fixed top-0 right-0 h-screen w-full max-w-md flex flex-col bg-black border-l border-gray-800 z-50 animate-in slide-in-from-right-full duration-300">
+    <div className="fixed top-0 right-0 h-screen w-full md:w-[calc(100%-4rem-25rem)] lg:w-[calc(100%-16rem-25rem)] flex flex-col bg-black border-l border-gray-800 z-30 animate-in slide-in-from-right-full duration-300">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800">
+      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />

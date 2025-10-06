@@ -165,7 +165,6 @@ function AppContent({ children }: { children: ReactNode }) {
     const colorInterval = setInterval(() => {
         const navElement = bottomNavRef.current;
         if (navElement) {
-            const nextColor = colorPairs[currentIndex];
             navElement.style.setProperty('--hue1', String(nextColor.hue1));
             navElement.style.setProperty('--hue2', String(nextColor.hue2));
             currentIndex = (currentIndex + 1) % colorPairs.length;
