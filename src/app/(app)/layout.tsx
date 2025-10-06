@@ -64,12 +64,8 @@ function AppContent({ children }: { children: ReactNode }) {
 
   // Auto-collapses the main sidebar when chat is opened on desktop
   useEffect(() => {
-    if (!isMobile) {
-      if (isChatVisible) {
-        setSidebarOpen(false); // Collapse
-      } else {
-        setSidebarOpen(true); // Expand
-      }
+    if (!isMobile && isChatVisible) {
+        setSidebarOpen(false);
     }
   }, [isChatVisible, isMobile, setSidebarOpen]);
 
@@ -239,26 +235,28 @@ function AppContent({ children }: { children: ReactNode }) {
   
   return (
     <>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <SidebarNav {...modalProps} />
         
         <div className={cn(
-          "flex flex-1 flex-col transition-all duration-300 ease-in-out",
+          "flex-1 flex flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12'
         )}>
-            <div className="flex-1 flex flex-col min-w-0">
-              <Header {...modalProps} />
-              <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
-                {children}
-              </main>
-            </div>
+            <Header {...modalProps} />
+            <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
+              {children}
+            </main>
         </div>
         
+        {/* Chat Interface Container */}
         {!isMobile && (
-          <div className="flex-shrink-0 flex">
+          <div className={cn(
+            "fixed top-0 right-0 h-full flex transition-transform duration-300 ease-in-out z-30",
+            isChatVisible ? "translate-x-0" : "translate-x-[calc(100%-5rem)]",
+          )}>
             <ChatSidebar />
             {chattingWith && (
-              <div className="w-[20rem] flex-1">
+              <div className="w-[20rem] flex-1 border-l border-border/30">
                   <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
               </div>
             )}
