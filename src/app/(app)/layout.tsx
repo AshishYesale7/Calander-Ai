@@ -173,17 +173,30 @@ function AppContent({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
+    let currentIndex = 0;
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, // Pink / Purple
+        { hue1: 280, hue2: 240 }, // Purple / Blue
+        { hue1: 240, hue2: 180 }, // Blue / Teal
+        { hue1: 180, hue2: 140 }, // Teal / Green
+        { hue1: 140, hue2: 60 },  // Green / Yellow
+        { hue1: 60, hue2: 30 },   // Yellow / Orange
+        { hue1: 30, hue2: 0 },    // Orange / Red
+        { hue1: 0, hue2: 320 },   // Red / Pink
+    ];
+    
     const colorInterval = setInterval(() => {
         const navElement = bottomNavRef.current;
         if (navElement) {
-            const nextColorPair = nextColor();
-            navElement.style.setProperty('--hue1', String(nextColorPair.hue1));
-            navElement.style.setProperty('--hue2', String(nextColorPair.hue2));
+            const nextColor = colorPairs[currentIndex];
+            navElement.style.setProperty('--hue1', String(nextColor.hue1));
+            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+            currentIndex = (currentIndex + 1) % colorPairs.length;
         }
     }, 3000); 
 
     return () => clearInterval(colorInterval);
-  }, [nextColor]);
+  }, []);
 
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -232,10 +245,7 @@ function AppContent({ children }: { children: ReactNode }) {
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
         )}>
-            <div className={cn(
-                "flex-1 flex flex-col transition-all duration-300",
-                chattingWith && !isMobile ? "md:pr-[calc(20rem+25rem)]" : "md:pr-20"
-            )}>
+            <div className="flex-1 flex flex-col">
               <Header {...modalProps} />
               <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
                 {children}

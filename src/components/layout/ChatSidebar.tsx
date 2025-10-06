@@ -133,7 +133,7 @@ const ChatListContent = () => {
 
 export function ChatSidebar() {
     const { user } = useAuth();
-    const { setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+    const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const isMobile = useIsMobile();
 
@@ -171,7 +171,7 @@ export function ChatSidebar() {
     if (isMobile) {
         return (
             <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
-                <SheetContent side="right" className="p-0 border-l-0 w-full max-w-sm">
+                <SheetContent side="left" className="p-0 border-l-0 w-full max-w-sm">
                     <SheetHeader className="p-4 border-b border-border/30">
                        <SheetTitle className="text-primary font-bold text-xl">Chats</SheetTitle>
                     </SheetHeader>
@@ -182,7 +182,7 @@ export function ChatSidebar() {
     }
     
     // Desktop view
-    if (isChatSidebarOpen) {
+    if (chattingWith) { // If a chat is open, show the full list sidebar
       return (
         <aside className="w-[25rem] z-30 flex-col border-l border-border/30 hidden md:flex">
           <ChatListContent />
@@ -190,12 +190,14 @@ export function ChatSidebar() {
       );
     }
     
+    // If no chat is open, show the compact icon-only bar
     return (
         <aside className="w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-30 hidden md:flex flex-col items-center py-4 space-y-4">
             <TooltipProvider delayDuration={0}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
+                         {/* This button toggles the full list when no chat is active, which is not in the design. We will make it open the first chat. */}
+                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setChattingWith(following[0] || null)}>
                             <PanelRightOpen className="h-6 w-6" />
                         </Button>
                     </TooltipTrigger>
@@ -233,7 +235,8 @@ export function ChatSidebar() {
                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
+                            {/* This button should open the full list in a sheet/modal, but for now we just open first chat */}
+                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setChattingWith(following[0] || null)}>
                                 <MessageSquare className="h-6 w-6" />
                             </Button>
                         </TooltipTrigger>
