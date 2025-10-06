@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { format, isSameDay } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatPanelProps {
   user: PublicUserProfile;
@@ -27,6 +28,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
     if (scrollAreaRef.current) {
@@ -88,7 +90,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   };
 
   return (
-    <div className="fixed top-16 right-[5rem] h-[calc(100%-4rem)] w-[calc(100%-12rem-5rem)] flex-col bg-black border-l border-gray-800 z-30 hidden md:flex">
+    <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
         <div className="flex items-center gap-3">
@@ -98,13 +100,13 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
           </Avatar>
           <div>
             <h3 className="font-semibold text-white">{otherUser.displayName}</h3>
-            <p className="text-xs text-gray-400">{otherUser.username}</p>
+            <p className="text-xs text-gray-400">@{otherUser.username}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-white">
-            <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon"><Video className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Phone className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Video className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" className={cn(isMobile && 'hidden')}><Info className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose}><X className="h-6 w-6" /></Button>
         </div>
       </header>

@@ -229,19 +229,37 @@ function AppContent({ children }: { children: ReactNode }) {
         <SidebarNav {...modalProps} />
         
         <div className={cn(
-          "flex flex-1 flex-col transition-all duration-300 ease-in-out relative",
+          "flex flex-1 flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
         )}>
-          <Header {...modalProps} />
-          <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
-            {children}
-          </main>
+            <div className={cn(
+                "flex-1 flex flex-col transition-all duration-300",
+                chattingWith && !isMobile ? "md:pr-[calc(20rem+25rem)]" : "md:pr-20"
+            )}>
+              <Header {...modalProps} />
+              <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
+                {children}
+              </main>
+            </div>
         </div>
         
-        <ChatSidebar />
+        {chattingWith && !isMobile ? (
+             <div className="fixed top-16 right-0 h-[calc(100%-4rem)] w-[calc(20rem+25rem)] flex z-30">
+                <div className="w-[25rem] border-l border-border/30">
+                    <ChatSidebar />
+                </div>
+                <div className="w-[20rem] flex-1">
+                    <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+                </div>
+             </div>
+        ) : (
+             <ChatSidebar />
+        )}
 
-        {chattingWith && (
-          <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+        {isMobile && chattingWith && (
+            <div className="fixed inset-0 top-16 z-40 bg-background">
+                <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+            </div>
         )}
       </div>
 

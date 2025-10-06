@@ -180,17 +180,18 @@ export function ChatSidebar() {
             </Sheet>
         );
     }
-
+    
+    // Desktop view
     if (isChatSidebarOpen) {
       return (
-        <aside className="fixed top-16 right-0 h-[calc(100%-4rem)] w-[25rem] z-30 flex-col border-l border-border/30 hidden md:flex">
+        <aside className="w-[25rem] z-30 flex-col border-l border-border/30 hidden md:flex">
           <ChatListContent />
         </aside>
       );
     }
     
     return (
-        <aside className="fixed top-16 right-0 h-[calc(100%-4rem)] w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-30 hidden md:flex flex-col items-center py-4 space-y-4">
+        <aside className="w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-30 hidden md:flex flex-col items-center py-4 space-y-4">
             <TooltipProvider delayDuration={0}>
                 <Tooltip>
                     <TooltipTrigger asChild>
