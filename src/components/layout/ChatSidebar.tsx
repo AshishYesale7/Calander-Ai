@@ -180,26 +180,17 @@ export function ChatSidebar() {
             </Sheet>
         );
     }
-    
-    if (isChatSidebarOpen) {
-        return (
-             <aside className={cn(
-                "fixed top-0 right-0 h-screen z-40 transition-all duration-300 ease-in-out hidden md:flex flex-col",
-                isChatSidebarOpen ? 'w-[25rem]' : 'w-20'
-            )}>
-                 <div className="flex-shrink-0 p-4 border-b border-border/30 h-16 flex justify-between items-center bg-card/60 backdrop-blur-xl">
-                    <h2 className="font-bold text-xl text-primary">Chats</h2>
-                    <div>
-                        <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}><X className="h-5 w-5"/></Button>
-                    </div>
-                </div>
-                <ChatListContent />
-             </aside>
-        );
-    }
 
+    if (isChatSidebarOpen) {
+      return (
+        <aside className="fixed top-16 right-0 h-[calc(100%-4rem)] w-[25rem] z-30 flex-col border-l border-border/30 hidden md:flex">
+          <ChatListContent />
+        </aside>
+      );
+    }
+    
     return (
-        <aside className="fixed top-0 right-0 h-screen w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-40 hidden md:flex flex-col items-center py-4 space-y-4">
+        <aside className="fixed top-16 right-0 h-[calc(100%-4rem)] w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-30 hidden md:flex flex-col items-center py-4 space-y-4">
             <TooltipProvider delayDuration={0}>
                 <Tooltip>
                     <TooltipTrigger asChild>

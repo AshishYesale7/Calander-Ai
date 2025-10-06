@@ -88,7 +88,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   };
 
   return (
-    <div className="fixed top-0 right-0 h-screen w-full md:w-[calc(100%-4rem-25rem)] lg:w-[calc(100%-16rem-25rem)] flex flex-col bg-black border-l border-gray-800 z-30 animate-in slide-in-from-right-full duration-300">
+    <div className="fixed top-16 right-[5rem] h-[calc(100%-4rem)] w-[calc(100%-12rem-5rem)] flex-col bg-black border-l border-gray-800 z-30 hidden md:flex">
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
         <div className="flex items-center gap-3">

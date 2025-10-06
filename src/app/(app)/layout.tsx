@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
@@ -64,10 +64,12 @@ function AppContent({ children }: { children: ReactNode }) {
       if (!user) {
         router.push('/auth/signin');
       } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
-        router.push('/subscription');
+        // Allow access to leaderboard and profile pages even if not subscribed
+        // But redirect from other pages if not subscribed.
       }
     }
   }, [user, loading, isSubscribed, router, pathname]);
+  
 
   const requestNotificationPermission = async () => {
     if (!messaging || !user) return;
@@ -149,7 +151,7 @@ function AppContent({ children }: { children: ReactNode }) {
     return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
   
-  useEffect(() => {
+  const nextColor = useCallback(() => {
     const colorPairs = [
         { hue1: 320, hue2: 280 }, // Pink / Purple
         { hue1: 280, hue2: 240 }, // Purple / Blue
@@ -162,18 +164,26 @@ function AppContent({ children }: { children: ReactNode }) {
     ];
     let currentIndex = 0;
 
+    return () => {
+      const color = colorPairs[currentIndex];
+      currentIndex = (currentIndex + 1) % colorPairs.length;
+      return color;
+    };
+  }, [])();
+
+
+  useEffect(() => {
     const colorInterval = setInterval(() => {
         const navElement = bottomNavRef.current;
         if (navElement) {
-            const nextColor = colorPairs[currentIndex];
-            navElement.style.setProperty('--hue1', String(nextColor.hue1));
-            navElement.style.setProperty('--hue2', String(nextColor.hue2));
-            currentIndex = (currentIndex + 1) % colorPairs.length;
+            const nextColorPair = nextColor();
+            navElement.style.setProperty('--hue1', String(nextColorPair.hue1));
+            navElement.style.setProperty('--hue2', String(nextColorPair.hue2));
         }
     }, 3000); 
 
     return () => clearInterval(colorInterval);
-  }, []);
+  }, [nextColor]);
 
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -187,12 +197,21 @@ function AppContent({ children }: { children: ReactNode }) {
   
   const { isMobile, state: sidebarState } = useSidebar();
 
-  if (loading || !user || (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile'))) {
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center preloader-background">
         <Preloader />
       </div>
     );
+  }
+  
+  if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
+      router.push('/subscription');
+      return (
+        <div className="flex h-screen w-full items-center justify-center preloader-background">
+          <Preloader />
+        </div>
+      );
   }
 
   const modalProps = {
@@ -208,21 +227,24 @@ function AppContent({ children }: { children: ReactNode }) {
     <>
       <div className="flex min-h-screen">
         <SidebarNav {...modalProps} />
+        
         <div className={cn(
-          "flex flex-1 flex-col transition-all duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          isChatSidebarOpen ? 'md:pr-[25rem]' : 'md:pr-20'
+          "flex flex-1 flex-col transition-all duration-300 ease-in-out relative",
+          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12'
         )}>
           <Header {...modalProps} />
           <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
             {children}
           </main>
         </div>
+        
         <ChatSidebar />
+
+        {chattingWith && (
+          <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+        )}
       </div>
-      {chattingWith && (
-        <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
-      )}
+
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette 
         isOpen={isCommandPaletteOpen} 
