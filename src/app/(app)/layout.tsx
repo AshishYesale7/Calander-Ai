@@ -58,6 +58,21 @@ function AppContent({ children }: { children: ReactNode }) {
 
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const lastScrollY = useRef(0);
+  
+  const { isMobile, state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
+  const isChatVisible = chattingWith || isChatSidebarOpen;
+
+  // Auto-collapses the main sidebar when chat is opened on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      if (isChatVisible) {
+        setSidebarOpen(false); // Collapse
+      } else {
+        setSidebarOpen(true); // Expand
+      }
+    }
+  }, [isChatVisible, isMobile, setSidebarOpen]);
+
 
   useEffect(() => {
     if (!loading) {
@@ -195,11 +210,6 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   };
   
-  const { isMobile, state: sidebarState } = useSidebar();
-  
-  // Calculate the width of the right sidebar area based on chat state
-  const rightSidebarWidth = chattingWith ? 'calc(20rem + 25rem)' : isChatSidebarOpen ? '25rem' : '5rem';
-
 
   if (loading || !user) {
     return (
@@ -234,10 +244,9 @@ function AppContent({ children }: { children: ReactNode }) {
         
         <div className={cn(
           "flex flex-1 flex-col transition-all duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:pl-64' : 'md:pl-12',
-          !isMobile && `md:pr-[${rightSidebarWidth}]`
+          !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12'
         )}>
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
               <Header {...modalProps} />
               <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
                 {children}
@@ -246,10 +255,7 @@ function AppContent({ children }: { children: ReactNode }) {
         </div>
         
         {!isMobile && (
-          <div 
-            className="fixed top-0 right-0 h-full flex flex-shrink-0 z-30 transition-all duration-300 ease-in-out"
-            style={{ width: rightSidebarWidth }}
-          >
+          <div className="flex-shrink-0 flex">
             <ChatSidebar />
             {chattingWith && (
               <div className="w-[20rem] flex-1">
