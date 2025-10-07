@@ -289,6 +289,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         } else {
             await remoteVideoRef.current.requestPictureInPicture();
         }
+        onTogglePipMode();
     } catch (error) {
         console.error("PiP Error:", error);
         toast({
@@ -297,7 +298,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             variant: 'destructive',
         });
     }
-  }, [toast]);
+  }, [toast, onTogglePipMode]);
 
 
   return (
@@ -311,12 +312,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
            </div>
         )}
 
-        {/* Local Video Preview - NOW VISIBLE in PiP mode */}
+        {/* Local Video Preview - Now styled for both modes */}
         <motion.div 
             className={cn(
-                "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 cursor-grab",
+                "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
                 isPipMode 
-                    ? "w-24 h-32 top-2 right-2" 
+                    ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
                     : "h-48 w-36 top-4 right-4"
             )}
             drag={isPipMode} // Only allow dragging in PiP mode
