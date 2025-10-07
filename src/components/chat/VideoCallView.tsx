@@ -1,16 +1,15 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot, collection, type Unsubscribe, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestore';
 import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
 
@@ -77,6 +76,20 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
 
   // Combined effect for WebRTC setup, signaling, and cleanup
+  const cleanup = useCallback(() => {
+    if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+        if (peerConnectionRef.current.signalingState !== 'closed') {
+            peerConnectionRef.current.close();
+        }
+        peerConnectionRef.current = null;
+    }
+    console.log("Video call resources cleaned up.");
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
         console.warn("This browser session is not the active participant for this call. WebRTC setup will not proceed.");
@@ -153,7 +166,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           });
 
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-            if (pc.signalingState === 'closed') return; // Guard clause
+            if (pc.signalingState === 'closed') return;
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
               const answerDescription = new RTCSessionDescription(data.answer);
@@ -188,7 +201,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           });
           
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-              if (pc.signalingState === 'closed') return; // Guard clause
+              if (pc.signalingState === 'closed') return; 
               const data = snapshot.data();
               if (data?.offer && !pc.currentRemoteDescription) {
                   const offerDescription = new RTCSessionDescription(data.offer);
@@ -221,22 +234,10 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     return () => {
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
-
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-        localStreamRef.current = null;
-      }
-      if (peerConnectionRef.current) {
-        // Check if it's already closed before trying to close it again
-        if (peerConnectionRef.current.signalingState !== 'closed') {
-            peerConnectionRef.current.close();
-        }
-        peerConnectionRef.current = null;
-      }
-      console.log("Video call resources cleaned up.");
+      cleanup();
     };
 
-  }, [user, call, toast, onEndCall]);
+  }, [user, call, toast, onEndCall, cleanup]);
 
 
   const toggleMute = () => {
@@ -254,6 +255,26 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         track.enabled = !track.enabled;
         setIsCameraOff(!track.enabled);
       });
+    }
+  };
+
+  const togglePipMode = async () => {
+    if (!remoteVideoRef.current) return;
+    
+    if (!('pictureInPictureEnabled' in document)) {
+        toast({ title: "Not Supported", description: "Picture-in-Picture is not supported by your browser.", variant: "destructive" });
+        return;
+    }
+    
+    try {
+        if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+        } else {
+            await remoteVideoRef.current.requestPictureInPicture();
+        }
+    } catch (error) {
+        console.error("PiP Error:", error);
+        toast({ title: "PiP Error", description: "Could not enter Picture-in-Picture mode.", variant: "destructive" });
     }
   };
 
@@ -303,13 +324,15 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         <Button variant="destructive" size="icon" className="rounded-full h-16 w-16" onClick={handleEndCall}>
           <PhoneOff className="h-7 w-7" />
         </Button>
-         <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-            <Users className="h-6 w-6" />
+         <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14" onClick={togglePipMode}>
+            <PictureInPicture2 className="h-6 w-6" />
         </Button>
          <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-            <MessageSquare className="h-6 w-6" />
+            <Users className="h-6 w-6" />
         </Button>
       </div>
     </div>
   );
 }
+
+    
