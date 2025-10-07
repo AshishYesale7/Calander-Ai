@@ -74,152 +74,141 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
 
-  const setupStreamsAndPC = useCallback(async () => {
-    try {
-      // 1. Get media stream
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      setHasPermission(true);
-      
-      // 2. Create Peer Connection
-      const pc = new RTCPeerConnection(servers);
-      peerConnectionRef.current = pc;
-      
-      // 3. Add local tracks to PC
-      stream.getTracks().forEach((track) => {
-        pc.addTrack(track, stream);
-      });
 
-      // 4. Set up remote stream
-      remoteStreamRef.current = new MediaStream();
-      if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamRef.current;
-      }
-
-      // 5. Handle incoming tracks
-      pc.ontrack = (event) => {
-          event.streams[0].getTracks().forEach((track) => {
-              remoteStreamRef.current?.addTrack(track);
-          });
-      };
-
-      return pc;
-
-    } catch (error) {
-      console.error('Error setting up streams or peer connection.', error);
-      toast({
-        variant: 'destructive',
-        title: 'Media Access Denied',
-        description: 'Please enable camera and microphone permissions to use video calling.',
-        duration: 7000,
-      });
-      setHasPermission(false);
-      onEndCall(); // End the call if permissions are denied
-      return null;
-    }
-  }, [toast, onEndCall]);
-
-  // Combined effect for WebRTC setup and signaling
+  // Combined effect for WebRTC setup, signaling, and cleanup
   useEffect(() => {
     if (!user || !call) return;
     
-    let unsubCall: Unsubscribe;
-    let unsubCandidates: Unsubscribe;
-
-    const setupAndSignal = async () => {
-      const pc = await setupStreamsAndPC();
-      if (!pc) return;
-
-      // Common ICE candidate handling
-      pc.onicecandidate = event => {
-        if (event.candidate) {
-          if (call.callerId === user.uid) {
-            addCallerCandidate(call.id, event.candidate.toJSON());
-          } else {
-            addReceiverCandidate(call.id, event.candidate.toJSON());
-          }
+    let unsubCall: Unsubscribe | undefined;
+    let unsubCandidates: Unsubscribe | undefined;
+    
+    const pc = new RTCPeerConnection(servers);
+    peerConnectionRef.current = pc;
+    
+    const setupStreamsAndPC = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
         }
-      };
-
-      // Role-specific logic
-      if (call.callerId === user.uid) { // We are the CALLER
-        unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
-          if (pc.currentRemoteDescription) {
-            pc.addIceCandidate(candidate);
-          } else {
-            receiverCandidatesQueue.current.push(candidate);
-          }
-        });
-
-        unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-          const data = snapshot.data();
-          if (!pc.currentRemoteDescription && data?.answer) {
-            const answerDescription = new RTCSessionDescription(data.answer);
-            await pc.setRemoteDescription(answerDescription);
-            
-            // Process queued candidates
-            receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
-            receiverCandidatesQueue.current = [];
-          }
-        });
-
-        // Create the offer
-        const offerDescription = await pc.createOffer();
-        await pc.setLocalDescription(offerDescription);
-        await saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
-      
-      } else { // We are the RECEIVER
-        unsubCandidates = listenForCallerCandidates(call.id, candidate => {
-          if (pc.currentRemoteDescription) {
-            pc.addIceCandidate(candidate);
-          } else {
-            callerCandidatesQueue.current.push(candidate);
-          }
-        });
+        setHasPermission(true);
         
-        unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-            const data = snapshot.data();
-            if (data?.offer && !pc.currentRemoteDescription) {
-                const offerDescription = new RTCSessionDescription(data.offer);
-                await pc.setRemoteDescription(offerDescription);
-                
-                // Process queued candidates
-                callerCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
-                callerCandidatesQueue.current = [];
-
-                const answerDescription = await pc.createAnswer();
-                await pc.setLocalDescription(answerDescription);
-                await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
-            }
+        stream.getTracks().forEach((track) => {
+          pc.addTrack(track, stream);
         });
+  
+        remoteStreamRef.current = new MediaStream();
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        }
+  
+        pc.ontrack = (event) => {
+          event.streams[0].getTracks().forEach((track) => {
+            remoteStreamRef.current?.addTrack(track);
+          });
+        };
+      } catch (error) {
+        console.error('Error setting up streams or peer connection.', error);
+        toast({
+          variant: 'destructive',
+          title: 'Media Access Denied',
+          description: 'Please enable camera and microphone permissions to use video calling.',
+          duration: 7000,
+        });
+        setHasPermission(false);
+        onEndCall();
+        return false; // Indicate failure
       }
+      return true; // Indicate success
     };
 
-    setupAndSignal();
+    const setupSignaling = () => {
+        pc.onicecandidate = event => {
+          if (event.candidate) {
+            if (call.callerId === user.uid) {
+              addCallerCandidate(call.id, event.candidate.toJSON());
+            } else {
+              addReceiverCandidate(call.id, event.candidate.toJSON());
+            }
+          }
+        };
+
+        if (call.callerId === user.uid) { // We are the CALLER
+          unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
+            if (pc.currentRemoteDescription) {
+              pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
+            } else {
+              receiverCandidatesQueue.current.push(candidate);
+            }
+          });
+
+          unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
+            const data = snapshot.data();
+            if (!pc.currentRemoteDescription && data?.answer) {
+              const answerDescription = new RTCSessionDescription(data.answer);
+              await pc.setRemoteDescription(answerDescription);
+              
+              receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e)));
+              receiverCandidatesQueue.current = [];
+            }
+          });
+
+          pc.createOffer().then(offerDescription => {
+             pc.setLocalDescription(offerDescription);
+             saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
+          });
+        
+        } else { // We are the RECEIVER
+          unsubCandidates = listenForCallerCandidates(call.id, candidate => {
+            if (pc.currentRemoteDescription) {
+              pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
+            } else {
+              callerCandidatesQueue.current.push(candidate);
+            }
+          });
+          
+          unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
+              const data = snapshot.data();
+              if (data?.offer && !pc.currentRemoteDescription) {
+                  const offerDescription = new RTCSessionDescription(data.offer);
+                  await pc.setRemoteDescription(offerDescription);
+                  
+                  callerCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e)));
+                  callerCandidatesQueue.current = [];
+  
+                  const answerDescription = await pc.createAnswer();
+                  await pc.setLocalDescription(answerDescription);
+                  await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
+              }
+          });
+        }
+    };
     
+    setupStreamsAndPC().then(success => {
+        if (success) {
+            setupSignaling();
+        }
+    });
+    
+    // The single, consolidated cleanup function
     return () => {
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
+
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+      }
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      console.log("Video call resources cleaned up.");
     };
 
-  }, [user, call, setupStreamsAndPC]);
-  
-  const cleanup = () => {
-     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-    }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-  };
+  }, [user, call, toast, onEndCall]);
 
-  useEffect(() => {
-    return () => cleanup();
-  }, []);
 
   const toggleMute = () => {
     if (localStreamRef.current) {
@@ -240,7 +229,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   };
 
   const handleEndCall = () => {
-    cleanup();
+    // The cleanup in the useEffect will handle stopping tracks and closing the connection.
     onEndCall();
   };
 
