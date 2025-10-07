@@ -55,17 +55,18 @@ const useCallNotifications = () => {
         return null;
     });
 
-    const setAndStoreActiveCallId = (callId: string | null) => {
+    const setAndStoreActiveCallId = useCallback((callId: string | null) => {
         setActiveCallId(callId);
         if (typeof window !== 'undefined') {
             if (callId) {
                 sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
             } else {
                 sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
+                // When a call session ends, always reset PiP mode.
                 setIsPipMode(false);
             }
         }
-    };
+    }, []);
 
     // Effect to listen for changes on a single active call (either incoming or outgoing)
     useEffect(() => {
@@ -101,7 +102,7 @@ const useCallNotifications = () => {
         });
 
         return () => unsubscribe();
-    }, [activeCallId, user, ongoingCall]);
+    }, [activeCallId, user, ongoingCall, setAndStoreActiveCallId]);
 
     // Effect to listen for NEW incoming calls for the current user
     useEffect(() => {
@@ -133,17 +134,17 @@ const useCallNotifications = () => {
         return () => unsubscribe();
     }, [user, ongoingCall, incomingCall]);
 
-    const acceptCall = () => {
+    const acceptCall = useCallback(() => {
         if (!incomingCall) return;
         setAndStoreActiveCallId(incomingCall.id); // Mark this session as active
         updateCallStatus(incomingCall.id, 'answered');
-    };
+    }, [incomingCall, setAndStoreActiveCallId]);
 
-    const declineCall = () => {
+    const declineCall = useCallback(() => {
         if (!incomingCall) return;
         updateCallStatus(incomingCall.id, 'declined');
         setIncomingCall(null);
-    };
+    }, [incomingCall]);
 
     const endCall = useCallback(() => {
         if (activeCallId) {
@@ -154,6 +155,13 @@ const useCallNotifications = () => {
     const onTogglePipMode = useCallback(() => {
       setIsPipMode(prev => !prev);
     }, []);
+
+    const handleCloseCallUI = useCallback(() => {
+        setOngoingCall(null);
+        setOtherUserInCall(null);
+        setAndStoreActiveCallId(null);
+        // isPipMode is reset inside setAndStoreActiveCallId
+    }, [setAndStoreActiveCallId]);
     
     return { 
       incomingCall, 
@@ -165,12 +173,7 @@ const useCallNotifications = () => {
       setActiveCallId: setAndStoreActiveCallId, 
       isPipMode, 
       onTogglePipMode,
-      // This function will now be responsible for closing the UI
-      onClose: () => {
-        setOngoingCall(null);
-        setOtherUserInCall(null);
-        setAndStoreActiveCallId(null);
-      }
+      onClose: handleCloseCallUI,
     };
 };
 
