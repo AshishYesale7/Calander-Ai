@@ -10,12 +10,14 @@ import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { format, isSameDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useChat } from '@/context/ChatContext';
+import VideoCallView from './VideoCallView';
 
 interface ChatPanelProps {
   user: PublicUserProfile;
@@ -29,6 +31,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { setChattingWith } = useChat();
+
+  const [isCalling, setIsCalling] = useState(false);
 
   const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
     if (scrollAreaRef.current) {
@@ -89,11 +94,23 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     }
   };
 
+  const handleBackToChatList = () => {
+    setChattingWith(null);
+  };
+  
+  if (isCalling) {
+    return <VideoCallView otherUser={otherUser} onEndCall={() => setIsCalling(false)} />;
+  }
+
+
   return (
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
         <div className="flex items-center gap-3">
+           <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
+              <PanelLeftOpen className="h-6 w-6" />
+           </Button>
           <Avatar className="h-10 w-10">
             <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
             <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
@@ -105,9 +122,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         </div>
         <div className="flex items-center gap-2 text-white">
             <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon"><Video className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setIsCalling(true)}><Video className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={onClose}><X className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-6 w-6" /></Button>
         </div>
       </header>
 
