@@ -18,7 +18,7 @@ import { format, isSameDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useChat } from '@/context/ChatContext';
 import VideoCallView from './VideoCallView';
-import { createCall, listenToCall, type CallData } from '@/services/callService';
+import { createCall, type CallData } from '@/services/callService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatPanelProps {
@@ -38,32 +38,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
 
   const [callState, setCallState] = useState<'idle' | 'calling' | 'in-call'>('idle');
   const [activeCall, setActiveCall] = useState<CallData | null>(null);
-
-  const callId = useMemo(() => {
-      if (!currentUser || !otherUser) return null;
-      return [currentUser.uid, otherUser.uid].sort().join('_');
-  }, [currentUser, otherUser]);
-
-  useEffect(() => {
-      if (!callId) return;
-      const unsubscribe = listenToCall(callId, (call) => {
-          setActiveCall(call);
-          if (call) {
-              if (call.status === 'answered') {
-                  setCallState('in-call');
-              } else if (call.status === 'ringing') {
-                  setCallState('calling');
-              }
-          } else {
-              // Call document was deleted (ended/declined)
-              if (callState === 'calling') {
-                toast({ title: "Call Declined", description: `${otherUser.displayName} declined the call.`});
-              }
-              setCallState('idle');
-          }
-      });
-      return () => unsubscribe();
-  }, [callId, callState, otherUser, toast]);
 
   const handleInitiateCall = async () => {
     if (!currentUser || !otherUser) return;
