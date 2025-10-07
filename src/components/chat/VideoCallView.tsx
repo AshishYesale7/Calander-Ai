@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestore';
+import { doc, onSnapshot, collection, type Unsubscribe, getDocs } from 'firebase/firestore';
 import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
 
@@ -101,7 +101,9 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         setHasPermission(true);
         
         stream.getTracks().forEach((track) => {
-          pc.addTrack(track, stream);
+          if (pc.signalingState !== 'closed') {
+            pc.addTrack(track, stream);
+          }
         });
   
         remoteStreamRef.current = new MediaStream();
