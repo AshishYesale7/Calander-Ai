@@ -14,6 +14,7 @@ import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestor
 import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 
 interface VideoCallViewProps {
@@ -275,19 +276,27 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
              <p className="font-semibold">{otherUser.displayName}</p>
            </div>
         )}
-      </div>
 
-      {/* Local Video Preview (hidden in PiP mode) */}
-      {!isPipMode && (
-          <div className="absolute top-4 right-4 h-48 w-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
+        {/* Local Video Preview - NOW VISIBLE in PiP mode */}
+        <motion.div 
+            className={cn(
+                "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 cursor-grab",
+                isPipMode 
+                    ? "w-24 h-32 top-2 right-2" 
+                    : "h-48 w-36 top-4 right-4"
+            )}
+            drag={isPipMode}
+            dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
+            dragMomentum={false}
+        >
             <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
             {isCameraOff && hasPermission && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
                 Camera is off
               </div>
             )}
-          </div>
-      )}
+        </motion.div>
+      </div>
       
        {hasPermission === false && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10/12 max-w-md">
