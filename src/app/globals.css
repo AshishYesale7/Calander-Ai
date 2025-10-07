@@ -14,7 +14,7 @@ body {
     --foreground: hsl(260 50% 92%); /* Light lavender-white text for high contrast */
 
     /* Card is now semi-transparent for the glass effect by default */
-    --card: hsla(265, 30%, 13%, 0.45); 
+    --card: hsla(265, 30%, 13%, 0.6); 
     --card-foreground: hsl(260 50% 92%); /* Match foreground text color */
 
     --popover: hsl(265 35% 10%); /* Popover, even darker for depth */
@@ -109,8 +109,7 @@ body {
 /* Custom utility for Glass & Card effects */
 .frosted-glass {
   /* Default properties shared by all effects */
-  @apply rounded-lg border shadow-lg transition-all duration-300;
-  background-color: var(--card); /* This has transparency by default */
+  @apply rounded-lg border shadow-lg transition-all duration-300 bg-card;
 }
 
 /* --- Frosted Glass Effect --- */

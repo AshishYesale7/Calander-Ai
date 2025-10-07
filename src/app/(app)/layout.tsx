@@ -235,7 +235,7 @@ function AppContent({ children }: { children: ReactNode }) {
   
   return (
     <>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full">
         <SidebarNav {...modalProps} />
         
         <div className={cn(
@@ -249,10 +249,10 @@ function AppContent({ children }: { children: ReactNode }) {
         </div>
         
         {/* Chat Interface Container */}
-        {!isMobile && (
-          <div className={cn(
+        <div className={cn(
             "fixed top-0 right-0 h-full flex transition-transform duration-300 ease-in-out z-30",
             isChatVisible ? "translate-x-0" : "translate-x-[calc(100%-5rem)]",
+            "hidden md:flex"
           )}>
             <ChatSidebar />
             {chattingWith && (
@@ -260,8 +260,7 @@ function AppContent({ children }: { children: ReactNode }) {
                   <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         {isMobile && chattingWith && (
             <div className="fixed inset-0 top-16 z-40 bg-background">
