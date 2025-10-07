@@ -86,7 +86,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
       onEndCall(); // Notify backend and other user
       const timer = setTimeout(() => {
         onClose(); // Close the UI completely
-      }, 3000);
+      }, 1000);
 
       return () => clearTimeout(timer);
     }
