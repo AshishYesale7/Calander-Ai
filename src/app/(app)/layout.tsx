@@ -146,18 +146,32 @@ const useCallNotifications = () => {
     };
 
     const endCall = useCallback(() => {
-        if (!ongoingCall) return;
-        updateCallStatus(ongoingCall.id, 'ended');
-        setOngoingCall(null); 
-        setOtherUserInCall(null);
-        setAndStoreActiveCallId(null);
-    }, [ongoingCall]);
+        if (activeCallId) {
+            updateCallStatus(activeCallId, 'ended');
+        }
+    }, [activeCallId]);
 
     const onTogglePipMode = useCallback(() => {
       setIsPipMode(prev => !prev);
     }, []);
     
-    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId, isPipMode, onTogglePipMode };
+    return { 
+      incomingCall, 
+      acceptCall, 
+      declineCall, 
+      ongoingCall, 
+      otherUserInCall, 
+      endCall, 
+      setActiveCallId: setAndStoreActiveCallId, 
+      isPipMode, 
+      onTogglePipMode,
+      // This function will now be responsible for closing the UI
+      onClose: () => {
+        setOngoingCall(null);
+        setOtherUserInCall(null);
+        setAndStoreActiveCallId(null);
+      }
+    };
 };
 
 
@@ -171,7 +185,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode, onClose } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -465,6 +479,7 @@ function AppContent({ children }: { children: ReactNode }) {
             otherUser={otherUserInCall} 
             onEndCall={endCall} 
             isPipMode={false}
+            onClose={onClose}
             onTogglePipMode={onTogglePipMode}
           />
         </div>
@@ -481,6 +496,7 @@ function AppContent({ children }: { children: ReactNode }) {
                 otherUser={otherUserInCall} 
                 onEndCall={endCall}
                 isPipMode={true}
+                onClose={onClose}
                 onTogglePipMode={onTogglePipMode}
              />
           </motion.div>

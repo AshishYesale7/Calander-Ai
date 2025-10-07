@@ -20,6 +20,7 @@ interface VideoCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
+  onClose: () => void;
   isPipMode: boolean;
   onTogglePipMode: () => void;
 }
@@ -61,12 +62,13 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 
-export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode }: VideoCallViewProps) {
+export default function VideoCallView({ call, otherUser, onEndCall, onClose, isPipMode, onTogglePipMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [callPhase, setCallPhase] = useState<'active' | 'ended'>('active');
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -77,6 +79,19 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+
+  // Effect for handling the end-of-call UI flow
+  useEffect(() => {
+    if (callPhase === 'ended') {
+      onEndCall(); // Notify backend and other user
+      const timer = setTimeout(() => {
+        onClose(); // Close the UI completely
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [callPhase, onEndCall, onClose]);
+
 
   // Combined effect for WebRTC setup, signaling, and cleanup
   useEffect(() => {
@@ -266,7 +281,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   };
 
   const handleEndCall = () => {
-    onEndCall();
+    setCallPhase('ended');
   };
 
   const handleTogglePipMode = useCallback(async () => {
@@ -280,22 +295,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         });
         return;
     }
-
-    try {
-        if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-        } else {
-            await remoteVideoRef.current.requestPictureInPicture();
-        }
-        onTogglePipMode();
-    } catch (error) {
-        console.error("PiP Error:", error);
-        toast({
-            title: 'PiP Not Supported',
-            description: 'Your browser may not support Picture-in-Picture mode.',
-            variant: 'destructive',
-        });
-    }
+    onTogglePipMode();
   }, [toast, onTogglePipMode]);
 
 
@@ -343,7 +343,11 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
 
       {/* Call Controls */}
-      <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4", isPipMode && "p-2 gap-2")}>
+      <div className={cn(
+          "flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", 
+          isPipMode && "p-2 gap-2",
+          callPhase === 'ended' && 'opacity-0'
+        )}>
         <Button onClick={toggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
@@ -353,7 +357,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
-        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
+        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={handleTogglePipMode}>
             {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
          {!isPipMode && (
@@ -362,6 +366,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             </Button>
          )}
       </div>
+
+       {callPhase === 'ended' && (
+        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <h2 className="text-2xl font-bold">Call Ended</h2>
+            <p className="text-muted-foreground mt-1">Closing window...</p>
+        </div>
+      )}
     </div>
   );
 }
