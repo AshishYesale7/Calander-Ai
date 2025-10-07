@@ -46,7 +46,6 @@ export default function VideoCallView({ otherUser, onEndCall }: VideoCallViewPro
     getCameraPermission();
 
     return () => {
-      // Cleanup: stop all tracks when the component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -74,7 +73,6 @@ export default function VideoCallView({ otherUser, onEndCall }: VideoCallViewPro
   };
 
   const handleEndCall = () => {
-    // Stop all media tracks before ending call
     if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
     }

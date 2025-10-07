@@ -33,6 +33,71 @@ import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { onSnapshot, collection, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { CallData } from '@/services/callService';
+import { updateCallStatus } from '@/services/callService';
+import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
+import VideoCallView from '@/components/chat/VideoCallView';
+
+const useCallNotifications = () => {
+    const { user } = useAuth();
+    const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
+    const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
+
+    useEffect(() => {
+        if (!user || !db) return;
+
+        const callsCollectionRef = collection(db, 'calls');
+        const q = query(callsCollectionRef, where("receiverId", "==", user.uid), where("status", "==", "ringing"));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (!snapshot.empty) {
+                const callDoc = snapshot.docs[0];
+                const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
+                if (!incomingCall && !ongoingCall) {
+                    setIncomingCall(callData);
+                }
+            } else {
+                setIncomingCall(null);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [user, incomingCall, ongoingCall]);
+    
+    const acceptCall = () => {
+        if (!incomingCall) return;
+        updateCallStatus(incomingCall.id, 'answered');
+        setOngoingCall(incomingCall);
+        setIncomingCall(null);
+    };
+
+    const declineCall = () => {
+        if (!incomingCall) return;
+        updateCallStatus(incomingCall.id, 'declined');
+        setIncomingCall(null);
+    };
+
+    const endCall = () => {
+        if (!ongoingCall) return;
+        updateCallStatus(ongoingCall.id, 'ended');
+        setOngoingCall(null);
+    };
+    
+    const caller = useMemo(() => {
+        if (ongoingCall) {
+          return {
+            uid: ongoingCall.callerId,
+            displayName: ongoingCall.callerName,
+            photoURL: ongoingCall.callerPhotoURL,
+          } as PublicUserProfile
+        }
+        return null;
+    }, [ongoingCall]);
+
+    return { incomingCall, acceptCall, declineCall, ongoingCall, endCall, caller };
+};
 
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -45,6 +110,8 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, endCall, caller } = useCallNotifications();
+
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -209,7 +276,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center preloader-background">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Preloader />
       </div>
     );
@@ -218,7 +285,7 @@ function AppContent({ children }: { children: ReactNode }) {
   if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
       router.push('/subscription');
       return (
-        <div className="flex h-screen w-full items-center justify-center preloader-background">
+        <div className="flex h-screen w-full items-center justify-center bg-background">
           <Preloader />
         </div>
       );
@@ -235,7 +302,7 @@ function AppContent({ children }: { children: ReactNode }) {
   
   return (
     <>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full relative z-10">
         <SidebarNav {...modalProps} />
         
         <div className={cn(
@@ -316,6 +383,20 @@ function AppContent({ children }: { children: ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Call Management */}
+      {incomingCall && (
+        <IncomingCallNotification
+          call={incomingCall}
+          onAccept={acceptCall}
+          onDecline={declineCall}
+        />
+      )}
+      {ongoingCall && caller && (
+        <div className="fixed inset-0 z-[100] bg-black">
+          <VideoCallView otherUser={caller} onEndCall={endCall} />
+        </div>
+      )}
 
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />

@@ -18,6 +18,8 @@ import { format, isSameDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useChat } from '@/context/ChatContext';
 import VideoCallView from './VideoCallView';
+import { createCall, listenToCall, type CallData } from '@/services/callService';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatPanelProps {
   user: PublicUserProfile;
@@ -26,6 +28,7 @@ interface ChatPanelProps {
 
 export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +36,52 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const isMobile = useIsMobile();
   const { setChattingWith } = useChat();
 
-  const [isCalling, setIsCalling] = useState(false);
+  const [callState, setCallState] = useState<'idle' | 'calling' | 'in-call'>('idle');
+  const [activeCall, setActiveCall] = useState<CallData | null>(null);
+
+  const callId = useMemo(() => {
+      if (!currentUser || !otherUser) return null;
+      return [currentUser.uid, otherUser.uid].sort().join('_');
+  }, [currentUser, otherUser]);
+
+  useEffect(() => {
+      if (!callId) return;
+      const unsubscribe = listenToCall(callId, (call) => {
+          setActiveCall(call);
+          if (call) {
+              if (call.status === 'answered') {
+                  setCallState('in-call');
+              } else if (call.status === 'ringing') {
+                  setCallState('calling');
+              }
+          } else {
+              // Call document was deleted (ended/declined)
+              if (callState === 'calling') {
+                toast({ title: "Call Declined", description: `${otherUser.displayName} declined the call.`});
+              }
+              setCallState('idle');
+          }
+      });
+      return () => unsubscribe();
+  }, [callId, callState, otherUser, toast]);
+
+  const handleInitiateCall = async () => {
+    if (!currentUser || !otherUser) return;
+    setCallState('calling');
+    try {
+        await createCall({
+            callerId: currentUser.uid,
+            callerName: currentUser.displayName || 'Anonymous',
+            callerPhotoURL: currentUser.photoURL,
+            receiverId: otherUser.uid,
+            status: 'ringing'
+        });
+        toast({ title: "Calling...", description: `Calling ${otherUser.displayName}.`});
+    } catch(e) {
+        toast({ title: "Call Failed", description: "Could not initiate the call.", variant: "destructive"});
+        setCallState('idle');
+    }
+  };
 
   const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
     if (scrollAreaRef.current) {
@@ -46,7 +94,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     }
   };
   
-  // Group messages by date
   const groupedMessages = useMemo(() => {
     return messages.reduce((acc, msg) => {
       const dateKey = format(msg.timestamp, 'yyyy-MM-dd');
@@ -98,8 +145,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setChattingWith(null);
   };
   
-  if (isCalling) {
-    return <VideoCallView otherUser={otherUser} onEndCall={() => setIsCalling(false)} />;
+  if (callState === 'in-call') {
+      const caller = activeCall?.callerId === currentUser?.uid ? otherUser : ({ uid: activeCall?.callerId, displayName: activeCall?.callerName, photoURL: activeCall?.callerPhotoURL } as PublicUserProfile);
+      return <VideoCallView otherUser={caller} onEndCall={() => setCallState('idle')} />;
   }
 
 
@@ -122,7 +170,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         </div>
         <div className="flex items-center gap-2 text-white">
             <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => setIsCalling(true)}><Video className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={callState !== 'idle'}>
+              {callState === 'calling' ? <LoadingSpinner /> : <Video className="h-6 w-6" />}
+            </Button>
             <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-6 w-6" /></Button>
         </div>
@@ -151,7 +201,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                     </div>
                     {msgs.map((msg, index) => {
                       const isMe = msg.senderId === currentUser?.uid;
-                      // Logic to determine if it's the last message in a block from the same sender
                       const nextMsg = msgs[index + 1];
                       const isLastInBlock = !nextMsg || nextMsg.senderId !== msg.senderId;
 
