@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2 } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
@@ -12,12 +13,15 @@ import { db } from '@/lib/firebase';
 import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestore';
 import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 
 interface VideoCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
+  isPipMode: boolean;
+  onTogglePipMode: () => void;
 }
 
 const servers = {
@@ -57,7 +61,7 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 
-export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallViewProps) {
+export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isMuted, setIsMuted] = useState(false);
@@ -73,7 +77,6 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
   const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
-
 
   // Combined effect for WebRTC setup, signaling, and cleanup
   const cleanup = useCallback(() => {
@@ -258,53 +261,33 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     }
   };
 
-  const togglePipMode = async () => {
-    if (!remoteVideoRef.current) return;
-    
-    if (!('pictureInPictureEnabled' in document)) {
-        toast({ title: "Not Supported", description: "Picture-in-Picture is not supported by your browser.", variant: "destructive" });
-        return;
-    }
-    
-    try {
-        if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-        } else {
-            if (remoteVideoRef.current.readyState >= 1) { // HAVE_METADATA or greater
-               await remoteVideoRef.current.requestPictureInPicture();
-            } else {
-               toast({ title: "Video Not Ready", description: "Please wait a moment for the video to load before using Picture-in-Picture.", variant: "default" });
-            }
-        }
-    } catch (error) {
-        console.error("PiP Error:", error);
-        toast({ title: "PiP Error", description: "Could not enter Picture-in-Picture mode.", variant: "destructive" });
-    }
-  };
-
   const handleEndCall = () => {
     onEndCall();
   };
 
   return (
-    <div className="flex flex-col h-full bg-black text-white relative">
+    <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
       {/* Remote Video */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
-        <div className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg">
-          <p className="font-semibold">{otherUser.displayName}</p>
-        </div>
-      </div>
-
-      {/* Local Video Preview */}
-      <div className="absolute top-4 right-4 h-48 w-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
-        <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-        {isCameraOff && hasPermission && (
-          <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
-            Camera is off
-          </div>
+        {!isPipMode && (
+           <div className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg">
+             <p className="font-semibold">{otherUser.displayName}</p>
+           </div>
         )}
       </div>
+
+      {/* Local Video Preview (hidden in PiP mode) */}
+      {!isPipMode && (
+          <div className="absolute top-4 right-4 h-48 w-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
+            <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            {isCameraOff && hasPermission && (
+              <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
+                Camera is off
+              </div>
+            )}
+          </div>
+      )}
       
        {hasPermission === false && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10/12 max-w-md">
@@ -318,22 +301,24 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         )}
 
       {/* Call Controls */}
-      <div className="flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4">
-        <Button onClick={toggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-          {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+      <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4", isPipMode && "p-2 gap-2")}>
+        <Button onClick={toggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+          {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-        <Button onClick={toggleCamera} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-          {isCameraOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
+        <Button onClick={toggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+          {isCameraOff ? <VideoOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Video className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-        <Button variant="destructive" size="icon" className="rounded-full h-16 w-16" onClick={handleEndCall}>
-          <PhoneOff className="h-7 w-7" />
+        <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
+          <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
-         <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14" onClick={togglePipMode}>
-            <PictureInPicture2 className="h-6 w-6" />
+        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
+            {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-         <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-            <Users className="h-6 w-6" />
-        </Button>
+         {!isPipMode && (
+            <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
+                <Users className="h-6 w-6" />
+            </Button>
+         )}
       </div>
     </div>
   );

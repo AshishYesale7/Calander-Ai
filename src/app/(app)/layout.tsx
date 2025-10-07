@@ -48,6 +48,7 @@ const useCallNotifications = () => {
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
+    const [isPipMode, setIsPipMode] = useState(false);
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
             return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
@@ -62,6 +63,7 @@ const useCallNotifications = () => {
                 sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
             } else {
                 sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
+                setIsPipMode(false);
             }
         }
     };
@@ -149,7 +151,7 @@ const useCallNotifications = () => {
         updateCallStatus(ongoingCall.id, 'ended');
     }, [ongoingCall]);
     
-    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId };
+    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId, isPipMode, setIsPipMode };
 };
 
 
@@ -163,7 +165,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, setIsPipMode } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -189,6 +191,12 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   }, [isChatVisible, isMobile, setSidebarOpen]);
 
+  // When call goes into PiP mode, close the chat panel
+  useEffect(() => {
+    if (isPipMode && chattingWith) {
+        setChattingWith(null);
+    }
+  }, [isPipMode, chattingWith, setChattingWith]);
 
   useEffect(() => {
     if (!loading) {
@@ -444,14 +452,32 @@ function AppContent({ children }: { children: ReactNode }) {
         />
       )}
       
-      {ongoingCall && otherUserInCall && (
+      {ongoingCall && otherUserInCall && !isPipMode && (
         <div className="fixed inset-0 z-[100] bg-black">
           <VideoCallView 
             call={ongoingCall} 
             otherUser={otherUserInCall} 
             onEndCall={endCall} 
+            isPipMode={false}
+            onTogglePipMode={() => setIsPipMode(true)}
           />
         </div>
+      )}
+
+      {ongoingCall && otherUserInCall && isPipMode && (
+          <motion.div 
+            drag
+            dragMomentum={false}
+            className="fixed top-4 right-4 z-[100] w-80 h-[22rem] bg-black rounded-xl overflow-hidden shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing"
+           >
+             <VideoCallView 
+                call={ongoingCall} 
+                otherUser={otherUserInCall} 
+                onEndCall={endCall}
+                isPipMode={true}
+                onTogglePipMode={() => setIsPipMode(false)}
+             />
+          </motion.div>
       )}
 
 
