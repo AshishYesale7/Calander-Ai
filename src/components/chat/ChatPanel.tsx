@@ -10,7 +10,7 @@ import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -22,11 +22,10 @@ interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
   onInitiateCall: (receiver: PublicUserProfile) => void;
+  onTogglePipMode: () => void; // Added to handle maximizing from PiP
 }
 
-const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
-
-export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: ChatPanelProps) {
+export default function ChatPanel({ user: otherUser, onClose, onInitiateCall, onTogglePipMode }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -36,12 +35,22 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
   const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
-  const isCallButtonDisabled = !!(outgoingCall || ongoingCall);
+  
+  // The button should be disabled if there's any outgoing call, or if there's an ongoing call that's NOT with this user.
+  const isCallButtonDisabled = (!!outgoingCall) || (!!ongoingCall && !isCallActiveWithThisUser);
 
 
   const handleInitiateCall = async () => {
     if (!currentUser || !otherUser) return;
     onInitiateCall(otherUser);
+  };
+
+  const handleVideoClick = () => {
+    if (isCallActiveWithThisUser) {
+        onTogglePipMode(); // This will toggle the PiP mode state in the parent layout
+    } else {
+        handleInitiateCall();
+    }
   };
 
 
@@ -126,8 +135,8 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
         </div>
         <div className="flex items-center gap-2 text-white">
             <Button variant="ghost" size="icon" disabled><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={isCallButtonDisabled}>
-              {isCallingThisUser ? <LoadingSpinner /> : (
+            <Button variant="ghost" size="icon" onClick={handleVideoClick} disabled={isCallButtonDisabled}>
+              {isCallingThisUser ? <Loader2 className="h-6 w-6 animate-spin"/> : (
                 <div className="relative">
                   <Video className="h-6 w-6" />
                   {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
@@ -225,3 +234,5 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     </div>
   );
 }
+
+    
