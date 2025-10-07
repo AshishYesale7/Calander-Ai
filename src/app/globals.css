@@ -14,7 +14,7 @@ body {
     --foreground: hsl(260 50% 92%); /* Light lavender-white text for high contrast */
 
     /* Card is now semi-transparent for the glass effect by default */
-    --card: hsla(265, 30%, 13%, 0.6); 
+    --card: hsla(265, 30%, 13%, 0.7); 
     --card-foreground: hsl(260 50% 92%); /* Match foreground text color */
 
     --popover: hsl(265 35% 10%); /* Popover, even darker for depth */
@@ -96,6 +96,9 @@ body {
 }
 
 @layer base {
+  html {
+    @apply bg-black;
+  }
   * {
     @apply border-border;
   }
