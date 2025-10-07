@@ -270,7 +270,11 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         if (document.pictureInPictureElement) {
             await document.exitPictureInPicture();
         } else {
-            await remoteVideoRef.current.requestPictureInPicture();
+            if (remoteVideoRef.current.readyState >= 1) { // HAVE_METADATA or greater
+               await remoteVideoRef.current.requestPictureInPicture();
+            } else {
+               toast({ title: "Video Not Ready", description: "Please wait a moment for the video to load before using Picture-in-Picture.", variant: "default" });
+            }
         }
     } catch (error) {
         console.error("PiP Error:", error);
@@ -334,5 +338,3 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     </div>
   );
 }
-
-    
