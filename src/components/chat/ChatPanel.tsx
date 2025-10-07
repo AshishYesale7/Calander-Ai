@@ -17,43 +17,41 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { format, isSameDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useChat } from '@/context/ChatContext';
-import VideoCallView from './VideoCallView';
-import { createCall, type CallData } from '@/services/callService';
+import { createCall } from '@/services/callService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
+  setActiveCallId: (callId: string | null) => void;
 }
 
-export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
+export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
   const { setChattingWith } = useChat();
-
-  const [callState, setCallState] = useState<'idle' | 'calling' | 'in-call'>('idle');
-  const [activeCall, setActiveCall] = useState<CallData | null>(null);
+  const [isCalling, setIsCalling] = useState(false);
 
   const handleInitiateCall = async () => {
     if (!currentUser || !otherUser) return;
-    setCallState('calling');
+    setIsCalling(true);
     try {
-        await createCall({
+        const callId = await createCall({
             callerId: currentUser.uid,
             callerName: currentUser.displayName || 'Anonymous',
             callerPhotoURL: currentUser.photoURL,
             receiverId: otherUser.uid,
             status: 'ringing'
         });
+        setActiveCallId(callId);
         toast({ title: "Calling...", description: `Calling ${otherUser.displayName}.`});
     } catch(e) {
         toast({ title: "Call Failed", description: "Could not initiate the call.", variant: "destructive"});
-        setCallState('idle');
+        setIsCalling(false);
     }
   };
 
@@ -119,12 +117,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setChattingWith(null);
   };
   
-  if (callState === 'in-call') {
-      const caller = activeCall?.callerId === currentUser?.uid ? otherUser : ({ uid: activeCall?.callerId, displayName: activeCall?.callerName, photoURL: activeCall?.callerPhotoURL } as PublicUserProfile);
-      return <VideoCallView otherUser={caller} onEndCall={() => setCallState('idle')} />;
-  }
-
-
   return (
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
@@ -144,8 +136,8 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         </div>
         <div className="flex items-center gap-2 text-white">
             <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={callState !== 'idle'}>
-              {callState === 'calling' ? <LoadingSpinner /> : <Video className="h-6 w-6" />}
+            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={isCalling}>
+              {isCalling ? <LoadingSpinner /> : <Video className="h-6 w-6" />}
             </Button>
             <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-6 w-6" /></Button>
