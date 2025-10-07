@@ -20,7 +20,6 @@ interface VideoCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
-  onClose: () => void;
   isPipMode: boolean;
   onTogglePipMode: () => void;
 }
@@ -62,13 +61,12 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 
-export default function VideoCallView({ call, otherUser, onEndCall, onClose, isPipMode, onTogglePipMode }: VideoCallViewProps) {
+export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [callPhase, setCallPhase] = useState<'active' | 'ended'>('active');
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -80,18 +78,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
   const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
 
-  // Effect for handling the end-of-call UI flow
+  // A ref to track if the component is still mounted.
+  const isMountedRef = useRef(true);
   useEffect(() => {
-    if (callPhase === 'ended') {
-      onEndCall(); // Notify backend and other user
-      const timer = setTimeout(() => {
-        onClose(); // Close the UI completely
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [callPhase, onEndCall, onClose]);
-
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   // Combined effect for WebRTC setup, signaling, and cleanup
   useEffect(() => {
@@ -111,6 +103,8 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
     const setupStreamsAndPC = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (!isMountedRef.current) { stream.getTracks().forEach(track => track.stop()); return false; }
+        
         localStreamRef.current = stream;
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -161,7 +155,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
 
         if (call.callerId === user.uid) { // We are the CALLER
           unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
-            if (pc.signalingState === 'closed') return;
+            if (!isMountedRef.current || pc.signalingState === 'closed') return;
             if (pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
@@ -170,7 +164,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
           });
 
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-            if (pc.signalingState === 'closed') return;
+            if (!isMountedRef.current || pc.signalingState === 'closed') return;
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
               const answerDescription = new RTCSessionDescription(data.answer);
@@ -196,7 +190,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
         
         } else { // We are the RECEIVER
           unsubCandidates = listenForCallerCandidates(call.id, candidate => {
-            if (pc.signalingState === 'closed') return;
+            if (!isMountedRef.current || pc.signalingState === 'closed') return;
             if (pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
@@ -205,7 +199,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
           });
           
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-              if (pc.signalingState === 'closed') return; 
+              if (!isMountedRef.current || pc.signalingState === 'closed') return; 
               const data = snapshot.data();
               if (data?.offer && !pc.currentRemoteDescription) {
                   const offerDescription = new RTCSessionDescription(data.offer);
@@ -229,13 +223,14 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
     };
     
     setupStreamsAndPC().then(success => {
-        if (success) {
+        if (success && isMountedRef.current) {
             setupSignaling();
         }
     });
     
     // Main cleanup function
     return () => {
+      isMountedRef.current = false;
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
       
@@ -259,7 +254,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
       console.log("Video call resources cleaned up.");
     };
 
-  }, [user, call, toast, onEndCall, onTogglePipMode]);
+  }, [user, call, toast, onEndCall]);
 
 
   const toggleMute = () => {
@@ -281,7 +276,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
   };
 
   const handleEndCall = () => {
-    setCallPhase('ended');
+    onEndCall();
   };
 
   const handleTogglePipMode = useCallback(async () => {
@@ -295,8 +290,22 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
         });
         return;
     }
-    onTogglePipMode();
-  }, [toast, onTogglePipMode]);
+
+    try {
+        if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+        } else {
+            await remoteVideoRef.current.requestPictureInPicture();
+        }
+    } catch (error) {
+        console.error("Native PiP Error:", error);
+        toast({
+            title: 'Picture-in-Picture Error',
+            description: 'Your browser may not support this feature or it was blocked.',
+            variant: 'destructive',
+        });
+    }
+  }, [toast]);
 
 
   return (
@@ -310,7 +319,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
            </div>
         )}
 
-        {/* Local Video Preview - Now styled for both modes */}
+        {/* Local Video Preview */}
         <motion.div 
             className={cn(
                 "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
@@ -318,7 +327,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
                     ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
                     : "h-48 w-36 top-4 right-4"
             )}
-            drag={isPipMode} // Only allow dragging in PiP mode
+            drag={isPipMode}
             dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
             dragMomentum={false}
         >
@@ -345,8 +354,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
       {/* Call Controls */}
       <div className={cn(
           "flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", 
-          isPipMode && "p-2 gap-2",
-          callPhase === 'ended' && 'opacity-0'
+          isPipMode && "p-2 gap-2"
         )}>
         <Button onClick={toggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
@@ -357,7 +365,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
-        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={handleTogglePipMode}>
+        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
             {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
          {!isPipMode && (
@@ -366,15 +374,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, onClose, isP
             </Button>
          )}
       </div>
-
-       {callPhase === 'ended' && (
-        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center animate-in fade-in duration-300">
-            <h2 className="text-2xl font-bold">Call Ended</h2>
-            <p className="text-muted-foreground mt-1">Closing window...</p>
-        </div>
-      )}
     </div>
   );
 }
-
-    

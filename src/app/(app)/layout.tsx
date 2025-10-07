@@ -88,12 +88,14 @@ const useCallNotifications = () => {
                         setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
                     }
                 } else if (callData.status === 'declined' || callData.status === 'ended') {
+                    // This is the key change: when the call document indicates the call is over,
+                    // immediately nullify the state to unmount the VideoCallView.
                     setOngoingCall(null);
                     setIncomingCall(null);
                     setOtherUserInCall(null);
                     setAndStoreActiveCallId(null);
                 }
-            } else { // Document was deleted (call ended/declined)
+            } else { // Document was deleted or does not exist anymore
                 setOngoingCall(null);
                 setIncomingCall(null);
                 setOtherUserInCall(null);
@@ -119,25 +121,22 @@ const useCallNotifications = () => {
             if (!snapshot.empty) {
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
-                // Only show notification if not already in a call and not the one initiating a call
-                if (!ongoingCall && !sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY)) { 
+                if (!activeCallId) { 
                     setIncomingCall(callData);
                 }
             } else {
-                // If the incoming call disappears from the query (e.g., caller cancels)
-                if (incomingCall && incomingCall.receiverId === user.uid) {
-                  setIncomingCall(null);
-                }
+                setIncomingCall(null);
             }
         });
 
         return () => unsubscribe();
-    }, [user, ongoingCall, incomingCall]);
+    }, [user, activeCallId]);
 
     const acceptCall = useCallback(() => {
         if (!incomingCall) return;
-        setAndStoreActiveCallId(incomingCall.id); // Mark this session as active
+        setAndStoreActiveCallId(incomingCall.id); 
         updateCallStatus(incomingCall.id, 'answered');
+        setIncomingCall(null); // Clear the incoming call notification
     }, [incomingCall, setAndStoreActiveCallId]);
 
     const declineCall = useCallback(() => {
@@ -155,13 +154,6 @@ const useCallNotifications = () => {
     const onTogglePipMode = useCallback(() => {
       setIsPipMode(prev => !prev);
     }, []);
-
-    const handleCloseCallUI = useCallback(() => {
-        setOngoingCall(null);
-        setOtherUserInCall(null);
-        setAndStoreActiveCallId(null);
-        // isPipMode is reset inside setAndStoreActiveCallId
-    }, [setAndStoreActiveCallId]);
     
     return { 
       incomingCall, 
@@ -173,7 +165,6 @@ const useCallNotifications = () => {
       setActiveCallId: setAndStoreActiveCallId, 
       isPipMode, 
       onTogglePipMode,
-      onClose: handleCloseCallUI,
     };
 };
 
@@ -188,7 +179,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode, onClose } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -482,7 +473,6 @@ function AppContent({ children }: { children: ReactNode }) {
             otherUser={otherUserInCall} 
             onEndCall={endCall} 
             isPipMode={false}
-            onClose={onClose}
             onTogglePipMode={onTogglePipMode}
           />
         </div>
@@ -499,7 +489,6 @@ function AppContent({ children }: { children: ReactNode }) {
                 otherUser={otherUserInCall} 
                 onEndCall={endCall}
                 isPipMode={true}
-                onClose={onClose}
                 onTogglePipMode={onTogglePipMode}
              />
           </motion.div>
@@ -532,5 +521,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
