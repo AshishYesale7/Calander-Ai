@@ -149,6 +149,11 @@ const useCallNotifications = () => {
     const endCall = useCallback(() => {
         if (!ongoingCall) return;
         updateCallStatus(ongoingCall.id, 'ended');
+        // Setting state to null here will immediately unmount the VideoCallView,
+        // triggering its cleanup effect.
+        setOngoingCall(null); 
+        setOtherUserInCall(null);
+        setAndStoreActiveCallId(null);
     }, [ongoingCall]);
     
     return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId, isPipMode, setIsPipMode };

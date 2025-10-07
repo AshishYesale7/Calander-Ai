@@ -80,20 +80,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
 
   // Combined effect for WebRTC setup, signaling, and cleanup
-  const cleanup = useCallback(() => {
-    if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-        localStreamRef.current = null;
-    }
-    if (peerConnectionRef.current) {
-        if (peerConnectionRef.current.signalingState !== 'closed') {
-            peerConnectionRef.current.close();
-        }
-        peerConnectionRef.current = null;
-    }
-    console.log("Video call resources cleaned up.");
-  }, []);
-
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
         console.warn("This browser session is not the active participant for this call. WebRTC setup will not proceed.");
@@ -238,10 +224,28 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     return () => {
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
-      cleanup();
+      
+      // Stop media tracks
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      if (remoteStreamRef.current) {
+          remoteStreamRef.current.getTracks().forEach(track => track.stop());
+          remoteStreamRef.current = null;
+      }
+
+      // Close the peer connection
+      if (peerConnectionRef.current) {
+        if (peerConnectionRef.current.signalingState !== 'closed') {
+            peerConnectionRef.current.close();
+        }
+        peerConnectionRef.current = null;
+      }
+      console.log("Video call resources cleaned up.");
     };
 
-  }, [user, call, toast, onEndCall, cleanup]);
+  }, [user, call, toast, onEndCall]);
 
 
   const toggleMute = () => {
@@ -266,6 +270,36 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     onEndCall();
   };
 
+  const togglePipMode = useCallback(async () => {
+    if (!remoteVideoRef.current) return;
+    
+    // Check if the video metadata is loaded
+    if (remoteVideoRef.current.readyState === 0) {
+        toast({
+            title: "Video Not Ready",
+            description: "Please wait a moment for the video to load before using Picture-in-Picture.",
+            variant: "default",
+        });
+        return;
+    }
+
+    try {
+        if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+        } else {
+            await remoteVideoRef.current.requestPictureInPicture();
+        }
+    } catch (error) {
+        console.error("PiP Error:", error);
+        toast({
+            title: 'PiP Not Supported',
+            description: 'Your browser does not support Picture-in-Picture mode or it was disabled.',
+            variant: 'destructive',
+        });
+    }
+  }, [toast]);
+
+
   return (
     <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
       {/* Remote Video */}
@@ -285,7 +319,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
                     ? "w-24 h-32 top-2 right-2" 
                     : "h-48 w-36 top-4 right-4"
             )}
-            drag={isPipMode}
+            drag={isPipMode} // Only allow dragging in PiP mode
             dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
             dragMomentum={false}
         >
