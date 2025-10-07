@@ -1,5 +1,4 @@
 
-
 'use client';
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -149,14 +148,16 @@ const useCallNotifications = () => {
     const endCall = useCallback(() => {
         if (!ongoingCall) return;
         updateCallStatus(ongoingCall.id, 'ended');
-        // Setting state to null here will immediately unmount the VideoCallView,
-        // triggering its cleanup effect.
         setOngoingCall(null); 
         setOtherUserInCall(null);
         setAndStoreActiveCallId(null);
     }, [ongoingCall]);
+
+    const onTogglePipMode = useCallback(() => {
+      setIsPipMode(prev => !prev);
+    }, []);
     
-    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId, isPipMode, setIsPipMode };
+    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId, isPipMode, onTogglePipMode };
 };
 
 
@@ -170,7 +171,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, setIsPipMode } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -464,7 +465,7 @@ function AppContent({ children }: { children: ReactNode }) {
             otherUser={otherUserInCall} 
             onEndCall={endCall} 
             isPipMode={false}
-            onTogglePipMode={() => setIsPipMode(true)}
+            onTogglePipMode={onTogglePipMode}
           />
         </div>
       )}
@@ -480,7 +481,7 @@ function AppContent({ children }: { children: ReactNode }) {
                 otherUser={otherUserInCall} 
                 onEndCall={endCall}
                 isPipMode={true}
-                onTogglePipMode={() => setIsPipMode(false)}
+                onTogglePipMode={onTogglePipMode}
              />
           </motion.div>
       )}
@@ -512,3 +513,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    

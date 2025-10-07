@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -245,7 +244,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
       console.log("Video call resources cleaned up.");
     };
 
-  }, [user, call, toast, onEndCall]);
+  }, [user, call, toast, onEndCall, onTogglePipMode]);
 
 
   const toggleMute = () => {
@@ -270,14 +269,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     onEndCall();
   };
 
-  const togglePipMode = useCallback(async () => {
+  const handleTogglePipMode = useCallback(async () => {
     if (!remoteVideoRef.current) return;
     
-    // Check if the video metadata is loaded
     if (remoteVideoRef.current.readyState === 0) {
         toast({
             title: "Video Not Ready",
-            description: "Please wait a moment for the video to load before using Picture-in-Picture.",
+            description: "Please wait for the video to load before using Picture-in-Picture.",
             variant: "default",
         });
         return;
@@ -294,7 +292,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         console.error("PiP Error:", error);
         toast({
             title: 'PiP Not Supported',
-            description: 'Your browser does not support Picture-in-Picture mode or it was disabled.',
+            description: 'Your browser may not support Picture-in-Picture mode.',
             variant: 'destructive',
         });
     }
@@ -367,3 +365,5 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
+
+    
