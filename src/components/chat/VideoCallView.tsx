@@ -144,7 +144,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
         if (call.callerId === user.uid) { // We are the CALLER
           unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
-            if (pc.currentRemoteDescription) {
+            if (pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
               receiverCandidatesQueue.current.push(candidate);
@@ -153,6 +153,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
             const data = snapshot.data();
+            if (pc.signalingState === 'closed') return; // Guard clause
             if (!pc.currentRemoteDescription && data?.answer) {
               const answerDescription = new RTCSessionDescription(data.answer);
               await pc.setRemoteDescription(answerDescription);
@@ -162,14 +163,16 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
             }
           });
 
-          pc.createOffer().then(offerDescription => {
-             pc.setLocalDescription(offerDescription);
-             saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
-          });
+          if (pc.signalingState !== 'closed') {
+            pc.createOffer().then(offerDescription => {
+               pc.setLocalDescription(offerDescription);
+               saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
+            });
+          }
         
         } else { // We are the RECEIVER
           unsubCandidates = listenForCallerCandidates(call.id, candidate => {
-            if (pc.currentRemoteDescription) {
+            if (pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
               callerCandidatesQueue.current.push(candidate);
@@ -178,6 +181,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
               const data = snapshot.data();
+              if (pc.signalingState === 'closed') return; // Guard clause
               if (data?.offer && !pc.currentRemoteDescription) {
                   const offerDescription = new RTCSessionDescription(data.offer);
                   await pc.setRemoteDescription(offerDescription);
