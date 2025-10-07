@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -18,49 +17,31 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { format, isSameDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useChat } from '@/context/ChatContext';
-import { createCall } from '@/services/callService';
-import { useToast } from '@/hooks/use-toast';
 
 interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
-  setActiveCallId: (callId: string | null) => void;
+  onInitiateCall: (receiver: PublicUserProfile) => void;
 }
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
 
-export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }: ChatPanelProps) {
+export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
-  const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { setChattingWith } = useChat();
-  const [isCalling, setIsCalling] = useState(false);
+  const { setChattingWith, outgoingCall, ongoingCall } = useChat();
+
+  const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
+  const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
+  const isCallButtonDisabled = !!(outgoingCall || ongoingCall);
+
 
   const handleInitiateCall = async () => {
     if (!currentUser || !otherUser) return;
-    
-    setIsCalling(true);
-    try {
-        const callId = await createCall({
-            callerId: currentUser.uid,
-            callerName: currentUser.displayName || 'Anonymous',
-            callerPhotoURL: currentUser.photoURL,
-            receiverId: otherUser.uid,
-            status: 'ringing'
-        });
-        // Mark this browser session as the one initiating the call
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
-        }
-        setActiveCallId(callId);
-        toast({ title: "Calling...", description: `Calling ${otherUser.displayName}.`});
-    } catch(e) {
-        toast({ title: "Call Failed", description: "Could not initiate the call.", variant: "destructive"});
-        setIsCalling(false);
-    }
+    onInitiateCall(otherUser);
   };
 
 
@@ -145,8 +126,13 @@ export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }:
         </div>
         <div className="flex items-center gap-2 text-white">
             <Button variant="ghost" size="icon" disabled><Phone className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={isCalling}>
-              {isCalling ? <LoadingSpinner /> : <Video className="h-6 w-6" />}
+            <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={isCallButtonDisabled}>
+              {isCallingThisUser ? <LoadingSpinner /> : (
+                <div className="relative">
+                  <Video className="h-6 w-6" />
+                  {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
+                </div>
+              )}
             </Button>
             <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-6 w-6" /></Button>

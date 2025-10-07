@@ -36,16 +36,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { CallData } from '@/types';
-import { updateCallStatus } from '@/services/callService';
+import { createCall, updateCallStatus } from '@/services/callService';
 import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
+import OutgoingCallNotification from '@/components/chat/OutgoingCallNotification';
 import VideoCallView from '@/components/chat/VideoCallView';
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
 
 const useCallNotifications = () => {
     const { user } = useAuth();
+    const { outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall } = useChat();
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
-    const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [isPipMode, setIsPipMode] = useState(false);
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
@@ -55,18 +56,44 @@ const useCallNotifications = () => {
         return null;
     });
 
-    const setAndStoreActiveCallId = useCallback((callId: string | null) => {
+    const setAndStoreActiveCallId = (callId: string | null) => {
         setActiveCallId(callId);
         if (typeof window !== 'undefined') {
             if (callId) {
                 sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
             } else {
                 sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
-                // When a call session ends, always reset PiP mode.
                 setIsPipMode(false);
             }
         }
-    }, []);
+    };
+    
+    const endCall = useCallback((callIdToEnd?: string) => {
+        const id = callIdToEnd || activeCallId;
+        if (id) {
+            updateCallStatus(id, 'ended');
+            // Clean up UI states related to any call
+            setOngoingCall(null);
+            setOutgoingCall(null);
+            setAndStoreActiveCallId(null);
+            setOtherUserInCall(null);
+        }
+    }, [activeCallId, setOngoingCall, setOutgoingCall]);
+
+    // Effect for handling outgoing call timeout
+    useEffect(() => {
+        if (!outgoingCall || !user) return;
+        
+        const callTimeout = setTimeout(() => {
+            if (outgoingCall && !ongoingCall) { // Check if still in outgoing state and not answered
+                const callIdToCancel = [user.uid, outgoingCall.uid].sort().join('_');
+                endCall(callIdToCancel);
+            }
+        }, 20000); // 20 seconds timeout
+
+        return () => clearTimeout(callTimeout);
+    }, [outgoingCall, ongoingCall, user, endCall]);
+    
 
     // Effect to listen for changes on a single active call (either incoming or outgoing)
     useEffect(() => {
@@ -79,6 +106,7 @@ const useCallNotifications = () => {
                 
                 // Transition from ringing to answered
                 if (callData.status === 'answered' && !ongoingCall) {
+                    setOutgoingCall(null); // Clear outgoing call UI
                     setOngoingCall(callData);
                     setIncomingCall(null);
                     
@@ -91,12 +119,14 @@ const useCallNotifications = () => {
                     // This is the key change: when the call document indicates the call is over,
                     // immediately nullify the state to unmount the VideoCallView.
                     setOngoingCall(null);
+                    setOutgoingCall(null);
                     setIncomingCall(null);
                     setOtherUserInCall(null);
                     setAndStoreActiveCallId(null);
                 }
             } else { // Document was deleted or does not exist anymore
                 setOngoingCall(null);
+                setOutgoingCall(null);
                 setIncomingCall(null);
                 setOtherUserInCall(null);
                 setAndStoreActiveCallId(null);
@@ -104,7 +134,7 @@ const useCallNotifications = () => {
         });
 
         return () => unsubscribe();
-    }, [activeCallId, user, ongoingCall, setAndStoreActiveCallId]);
+    }, [activeCallId, user, ongoingCall, setOngoingCall, setOutgoingCall]);
 
     // Effect to listen for NEW incoming calls for the current user
     useEffect(() => {
@@ -137,7 +167,7 @@ const useCallNotifications = () => {
         setAndStoreActiveCallId(incomingCall.id); 
         updateCallStatus(incomingCall.id, 'answered');
         setIncomingCall(null); // Clear the incoming call notification
-    }, [incomingCall, setAndStoreActiveCallId]);
+    }, [incomingCall]);
 
     const declineCall = useCallback(() => {
         if (!incomingCall) return;
@@ -145,21 +175,32 @@ const useCallNotifications = () => {
         setIncomingCall(null);
     }, [incomingCall]);
 
-    const endCall = useCallback(() => {
-        if (activeCallId) {
-            updateCallStatus(activeCallId, 'ended');
-        }
-    }, [activeCallId]);
-
     const onTogglePipMode = useCallback(() => {
       setIsPipMode(prev => !prev);
     }, []);
+
+    const initiateCall = useCallback(async (receiver: PublicUserProfile) => {
+      if (!user) return;
+      
+      setOutgoingCall(receiver); // Show outgoing call UI
+      
+      const callId = await createCall({
+        callerId: user.uid,
+        callerName: user.displayName || 'Anonymous',
+        callerPhotoURL: user.photoURL,
+        receiverId: receiver.uid,
+        status: 'ringing'
+      });
+      setAndStoreActiveCallId(callId);
+    }, [user, setOutgoingCall]);
     
     return { 
       incomingCall, 
       acceptCall, 
       declineCall, 
-      ongoingCall, 
+      ongoingCall,
+      outgoingCall,
+      initiateCall,
       otherUserInCall, 
       endCall, 
       setActiveCallId: setAndStoreActiveCallId, 
@@ -179,7 +220,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, outgoingCall, initiateCall, otherUserInCall, endCall, setActiveCallId, isPipMode, onTogglePipMode } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -398,14 +439,14 @@ function AppContent({ children }: { children: ReactNode }) {
             <ChatSidebar />
             {chattingWith && (
               <div className="w-[20rem] flex-1 border-l border-border/30">
-                  <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} setActiveCallId={setActiveCallId} />
+                  <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
               </div>
             )}
         </div>
 
         {isMobile && chattingWith && !ongoingCall && (
             <div className="fixed inset-0 top-16 z-40 bg-background">
-                <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} setActiveCallId={setActiveCallId} />
+                <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
             </div>
         )}
       </div>
@@ -463,6 +504,13 @@ function AppContent({ children }: { children: ReactNode }) {
           call={incomingCall}
           onAccept={acceptCall}
           onDecline={declineCall}
+        />
+      )}
+
+      {outgoingCall && !ongoingCall && (
+        <OutgoingCallNotification
+            user={outgoingCall}
+            onCancel={() => endCall()}
         />
       )}
       
