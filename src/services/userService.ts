@@ -121,33 +121,46 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
 export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; coverPhotoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
-    
+
     let needsIndexUpdate = false;
 
-    if(profileData.displayName !== undefined) {
+    // Construct the update object from the provided profileData
+    if (profileData.displayName !== undefined) {
         dataToUpdate['displayName'] = profileData.displayName;
         needsIndexUpdate = true;
     }
-    if(profileData.username !== undefined) {
+    if (profileData.username !== undefined) {
         dataToUpdate['username'] = profileData.username;
         needsIndexUpdate = true;
     }
-    if(profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
-    if(profileData.coverPhotoURL !== undefined) dataToUpdate['coverPhotoURL'] = profileData.coverPhotoURL;
-    if(profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
-    if(profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
-    if(profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
-    if(profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
+    if (profileData.photoURL !== undefined) dataToUpdate['photoURL'] = profileData.photoURL;
+    if (profileData.coverPhotoURL !== undefined) dataToUpdate['coverPhotoURL'] = profileData.coverPhotoURL;
+    if (profileData.bio !== undefined) dataToUpdate['bio'] = profileData.bio;
+    if (profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
+    if (profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
+    if (profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
 
-    // If username or displayName changed, update the searchable index
+    // If username or displayName changed, fetch the document to correctly build the new index.
     if (needsIndexUpdate) {
-        const docSnap = await getDoc(userDocRef);
-        const currentData = docSnap.data();
-        const displayName = profileData.displayName ?? currentData?.displayName;
-        const username = profileData.username ?? currentData?.username;
-        dataToUpdate['searchableIndex'] = Array.from(new Set([displayName?.toLowerCase(), username?.toLowerCase()]));
-    }
+        try {
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                const currentData = docSnap.data();
+                // Use the new data if it exists, otherwise fall back to the current data in Firestore.
+                const newDisplayName = profileData.displayName ?? currentData.displayName;
+                const newUsername = profileData.username ?? currentData.username;
+                
+                const indexSet = new Set<string>();
+                if (newDisplayName) indexSet.add(newDisplayName.toLowerCase());
+                if (newUsername) indexSet.add(newUsername.toLowerCase());
 
+                dataToUpdate['searchableIndex'] = Array.from(indexSet);
+            }
+        } catch (error) {
+             console.error("Could not get user doc for search index update:", error);
+             throw new Error("Could not update user profile index.");
+        }
+    }
 
     try {
         await setDoc(userDocRef, dataToUpdate, { merge: true });
