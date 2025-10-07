@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import SidebarNav from '@/components/layout/SidebarNav';
 import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
@@ -33,7 +33,7 @@ import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { onSnapshot, collection, query, where } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { CallData } from '@/services/callService';
 import { updateCallStatus } from '@/services/callService';
@@ -47,6 +47,23 @@ const useCallNotifications = () => {
 
     useEffect(() => {
         if (!user || !db) return;
+
+        // This is the client-side listener logic, moved from the server file.
+        const listenToCall = (callId: string, callback: (call: CallData | null) => void) => {
+            const callDocRef = doc(db, 'calls', callId);
+            return onSnapshot(callDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as DocumentData;
+                    callback({
+                        id: docSnap.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate(),
+                    } as CallData);
+                } else {
+                    callback(null);
+                }
+            });
+        };
 
         const callsCollectionRef = collection(db, 'calls');
         const q = query(callsCollectionRef, where("receiverId", "==", user.uid), where("status", "==", "ringing"));

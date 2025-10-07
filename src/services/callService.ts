@@ -5,12 +5,9 @@ import { db } from '@/lib/firebase';
 import {
   doc,
   setDoc,
-  onSnapshot,
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  type Unsubscribe,
-  type DocumentData,
 } from 'firebase/firestore';
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
@@ -56,27 +53,4 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   } else {
     await updateDoc(callDocRef, { status });
   }
-}
-
-/**
- * Listens for changes to a specific call document.
- * @param callId The ID of the call to listen to.
- * @param callback A function to be called with the call data.
- * @returns An unsubscribe function.
- */
-export function listenToCall(callId: string, callback: (call: CallData | null) => void): Unsubscribe {
-  const callDocRef = getCallDocRef(callId);
-  return onSnapshot(callDocRef, (docSnap) => {
-    if (docSnap.exists()) {
-      const data = docSnap.data() as DocumentData;
-      callback({
-          id: docSnap.id,
-          ...data,
-          createdAt: data.createdAt?.toDate(),
-      } as CallData);
-    } else {
-      // Document does not exist (e.g., call was declined/ended and deleted)
-      callback(null);
-    }
-  });
 }
