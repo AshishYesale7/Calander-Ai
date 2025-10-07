@@ -144,7 +144,8 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
         if (call.callerId === user.uid) { // We are the CALLER
           unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
-            if (pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
+            if (pc.signalingState === 'closed') return;
+            if (pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
               receiverCandidatesQueue.current.push(candidate);
@@ -152,27 +153,34 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           });
 
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-            const data = snapshot.data();
             if (pc.signalingState === 'closed') return; // Guard clause
+            const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
               const answerDescription = new RTCSessionDescription(data.answer);
               await pc.setRemoteDescription(answerDescription);
               
-              receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e)));
+              receiverCandidatesQueue.current.forEach(candidate => {
+                  if (pc.signalingState !== 'closed') {
+                     pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e))
+                  }
+              });
               receiverCandidatesQueue.current = [];
             }
           });
-
+          
           if (pc.signalingState !== 'closed') {
             pc.createOffer().then(offerDescription => {
-               pc.setLocalDescription(offerDescription);
-               saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
+               if (pc.signalingState !== 'closed') {
+                 pc.setLocalDescription(offerDescription);
+                 saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
+               }
             });
           }
         
         } else { // We are the RECEIVER
           unsubCandidates = listenForCallerCandidates(call.id, candidate => {
-            if (pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
+            if (pc.signalingState === 'closed') return;
+            if (pc.currentRemoteDescription) {
               pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
             } else {
               callerCandidatesQueue.current.push(candidate);
@@ -180,18 +188,24 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           });
           
           unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-              const data = snapshot.data();
               if (pc.signalingState === 'closed') return; // Guard clause
+              const data = snapshot.data();
               if (data?.offer && !pc.currentRemoteDescription) {
                   const offerDescription = new RTCSessionDescription(data.offer);
                   await pc.setRemoteDescription(offerDescription);
                   
-                  callerCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e)));
+                  callerCandidatesQueue.current.forEach(candidate => {
+                      if (pc.signalingState !== 'closed') {
+                        pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e))
+                      }
+                  });
                   callerCandidatesQueue.current = [];
   
-                  const answerDescription = await pc.createAnswer();
-                  await pc.setLocalDescription(answerDescription);
-                  await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
+                  if (pc.signalingState !== 'closed') {
+                    const answerDescription = await pc.createAnswer();
+                    await pc.setLocalDescription(answerDescription);
+                    await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
+                  }
               }
           });
         }
@@ -203,6 +217,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         }
     });
     
+    // Main cleanup function
     return () => {
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
@@ -212,7 +227,10 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         localStreamRef.current = null;
       }
       if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
+        // Check if it's already closed before trying to close it again
+        if (peerConnectionRef.current.signalingState !== 'closed') {
+            peerConnectionRef.current.close();
+        }
         peerConnectionRef.current = null;
       }
       console.log("Video call resources cleaned up.");
