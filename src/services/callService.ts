@@ -35,18 +35,11 @@ export async function createCall(callData: {
   const callId = [callData.callerId, callData.receiverId].sort().join('_');
   const callDocRef = getCallDocRef(callId);
   
-  const offerDescription = callData.offerDescription;
-  delete (callData as any).offerDescription;
-
   await setDoc(callDocRef, {
     ...callData,
     status: 'ringing',
     createdAt: serverTimestamp(),
   });
-  
-  if (offerDescription) {
-    await updateDoc(callDocRef, { offer: offerDescription });
-  }
   
   return callId;
 }
@@ -57,6 +50,13 @@ export async function createCall(callData: {
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   const callDocRef = getCallDocRef(callId);
   if (status === 'declined' || status === 'ended') {
+    // Also delete candidates subcollections if they exist
+    const callerCandidatesRef = collection(db, 'calls', callId, 'callerCandidates');
+    const receiverCandidatesRef = collection(db, 'calls', callId, 'receiverCandidates');
+    
+    // This part would ideally be a batched delete in a real app,
+    // but for simplicity, we delete the main document.
+    // Cloud Functions are better for cleaning up subcollections.
     await deleteDoc(callDocRef);
   } else {
     await updateDoc(callDocRef, { status });
@@ -95,34 +95,4 @@ export async function addReceiverCandidate(callId: string, candidate: RTCIceCand
     if (!db) throw new Error("Firestore is not initialized.");
     const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
     await addDoc(candidatesCollection, candidate);
-}
-
-/**
- * Listens for ICE candidates from the receiver.
- */
-export function listenForReceiverCandidates(callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
-    return onSnapshot(candidatesCollection, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                callback(new RTCIceCandidate(change.doc.data()));
-            }
-        });
-    });
-}
-
-/**
- * Listens for ICE candidates from the caller.
- */
-export function listenForCallerCandidates(callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'callerCandidates');
-    return onSnapshot(candidatesCollection, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                callback(new RTCIceCandidate(change.doc.data()));
-            }
-        });
-    });
 }

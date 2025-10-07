@@ -11,8 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { saveAnswer, saveOffer, listenForReceiverCandidates, listenForCallerCandidates, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
+import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestore';
+import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -30,6 +30,32 @@ const servers = {
   ],
   iceCandidatePoolSize: 10,
 };
+
+// Client-side listener functions moved from callService.ts
+const listenForReceiverCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
+    return onSnapshot(candidatesCollection, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                callback(new RTCIceCandidate(change.doc.data()));
+            }
+        });
+    });
+};
+
+const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(db, 'calls', callId, 'callerCandidates');
+    return onSnapshot(candidatesCollection, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                callback(new RTCIceCandidate(change.doc.data()));
+            }
+        });
+    });
+};
+
 
 export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallViewProps) {
   const { user } = useAuth();
@@ -104,27 +130,31 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         const pc = await createPeerConnection();
         if (!pc) return;
 
-        listenForReceiverCandidates(call.id, (candidate) => {
+        const unsubscribeCandidates = listenForReceiverCandidates(call.id, (candidate) => {
             pc.addIceCandidate(new RTCIceCandidate(candidate));
         });
+        
+        pc.onicecandidate = (event) => {
+            event.candidate && addCallerCandidate(call.id, event.candidate.toJSON());
+        };
         
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
         await saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
 
-        pc.onicecandidate = (event) => {
-            event.candidate && addCallerCandidate(call.id, event.candidate.toJSON());
-        };
-
         const callDocRef = doc(db, 'calls', call.id);
-        const unsubscribe = onSnapshot(callDocRef, (snapshot) => {
+        const unsubscribeCall = onSnapshot(callDocRef, (snapshot) => {
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
                 pc.setRemoteDescription(answerDescription);
             }
         });
-        return unsubscribe;
+        
+        return () => {
+          unsubscribeCandidates();
+          unsubscribeCall();
+        }
     };
 
     const unsubscribePromise = startCall();
@@ -143,12 +173,16 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         const pc = await createPeerConnection();
         if (!pc) return;
 
-        listenForCallerCandidates(call.id, (candidate) => {
+        const unsubscribeCandidates = listenForCallerCandidates(call.id, (candidate) => {
             pc.addIceCandidate(new RTCIceCandidate(candidate));
         });
+        
+        pc.onicecandidate = (event) => {
+            event.candidate && addReceiverCandidate(call.id, event.candidate.toJSON());
+        };
 
         const callDocRef = doc(db, 'calls', call.id);
-        const unsubscribe = onSnapshot(callDocRef, async (snapshot) => {
+        const unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
             const data = snapshot.data();
             if (data?.offer && !pc.currentRemoteDescription) {
                 const offerDescription = new RTCSessionDescription(data.offer);
@@ -158,13 +192,13 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
                 await pc.setLocalDescription(answerDescription);
 
                 await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
-                
-                pc.onicecandidate = (event) => {
-                    event.candidate && addReceiverCandidate(call.id, event.candidate.toJSON());
-                };
             }
         });
-        return unsubscribe;
+
+        return () => {
+          unsubscribeCandidates();
+          unsubscribeCall();
+        }
     };
     
     const unsubscribePromise = answerCall();
