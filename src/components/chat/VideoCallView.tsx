@@ -71,6 +71,9 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
 
+  const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+  const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+
   const setupStreams = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -105,7 +108,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     const localStream = await setupStreams();
     if (!localStream) {
       onEndCall();
-      return;
+      return null;
     }
 
     localStream.getTracks().forEach((track) => {
@@ -126,12 +129,19 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   useEffect(() => {
     if (!user || !call || user.uid !== call.callerId) return;
 
+    let unsubscribeCandidates: Unsubscribe | undefined;
+    let unsubscribeCall: Unsubscribe | undefined;
+
     const startCall = async () => {
         const pc = await createPeerConnection();
         if (!pc) return;
 
-        const unsubscribeCandidates = listenForReceiverCandidates(call.id, (candidate) => {
-            pc.addIceCandidate(new RTCIceCandidate(candidate));
+        unsubscribeCandidates = listenForReceiverCandidates(call.id, (candidate) => {
+          if (pc.currentRemoteDescription) {
+            pc.addIceCandidate(candidate);
+          } else {
+            receiverCandidatesQueue.current.push(candidate);
+          }
         });
         
         pc.onicecandidate = (event) => {
@@ -143,23 +153,24 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         await saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
 
         const callDocRef = doc(db, 'calls', call.id);
-        const unsubscribeCall = onSnapshot(callDocRef, (snapshot) => {
+        unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
-                pc.setRemoteDescription(answerDescription);
+                await pc.setRemoteDescription(answerDescription);
+
+                // Process any queued candidates
+                receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
+                receiverCandidatesQueue.current = [];
             }
         });
-        
-        return () => {
-          unsubscribeCandidates();
-          unsubscribeCall();
-        }
     };
 
-    const unsubscribePromise = startCall();
+    startCall();
+    
     return () => {
-        unsubscribePromise.then(unsubscribe => unsubscribe && unsubscribe());
+      if (unsubscribeCandidates) unsubscribeCandidates();
+      if (unsubscribeCall) unsubscribeCall();
     };
 
   }, [user, call, createPeerConnection]);
@@ -169,12 +180,19 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   useEffect(() => {
     if (!user || !call || user.uid !== call.receiverId) return;
 
+    let unsubscribeCandidates: Unsubscribe | undefined;
+    let unsubscribeCall: Unsubscribe | undefined;
+
     const answerCall = async () => {
         const pc = await createPeerConnection();
         if (!pc) return;
 
-        const unsubscribeCandidates = listenForCallerCandidates(call.id, (candidate) => {
-            pc.addIceCandidate(new RTCIceCandidate(candidate));
+        unsubscribeCandidates = listenForCallerCandidates(call.id, (candidate) => {
+          if (pc.currentRemoteDescription) {
+            pc.addIceCandidate(candidate);
+          } else {
+            callerCandidatesQueue.current.push(candidate);
+          }
         });
         
         pc.onicecandidate = (event) => {
@@ -182,28 +200,28 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         };
 
         const callDocRef = doc(db, 'calls', call.id);
-        const unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
+        unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
             const data = snapshot.data();
             if (data?.offer && !pc.currentRemoteDescription) {
                 const offerDescription = new RTCSessionDescription(data.offer);
                 await pc.setRemoteDescription(offerDescription);
+                
+                // Process any queued candidates
+                callerCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
+                callerCandidatesQueue.current = [];
 
                 const answerDescription = await pc.createAnswer();
                 await pc.setLocalDescription(answerDescription);
-
                 await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
             }
         });
-
-        return () => {
-          unsubscribeCandidates();
-          unsubscribeCall();
-        }
     };
     
-    const unsubscribePromise = answerCall();
+    answerCall();
+
     return () => {
-        unsubscribePromise.then(unsubscribe => unsubscribe && unsubscribe());
+      if (unsubscribeCandidates) unsubscribeCandidates();
+      if (unsubscribeCall) unsubscribeCall();
     };
   }, [user, call, createPeerConnection]);
   
@@ -213,6 +231,7 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
     }
   };
 
