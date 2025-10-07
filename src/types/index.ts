@@ -1,8 +1,10 @@
 
+
 'use server';
 
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
+import type { RTCSessionDescriptionInit } from 'react';
 
 export interface SocialLinks {
     github?: string;
@@ -226,6 +228,22 @@ export interface ChatMessage {
   senderId: string;
   timestamp: Date;
 }
+
+export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
+
+export interface CallData {
+  id: string;
+  callerId: string;
+  callerName: string;
+  callerPhotoURL: string | null;
+  receiverId: string;
+  status: CallStatus;
+  createdAt: any; // Can be Timestamp or Date
+  // WebRTC signaling fields
+  offer?: RTCSessionDescriptionInit;
+  answer?: RTCSessionDescriptionInit;
+}
+
 
 export interface StreakData {
     currentStreak: number;

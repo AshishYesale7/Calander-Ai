@@ -1,4 +1,5 @@
 
+
 'use client';
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -35,7 +36,7 @@ import { ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { CallData } from '@/services/callService';
+import type { CallData } from '@/types';
 import { updateCallStatus } from '@/services/callService';
 import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
 import VideoCallView from '@/components/chat/VideoCallView';
@@ -56,29 +57,25 @@ const useCallNotifications = () => {
             if (docSnap.exists()) {
                 const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
 
-                if (callData.status === 'answered') {
+                if (callData.status === 'answered' && !ongoingCall) { // Prevent re-triggering
                     setOngoingCall(callData);
                     setIncomingCall(null);
                     
-                    // Determine the other user in the call
                     const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                     const userDoc = await getDoc(doc(db, 'users', otherUserId));
                     if (userDoc.exists()) {
                         setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
                     }
 
-                } else if (callData.status === 'ringing') {
-                    // This state is primarily for the caller waiting for an answer.
-                    // The receiver's UI is handled by the other useEffect.
-                } else {
-                    // Call was declined, ended, or document was deleted
+                } else if (callData.status === 'ringing' && callData.callerId === user.uid) {
+                    // Caller is waiting, nothing to change in UI yet, but we are listening
+                } else if (callData.status === 'declined' || callData.status === 'ended') {
                     setOngoingCall(null);
                     setIncomingCall(null);
                     setOtherUserInCall(null);
                     setActiveCallId(null);
                 }
             } else {
-                // Document was deleted (call ended/declined)
                 setOngoingCall(null);
                 setIncomingCall(null);
                 setOtherUserInCall(null);
@@ -87,13 +84,12 @@ const useCallNotifications = () => {
         });
 
         return () => unsubscribe();
-    }, [activeCallId, user]);
+    }, [activeCallId, user, ongoingCall]);
 
     // Effect to listen for new incoming calls for the current user
     useEffect(() => {
         if (!user || !db) return;
         
-        // This query is specifically for finding calls where I am the receiver.
         const callsCollectionRef = collection(db, 'calls');
         const q = query(
             callsCollectionRef,
@@ -103,26 +99,25 @@ const useCallNotifications = () => {
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
-                // Get the first ringing call targeted at me
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
-                if (!ongoingCall) { // Don't show incoming call if already in one
+                if (!ongoingCall) { 
                     setIncomingCall(callData);
                     setActiveCallId(callData.id);
                 }
             } else {
-                // No calls are ringing for me
-                setIncomingCall(null);
+                if (incomingCall && incomingCall.receiverId === user.uid) {
+                  setIncomingCall(null);
+                }
             }
         });
 
         return () => unsubscribe();
-    }, [user, ongoingCall]);
+    }, [user, ongoingCall, incomingCall]);
 
     const acceptCall = () => {
         if (!incomingCall) return;
         updateCallStatus(incomingCall.id, 'answered');
-        // The listener will handle setting ongoingCall
     };
 
     const declineCall = () => {
@@ -135,7 +130,6 @@ const useCallNotifications = () => {
     const endCall = () => {
         if (!ongoingCall) return;
         updateCallStatus(ongoingCall.id, 'ended');
-        // The listener will handle cleanup
     };
     
     return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId };
@@ -435,7 +429,11 @@ function AppContent({ children }: { children: ReactNode }) {
       
       {ongoingCall && otherUserInCall && (
         <div className="fixed inset-0 z-[100] bg-black">
-          <VideoCallView otherUser={otherUserInCall} onEndCall={endCall} />
+          <VideoCallView 
+            call={ongoingCall} 
+            otherUser={otherUserInCall} 
+            onEndCall={endCall} 
+          />
         </div>
       )}
 
