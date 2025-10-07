@@ -144,10 +144,10 @@ const useCallNotifications = () => {
         setIncomingCall(null);
     };
 
-    const endCall = () => {
+    const endCall = useCallback(() => {
         if (!ongoingCall) return;
         updateCallStatus(ongoingCall.id, 'ended');
-    };
+    }, [ongoingCall]);
     
     return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId };
 };
