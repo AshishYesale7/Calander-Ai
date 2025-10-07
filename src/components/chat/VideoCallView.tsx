@@ -74,23 +74,42 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
   const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
 
-  const setupStreams = useCallback(async () => {
+  const setupStreamsAndPC = useCallback(async () => {
     try {
+      // 1. Get media stream
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
-      
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
+      setHasPermission(true);
+      
+      // 2. Create Peer Connection
+      const pc = new RTCPeerConnection(servers);
+      peerConnectionRef.current = pc;
+      
+      // 3. Add local tracks to PC
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
 
+      // 4. Set up remote stream
       remoteStreamRef.current = new MediaStream();
       if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
       }
-      setHasPermission(true);
-      return stream;
+
+      // 5. Handle incoming tracks
+      pc.ontrack = (event) => {
+          event.streams[0].getTracks().forEach((track) => {
+              remoteStreamRef.current?.addTrack(track);
+          });
+      };
+
+      return pc;
+
     } catch (error) {
-      console.error('Error accessing media devices.', error);
+      console.error('Error setting up streams or peer connection.', error);
       toast({
         variant: 'destructive',
         title: 'Media Access Denied',
@@ -98,96 +117,62 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         duration: 7000,
       });
       setHasPermission(false);
+      onEndCall(); // End the call if permissions are denied
       return null;
     }
-  }, [toast]);
-  
-  const createPeerConnection = useCallback(async () => {
-    const pc = new RTCPeerConnection(servers);
+  }, [toast, onEndCall]);
 
-    const localStream = await setupStreams();
-    if (!localStream) {
-      onEndCall();
-      return null;
-    }
-
-    localStream.getTracks().forEach((track) => {
-      pc.addTrack(track, localStream);
-    });
-
-    pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        remoteStreamRef.current?.addTrack(track);
-      });
-    };
-
-    peerConnectionRef.current = pc;
-    return pc;
-  }, [setupStreams, onEndCall]);
-
-  // Caller logic
+  // Combined effect for WebRTC setup and signaling
   useEffect(() => {
-    if (!user || !call || user.uid !== call.callerId) return;
+    if (!user || !call) return;
+    
+    let unsubCall: Unsubscribe;
+    let unsubCandidates: Unsubscribe;
 
-    let unsubscribeCandidates: Unsubscribe | undefined;
-    let unsubscribeCall: Unsubscribe | undefined;
+    const setupAndSignal = async () => {
+      const pc = await setupStreamsAndPC();
+      if (!pc) return;
 
-    const startCall = async () => {
-        const pc = await createPeerConnection();
-        if (!pc) return;
+      // Common ICE candidate handling
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          if (call.callerId === user.uid) {
+            addCallerCandidate(call.id, event.candidate.toJSON());
+          } else {
+            addReceiverCandidate(call.id, event.candidate.toJSON());
+          }
+        }
+      };
 
-        unsubscribeCandidates = listenForReceiverCandidates(call.id, (candidate) => {
+      // Role-specific logic
+      if (call.callerId === user.uid) { // We are the CALLER
+        unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
           if (pc.currentRemoteDescription) {
             pc.addIceCandidate(candidate);
           } else {
             receiverCandidatesQueue.current.push(candidate);
           }
         });
-        
-        pc.onicecandidate = (event) => {
-            event.candidate && addCallerCandidate(call.id, event.candidate.toJSON());
-        };
-        
+
+        unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
+          const data = snapshot.data();
+          if (!pc.currentRemoteDescription && data?.answer) {
+            const answerDescription = new RTCSessionDescription(data.answer);
+            await pc.setRemoteDescription(answerDescription);
+            
+            // Process queued candidates
+            receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
+            receiverCandidatesQueue.current = [];
+          }
+        });
+
+        // Create the offer
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
         await saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
-
-        const callDocRef = doc(db, 'calls', call.id);
-        unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
-            const data = snapshot.data();
-            if (!pc.currentRemoteDescription && data?.answer) {
-                const answerDescription = new RTCSessionDescription(data.answer);
-                await pc.setRemoteDescription(answerDescription);
-
-                // Process any queued candidates
-                receiverCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
-                receiverCandidatesQueue.current = [];
-            }
-        });
-    };
-
-    startCall();
-    
-    return () => {
-      if (unsubscribeCandidates) unsubscribeCandidates();
-      if (unsubscribeCall) unsubscribeCall();
-    };
-
-  }, [user, call, createPeerConnection]);
-
-
-  // Receiver logic
-  useEffect(() => {
-    if (!user || !call || user.uid !== call.receiverId) return;
-
-    let unsubscribeCandidates: Unsubscribe | undefined;
-    let unsubscribeCall: Unsubscribe | undefined;
-
-    const answerCall = async () => {
-        const pc = await createPeerConnection();
-        if (!pc) return;
-
-        unsubscribeCandidates = listenForCallerCandidates(call.id, (candidate) => {
+      
+      } else { // We are the RECEIVER
+        unsubCandidates = listenForCallerCandidates(call.id, candidate => {
           if (pc.currentRemoteDescription) {
             pc.addIceCandidate(candidate);
           } else {
@@ -195,18 +180,13 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
           }
         });
         
-        pc.onicecandidate = (event) => {
-            event.candidate && addReceiverCandidate(call.id, event.candidate.toJSON());
-        };
-
-        const callDocRef = doc(db, 'calls', call.id);
-        unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
+        unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
             const data = snapshot.data();
             if (data?.offer && !pc.currentRemoteDescription) {
                 const offerDescription = new RTCSessionDescription(data.offer);
                 await pc.setRemoteDescription(offerDescription);
                 
-                // Process any queued candidates
+                // Process queued candidates
                 callerCandidatesQueue.current.forEach(candidate => pc.addIceCandidate(candidate));
                 callerCandidatesQueue.current = [];
 
@@ -215,15 +195,17 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
                 await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
             }
         });
+      }
     };
-    
-    answerCall();
 
+    setupAndSignal();
+    
     return () => {
-      if (unsubscribeCandidates) unsubscribeCandidates();
-      if (unsubscribeCall) unsubscribeCall();
+      if (unsubCall) unsubCall();
+      if (unsubCandidates) unsubCandidates();
     };
-  }, [user, call, createPeerConnection]);
+
+  }, [user, call, setupStreamsAndPC]);
   
   const cleanup = () => {
      if (localStreamRef.current) {
