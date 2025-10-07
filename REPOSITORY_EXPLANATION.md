@@ -1,9 +1,9 @@
 
-# FutureSight Repository Comprehensive Explanation
+# Calendar.ai Repository Comprehensive Explanation
 
 ## Project Overview
 
-**FutureSight** is an intelligent, AI-powered career calendar and planning application designed specifically for college students and early-career professionals. It serves as a comprehensive digital assistant that helps users navigate the complexities of career development by transforming traditional calendar management into a proactive, AI-driven planning system.
+**Calendar.ai** is an intelligent, AI-powered career calendar and planning application designed specifically for college students and early-career professionals. It serves as a comprehensive digital assistant that helps users navigate the complexities of career development by transforming traditional calendar management into a proactive, AI-driven planning system.
 
 ### Core Purpose
 The application addresses the overwhelming challenge faced by students who must juggle:
@@ -51,7 +51,7 @@ The application addresses the overwhelming challenge faced by students who must 
 ## Repository Structure
 
 ```
-FutureSight/
+Calendar.ai/
 ├── .git/                          # Git version control
 ├── .vscode/                       # VS Code configuration
 ├── docs/                          # Documentation files
@@ -155,8 +155,8 @@ FutureSight/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/AshishYesale7/FutureSight.git
-   cd FutureSight
+   git clone https://github.com/AshishYesale7/Calendar.ai.git
+   cd Calendar.ai
    ```
 
 2. **Install dependencies**:

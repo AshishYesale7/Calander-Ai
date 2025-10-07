@@ -1,6 +1,6 @@
-# FutureSight: Feature & Update Catalog
+# Calendar.ai: Feature & Update Catalog
 
-This document provides a comprehensive overview of all new features, enhancements, and bug fixes implemented in the FutureSight application.
+This document provides a comprehensive overview of all new features, enhancements, and bug fixes implemented in the Calendar.ai application.
 
 ---
 
@@ -22,7 +22,7 @@ The primary timeline and calendar views have been significantly upgraded for bet
 
 ### 1.2. Plugin System & Extension Marketplace
 
-A modular plugin system has been introduced to extend the core functionality of FutureSight.
+A modular plugin system has been introduced to extend the core functionality of Calendar.ai.
 
 - **Marketplace UI (`/extension`):** A dedicated page now serves as a central hub for users to discover, install, and manage plugins.
 - **Dynamic Installation & Persistence:** Users can install or uninstall plugins with a single click, and their selections are saved to their cloud profile.

@@ -1,8 +1,8 @@
-# FutureSight Technical Architecture
+# Calendar.ai Technical Architecture
 
 ## System Architecture Overview
 
-FutureSight follows a modern, cloud-native architecture built on serverless principles with AI-first design patterns.
+Calendar.ai follows a modern, cloud-native architecture built on serverless principles with AI-first design patterns.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -593,4 +593,4 @@ const withPerformanceTracking = (handler: any) => {
 };
 ```
 
-This technical architecture provides a comprehensive foundation for understanding how FutureSight is built, scaled, and maintained as a modern, AI-powered web application.
+This technical architecture provides a comprehensive foundation for understanding how Calendar.ai is built, scaled, and maintained as a modern, AI-powered web application.

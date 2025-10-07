@@ -1,12 +1,12 @@
-# Complete Repository Explanation: FutureSight
+# Complete Repository Explanation: Calendar.ai
 
 ## Introduction
 
-You've asked me to explain this repository ("Can you explain this rep"), and I'm excited to provide you with a comprehensive overview of **FutureSight** - an innovative AI-powered career planning and calendar management application.
+You've asked me to explain this repository ("Can you explain this rep"), and I'm excited to provide you with a comprehensive overview of **Calendar.ai** - an innovative AI-powered career planning and calendar management application.
 
-## What is FutureSight?
+## What is Calendar.ai?
 
-FutureSight is not just another calendar application. It's an intelligent digital assistant specifically designed for college students and early-career professionals who struggle with the complexity of managing academic responsibilities, career development, and personal growth simultaneously.
+Calendar.ai is not just another calendar application. It's an intelligent digital assistant specifically designed for college students and early-career professionals who struggle with the complexity of managing academic responsibilities, career development, and personal growth simultaneously.
 
 ### The Problem It Solves
 
@@ -21,7 +21,7 @@ Traditional planning tools are passive - they show you what you need to do but d
 
 ### The Solution
 
-FutureSight transforms planning from reactive to proactive using AI-powered insights that:
+Calendar.ai transforms planning from reactive to proactive using AI-powered insights that:
 - Generate personalized daily schedules
 - Connect daily tasks to long-term career goals
 - Provide intelligent recommendations and resources
@@ -56,7 +56,7 @@ FutureSight transforms planning from reactive to proactive using AI-powered insi
 ## Repository Structure Explained
 
 ```
-FutureSight/
+Calendar.ai/
 ├── 📁 src/                          # Source code
 │   ├── 📁 app/                      # Next.js App Router
 │   │   ├── 📁 (app)/               # Protected routes (main application)
@@ -222,7 +222,7 @@ The application requires several environment variables:
 ## Innovation Highlights
 
 ### 1. **AI-Human Collaboration**
-Rather than replacing human planning, FutureSight augments human decision-making with AI insights, creating a collaborative planning experience.
+Rather than replacing human planning, Calendar.ai augments human decision-making with AI insights, creating a collaborative planning experience.
 
 ### 2. **Context-Aware Intelligence**
 The AI doesn't just respond to queries; it understands the user's context, goals, and patterns to provide proactive assistance.
@@ -289,13 +289,13 @@ The email analysis feature demonstrates how AI can be helpful while respecting u
 
 ## Live Experience
 
-You can experience FutureSight yourself at: **http://futuresight-8ebba4468907.herokuapp.com**
+You can experience Calendar.ai yourself at: **http://futuresight-8ebba4468907.herokuapp.com**
 
 The live demo showcases all the features described above and provides a complete view of how the application helps users manage their career development journey.
 
 ## Conclusion
 
-FutureSight represents a significant evolution in personal productivity and career planning tools. By combining AI intelligence with thoughtful user experience design, it addresses the real challenges faced by students and young professionals in today's complex world.
+Calendar.ai represents a significant evolution in personal productivity and career planning tools. By combining AI intelligence with thoughtful user experience design, it addresses the real challenges faced by students and young professionals in today's complex world.
 
 The repository demonstrates:
 - **Technical Excellence**: Modern architecture and development practices
@@ -303,6 +303,6 @@ The repository demonstrates:
 - **User Focus**: Solutions designed around real user needs
 - **Scalable Design**: Built to grow and adapt to changing requirements
 
-Whether you're a developer interested in AI integration, a student looking for career guidance, or someone passionate about the intersection of technology and personal development, FutureSight offers valuable insights and practical solutions.
+Whether you're a developer interested in AI integration, a student looking for career guidance, or someone passionate about the intersection of technology and personal development, Calendar.ai offers valuable insights and practical solutions.
 
 The project showcases how technology can be used not just to automate tasks, but to genuinely enhance human potential and help people achieve their aspirations more effectively.

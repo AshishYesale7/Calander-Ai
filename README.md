@@ -1,8 +1,8 @@
 [![wakatime](https://wakatime.com/badge/user/d1ca8a6d-192f-4863-8ce8-0faf66511e19/project/9e9e6fd5-45b6-4927-b14e-b8f6f50df53d.svg)](https://wakatime.com/badge/user/d1ca8a6d-192f-4863-8ce8-0faf66511e19/project/9e9e6fd5-45b6-4927-b14e-b8f6f50df53d)
 
-# FutureSight: Your AI-Powered Career Calendar
+# Calendar.ai: Your AI-Powered Career Calendar
 
-Welcome to FutureSight, an intelligent planning application designed to help ambitious students and young professionals navigate the complexities of career development. This isn't just a calendar; it's a proactive assistant that helps you manage your time, track your goals, and build a clear path to success with the help of powerful AI.
+Welcome to Calendar.ai, an intelligent planning application designed to help ambitious students and young professionals navigate the complexities of career development. This isn't just a calendar; it's a proactive assistant that helps you manage your time, track your goals, and build a clear path to success with the help of powerful AI.
 
 ## 1. The Problem: Overcoming Student Overwhelm
 
@@ -11,13 +11,13 @@ For college students and an early-career individuals, the path forward is often 
 *   **Information Overload:** Students are bombarded with information about exams (like GATE, GRE, CAT), internship opportunities, new technologies, and necessary skills (DSA, AI, WebDev), making it difficult to know what to focus on.
 *   **Time Management Deficit:** Traditional calendars are passive. They show you *what* you have to do, but they don't help you figure out *how* to get it all done. Students struggle to balance classes, studying, projects, and personal growth, often leading to burnout or missed opportunities.
 *   **Lack of a Cohesive Strategy:** It's easy to get lost in the day-to-day grind. Connecting daily tasks to long-term career goals is often an abstract concept, leaving students feeling directionless. They may track their goals in one place, their skills in another, and their deadlines in a third, with no unified view of their progress.
-*   **Reactive vs. Proactive Planning:** Most planning happens in response to an impending deadline. FutureSight aims to solve this by providing predictive insights and structured plans. It analyzes your past activities, current commitments, and future goals to help you not just manage your present but actively build your future. By structuring a clear, AI-assisted plan, it turns the daunting task of career planning into a manageable, day-by-day journey.
+*   **Reactive vs. Proactive Planning:** Most planning happens in response to an impending deadline. Calendar.ai aims to solve this by providing predictive insights and structured plans. It analyzes your past activities, current commitments, and future goals to help you not just manage your present but actively build your future. By structuring a clear, AI-assisted plan, it turns the daunting task of career planning into a manageable, day-by-day journey.
 
-FutureSight addresses this by creating a single, intelligent ecosystem where every task, every goal, and every learning resource is part of a larger, personalized career strategy.
+Calendar.ai addresses this by creating a single, intelligent ecosystem where every task, every goal, and every learning resource is part of a larger, personalized career strategy.
 
-## 2. The Solution: An Overview of FutureSight
+## 2. The Solution: An Overview of Calendar.ai
 
-FutureSight is a web application built with a modern tech stack, designed to be a student's central hub for all academic and career-related planning. It leverages Google's Gemini AI to provide intelligent, actionable insights that transform a simple calendar into a dynamic career co-pilot.
+Calendar.ai is a web application built with a modern tech stack, designed to be a student's central hub for all academic and career-related planning. It leverages Google's Gemini AI to provide intelligent, actionable insights that transform a simple calendar into a dynamic career co-pilot.
 
 ### Key Features:
 
@@ -157,7 +157,7 @@ The `apphosting.yaml` file is already set up. To deploy your app, you will need 
 
 You can also deploy this application to Heroku with a single click using the button below. Heroku will automatically detect the `app.json` file and guide you through setting up the required environment variables.
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/AshishYesale7/FutureSight/tree/master)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/AshishYesale7/Calendar.ai/tree/master)
 
 ## 8. Documentation
 

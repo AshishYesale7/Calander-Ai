@@ -1,9 +1,9 @@
 
-# FutureSight Repository Summary
+# Calendar.ai Repository Summary
 
 ## Quick Overview
 
-**FutureSight** is a comprehensive AI-powered career planning and calendar management application designed for students and young professionals. It transforms traditional scheduling into an intelligent, proactive system that helps users achieve their career goals through AI-driven insights and planning.
+**Calendar.ai** is a comprehensive AI-powered career planning and calendar management application designed for students and young professionals. It transforms traditional scheduling into an intelligent, proactive system that helps users achieve their career goals through AI-driven insights and planning.
 
 ## What Makes This Repository Special
 
@@ -36,7 +36,7 @@
 ## Key Differentiators
 
 ### 1. **Holistic Career Planning**
-Unlike simple calendar apps, FutureSight connects daily tasks to long-term career aspirations through AI analysis and planning.
+Unlike simple calendar apps, Calendar.ai connects daily tasks to long-term career aspirations through AI analysis and planning.
 
 ### 2. **Extension Marketplace**
 Modular plugin architecture allows specialized tools like the Codefolio Ally for competitive programmers.
@@ -53,7 +53,7 @@ Smart email analysis that automatically excludes sensitive content like OTPs and
 ## Repository Structure at a Glance
 
 ```
-FutureSight/
+Calendar.ai/
 ├── src/
 │   ├── app/               # Next.js App Router pages
 │   │   ├── (app)/        # Protected application routes
@@ -72,8 +72,8 @@ FutureSight/
 
 1. **Clone & Install**:
    ```bash
-   git clone https://github.com/AshishYesale7/FutureSight.git
-   cd FutureSight
+   git clone https://github.com/AshishYesale7/Calendar.ai.git
+   cd Calendar.ai
    npm install
    ```
 
@@ -184,7 +184,7 @@ The repository welcomes contributions in:
 
 ## Why This Repository Matters
 
-FutureSight represents the future of personal productivity tools:
+Calendar.ai represents the future of personal productivity tools:
 
 1. **AI Integration**: Shows how to properly integrate AI into user applications
 2. **Modern Stack**: Demonstrates best practices with latest web technologies
@@ -195,10 +195,10 @@ FutureSight represents the future of personal productivity tools:
 ## Contact & Resources
 
 - **Live Demo**: http://futuresight-8ebba4468907.herokuapp.com
-- **Repository**: https://github.com/AshishYesale7/FutureSight
+- **Repository**: https://github.com/AshishYesale7/Calendar.ai
 - **Documentation**: See `REPOSITORY_EXPLANATION.md` and `TECHNICAL_ARCHITECTURE.md`
 - **Issues**: GitHub Issues for bug reports and feature requests
 
 ---
 
-**FutureSight** bridges the gap between daily task management and long-term career success, making it an invaluable tool for anyone serious about their professional development. The repository showcases modern web development practices while solving a real-world problem that affects millions of students and young professionals worldwide.
+**Calendar.ai** bridges the gap between daily task management and long-term career success, making it an invaluable tool for anyone serious about their professional development. The repository showcases modern web development practices while solving a real-world problem that affects millions of students and young professionals worldwide.
