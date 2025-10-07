@@ -44,81 +44,85 @@ const useCallNotifications = () => {
     const { user } = useAuth();
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
+    const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [activeCallId, setActiveCallId] = useState<string | null>(null);
 
     // Effect to listen for changes on a single active call (either incoming or outgoing)
     useEffect(() => {
-        if (!activeCallId || !db) return;
+        if (!activeCallId || !db || !user) return;
 
         const callDocRef = doc(db, 'calls', activeCallId);
-        const unsubscribe = onSnapshot(callDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
+
                 if (callData.status === 'answered') {
                     setOngoingCall(callData);
                     setIncomingCall(null);
+                    
+                    // Determine the other user in the call
+                    const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
+                    const userDoc = await getDoc(doc(db, 'users', otherUserId));
+                    if (userDoc.exists()) {
+                        setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
+                    }
+
                 } else if (callData.status === 'ringing') {
-                    // This is for the caller waiting for an answer
+                    // This state is primarily for the caller waiting for an answer.
+                    // The receiver's UI is handled by the other useEffect.
                 } else {
                     // Call was declined, ended, or document was deleted
                     setOngoingCall(null);
                     setIncomingCall(null);
+                    setOtherUserInCall(null);
                     setActiveCallId(null);
                 }
             } else {
                 // Document was deleted (call ended/declined)
                 setOngoingCall(null);
                 setIncomingCall(null);
+                setOtherUserInCall(null);
                 setActiveCallId(null);
             }
         });
 
         return () => unsubscribe();
-    }, [activeCallId]);
+    }, [activeCallId, user]);
 
     // Effect to listen for new incoming calls for the current user
     useEffect(() => {
         if (!user || !db) return;
-
-        // Listen for calls where user is the receiver AND calls they initiated
+        
+        // This query is specifically for finding calls where I am the receiver.
         const callsCollectionRef = collection(db, 'calls');
         const q = query(
             callsCollectionRef,
-            or(
-                where("receiverId", "==", user.uid),
-                where("callerId", "==", user.uid)
-            )
+            where("receiverId", "==", user.uid),
+            where("status", "==", "ringing")
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            let foundRingingCall = false;
-            snapshot.forEach((callDoc) => {
+            if (!snapshot.empty) {
+                // Get the first ringing call targeted at me
+                const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
-                // If I am the receiver and it's ringing, show incoming notification.
-                if (callData.receiverId === user.uid && callData.status === 'ringing' && !ongoingCall) {
+                if (!ongoingCall) { // Don't show incoming call if already in one
                     setIncomingCall(callData);
                     setActiveCallId(callData.id);
-                    foundRingingCall = true;
                 }
-                // If I initiated a call, set it as active to monitor its status
-                if (callData.callerId === user.uid && !activeCallId) {
-                    setActiveCallId(callData.id);
-                }
-            });
-
-            if (!foundRingingCall) {
+            } else {
+                // No calls are ringing for me
                 setIncomingCall(null);
             }
         });
 
         return () => unsubscribe();
-    }, [user, ongoingCall, activeCallId]);
+    }, [user, ongoingCall]);
 
     const acceptCall = () => {
         if (!incomingCall) return;
         updateCallStatus(incomingCall.id, 'answered');
-        setOngoingCall(incomingCall);
-        setIncomingCall(null);
+        // The listener will handle setting ongoingCall
     };
 
     const declineCall = () => {
@@ -131,27 +135,10 @@ const useCallNotifications = () => {
     const endCall = () => {
         if (!ongoingCall) return;
         updateCallStatus(ongoingCall.id, 'ended');
-        setOngoingCall(null);
-        setActiveCallId(null);
+        // The listener will handle cleanup
     };
     
-    const caller = useMemo(() => {
-        if (!ongoingCall) return null;
-        // If I am the caller, the other user is the receiver
-        if (ongoingCall.callerId === user?.uid) {
-            // We don't have receiver info on the call object, this needs adjustment if we want to show their name
-            // For now, let's assume we can get it from somewhere else or just show a generic view
-            return null; 
-        }
-        // If I am the receiver, the other user is the caller
-        return {
-          uid: ongoingCall.callerId,
-          displayName: ongoingCall.callerName,
-          photoURL: ongoingCall.callerPhotoURL,
-        } as PublicUserProfile
-    }, [ongoingCall, user]);
-
-    return { incomingCall, acceptCall, declineCall, ongoingCall, endCall, caller, setActiveCallId };
+    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId };
 };
 
 
@@ -165,7 +152,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
   const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-  const { incomingCall, acceptCall, declineCall, ongoingCall, endCall, setActiveCallId } = useCallNotifications();
+  const { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId } = useCallNotifications();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -356,8 +343,8 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   return (
-    <>
-      <div className="flex min-h-screen w-full relative z-10">
+    <div className='relative z-0'>
+      <div className="flex min-h-screen w-full">
         <SidebarNav {...modalProps} />
         
         <div className={cn(
@@ -370,7 +357,6 @@ function AppContent({ children }: { children: ReactNode }) {
             </main>
         </div>
         
-        {/* Chat Interface Container */}
         <div className={cn(
             "fixed top-0 right-0 h-full flex transition-transform duration-300 ease-in-out z-30",
             isChatVisible ? "translate-x-0" : "translate-x-[calc(100%-5rem)]",
@@ -384,7 +370,7 @@ function AppContent({ children }: { children: ReactNode }) {
             )}
         </div>
 
-        {isMobile && chattingWith && (
+        {isMobile && chattingWith && !ongoingCall && (
             <div className="fixed inset-0 top-16 z-40 bg-background">
                 <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} setActiveCallId={setActiveCallId} />
             </div>
@@ -439,7 +425,6 @@ function AppContent({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
       
-      {/* Call Management */}
       {incomingCall && (
         <IncomingCallNotification
           call={incomingCall}
@@ -447,9 +432,10 @@ function AppContent({ children }: { children: ReactNode }) {
           onDecline={declineCall}
         />
       )}
-      {ongoingCall && chattingWith && (
+      
+      {ongoingCall && otherUserInCall && (
         <div className="fixed inset-0 z-[100] bg-black">
-          <VideoCallView otherUser={chattingWith} onEndCall={endCall} />
+          <VideoCallView otherUser={otherUserInCall} onEndCall={endCall} />
         </div>
       )}
 
@@ -463,7 +449,7 @@ function AppContent({ children }: { children: ReactNode }) {
         onOpenChange={setIsNotificationModalOpen}
         onConfirm={requestNotificationPermission}
       />
-    </>
+    </div>
   );
 }
 

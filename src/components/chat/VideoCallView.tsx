@@ -94,11 +94,11 @@ export default function VideoCallView({ otherUser, onEndCall }: VideoCallViewPro
 
       {/* Local Video Preview */}
       <div className="absolute top-4 right-4 h-48 w-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
-        <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted />
-        {hasCameraPermission === false && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-2 text-center text-xs">
-            Camera access denied. Please check your browser permissions.
-          </div>
+        <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+        {isCameraOff && (
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
+                Camera is off
+            </div>
         )}
       </div>
       

@@ -38,6 +38,7 @@ export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }:
 
   const handleInitiateCall = async () => {
     if (!currentUser || !otherUser) return;
+    
     setIsCalling(true);
     try {
         const callId = await createCall({
@@ -54,6 +55,7 @@ export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }:
         setIsCalling(false);
     }
   };
+
 
   const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
     if (scrollAreaRef.current) {
@@ -135,7 +137,7 @@ export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }:
           </div>
         </div>
         <div className="flex items-center gap-2 text-white">
-            <Button variant="ghost" size="icon"><Phone className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" disabled><Phone className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={isCalling}>
               {isCalling ? <LoadingSpinner /> : <Video className="h-6 w-6" />}
             </Button>
