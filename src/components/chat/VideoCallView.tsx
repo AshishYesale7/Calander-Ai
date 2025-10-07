@@ -4,7 +4,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +30,9 @@ const servers = {
   iceCandidatePoolSize: 10,
 };
 
-// Client-side listener functions moved from callService.ts
+const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
+
+// Client-side listener functions
 const listenForReceiverCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
     if (!db) throw new Error("Firestore is not initialized.");
     const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
@@ -77,6 +78,11 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
 
   // Combined effect for WebRTC setup, signaling, and cleanup
   useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
+        console.warn("This browser session is not the active participant for this call. WebRTC setup will not proceed.");
+        return;
+    }
+    
     if (!user || !call) return;
     
     let unsubCall: Unsubscribe | undefined;
@@ -118,9 +124,9 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         });
         setHasPermission(false);
         onEndCall();
-        return false; // Indicate failure
+        return false;
       }
-      return true; // Indicate success
+      return true;
     };
 
     const setupSignaling = () => {
@@ -191,7 +197,6 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
         }
     });
     
-    // The single, consolidated cleanup function
     return () => {
       if (unsubCall) unsubCall();
       if (unsubCandidates) unsubCandidates();
@@ -229,7 +234,6 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
   };
 
   const handleEndCall = () => {
-    // The cleanup in the useEffect will handle stopping tracks and closing the connection.
     onEndCall();
   };
 
@@ -285,5 +289,3 @@ export default function VideoCallView({ call, otherUser, onEndCall }: VideoCallV
     </div>
   );
 }
-
-    

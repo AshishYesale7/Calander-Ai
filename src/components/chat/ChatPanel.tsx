@@ -26,6 +26,8 @@ interface ChatPanelProps {
   setActiveCallId: (callId: string | null) => void;
 }
 
+const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
+
 export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
@@ -48,6 +50,10 @@ export default function ChatPanel({ user: otherUser, onClose, setActiveCallId }:
             receiverId: otherUser.uid,
             status: 'ringing'
         });
+        // Mark this browser session as the one initiating the call
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
+        }
         setActiveCallId(callId);
         toast({ title: "Calling...", description: `Calling ${otherUser.displayName}.`});
     } catch(e) {

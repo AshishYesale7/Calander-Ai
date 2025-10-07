@@ -41,12 +41,30 @@ import { updateCallStatus } from '@/services/callService';
 import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
 import VideoCallView from '@/components/chat/VideoCallView';
 
+const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
+
 const useCallNotifications = () => {
     const { user } = useAuth();
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
-    const [activeCallId, setActiveCallId] = useState<string | null>(null);
+    const [activeCallId, setActiveCallId] = useState<string | null>(() => {
+        if (typeof window !== 'undefined') {
+            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
+        }
+        return null;
+    });
+
+    const setAndStoreActiveCallId = (callId: string | null) => {
+        setActiveCallId(callId);
+        if (typeof window !== 'undefined') {
+            if (callId) {
+                sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
+            } else {
+                sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
+            }
+        }
+    };
 
     // Effect to listen for changes on a single active call (either incoming or outgoing)
     useEffect(() => {
@@ -56,8 +74,9 @@ const useCallNotifications = () => {
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
-
-                if (callData.status === 'answered' && !ongoingCall) { // Prevent re-triggering
+                
+                // Transition from ringing to answered
+                if (callData.status === 'answered' && !ongoingCall) {
                     setOngoingCall(callData);
                     setIncomingCall(null);
                     
@@ -66,27 +85,24 @@ const useCallNotifications = () => {
                     if (userDoc.exists()) {
                         setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
                     }
-
-                } else if (callData.status === 'ringing' && callData.callerId === user.uid) {
-                    // Caller is waiting, nothing to change in UI yet, but we are listening
                 } else if (callData.status === 'declined' || callData.status === 'ended') {
                     setOngoingCall(null);
                     setIncomingCall(null);
                     setOtherUserInCall(null);
-                    setActiveCallId(null);
+                    setAndStoreActiveCallId(null);
                 }
-            } else {
+            } else { // Document was deleted (call ended/declined)
                 setOngoingCall(null);
                 setIncomingCall(null);
                 setOtherUserInCall(null);
-                setActiveCallId(null);
+                setAndStoreActiveCallId(null);
             }
         });
 
         return () => unsubscribe();
     }, [activeCallId, user, ongoingCall]);
 
-    // Effect to listen for new incoming calls for the current user
+    // Effect to listen for NEW incoming calls for the current user
     useEffect(() => {
         if (!user || !db) return;
         
@@ -101,11 +117,12 @@ const useCallNotifications = () => {
             if (!snapshot.empty) {
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
-                if (!ongoingCall) { 
+                // Only show notification if not already in a call and not the one initiating a call
+                if (!ongoingCall && !sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY)) { 
                     setIncomingCall(callData);
-                    setActiveCallId(callData.id);
                 }
             } else {
+                // If the incoming call disappears from the query (e.g., caller cancels)
                 if (incomingCall && incomingCall.receiverId === user.uid) {
                   setIncomingCall(null);
                 }
@@ -117,6 +134,7 @@ const useCallNotifications = () => {
 
     const acceptCall = () => {
         if (!incomingCall) return;
+        setAndStoreActiveCallId(incomingCall.id); // Mark this session as active
         updateCallStatus(incomingCall.id, 'answered');
     };
 
@@ -124,7 +142,6 @@ const useCallNotifications = () => {
         if (!incomingCall) return;
         updateCallStatus(incomingCall.id, 'declined');
         setIncomingCall(null);
-        setActiveCallId(null);
     };
 
     const endCall = () => {
@@ -132,7 +149,7 @@ const useCallNotifications = () => {
         updateCallStatus(ongoingCall.id, 'ended');
     };
     
-    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId };
+    return { incomingCall, acceptCall, declineCall, ongoingCall, otherUserInCall, endCall, setActiveCallId: setAndStoreActiveCallId };
 };
 
 
