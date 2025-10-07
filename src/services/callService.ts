@@ -14,6 +14,8 @@ import {
   query,
   onSnapshot,
   type Unsubscribe,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 import type { CallStatus } from '@/types';
 
@@ -50,14 +52,25 @@ export async function createCall(callData: {
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   const callDocRef = getCallDocRef(callId);
   if (status === 'declined' || status === 'ended') {
-    // Also delete candidates subcollections if they exist
+    // Soft delete the call and clean up subcollections
     const callerCandidatesRef = collection(db, 'calls', callId, 'callerCandidates');
     const receiverCandidatesRef = collection(db, 'calls', callId, 'receiverCandidates');
+
+    const callerCandidatesSnap = await getDocs(callerCandidatesRef);
+    const receiverCandidatesSnap = await getDocs(receiverCandidatesRef);
+
+    const batch = writeBatch(db);
     
-    // This part would ideally be a batched delete in a real app,
-    // but for simplicity, we delete the main document.
-    // Cloud Functions are better for cleaning up subcollections.
-    await deleteDoc(callDocRef);
+    callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
+    receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
+
+    batch.update(callDocRef, { 
+      status: status,
+      deletedAt: serverTimestamp() // Soft delete
+    });
+    
+    await batch.commit();
+
   } else {
     await updateDoc(callDocRef, { status });
   }
