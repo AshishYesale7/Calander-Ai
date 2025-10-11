@@ -205,7 +205,7 @@ const useCallNotifications = () => {
       endCall, 
       setActiveCallId: setAndStoreActiveCallId, 
       isPipMode,
-      onTogglePipMode
+      onTogglePipMode,
     };
 };
 
@@ -437,12 +437,12 @@ function AppContent({ children }: { children: ReactNode }) {
           "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
           "hidden md:flex",
           isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
-          isChatSidebarOpen && isChatPanelVisible && "lg:w-[43rem]",
+          isChatSidebarOpen && isChatPanelVisible && "lg:w-[40rem]", // 18rem + 22rem = 40rem
         )}
       >
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
-           isChatPanelVisible ? 'w-[25rem]' : 'w-0'
+           isChatPanelVisible ? 'w-[22rem]' : 'w-0'
          )}>
             {chattingWith && (
               <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
@@ -581,3 +581,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
