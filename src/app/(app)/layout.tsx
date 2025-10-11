@@ -438,7 +438,6 @@ function AppContent({ children }: { children: ReactNode }) {
         className={cn(
           "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out z-50",
           "hidden md:flex",
-          // Use the new 'chat' breakpoint. Below 1124px, it's collapsed (w-20). Above, it's expanded.
           isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
           isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
         )}
@@ -452,8 +451,7 @@ function AppContent({ children }: { children: ReactNode }) {
             )}
          </div>
          <div className={cn(
-           "transition-all duration-300 ease-in-out h-full overflow-hidden",
-            // Use the new 'chat' breakpoint here as well.
+           "transition-all duration-300 ease-in-out h-full",
            isChatSidebarOpen ? "w-20 chat:w-[18rem]" : "w-0"
          )}>
            <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
