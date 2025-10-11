@@ -159,7 +159,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2" onClick={() => setIsChatSidebarOpen(false)}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2 hidden md:inline-flex" onClick={() => setIsChatSidebarOpen(false)}>
                     <PanelRightOpen className="h-5 w-5" />
                 </Button>
             </div>
