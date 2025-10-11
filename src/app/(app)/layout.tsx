@@ -424,41 +424,43 @@ function AppContent({ children }: { children: ReactNode }) {
       <SidebarNav {...modalProps} />
       
       <div className={cn(
-        "flex-1 flex flex-col min-h-0 min-w-0 transition-all duration-300 ease-in-out",
+        "flex flex-1 min-w-0 transition-all duration-300 ease-in-out",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
         !isMobile && sidebarState === 'collapsed' && "md:ml-12"
       )}>
-        <Header {...modalProps} />
-        <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
-          {children}
-        </main>
-      </div>
-      
-      <aside
-        className={cn(
-          "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-20",
-          "hidden md:flex", 
-          isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
-          isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
-        )}
-      >
-         <div className={cn(
-           "transition-all duration-300 ease-in-out h-full",
-           isChatPanelVisible ? 'w-[22rem]' : 'w-0'
-         )}>
-            {chattingWith && (
-              <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
-            )}
-         </div>
-          {isChatSidebarOpen && (
-            <div className={cn(
-              "transition-all duration-300 ease-in-out h-full",
-              "w-20 chat:w-[18rem]"
-            )}>
-              <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
-            </div>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <Header {...modalProps} />
+          <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
+            {children}
+          </main>
+        </div>
+        
+        <aside
+          className={cn(
+            "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-20",
+            "hidden md:flex", 
+            isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
+            isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
           )}
-      </aside>
+        >
+           <div className={cn(
+             "transition-all duration-300 ease-in-out h-full",
+             isChatPanelVisible ? 'w-[22rem]' : 'w-0'
+           )}>
+              {chattingWith && (
+                <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
+              )}
+           </div>
+            {isChatSidebarOpen && (
+              <div className={cn(
+                "transition-all duration-300 ease-in-out h-full",
+                "w-20 chat:w-[18rem]"
+              )}>
+                <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
+              </div>
+            )}
+        </aside>
+      </div>
 
       {/* Mobile-only full-screen chat view with split layout */}
       {isMobile && isChatSidebarOpen && (
