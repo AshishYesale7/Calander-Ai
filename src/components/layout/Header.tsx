@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, LayoutGrid } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -39,6 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { WidgetIcon } from '../logo/WidgetIcon';
 
 
 const navItems = [
@@ -389,8 +390,8 @@ export default function Header({
                   </PopoverContent>
               </Popover>
 
-              <Button variant="ghost" size="icon">
-                <LayoutGrid className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(prev => !prev)}>
+                <WidgetIcon />
                 <span className="sr-only">Widget</span>
               </Button>
               
@@ -457,5 +458,3 @@ export default function Header({
     </>
   );
 }
-
-    
