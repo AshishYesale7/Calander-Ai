@@ -227,7 +227,6 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
            <div className="flex items-center gap-1">
                <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
                <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
-               <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Heart className="h-6 w-6"/></Button>
             </div>
         </form>
       </footer>
