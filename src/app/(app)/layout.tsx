@@ -418,7 +418,7 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   return (
-    <div className='relative z-0 flex min-h-screen w-full'>
+    <div className='relative z-0 flex h-screen w-full bg-transparent'>
       <SidebarNav {...modalProps} />
       
       <div className={cn(
@@ -578,3 +578,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
