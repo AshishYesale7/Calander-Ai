@@ -31,6 +31,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { setChattingWith, outgoingCall, ongoingCall } = useChat();
+  const isMobile = useIsMobile();
 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
   const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
@@ -212,8 +213,9 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2 bg-[#262626] rounded-full px-4"
+          className="flex items-center gap-2 bg-[#262626] rounded-full px-2"
         >
+          <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
@@ -222,16 +224,17 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             autoComplete="off"
           />
            <div className="flex items-center gap-1">
-               {inputMessage.trim() === '' ? (
+               {(isMobile && inputMessage.trim() === '') || !isMobile ? (
                    <>
                        <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
                        <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
                    </>
-               ) : (
+               ) : null}
+               {isMobile && inputMessage.trim() !== '' ? (
                     <Button variant="ghost" size="icon" type="submit" className="text-accent hover:bg-transparent hover:text-accent/80">
                         <Send className="h-6 w-6"/>
                     </Button>
-               )}
+               ) : null}
             </div>
         </form>
       </footer>
