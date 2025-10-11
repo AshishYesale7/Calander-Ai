@@ -32,24 +32,21 @@ interface ChatListContentProps {
 
 
 // A new, stateful search input component
-const SearchInput = ({ isForMobile = false }: { isForMobile?: boolean }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+const SearchInput = ({ searchTerm, setSearchTerm }: { searchTerm: string, setSearchTerm: (value: string) => void }) => {
     const [isFocused, setIsFocused] = useState(false);
+    const isMobile = useIsMobile();
   
-    // The container's classes are now managed by state for mobile
     const containerClasses = cn(
       "relative group w-full flex transition-all duration-300",
-      isForMobile
-        ? isFocused
-          ? "absolute top-2 left-2 z-10 w-64" // Absolute positioning when focused on mobile
-          : "justify-center w-full"
-        : "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10" // Original desktop logic
+      isMobile ? 
+        (isFocused ? "absolute top-2 left-2 z-10 w-64" : "justify-center w-full") :
+        "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10"
     );
   
-    // The input's classes are also managed by state
     const inputClasses = cn(
       "pl-10 h-9 transition-all duration-300",
-      (isForMobile && !isFocused) || (!isForMobile && "group-focus-within:w-full w-10")
+      !isMobile && "group-focus-within:w-full w-10",
+      isMobile && (isFocused ? "w-full" : "w-10")
     );
   
     return (
@@ -63,8 +60,8 @@ const SearchInput = ({ isForMobile = false }: { isForMobile?: boolean }) => {
           className={inputClasses}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={() => { if (isForMobile) setIsFocused(true); }}
-          onBlur={() => { if (isForMobile) setIsFocused(false); }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
       </div>
     );
@@ -141,12 +138,14 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     if (isMobile) {
         return (
             <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-r border-border/30 items-center p-2 gap-2">
-                <SearchInput isForMobile={true} />
+                <div className="relative h-9 w-full">
+                    <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                </div>
                 <Separator />
                 <TooltipProvider delayDuration={0}>
                     <ScrollArea className="flex-1 w-full">
                         <div className="space-y-2">
-                            {following.map(friend => (
+                            {filteredFollowing.map(friend => (
                                 <Tooltip key={friend.id}>
                                     <TooltipTrigger asChild>
                                         <button onClick={() => handleUserClick(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
@@ -257,7 +256,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2 hidden md:inline-flex" onClick={() => onToggleCollapse()}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2 md:inline-flex" onClick={() => onToggleCollapse()}>
                     <PanelRightOpen className="h-5 w-5" />
                 </Button>
             </div>
