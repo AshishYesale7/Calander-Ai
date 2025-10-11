@@ -10,7 +10,7 @@ import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2 } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -212,21 +212,26 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2 bg-[#262626] rounded-full px-2"
+          className="flex items-center gap-2 bg-[#262626] rounded-full px-4"
         >
-          <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300">
-            <Smile className="h-6 w-6" />
-          </Button>
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Message..."
-            className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0"
+            className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12"
             autoComplete="off"
           />
            <div className="flex items-center gap-1">
-               <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
-               <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
+               {inputMessage.trim() === '' ? (
+                   <>
+                       <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
+                       <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
+                   </>
+               ) : (
+                    <Button variant="ghost" size="icon" type="submit" className="text-accent hover:bg-transparent hover:text-accent/80">
+                        <Send className="h-6 w-6"/>
+                    </Button>
+               )}
             </div>
         </form>
       </footer>
