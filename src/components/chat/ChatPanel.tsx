@@ -129,7 +129,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
+            <h3 className="font-semibold text-xs text-white">{otherUser.displayName}</h3>
             <p className="text-xs text-gray-400">@{otherUser.username}</p>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className="flex-shrink-0 p-3 md:pb-3 pb-16">
+      <footer className="flex-shrink-0 p-3 pb-16 md:pb-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
