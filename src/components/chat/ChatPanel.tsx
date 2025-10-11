@@ -119,32 +119,32 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   return (
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-16">
+      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14">
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
-              <PanelLeftOpen className="h-6 w-6" />
+              <PanelLeftOpen className="h-5 w-5" />
            </Button>
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-9 w-9">
             <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
             <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-white">{otherUser.displayName}</h3>
+            <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
             <p className="text-xs text-gray-400">@{otherUser.username}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-white">
-            <Button variant="ghost" size="icon" disabled><Phone className="h-6 w-6" /></Button>
+        <div className="flex items-center gap-1 text-white">
+            <Button variant="ghost" size="icon" disabled><Phone className="h-5 w-5" /></Button>
             <Button variant="ghost" size="icon" onClick={handleVideoClick} disabled={isCallButtonDisabled}>
-              {isCallingThisUser ? <Loader2 className="h-6 w-6 animate-spin"/> : (
+              {isCallingThisUser ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                 <div className="relative">
-                  <Video className="h-6 w-6" />
+                  <Video className="h-5 w-5" />
                   {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
                 </div>
               )}
             </Button>
-            <Button variant="ghost" size="icon"><Info className="h-6 w-6" /></Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
         </div>
       </header>
 
