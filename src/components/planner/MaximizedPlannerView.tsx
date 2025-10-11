@@ -16,7 +16,7 @@ import PlannerDayView from './PlannerDayView';
 import PlannerWeeklyView from './PlannerWeeklyView';
 import PlannerMonthView from './PlannerMonthView';
 import { GripVertical } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 export type PlannerViewMode = 'day' | 'week' | 'month';
