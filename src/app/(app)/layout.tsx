@@ -238,17 +238,16 @@ function AppContent({ children }: { children: ReactNode }) {
   
   const { isMobile, setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
-  const isChatVisible = isChatSidebarOpen || isChatPanelVisible;
   
+  // New state to explicitly control the chatbar's collapsed state based on screen size
   const [isChatbarCollapsed, setIsChatbarCollapsed] = useState(false);
-
 
   // Auto-collapses the main sidebar when chat is opened on desktop
   useEffect(() => {
-    if (!isMobile && isChatVisible) {
+    if (!isMobile && isChatSidebarOpen) {
         setSidebarOpen(false);
     }
-  }, [isChatVisible, isMobile, setSidebarOpen]);
+  }, [isChatSidebarOpen, isMobile, setSidebarOpen]);
 
   // When call goes into PiP mode, close the chat panel
   useEffect(() => {
@@ -425,7 +424,7 @@ function AppContent({ children }: { children: ReactNode }) {
       <SidebarNav {...modalProps} />
       
       <div className={cn(
-        "flex flex-1 flex-col min-h-0 min-w-0 transition-all duration-300 ease-in-out",
+        "flex-1 flex flex-col min-h-0 min-w-0 transition-all duration-300 ease-in-out",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
         !isMobile && sidebarState === 'collapsed' && "md:ml-12"
       )}>
@@ -439,9 +438,9 @@ function AppContent({ children }: { children: ReactNode }) {
         className={cn(
           "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
           "hidden md:flex",
-          // The new responsive logic for chat sidebar width
-          isChatSidebarOpen && !isChatPanelVisible && "xl:w-[18rem] lg:w-20",
-          isChatSidebarOpen && isChatPanelVisible && "xl:w-[40rem] lg:w-[calc(22rem+5rem)]"
+          // Use the new 'chat' breakpoint. Below 1124px, it's collapsed (w-20). Above, it's expanded.
+          isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
+          isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[40rem]"
         )}
       >
          <div className={cn(
@@ -454,7 +453,8 @@ function AppContent({ children }: { children: ReactNode }) {
          </div>
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
-           isChatSidebarOpen ? "xl:w-[18rem] lg:w-20" : "w-0"
+            // Use the new 'chat' breakpoint here as well.
+           isChatSidebarOpen ? "w-20 chat:w-[18rem]" : "w-0"
          )}>
            <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
          </div>

@@ -31,13 +31,26 @@ interface ChatListContentProps {
 }
 
 
-const ChatListContent = ({ isCollapsed, onToggleCollapse }: ChatListContentProps) => {
+const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
     const isMobile = useIsMobile();
+    
+    // Determine collapsed state based on screen size.
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    useEffect(() => {
+        const checkSize = () => {
+            // Collapse if screen is less than 1124px
+            setIsCollapsed(window.innerWidth < 1124);
+        };
+        checkSize();
+        window.addEventListener('resize', checkSize);
+        return () => window.removeEventListener('resize', checkSize);
+    }, []);
 
     const filteredFollowing = useMemo(() => {
         return following.filter(friend => 
@@ -191,7 +204,7 @@ const ChatListContent = ({ isCollapsed, onToggleCollapse }: ChatListContentProps
 };
 
 
-export function ChatSidebar({ isCollapsed, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: () => void }) {
+export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void }) {
     const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
@@ -208,10 +221,9 @@ export function ChatSidebar({ isCollapsed, onToggleCollapse }: { isCollapsed: bo
         );
     }
     
-    // Desktop view logic remains, but simplified container
     return (
       <div className="h-full w-full">
-        <ChatListContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse}/>
+        <ChatListContent onToggleCollapse={onToggleCollapse}/>
       </div>
     )
 }
