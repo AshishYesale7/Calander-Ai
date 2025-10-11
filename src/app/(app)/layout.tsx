@@ -236,7 +236,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const lastScrollY = useRef(0);
   
-  const { isMobile, setOpen: setSidebarOpen } = useSidebar();
+  const { isMobile, setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   const isChatVisible = isChatSidebarOpen || isChatPanelVisible;
 
@@ -418,32 +418,36 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   return (
-    <div className='relative z-0 flex min-h-screen w-full'>
+    <div className='relative z-0 flex min-h-screen w-full bg-background'>
       <SidebarNav {...modalProps} />
-        
-      <div className="flex flex-1 flex-col min-w-0">
-          <Header {...modalProps} />
-          <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
-            {children}
-          </main>
+      
+      <div className={cn(
+        "flex flex-1 flex-col min-h-0 min-w-0 transition-all duration-300 ease-in-out",
+        !isMobile && sidebarState === 'expanded' && "md:ml-64",
+        !isMobile && sidebarState === 'collapsed' && "md:ml-12"
+      )}>
+        <Header {...modalProps} />
+        <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
+          {children}
+        </main>
       </div>
       
       <aside className={cn(
         "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
-        isChatVisible ? "w-full md:w-[20rem] lg:w-[45rem]" : "w-0",
-        "hidden md:flex"
+        "hidden md:flex",
+        isChatVisible ? "w-[20rem] lg:w-[45rem]" : "w-0"
       )}>
          <div className={cn(
-           "transition-all duration-300 ease-in-out h-full",
-           isChatPanelVisible ? 'w-full md:w-[25rem]' : 'w-0'
+           "transition-all duration-300 ease-in-out h-full overflow-hidden",
+           isChatPanelVisible ? 'w-[25rem]' : 'w-0'
          )}>
             {chattingWith && (
               <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
             )}
          </div>
          <div className={cn(
-           "transition-all duration-300 ease-in-out h-full",
-           isChatSidebarOpen ? "w-full md:w-[20rem]" : "w-0"
+           "transition-all duration-300 ease-in-out h-full overflow-hidden",
+           isChatSidebarOpen ? "w-[20rem]" : "w-0"
          )}>
            <ChatSidebar />
          </div>
