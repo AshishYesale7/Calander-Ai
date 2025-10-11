@@ -162,10 +162,10 @@ const useCallNotifications = () => {
         return () => unsubscribe();
     }, [user, activeCallId]);
 
-    const acceptCall = useCallback(() => {
+    const acceptCall = useCallback(async () => {
         if (!incomingCall) return;
         setAndStoreActiveCallId(incomingCall.id); 
-        updateCallStatus(incomingCall.id, 'answered');
+        await updateCallStatus(incomingCall.id, 'answered');
         setIncomingCall(null); // Clear the incoming call notification
     }, [incomingCall]);
 
@@ -424,7 +424,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <div className={cn(
           "flex-1 flex flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12',
-          isChatVisible && !isMobile ? 'md:mr-80' : 'md:mr-0' // Adjust right margin for chat
+          isChatVisible && !isMobile ? 'md:mr-[45rem]' : 'md:mr-0' // Adjust right margin for chat
         )}>
             <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
@@ -432,7 +432,6 @@ function AppContent({ children }: { children: ReactNode }) {
             </main>
         </div>
         
-        {/* Main Chat Sidebar Container */}
         <ChatSidebar>
             {chattingWith && (
                 <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />

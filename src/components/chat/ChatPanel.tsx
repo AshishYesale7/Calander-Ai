@@ -22,10 +22,9 @@ interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
   onInitiateCall: (receiver: PublicUserProfile) => void;
-  onTogglePipMode: () => void; // Added to handle maximizing from PiP
 }
 
-export default function ChatPanel({ user: otherUser, onClose, onInitiateCall, onTogglePipMode }: ChatPanelProps) {
+export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -47,7 +46,8 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall, on
 
   const handleVideoClick = () => {
     if (isCallActiveWithThisUser) {
-        onTogglePipMode(); // This will toggle the PiP mode state in the parent layout
+        // Future: Add logic to bring PiP back to full screen
+        console.log("Call is active, should maximize");
     } else {
         handleInitiateCall();
     }
@@ -234,5 +234,3 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall, on
     </div>
   );
 }
-
-    

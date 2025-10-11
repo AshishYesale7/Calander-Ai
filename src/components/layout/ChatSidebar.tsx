@@ -134,13 +134,17 @@ const ChatListContent = () => {
 
 
 export function ChatSidebar({ children }: { children?: ReactNode }) {
-    const { isChatSidebarOpen, chattingWith } = useChat();
+    const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
     if (isMobile) {
-        // On mobile, the chat list is a full-screen sheet, handled in layout.tsx
-        // This component doesn't render anything itself for the sidebar on mobile.
-        return null; 
+        return (
+             <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
+                <SheetContent side="right" className="p-0 w-[85vw] max-w-sm">
+                   <ChatListContent />
+                </SheetContent>
+             </Sheet>
+        );
     }
     
     // Desktop view
@@ -150,10 +154,13 @@ export function ChatSidebar({ children }: { children?: ReactNode }) {
         isChatSidebarOpen ? "translate-x-0" : "translate-x-full",
         "hidden md:flex"
       )}>
-        <div className="w-[20rem] flex-1 border-l border-border/30 h-full">
+        <div className={cn(
+            "transition-all duration-300 ease-in-out border-l border-border/30 h-full",
+            children ? 'w-[25rem]' : 'w-0'
+        )}>
             {children}
         </div>
-        <div className="w-[25rem] flex-shrink-0 border-l border-border/30 h-full">
+        <div className="w-[20rem] flex-shrink-0 border-l border-border/30 h-full">
           <ChatListContent />
         </div>
       </aside>
