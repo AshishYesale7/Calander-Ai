@@ -92,13 +92,13 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     const handleUserClick = (friend: FollowedUserWithPresence) => {
         setChattingWith(friend);
         if (isMobile) {
-            setIsChatSidebarOpen(false); // Close sheet on selection in mobile
+            // On mobile, the split view is always open, so we just set the chat partner.
         } else if (isCollapsed) {
             onToggleCollapse(); // Expand sidebar on desktop if collapsed
         }
     };
 
-    if (isCollapsed) {
+    if (isCollapsed && !isMobile) {
         return (
             <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
                 <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-9 w-9">
@@ -148,12 +148,12 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30">
+        <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30", isMobile ? "border-r" : "border-l")}>
              <div className="p-4 border-b border-border/30 flex items-center justify-between">
                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input 
-                        placeholder="Search or start a new chat" 
+                        placeholder="Search..." 
                         className="pl-10" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -163,15 +163,19 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <PanelRightOpen className="h-5 w-5" />
                 </Button>
             </div>
-            <div className="p-4 border-b border-border/30">
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                    {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
-                        <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)} className="shrink-0">
-                            {filter}
-                        </Button>
-                    ))}
-                </div>
-            </div>
+            
+            {!isMobile && (
+              <div className="p-4 border-b border-border/30">
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                      {['All', 'Unread', 'Favorites', 'Groups'].map(filter => (
+                          <Button key={filter} variant={activeFilter === filter ? 'default' : 'secondary'} size="sm" onClick={() => setActiveFilter(filter)} className="shrink-0">
+                              {filter}
+                          </Button>
+                      ))}
+                  </div>
+              </div>
+            )}
+
 
             <ScrollArea className="flex-1">
                 <div className="p-2 space-y-1">
@@ -185,16 +189,18 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                                 <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
                                 <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
-                                    <p className="text-xs text-muted-foreground">2m</p>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
-                                    {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
-                                </div>
-                            </div>
+                            {!isMobile && (
+                              <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-center">
+                                      <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
+                                      <p className="text-xs text-muted-foreground">2m</p>
+                                  </div>
+                                  <div className="flex justify-between items-start">
+                                      <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
+                                      {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
+                                  </div>
+                              </div>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -209,18 +215,16 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
     const isMobile = useIsMobile();
     
     if (isMobile) {
+        // On mobile, the sidebar is part of a flex container in the main layout, not a sheet.
+        // It's controlled by isChatSidebarOpen.
         return (
-             <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
-                <SheetContent side="right" className="p-0 w-[85vw] max-w-sm">
-                   <SheetHeader className="sr-only">
-                     <SheetTitle>Chat</SheetTitle>
-                   </SheetHeader>
-                   <ChatListContent isCollapsed={false} onToggleCollapse={() => {}} />
-                </SheetContent>
-             </Sheet>
+             <div className="h-full w-full">
+                <ChatListContent isCollapsed={false} onToggleCollapse={() => {}} />
+            </div>
         );
     }
     
+    // Desktop view
     return (
       <div className="h-full w-full">
         <ChatListContent onToggleCollapse={onToggleCollapse}/>

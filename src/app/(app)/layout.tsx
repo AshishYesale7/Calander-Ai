@@ -436,14 +436,14 @@ function AppContent({ children }: { children: ReactNode }) {
       
       <aside
         className={cn(
-          "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out z-50",
-          "hidden md:flex",
+          "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-50",
+          "hidden md:flex", // This is key: it's a flex container on desktop
           isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
           isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
         )}
       >
          <div className={cn(
-           "transition-all duration-300 ease-in-out h-full overflow-hidden",
+           "transition-all duration-300 ease-in-out h-full",
            isChatPanelVisible ? 'w-[22rem]' : 'w-0'
          )}>
             {chattingWith && (
@@ -458,12 +458,24 @@ function AppContent({ children }: { children: ReactNode }) {
          </div>
       </aside>
 
-      {/* Mobile-only full-screen chat view */}
-      {isMobile && chattingWith && !ongoingCall && (
-          <div className="fixed inset-0 top-16 z-40">
-              <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
+      {/* Mobile-only full-screen chat view with split layout */}
+      {isMobile && isChatSidebarOpen && (
+          <div className="fixed inset-0 top-16 z-40 flex">
+              <div className="w-[25%] h-full">
+                  <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
+              </div>
+              <div className="w-[75%] h-full">
+                  {chattingWith ? (
+                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
+                  ) : (
+                    <div className="h-full bg-black flex items-center justify-center text-center text-muted-foreground">
+                        <p>Select a chat to start messaging</p>
+                    </div>
+                  )}
+              </div>
           </div>
       )}
+
 
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette 
