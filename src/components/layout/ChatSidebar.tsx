@@ -144,6 +144,9 @@ export function ChatSidebar() {
         return (
              <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
                 <SheetContent side="right" className="p-0 w-[85vw] max-w-sm">
+                   <SheetHeader className="sr-only">
+                     <SheetTitle>Chat</SheetTitle>
+                   </SheetHeader>
                    <ChatListContent />
                 </SheetContent>
              </Sheet>
