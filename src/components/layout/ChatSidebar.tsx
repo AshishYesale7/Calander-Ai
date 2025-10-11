@@ -112,6 +112,9 @@ const ChatListContent = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2" onClick={() => setIsChatSidebarOpen(false)}>
+                    <PanelRightOpen className="h-5 w-5" />
+                </Button>
             </div>
             <div className="p-4 border-b border-border/30">
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -133,7 +136,7 @@ const ChatListContent = () => {
 };
 
 
-export function ChatSidebar({ children }: { children?: ReactNode }) {
+export function ChatSidebar() {
     const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
@@ -147,22 +150,10 @@ export function ChatSidebar({ children }: { children?: ReactNode }) {
         );
     }
     
-    // Desktop view
+    // Desktop view logic remains, but simplified container
     return (
-      <aside className={cn(
-        "fixed top-0 right-0 h-full flex flex-row-reverse transition-[width] duration-300 ease-in-out z-30",
-        isChatSidebarOpen ? "w-[45rem]" : "w-0",
-        "hidden md:flex"
-      )}>
-        <div className={cn(
-            "transition-all duration-300 ease-in-out border-l border-border/30 h-full",
-            children ? 'w-[25rem]' : 'w-0'
-        )}>
-            {children}
-        </div>
-        <div className="w-[20rem] flex-shrink-0 border-l border-border/30 h-full">
-          <ChatListContent />
-        </div>
-      </aside>
+      <div className="h-full w-full">
+        <ChatListContent />
+      </div>
     )
 }

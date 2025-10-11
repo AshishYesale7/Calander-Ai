@@ -425,8 +425,7 @@ function AppContent({ children }: { children: ReactNode }) {
         <div className={cn(
           "flex-1 flex flex-col transition-all duration-300 ease-in-out",
           !isMobile && sidebarState === 'expanded' && "ml-64",
-          !isMobile && sidebarState === 'collapsed' && "ml-12",
-          isChatVisible && !isMobile && "mr-[45rem]"
+          !isMobile && sidebarState === 'collapsed' && "ml-12"
         )}>
             <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
@@ -434,11 +433,26 @@ function AppContent({ children }: { children: ReactNode }) {
             </main>
         </div>
         
-        <ChatSidebar>
-            {chattingWith && (
+        <aside className={cn(
+          "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
+          isChatVisible ? "w-[45rem]" : "w-0",
+          "hidden md:flex"
+        )}>
+           <div className={cn(
+             "transition-all duration-300 ease-in-out h-full",
+             isChatPanelVisible ? 'w-[25rem]' : 'w-0'
+           )}>
+              {chattingWith && (
                 <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
-            )}
-        </ChatSidebar>
+              )}
+           </div>
+           <div className={cn(
+             "transition-all duration-300 ease-in-out h-full",
+             isChatSidebarOpen ? "w-[20rem]" : "w-0"
+           )}>
+             <ChatSidebar />
+           </div>
+        </aside>
 
         {/* Mobile-only full-screen chat view */}
         {isMobile && chattingWith && !ongoingCall && (
