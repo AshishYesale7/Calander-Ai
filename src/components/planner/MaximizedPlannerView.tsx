@@ -16,7 +16,7 @@ import PlannerDayView from './PlannerDayView';
 import PlannerWeeklyView from './PlannerWeeklyView';
 import PlannerMonthView from './PlannerMonthView';
 import { GripVertical } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 export type PlannerViewMode = 'day' | 'week' | 'month';
@@ -296,7 +296,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   };
 
   return (
-     <div className={cn("fixed inset-0 top-16 z-40 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}>
+     <div className={cn("fixed inset-0 top-16 z-30 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}>
         <PlannerHeader 
           activeView={plannerViewMode} 
           date={currentDisplayDate} 

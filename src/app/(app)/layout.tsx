@@ -437,7 +437,7 @@ function AppContent({ children }: { children: ReactNode }) {
         
         <aside
           className={cn(
-            "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-20",
+            "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
             "hidden md:flex", 
             isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
             isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
