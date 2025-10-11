@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus } from "lucide-react";
@@ -27,7 +27,7 @@ type FollowedUserWithPresence = PublicUserProfile & {
 
 const ChatListContent = () => {
     const { user } = useAuth();
-    const { setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+    const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
@@ -80,7 +80,7 @@ const ChatListContent = () => {
     const renderChatListItem = (friend: FollowedUserWithPresence) => (
          <button 
             key={friend.id}
-            className="w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted"
+            className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
             onClick={() => handleUserClick(friend)}
         >
             <Avatar className="h-12 w-12">
@@ -112,9 +112,6 @@ const ChatListContent = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button variant="ghost" size="icon" className="ml-2 h-10 w-10" onClick={() => setIsChatSidebarOpen(false)}>
-                    <PanelRightOpen className="h-6 w-6"/>
-                </Button>
             </div>
             <div className="p-4 border-b border-border/30">
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -136,133 +133,29 @@ const ChatListContent = () => {
 };
 
 
-export function ChatSidebar() {
-    const { user } = useAuth();
-    const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
-    const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+export function ChatSidebar({ children }: { children?: ReactNode }) {
+    const { isChatSidebarOpen, chattingWith } = useChat();
     const isMobile = useIsMobile();
-
-    useEffect(() => {
-        if (!user || !db) return;
-
-        const followingCollectionRef = collection(db, 'users', user.uid, 'following');
-        const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
-
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
-                const userId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', userId));
-                if (userDocSnap.exists()) {
-                    const data = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL || null,
-                        username: data.username || `user_${userId.substring(0,5)}`,
-                        status: 'online', 
-                        notification: Math.random() > 0.8,
-                    } as FollowedUserWithPresence;
-                }
-                return null;
-            });
-            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
-            setFollowing(followedUsers);
-        });
-
-        return () => unsubscribe();
-    }, [user]);
-
+    
     if (isMobile) {
-        return (
-            <Sheet open={isChatSidebarOpen} onOpenChange={setIsChatSidebarOpen}>
-                <SheetContent side="left" className="p-0 border-l-0 w-full max-w-sm">
-                    <SheetHeader className="p-4 border-b border-border/30">
-                       <SheetTitle className="text-primary font-bold text-xl">Chats</SheetTitle>
-                    </SheetHeader>
-                    <ChatListContent />
-                </SheetContent>
-            </Sheet>
-        );
+        // On mobile, the chat list is a full-screen sheet, handled in layout.tsx
+        // This component doesn't render anything itself for the sidebar on mobile.
+        return null; 
     }
     
     // Desktop view
-    if (isChatSidebarOpen) { // If chat list is open, show the full list sidebar
-      return (
-        <aside className="w-[25rem] flex-shrink-0 z-30 flex-col border-l border-border/30 hidden md:flex">
-          <ChatListContent />
-        </aside>
-      );
-    }
-    
-    // If no chat is open, show the compact icon-only bar
     return (
-        <aside className="w-20 bg-background/50 backdrop-blur-md border-l border-border/30 z-30 hidden md:flex flex-col items-center py-4 space-y-4">
-            <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
-                            <PanelLeftOpen className="h-6 w-6" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="frosted-glass">
-                        <p>Open Chats</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-
-            <Separator className="w-10/12 my-2 bg-border/50" />
-
-            <ScrollArea className="flex-1 w-full">
-                <div className="flex flex-col items-center space-y-4">
-                    {following.slice(0, 7).map(friend => (
-                       <TooltipProvider key={friend.id} delayDuration={0}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button onClick={() => setChattingWith(friend)} className="relative group">
-                                        <Avatar className="h-12 w-12 border-2 border-transparent group-hover:border-accent transition-colors duration-200">
-                                            <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                                            <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        {friend.notification && (
-                                            <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background"></div>
-                                        )}
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="left" className="frosted-glass">
-                                    <p className="font-semibold">{friend.displayName}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    ))}
-                </div>
-            </ScrollArea>
-             <div className="mt-auto flex flex-col items-center space-y-4">
-                 <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-12 w-12">
-                                <UserPlus className="h-6 w-6" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="frosted-glass">
-                            <p>New Contact</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                 <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={() => setIsChatSidebarOpen(true)}>
-                                <MessageSquare className="h-6 w-6" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="frosted-glass">
-                            <p>All Chats</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            </div>
-        </aside>
+      <aside className={cn(
+        "fixed top-0 right-0 h-full flex flex-row-reverse transition-transform duration-300 ease-in-out z-30",
+        isChatSidebarOpen ? "translate-x-0" : "translate-x-full",
+        "hidden md:flex"
+      )}>
+        <div className="w-[20rem] flex-1 border-l border-border/30 h-full">
+            {children}
+        </div>
+        <div className="w-[25rem] flex-shrink-0 border-l border-border/30 h-full">
+          <ChatListContent />
+        </div>
+      </aside>
     )
 }

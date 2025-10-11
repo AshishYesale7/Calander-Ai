@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -18,11 +18,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
@@ -38,6 +33,8 @@ import { usePlugin } from '@/hooks/use-plugin';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, addDays, toDate, isToday as dfnsIsToday } from 'date-fns';
 import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
+import { useChat } from '@/context/ChatContext';
+
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -126,6 +123,8 @@ export default function Header({
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { streakData } = useStreak();
   const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
+  const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+
 
   useEffect(() => {
     if (user) {
@@ -388,6 +387,11 @@ export default function Header({
               <NotificationPanel />
             </>
           )}
+
+          <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(prev => !prev)} className="hidden md:inline-flex">
+            <MessageSquare className="h-5 w-5" />
+            <span className="sr-only">Toggle Chat</span>
+          </Button>
 
           <DropdownMenu>
               <DropdownMenuTrigger asChild>

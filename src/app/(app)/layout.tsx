@@ -237,7 +237,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const lastScrollY = useRef(0);
   
   const { isMobile, state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
-  const isChatVisible = chattingWith || isChatSidebarOpen;
+  const isChatVisible = isChatSidebarOpen || !!chattingWith;
 
   // Auto-collapses the main sidebar when chat is opened on desktop
   useEffect(() => {
@@ -423,7 +423,8 @@ function AppContent({ children }: { children: ReactNode }) {
         
         <div className={cn(
           "flex-1 flex flex-col transition-all duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12'
+          !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12',
+          isChatVisible && !isMobile ? 'md:mr-80' : 'md:mr-0' // Adjust right margin for chat
         )}>
             <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
@@ -431,19 +432,14 @@ function AppContent({ children }: { children: ReactNode }) {
             </main>
         </div>
         
-        <div className={cn(
-            "fixed top-0 right-0 h-full flex transition-transform duration-300 ease-in-out z-30",
-            isChatVisible ? "translate-x-0" : "translate-x-[calc(100%-5rem)]",
-            "hidden md:flex"
-          )}>
-            <ChatSidebar />
+        {/* Main Chat Sidebar Container */}
+        <ChatSidebar>
             {chattingWith && (
-              <div className="w-[20rem] flex-1 border-l border-border/30">
-                  <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
-              </div>
+                <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
             )}
-        </div>
+        </ChatSidebar>
 
+        {/* Mobile-only full-screen chat view */}
         {isMobile && chattingWith && !ongoingCall && (
             <div className="fixed inset-0 top-16 z-40 bg-background">
                 <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
