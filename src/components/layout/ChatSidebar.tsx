@@ -39,7 +39,7 @@ const SearchInput = ({ searchTerm, setSearchTerm }: { searchTerm: string, setSea
     const containerClasses = cn(
       "relative group w-full flex transition-all duration-300",
       isMobile ? 
-        (isFocused ? "absolute top-2 left-2 z-60 w-64 bg-card rounded-md" : "justify-center w-full") :
+        (isFocused ? "absolute top-2 left-2 z-60 bg-card rounded-md" : "justify-center w-full") :
         "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10"
     );
   
@@ -234,9 +234,9 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         </Tooltip>
                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9"><MessageSquare className="h-5 w-5"/></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
                             </TooltipTrigger>
-                             <TooltipContent side="right"><p>All Chats</p></TooltipContent>
+                             <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
                     </div>
                 </TooltipProvider>
