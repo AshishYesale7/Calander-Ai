@@ -31,6 +31,46 @@ interface ChatListContentProps {
 }
 
 
+// A new, stateful search input component
+const SearchInput = ({ isForMobile = false }: { isForMobile?: boolean }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
+  
+    // The container's classes are now managed by state for mobile
+    const containerClasses = cn(
+      "relative group w-full flex transition-all duration-300",
+      isForMobile
+        ? isFocused
+          ? "absolute top-2 left-2 z-10 w-64" // Absolute positioning when focused on mobile
+          : "justify-center w-full"
+        : "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10" // Original desktop logic
+    );
+  
+    // The input's classes are also managed by state
+    const inputClasses = cn(
+      "pl-10 h-9 transition-all duration-300",
+      (isForMobile && !isFocused) || (!isForMobile && "group-focus-within:w-full w-10")
+    );
+  
+    return (
+      <div className={containerClasses}>
+        <Search className={cn(
+            "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none",
+            isFocused && 'text-primary'
+        )} />
+        <Input
+          placeholder="Search..."
+          className={inputClasses}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={() => { if (isForMobile) setIsFocused(true); }}
+          onBlur={() => { if (isForMobile) setIsFocused(false); }}
+        />
+      </div>
+    );
+};
+
+
 const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith, setIsChatSidebarOpen } = useChat();
@@ -97,8 +137,55 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
             onToggleCollapse(); // Expand sidebar on desktop if collapsed
         }
     };
+    
+    if (isMobile) {
+        return (
+            <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-r border-border/30 items-center p-2 gap-2">
+                <SearchInput isForMobile={true} />
+                <Separator />
+                <TooltipProvider delayDuration={0}>
+                    <ScrollArea className="flex-1 w-full">
+                        <div className="space-y-2">
+                            {following.map(friend => (
+                                <Tooltip key={friend.id}>
+                                    <TooltipTrigger asChild>
+                                        <button onClick={() => handleUserClick(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                                                <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>{friend.displayName}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </TooltipProvider>
+                <Separator />
+                <TooltipProvider delayDuration={0}>
+                    <div className="space-y-2">
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                </TooltipProvider>
+            </div>
+        )
+    }
 
-    if (isCollapsed && !isMobile) {
+    if (isCollapsed) {
         return (
             <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
                 <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-9 w-9">
@@ -170,7 +257,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2 hidden md:inline-flex" onClick={() => setIsChatSidebarOpen(false)}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 ml-2 hidden md:inline-flex" onClick={() => onToggleCollapse()}>
                     <PanelRightOpen className="h-5 w-5" />
                 </Button>
             </div>
@@ -221,7 +308,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
 };
 
 
-export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void; isCollapsed: boolean }) {
+export function ChatSidebar({ onToggleCollapse, isCollapsed }: { onToggleCollapse: () => void; isCollapsed: boolean }) {
     const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
@@ -238,7 +325,7 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
     // Desktop view
     return (
       <div className="h-full w-full">
-        <ChatListContent onToggleCollapse={onToggleCollapse} isCollapsed={false}/>
+        <ChatListContent onToggleCollapse={onToggleCollapse} isCollapsed={isCollapsed}/>
       </div>
     )
 }
