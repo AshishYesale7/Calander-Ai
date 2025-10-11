@@ -436,11 +436,11 @@ function AppContent({ children }: { children: ReactNode }) {
       
       <aside
         className={cn(
-          "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
+          "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out z-50",
           "hidden md:flex",
           // Use the new 'chat' breakpoint. Below 1124px, it's collapsed (w-20). Above, it's expanded.
           isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
-          isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[40rem]"
+          isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
         )}
       >
          <div className={cn(
@@ -462,7 +462,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
       {/* Mobile-only full-screen chat view */}
       {isMobile && chattingWith && !ongoingCall && (
-          <div className="fixed inset-0 top-16 z-40 bg-background">
+          <div className="fixed inset-0 top-16 z-40">
               <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
           </div>
       )}
