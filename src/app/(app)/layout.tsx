@@ -436,8 +436,8 @@ function AppContent({ children }: { children: ReactNode }) {
       
       <aside
         className={cn(
-          "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-50",
-          "hidden md:flex", // This is key: it's a flex container on desktop
+          "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-20",
+          "hidden md:flex", 
           isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
           isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
         )}
@@ -460,7 +460,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
       {/* Mobile-only full-screen chat view with split layout */}
       {isMobile && isChatSidebarOpen && (
-          <div className="fixed inset-0 top-16 z-40 flex">
+          <div className="fixed inset-0 top-16 z-50 flex">
               <div className="w-[25%] h-full">
                   <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
               </div>
