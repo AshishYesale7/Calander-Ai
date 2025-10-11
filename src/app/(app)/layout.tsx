@@ -204,7 +204,7 @@ const useCallNotifications = () => {
       otherUserInCall, 
       endCall, 
       setActiveCallId: setAndStoreActiveCallId, 
-      isPipMode, -
+      isPipMode,
       onTogglePipMode,
     };
 };
