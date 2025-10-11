@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus } from "lucide-react";
+import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus, PanelLeftClose } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -25,9 +25,15 @@ type FollowedUserWithPresence = PublicUserProfile & {
     notification?: boolean; 
 }
 
-const ChatListContent = () => {
+interface ChatListContentProps {
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
+}
+
+
+const ChatListContent = ({ isCollapsed, onToggleCollapse }: ChatListContentProps) => {
     const { user } = useAuth();
-    const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+    const { chattingWith, setChattingWith, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
@@ -74,31 +80,59 @@ const ChatListContent = () => {
         setChattingWith(friend);
         if (isMobile) {
             setIsChatSidebarOpen(false); // Close sheet on selection in mobile
+        } else if (isCollapsed) {
+            onToggleCollapse(); // Expand sidebar on desktop if collapsed
         }
     };
 
-    const renderChatListItem = (friend: FollowedUserWithPresence) => (
-         <button 
-            key={friend.id}
-            className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
-            onClick={() => handleUserClick(friend)}
-        >
-            <Avatar className="h-12 w-12">
-                <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
-                    <p className="text-xs text-muted-foreground">2m</p>
-                </div>
-                <div className="flex justify-between items-start">
-                    <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
-                    {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
-                </div>
+    if (isCollapsed) {
+        return (
+            <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
+                <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-9 w-9">
+                    <PanelLeftOpen className="h-5 w-5" />
+                </Button>
+                <Separator />
+                <TooltipProvider delayDuration={0}>
+                    <ScrollArea className="flex-1 w-full">
+                        <div className="space-y-2">
+                            {following.map(friend => (
+                                <Tooltip key={friend.id}>
+                                    <TooltipTrigger asChild>
+                                        <button onClick={() => handleUserClick(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                                                <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                        <p>{friend.displayName}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </TooltipProvider>
+                <Separator />
+                <TooltipProvider delayDuration={0}>
+                    <div className="space-y-2">
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="left"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9"><MessageSquare className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="left"><p>All Chats</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                </TooltipProvider>
             </div>
-        </button>
-    )
+        )
+    }
 
     return (
         <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30">
@@ -128,7 +162,28 @@ const ChatListContent = () => {
 
             <ScrollArea className="flex-1">
                 <div className="p-2 space-y-1">
-                    {filteredFollowing.map(renderChatListItem)}
+                    {filteredFollowing.map(friend => (
+                        <button 
+                            key={friend.id}
+                            className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
+                            onClick={() => handleUserClick(friend)}
+                        >
+                            <Avatar className="h-12 w-12">
+                                <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
+                                <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
+                                    <p className="text-xs text-muted-foreground">2m</p>
+                                </div>
+                                <div className="flex justify-between items-start">
+                                    <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
+                                    {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
+                                </div>
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </ScrollArea>
         </div>
@@ -136,7 +191,7 @@ const ChatListContent = () => {
 };
 
 
-export function ChatSidebar() {
+export function ChatSidebar({ isCollapsed, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: () => void }) {
     const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
@@ -147,7 +202,7 @@ export function ChatSidebar() {
                    <SheetHeader className="sr-only">
                      <SheetTitle>Chat</SheetTitle>
                    </SheetHeader>
-                   <ChatListContent />
+                   <ChatListContent isCollapsed={false} onToggleCollapse={() => {}} />
                 </SheetContent>
              </Sheet>
         );
@@ -156,7 +211,7 @@ export function ChatSidebar() {
     // Desktop view logic remains, but simplified container
     return (
       <div className="h-full w-full">
-        <ChatListContent />
+        <ChatListContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse}/>
       </div>
     )
 }

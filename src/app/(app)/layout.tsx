@@ -239,6 +239,9 @@ function AppContent({ children }: { children: ReactNode }) {
   const { isMobile, setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   const isChatVisible = isChatSidebarOpen || isChatPanelVisible;
+  
+  const [isChatbarCollapsed, setIsChatbarCollapsed] = useState(false);
+
 
   // Auto-collapses the main sidebar when chat is opened on desktop
   useEffect(() => {
@@ -436,8 +439,9 @@ function AppContent({ children }: { children: ReactNode }) {
         className={cn(
           "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
           "hidden md:flex",
-          isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
-          isChatSidebarOpen && isChatPanelVisible && "lg:w-[40rem]", // 18rem + 22rem = 40rem
+          // The new responsive logic for chat sidebar width
+          isChatSidebarOpen && !isChatPanelVisible && "xl:w-[18rem] lg:w-20",
+          isChatSidebarOpen && isChatPanelVisible && "xl:w-[40rem] lg:w-[calc(22rem+5rem)]"
         )}
       >
          <div className={cn(
@@ -450,9 +454,9 @@ function AppContent({ children }: { children: ReactNode }) {
          </div>
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
-           isChatSidebarOpen ? "w-[18rem]" : "w-0"
+           isChatSidebarOpen ? "xl:w-[18rem] lg:w-20" : "w-0"
          )}>
-           <ChatSidebar />
+           <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
          </div>
       </aside>
 
@@ -581,5 +585,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
