@@ -105,7 +105,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <PanelLeftOpen className="h-5 w-5" />
                 </Button>
                 
-                 <div className="relative group w-full flex justify-center focus-within:w-[16rem] focus-within:absolute focus-within:top-2 focus-within:z-10 transition-all duration-300">
+                 <div className="relative group w-full flex justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10 transition-all duration-300">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none group-focus-within:text-primary" />
                     <Input
                         placeholder="Search..."
@@ -129,7 +129,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                                             </Avatar>
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="left">
+                                    <TooltipContent side="right">
                                         <p>{friend.displayName}</p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -144,13 +144,13 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
                             </TooltipTrigger>
-                             <TooltipContent side="left"><p>Add Friend</p></TooltipContent>
+                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
                         </Tooltip>
                          <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-9 w-9"><MessageSquare className="h-5 w-5"/></Button>
                             </TooltipTrigger>
-                             <TooltipContent side="left"><p>All Chats</p></TooltipContent>
+                             <TooltipContent side="right"><p>All Chats</p></TooltipContent>
                         </Tooltip>
                     </div>
                 </TooltipProvider>
