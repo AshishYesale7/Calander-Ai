@@ -424,7 +424,7 @@ function AppContent({ children }: { children: ReactNode }) {
       <SidebarNav {...modalProps} />
       
       <div className={cn(
-        "flex flex-1 min-w-0 transition-all duration-300 ease-in-out",
+        "flex flex-1 min-w-0",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
         !isMobile && sidebarState === 'collapsed' && "md:ml-12"
       )}>
