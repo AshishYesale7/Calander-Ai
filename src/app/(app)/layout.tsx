@@ -418,7 +418,7 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   return (
-    <div className='relative z-0 flex min-h-screen w-full bg-background'>
+    <div className='relative z-0 flex min-h-screen w-full'>
       <SidebarNav {...modalProps} />
       
       <div className={cn(
