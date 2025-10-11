@@ -190,7 +190,10 @@ export default function UserProfilePage() {
     const { setChattingWith } = useChat();
     const params = useParams();
     const { toast } = useToast();
-    const username = Array.isArray(params.username) ? params.username[0] : params.username as string;
+    
+    // Correctly get username from params
+    const usernameParam = params?.username || '';
+    const username = Array.isArray(usernameParam) ? usernameParam[0] : usernameParam;
     
     const [profile, setProfile] = useState<PublicUserProfile | null>(null);
     const [streakData, setStreakData] = useState<StreakData | null>(null);
@@ -614,3 +617,5 @@ export default function UserProfilePage() {
         </div>
     )
 }
+
+    
