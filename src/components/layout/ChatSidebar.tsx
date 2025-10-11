@@ -150,8 +150,8 @@ export function ChatSidebar({ children }: { children?: ReactNode }) {
     // Desktop view
     return (
       <aside className={cn(
-        "fixed top-0 right-0 h-full flex flex-row-reverse transition-transform duration-300 ease-in-out z-30",
-        isChatSidebarOpen ? "translate-x-0" : "translate-x-full",
+        "fixed top-0 right-0 h-full flex flex-row-reverse transition-[width] duration-300 ease-in-out z-30",
+        isChatSidebarOpen ? "w-[45rem]" : "w-0",
         "hidden md:flex"
       )}>
         <div className={cn(

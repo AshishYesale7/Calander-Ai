@@ -237,7 +237,8 @@ function AppContent({ children }: { children: ReactNode }) {
   const lastScrollY = useRef(0);
   
   const { isMobile, state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
-  const isChatVisible = isChatSidebarOpen || !!chattingWith;
+  const isChatPanelVisible = !!chattingWith;
+  const isChatVisible = isChatSidebarOpen || isChatPanelVisible;
 
   // Auto-collapses the main sidebar when chat is opened on desktop
   useEffect(() => {
@@ -423,8 +424,9 @@ function AppContent({ children }: { children: ReactNode }) {
         
         <div className={cn(
           "flex-1 flex flex-col transition-all duration-300 ease-in-out",
-          !isMobile && sidebarState === 'expanded' ? 'md:ml-64' : 'md:ml-12',
-          isChatVisible && !isMobile ? 'md:mr-[45rem]' : 'md:mr-0' // Adjust right margin for chat
+          !isMobile && sidebarState === 'expanded' && "ml-64",
+          !isMobile && sidebarState === 'collapsed' && "ml-12",
+          isChatVisible && !isMobile && "mr-[45rem]"
         )}>
             <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
