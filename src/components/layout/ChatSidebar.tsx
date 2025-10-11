@@ -22,7 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
 
 type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
-    notification?: boolean; 
+    notification?: boolean;
 }
 
 interface ChatListContentProps {
@@ -53,7 +53,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     }, []);
 
     const filteredFollowing = useMemo(() => {
-        return following.filter(friend => 
+        return following.filter(friend =>
             friend.displayName.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [following, searchTerm]);
@@ -104,11 +104,22 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                 <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-9 w-9">
                     <PanelLeftOpen className="h-5 w-5" />
                 </Button>
+                
+                 <div className="relative group w-full flex justify-center focus-within:w-[16rem] focus-within:absolute focus-within:top-2 focus-within:z-10 transition-all duration-300">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none group-focus-within:text-primary" />
+                    <Input
+                        placeholder="Search..."
+                        className="pl-10 h-9 w-10 group-focus-within:w-full transition-all duration-300"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
                 <Separator />
                 <TooltipProvider delayDuration={0}>
                     <ScrollArea className="flex-1 w-full">
                         <div className="space-y-2">
-                            {following.map(friend => (
+                            {filteredFollowing.map(friend => (
                                 <Tooltip key={friend.id}>
                                     <TooltipTrigger asChild>
                                         <button onClick={() => handleUserClick(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
@@ -148,13 +159,13 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     }
 
     return (
-        <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30", isMobile ? "border-r" : "border-l")}>
+        <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl", isMobile ? "border-r" : "border-l", "border-border/30")}>
              <div className="p-4 border-b border-border/30 flex items-center justify-between">
                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search..." 
-                        className="pl-10" 
+                    <Input
+                        placeholder="Search..."
+                        className="pl-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -180,7 +191,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
             <ScrollArea className="flex-1">
                 <div className="p-2 space-y-1">
                     {filteredFollowing.map(friend => (
-                        <button 
+                        <button
                             key={friend.id}
                             className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
                             onClick={() => handleUserClick(friend)}
@@ -210,7 +221,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
 };
 
 
-export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void }) {
+export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void; isCollapsed: boolean }) {
     const { isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
     const isMobile = useIsMobile();
     
@@ -227,7 +238,7 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
     // Desktop view
     return (
       <div className="h-full w-full">
-        <ChatListContent onToggleCollapse={onToggleCollapse}/>
+        <ChatListContent onToggleCollapse={onToggleCollapse} isCollapsed={false}/>
       </div>
     )
 }
