@@ -321,7 +321,7 @@ export default function TasksPage() {
           </div>
 
           <ScrollArea className="h-[calc(100%-80px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6 pb-6">
               {taskLists.map(list => {
                   const pendingTasks = tasks[list.id]?.filter(t => t.status !== 'completed') || [];
                   const completedTasks = tasks[list.id]?.filter(t => t.status === 'completed') || [];
