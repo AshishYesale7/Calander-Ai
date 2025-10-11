@@ -432,12 +432,14 @@ function AppContent({ children }: { children: ReactNode }) {
         </main>
       </div>
       
-      <aside className={cn(
-        "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
-        "hidden md:flex",
-        isChatPanelVisible && isChatSidebarOpen && "w-[45rem]",
-        isChatSidebarOpen && !isChatPanelVisible && "w-[20rem]"
-      )}>
+      <aside
+        className={cn(
+          "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
+          "hidden md:flex",
+          isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
+          isChatSidebarOpen && isChatPanelVisible && "lg:w-[43rem]",
+        )}
+      >
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
            isChatPanelVisible ? 'w-[25rem]' : 'w-0'
@@ -448,7 +450,7 @@ function AppContent({ children }: { children: ReactNode }) {
          </div>
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
-           isChatSidebarOpen ? "w-[20rem]" : "w-0"
+           isChatSidebarOpen ? "w-[18rem]" : "w-0"
          )}>
            <ChatSidebar />
          </div>
