@@ -450,12 +450,14 @@ function AppContent({ children }: { children: ReactNode }) {
               <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
             )}
          </div>
-         <div className={cn(
-           "transition-all duration-300 ease-in-out h-full",
-           isChatSidebarOpen ? "w-20 chat:w-[18rem]" : "w-0"
-         )}>
-           <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
-         </div>
+          {isChatSidebarOpen && (
+            <div className={cn(
+              "transition-all duration-300 ease-in-out h-full",
+              "w-20 chat:w-[18rem]"
+            )}>
+              <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
+            </div>
+          )}
       </aside>
 
       {/* Mobile-only full-screen chat view with split layout */}
