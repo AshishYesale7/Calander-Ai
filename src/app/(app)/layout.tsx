@@ -205,7 +205,7 @@ const useCallNotifications = () => {
       endCall, 
       setActiveCallId: setAndStoreActiveCallId, 
       isPipMode,
-      onTogglePipMode,
+      onTogglePipMode
     };
 };
 
@@ -393,7 +393,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center">
         <Preloader />
       </div>
     );
@@ -402,7 +402,7 @@ function AppContent({ children }: { children: ReactNode }) {
   if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
       router.push('/subscription');
       return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex h-screen w-full items-center justify-center">
           <Preloader />
         </div>
       );
@@ -418,7 +418,7 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   return (
-    <div className='relative z-0 flex h-screen w-full bg-transparent'>
+    <div className='relative z-0 flex h-screen w-full'>
       <SidebarNav {...modalProps} />
       
       <div className={cn(
@@ -427,7 +427,7 @@ function AppContent({ children }: { children: ReactNode }) {
         !isMobile && sidebarState === 'collapsed' && "md:ml-12"
       )}>
         <Header {...modalProps} />
-        <main ref={mainScrollRef} className="flex-1 overflow-auto p-6 pb-24">
+        <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
           {children}
         </main>
       </div>
@@ -435,7 +435,8 @@ function AppContent({ children }: { children: ReactNode }) {
       <aside className={cn(
         "h-full flex-shrink-0 flex flex-row-reverse transition-all duration-300 ease-in-out",
         "hidden md:flex",
-        isChatVisible ? "w-[20rem] lg:w-[45rem]" : "w-0"
+        isChatPanelVisible && isChatSidebarOpen && "w-[45rem]",
+        isChatSidebarOpen && !isChatPanelVisible && "w-[20rem]"
       )}>
          <div className={cn(
            "transition-all duration-300 ease-in-out h-full overflow-hidden",
@@ -578,5 +579,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
