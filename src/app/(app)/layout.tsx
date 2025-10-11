@@ -242,12 +242,12 @@ function AppContent({ children }: { children: ReactNode }) {
   // New state to explicitly control the chatbar's collapsed state based on screen size
   const [isChatbarCollapsed, setIsChatbarCollapsed] = useState(false);
 
-  // Auto-collapses the main sidebar when chat is opened on desktop, but only if it's currently expanded.
+  // Auto-collapses the main sidebar when a chat *panel* is opened on desktop, but only if it's currently expanded.
   useEffect(() => {
-    if (!isMobile && isChatSidebarOpen && sidebarState === 'expanded') {
+    if (!isMobile && chattingWith && sidebarState === 'expanded') {
         setSidebarOpen(false);
     }
-  }, [isChatSidebarOpen, isMobile, sidebarState, setSidebarOpen]);
+  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
 
   // When call goes into PiP mode, close the chat panel
   useEffect(() => {
@@ -597,5 +597,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
