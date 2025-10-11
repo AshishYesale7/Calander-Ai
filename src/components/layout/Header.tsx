@@ -34,6 +34,11 @@ import { cn } from '@/lib/utils';
 import { format, startOfWeek, addDays, toDate, isToday as dfnsIsToday } from 'date-fns';
 import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
 import { useChat } from '@/context/ChatContext';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 
 const navItems = [
@@ -447,3 +452,5 @@ export default function Header({
     </>
   );
 }
+
+    
