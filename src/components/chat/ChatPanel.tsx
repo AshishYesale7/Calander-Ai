@@ -10,7 +10,7 @@ import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -123,7 +123,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14">
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
-              <PanelLeftOpen className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5" />
            </Button>
           <Avatar className="h-9 w-9">
             <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
