@@ -100,13 +100,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     localStreamRef.current.getTracks().forEach(track => track.stop());
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
-    setIsFrontCamera(!isFrontCamera);
-
+    
     try {
         const newStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: { exact: newFacingMode } },
             audio: true // We need to request audio again as well
         });
+        
         if (!isMountedRef.current) return;
         
         localStreamRef.current = newStream;
@@ -114,21 +114,19 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             localVideoRef.current.srcObject = newStream;
         }
         
-        // Replace the video track in the peer connection
         const videoTrack = newStream.getVideoTracks()[0];
         const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
             await sender.replaceTrack(videoTrack);
+            setIsFrontCamera(!isFrontCamera); // Only change state on success
         } else {
             console.warn("Could not find video sender to replace track.");
         }
     } catch (error) {
         console.error("Error flipping camera:", error);
-        toast({ title: "Camera Switch Failed", description: "Could not switch to the other camera.", variant: 'destructive' });
-        // Try to revert back to the original state
-        setIsFrontCamera(isFrontCamera);
-        // And re-acquire the initial stream
+        toast({ title: "Camera Switch Failed", description: "Could not find a second camera to switch to.", variant: 'destructive' });
+        // Attempt to re-acquire the original stream to recover the call
         setupStreamsAndPC();
     }
   };
