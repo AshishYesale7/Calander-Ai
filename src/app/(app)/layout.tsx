@@ -504,16 +504,19 @@ function AppContent({ children }: { children: ReactNode }) {
             drag={isPipMode && !isResetting}
             dragMomentum={false}
             animate={pipControls}
-            resize={isPipMode ? "both" : undefined}
+            resize="both"
             onResize={(event, info) => {
-                if(isPipMode) {
-                    const target = event.target as HTMLElement;
-                    setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
-                }
+              if (isPipMode) {
+                // In framer-motion, the `event` is a mouse/touch event.
+                // We need to get the size from the DOM element itself.
+                const target = event.target as HTMLElement;
+                setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
+              }
             }}
-            className={cn( "fixed bg-black z-[100] overflow-hidden",
-                isPipMode
-                    ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing top-4 right-4"
+            className={cn(
+                "fixed bg-black z-[100] border border-white/20",
+                isPipMode 
+                    ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4"
                     : "inset-0"
             )}
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
@@ -550,5 +553,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
