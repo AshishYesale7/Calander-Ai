@@ -506,8 +506,8 @@ function AppContent({ children }: { children: ReactNode }) {
             animate={pipControls}
             resize={isPipMode ? "both" : undefined}
             onResize={(event, info) => {
-              if (isPipMode) {
-                const target = event.target as HTMLElement;
+              const target = event.target as HTMLElement;
+              if (isPipMode && target) {
                 setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
               }
             }}
@@ -551,3 +551,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
