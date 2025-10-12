@@ -71,6 +71,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const isMobile = useIsMobile();
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -91,10 +92,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   }, []);
 
   const flipCamera = async () => {
-    if (!localStreamRef.current || !navigator.mediaDevices?.enumerateDevices) {
-        toast({ title: "Camera Error", description: "Could not detect multiple cameras.", variant: 'destructive'});
-        return;
-    }
+    if (!localStreamRef.current) return;
     
     // Stop all current tracks to release the camera
     localStreamRef.current.getTracks().forEach(track => track.stop());
@@ -104,7 +102,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     try {
         const newStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: { exact: newFacingMode } },
-            audio: true // We need to request audio again as well
+            audio: true
         });
         
         if (!isMountedRef.current) return;
@@ -119,13 +117,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         
         if (sender) {
             await sender.replaceTrack(videoTrack);
-            setIsFrontCamera(!isFrontCamera); // Only change state on success
+            setIsFrontCamera(!isFrontCamera);
         } else {
             console.warn("Could not find video sender to replace track.");
         }
     } catch (error) {
         console.error("Error flipping camera:", error);
-        toast({ title: "Camera Switch Failed", description: "Could not find a second camera to switch to.", variant: 'destructive' });
+        toast({ title: "Camera Switch Failed", description: "Could not switch to the other camera.", variant: 'destructive' });
         // Attempt to re-acquire the original stream to recover the call
         setupStreamsAndPC();
     }
@@ -143,6 +141,11 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         localVideoRef.current.srcObject = stream;
       }
       setHasPermission(true);
+
+      // Check for multiple cameras after getting permissions
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(device => device.kind === 'videoinput');
+      setHasMultipleCameras(videoInputs.length > 1);
 
       const pc = peerConnectionRef.current;
       if (!pc || pc.signalingState === 'closed') return false;
@@ -343,7 +346,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <motion.div 
             className={cn(
                 "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
-                isPipMode && pipSizeMode === 'small' && 'hidden', // Hide local video in smallest PiP mode
+                pipSizeMode === 'small' && 'hidden',
                 isPipMode 
                     ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
                     : "h-48 w-36 top-4 right-4"
@@ -386,7 +389,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
-        {isMobile && (
+        {isMobile && hasMultipleCameras && (
             <Button onClick={flipCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
                <SwitchCamera className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
             </Button>
