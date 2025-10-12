@@ -83,9 +83,6 @@ export default function EventCalendarView({
             </Button>
           </div>
         </div>
-         <CardDescription>
-          Click on a day to see its hourly timetable. Dots indicate days with events.
-        </CardDescription>
       </CardHeader>
       <CardContent className="p-2 sm:p-4">
         <Calendar
