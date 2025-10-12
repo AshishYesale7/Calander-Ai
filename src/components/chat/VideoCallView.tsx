@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, SwitchCamera, FlipHorizontal } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, SwitchCamera, FlipHorizontal, WifiOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 
 interface VideoCallViewProps {
@@ -73,6 +74,8 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const isMobile = useIsMobile();
+  const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -166,9 +169,9 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     if (!localStreamRef.current || !hasMultipleCameras) return;
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
+    const oldStream = localStreamRef.current; // Keep a reference to the old stream
     
     try {
-        // Attempt to get the new stream WITHOUT stopping the old one
         const newStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: { exact: newFacingMode } },
             audio: true
@@ -176,22 +179,20 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         
         if (!isMountedRef.current) return;
         
-        // If successful, replace the track and update state
         const videoTrack = newStream.getVideoTracks()[0];
         const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
             await sender.replaceTrack(videoTrack);
 
-            // Now we can stop the OLD stream tracks
-            localStreamRef.current?.getTracks().forEach(track => track.stop());
-            
-            // And update our refs and state
             localStreamRef.current = newStream;
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = newStream;
             }
             setIsFrontCamera(!isFrontCamera);
+
+            // Now that the switch is successful, stop the old stream tracks.
+            oldStream.getTracks().forEach(track => track.stop());
 
         } else {
             console.warn("Could not find video sender to replace track.");
@@ -203,8 +204,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             description: "Could not find a second camera to switch to.", 
             variant: 'destructive' 
         });
-        // Since we didn't stop the original stream, the call continues without interruption.
-        // No fallback logic is needed here because nothing broke.
+        // Important: We do not call setupStreamsAndPC() here because the original stream was never stopped.
     }
   };
 
@@ -222,6 +222,21 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     
     const pc = new RTCPeerConnection(servers);
     peerConnectionRef.current = pc;
+    
+    pc.onconnectionstatechange = () => {
+        if (!isMountedRef.current) return;
+        setConnectionStatus(pc.connectionState);
+
+        if (pc.connectionState === 'disconnected') {
+            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = setTimeout(() => {
+                toast({ title: 'Call Failed', description: 'Connection lost. Please try again.', variant: 'destructive'});
+                onEndCall();
+            }, 10000); // 10-second timeout
+        } else if (pc.connectionState === 'connected') {
+            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+        }
+    };
     
     const setupSignaling = () => {
         pc.onicecandidate = event => {
@@ -313,9 +328,10 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     return () => {
         if (unsubCall) unsubCall();
         if (unsubCandidates) unsubCandidates();
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     }
 
-  }, [user, call, toast, setupStreamsAndPC]);
+  }, [user, call, toast, setupStreamsAndPC, onEndCall]);
 
   useEffect(() => {
     return () => {
@@ -365,6 +381,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
       {/* Remote Video */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
+        {connectionStatus === 'disconnected' && (
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
+                <LoadingSpinner className="text-white" />
+                Reconnecting...
+            </div>
+        )}
         {!isPipMode && (
            <div className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg">
              <p className="font-semibold">{otherUser.displayName}</p>
@@ -440,4 +462,3 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
-
