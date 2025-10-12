@@ -168,7 +168,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
               const answerDescription = new RTCSessionDescription(data.answer);
-              await pc.setRemoteDescription(answerDescription);
+              if(pc.signalingState !== 'closed') await pc.setRemoteDescription(answerDescription);
               
               receiverCandidatesQueue.current.forEach(candidate => {
                   if (pc.signalingState !== 'closed') {
@@ -203,7 +203,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               const data = snapshot.data();
               if (data?.offer && !pc.currentRemoteDescription) {
                   const offerDescription = new RTCSessionDescription(data.offer);
-                  await pc.setRemoteDescription(offerDescription);
+                  if (pc.signalingState !== 'closed') await pc.setRemoteDescription(offerDescription);
                   
                   callerCandidatesQueue.current.forEach(candidate => {
                       if (pc.signalingState !== 'closed') {
@@ -228,33 +228,34 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         }
     });
     
-    // Main cleanup function
+    // Main cleanup function is now in its own effect
     return () => {
-      isMountedRef.current = false;
-      if (unsubCall) unsubCall();
-      if (unsubCandidates) unsubCandidates();
-      
-      // Stop media tracks
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-        localStreamRef.current = null;
-      }
-      if (remoteStreamRef.current) {
-          remoteStreamRef.current.getTracks().forEach(track => track.stop());
-          remoteStreamRef.current = null;
-      }
+        if (unsubCall) unsubCall();
+        if (unsubCandidates) unsubCandidates();
+    }
 
-      // Close the peer connection
-      if (peerConnectionRef.current) {
-        if (peerConnectionRef.current.signalingState !== 'closed') {
-            peerConnectionRef.current.close();
+  }, [user, call, toast]);
+
+  useEffect(() => {
+    return () => {
+        isMountedRef.current = false;
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
         }
-        peerConnectionRef.current = null;
-      }
-      console.log("Video call resources cleaned up.");
-    };
-
-  }, [user, call, toast, onEndCall]);
+        if (remoteStreamRef.current) {
+            remoteStreamRef.current.getTracks().forEach(track => track.stop());
+            remoteStreamRef.current = null;
+        }
+        if (peerConnectionRef.current) {
+            if (peerConnectionRef.current.signalingState !== 'closed') {
+                peerConnectionRef.current.close();
+            }
+            peerConnectionRef.current = null;
+        }
+        console.log("Video call resources cleaned up on unmount.");
+    }
+  }, [])
 
 
   const toggleMute = () => {
