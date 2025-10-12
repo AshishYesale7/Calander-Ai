@@ -249,13 +249,6 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
 
-  // When call goes into PiP mode, close the chat panel
-  useEffect(() => {
-    if (isPipMode && chattingWith) {
-        setChattingWith(null);
-    }
-  }, [isPipMode, chattingWith, setChattingWith]);
-
   useEffect(() => {
     if (!loading) {
       if (!user) {
