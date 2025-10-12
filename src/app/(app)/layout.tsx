@@ -53,6 +53,8 @@ const useCallNotifications = () => {
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
+    const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
+
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
@@ -215,6 +217,8 @@ const useCallNotifications = () => {
       onTogglePipMode,
       pipControls,
       isResetting,
+      pipSize,
+      setPipSize
     };
 };
 
@@ -233,7 +237,8 @@ function AppContent({ children }: { children: ReactNode }) {
       incomingCall, acceptCall, declineCall, 
       ongoingCall, outgoingCall, initiateCall, 
       otherUserInCall, endCall, 
-      isPipMode, onTogglePipMode, pipControls, isResetting
+      isPipMode, onTogglePipMode, pipControls, isResetting,
+      pipSize, setPipSize
   } = useCallNotifications();
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -499,11 +504,19 @@ function AppContent({ children }: { children: ReactNode }) {
             drag={isPipMode && !isResetting}
             dragMomentum={false}
             animate={pipControls}
+            resize={isPipMode ? "both" : undefined}
+            onResize={(event, info) => {
+                if(isPipMode) {
+                    const target = event.target as HTMLElement;
+                    setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
+                }
+            }}
             className={cn( "fixed bg-black z-[100] overflow-hidden",
                 isPipMode
-                    ? "w-80 h-[22rem] rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing top-4 right-4"
+                    ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing top-4 right-4"
                     : "inset-0"
             )}
+            style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
         >
             <VideoCallView 
                 call={ongoingCall} 
