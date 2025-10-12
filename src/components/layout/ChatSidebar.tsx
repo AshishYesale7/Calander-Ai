@@ -39,8 +39,8 @@ const SearchInput = ({ searchTerm, setSearchTerm }: { searchTerm: string, setSea
     const containerClasses = cn(
       "relative group w-full flex transition-all duration-300",
       isMobile ? 
-        (isFocused ? "absolute top-2 left-2 z-60 bg-card rounded-md" : "justify-center w-full") :
-        "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10"
+        (isFocused ? "absolute top-2 left-2 z-50 bg-card rounded-md w-[80%]" : "justify-center w-full") :
+        "justify-center focus-within:w-[16rem] focus-within:absolute focus-within:right-0 focus-within:top-2 focus-within:z-10"
     );
   
     const inputClasses = cn(
@@ -343,3 +343,5 @@ export function ChatSidebar({ onToggleCollapse, isCollapsed }: { onToggleCollaps
       </div>
     )
 }
+
+    
