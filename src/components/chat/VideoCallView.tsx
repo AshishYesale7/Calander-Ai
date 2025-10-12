@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, SwitchCamera, FlipHorizontal, WifiOff } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, SwitchCamera, FlipHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
@@ -14,7 +14,6 @@ import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from 
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 
@@ -73,7 +72,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
-  const isMobile = useIsMobile();
   const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -166,7 +164,16 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   }, [toast, onEndCall]);
   
   const flipCamera = async () => {
-    if (!localStreamRef.current || !hasMultipleCameras) return;
+    if (!localStreamRef.current || !hasMultipleCameras) {
+        if (!hasMultipleCameras) {
+            toast({ 
+                title: "Camera Switch Failed", 
+                description: "Could not find a second camera to switch to.", 
+                variant: 'destructive' 
+            });
+        }
+        return;
+    }
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
     const oldStream = localStreamRef.current; // Keep a reference to the old stream
@@ -204,7 +211,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             description: "Could not find a second camera to switch to.", 
             variant: 'destructive' 
         });
-        // Important: We do not call setupStreamsAndPC() here because the original stream was never stopped.
+        // The original stream was never stopped, so no need for fallback logic.
     }
   };
 
@@ -232,7 +239,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             reconnectTimerRef.current = setTimeout(() => {
                 toast({ title: 'Call Failed', description: 'Connection lost. Please try again.', variant: 'destructive'});
                 onEndCall();
-            }, 10000); // 10-second timeout
+            }, 60000); // 60-second timeout
         } else if (pc.connectionState === 'connected') {
             if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         }
@@ -394,25 +401,26 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
 
         {/* Local Video Preview */}
-        <motion.div 
-            className={cn(
-                "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
-                pipSizeMode === 'small' && isPipMode && 'hidden', // Hide local view in small PiP
-                isPipMode 
-                    ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
-                    : "h-48 w-36 top-4 right-4"
-            )}
-            drag={isPipMode}
-            dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
-            dragMomentum={false}
-        >
-            <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline style={{ transform: isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)' }} />
-            {isCameraOff && hasPermission && (
-              <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
-                Camera is off
-              </div>
-            )}
-        </motion.div>
+        {pipSizeMode !== 'small' && (
+          <motion.div 
+              className={cn(
+                  "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
+                  isPipMode 
+                      ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
+                      : "h-48 w-36 top-4 right-4"
+              )}
+              drag={isPipMode}
+              dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
+              dragMomentum={false}
+          >
+              <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline style={{ transform: isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)' }} />
+              {isCameraOff && hasPermission && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
+                  Camera is off
+                </div>
+              )}
+          </motion.div>
+        )}
       </div>
       
        {hasPermission === false && (
