@@ -174,6 +174,18 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         </div>
                     </ScrollArea>
                 </TooltipProvider>
+                 <div className="mt-auto p-2">
+                    <TooltipProvider delayDuration={0}>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 w-full">
+                                    <UserPlus className="h-5 w-5"/>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
             </div>
         )
     }
@@ -226,6 +238,18 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         </div>
                     </ScrollArea>
                 </TooltipProvider>
+                 <div className="mt-auto p-2">
+                    <TooltipProvider delayDuration={0}>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 w-full">
+                                    <UserPlus className="h-5 w-5"/>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
             </div>
         )
     }
@@ -288,6 +312,11 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     ))}
                 </div>
             </ScrollArea>
+             <div className="p-2 mt-auto border-t border-border/30">
+                <Button variant="ghost" className="w-full justify-center">
+                    <UserPlus className="mr-2 h-4 w-4"/> Add Friend
+                </Button>
+            </div>
         </div>
     );
 };
