@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus, PanelLeftClose } from "lucide-react";
+import { Users, Search, MessageSquare, PanelRightOpen, X, PanelLeftOpen, UserPlus, PanelLeftClose, PanelRightClose } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useAuth } from '@/context/AuthContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -138,6 +138,22 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     if (isMobile) {
         return (
             <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-r border-border/30 items-center p-2 gap-2">
+                <TooltipProvider delayDuration={0}>
+                    <div className="space-y-2">
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                </TooltipProvider>
                 <div className="relative h-9 w-full">
                     <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
                 </div>
@@ -163,23 +179,6 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                         </div>
                     </ScrollArea>
                 </TooltipProvider>
-                <Separator />
-                <TooltipProvider delayDuration={0}>
-                    <div className="space-y-2">
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
-                        </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
-                        </Tooltip>
-                    </div>
-                </TooltipProvider>
             </div>
         )
     }
@@ -195,7 +194,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <div className="space-y-2">
                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-5 w-5"/></Button>
                             </TooltipTrigger>
                              <TooltipContent side="left"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
