@@ -165,6 +165,11 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   
   const flipCamera = async () => {
     if (!localStreamRef.current || !hasMultipleCameras) {
+        toast({
+          title: "Camera Switch Failed",
+          description: "Could not find a second camera to switch to.",
+          variant: 'destructive'
+        });
         return;
     }
 
@@ -230,7 +235,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             reconnectTimerRef.current = setTimeout(() => {
                 toast({ title: 'Call Failed', description: 'Connection lost. Please try again.', variant: 'destructive'});
                 onEndCall();
-            }, 60000); // 60-second timeout
+            }, 15000); // 15-second timeout
         } else if (pc.connectionState === 'connected') {
             if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         }
@@ -461,3 +466,5 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
+
+    
