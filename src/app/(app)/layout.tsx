@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -432,7 +431,8 @@ function AppContent({ children }: { children: ReactNode }) {
         <aside
           className={cn(
             "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
-            "hidden md:flex", 
+            "hidden md:flex",
+            ongoingCall && !isPipMode && "hidden", // Hide sidebar in full-screen call on desktop
             isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
             isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
           )}
@@ -457,7 +457,7 @@ function AppContent({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile-only full-screen chat view with split layout */}
-      {isMobile && isChatSidebarOpen && (
+      {isMobile && isChatSidebarOpen && !(ongoingCall && !isPipMode) && (
           <div className="fixed inset-0 top-16 z-50 flex">
               <div className="w-[25%] h-full">
                   <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
@@ -538,32 +538,26 @@ function AppContent({ children }: { children: ReactNode }) {
         />
       )}
       
-      {ongoingCall && otherUserInCall && !isPipMode && (
-        <div className="fixed inset-0 z-[100] bg-black">
-          <VideoCallView 
-            call={ongoingCall} 
-            otherUser={otherUserInCall} 
-            onEndCall={endCall} 
-            isPipMode={false}
-            onTogglePipMode={onTogglePipMode}
-          />
-        </div>
-      )}
-
-      {ongoingCall && otherUserInCall && isPipMode && (
-          <motion.div 
-            drag
+      {ongoingCall && otherUserInCall && (
+        <motion.div
+            drag={isPipMode}
             dragMomentum={false}
-            className="fixed top-4 right-4 z-[100] w-80 h-[22rem] bg-black rounded-xl overflow-hidden shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing"
-           >
-             <VideoCallView 
+            className={cn(
+                "fixed bg-black z-[100] overflow-hidden",
+                isPipMode
+                    ? "top-4 right-4 w-80 h-[22rem] rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing"
+                    : "inset-0"
+            )}
+            style={{ x: isPipMode ? undefined : 0, y: isPipMode ? undefined : 0 }} // Reset position when not in PiP
+        >
+            <VideoCallView 
                 call={ongoingCall} 
                 otherUser={otherUserInCall} 
                 onEndCall={endCall}
-                isPipMode={true}
+                isPipMode={isPipMode}
                 onTogglePipMode={onTogglePipMode}
-             />
-          </motion.div>
+            />
+        </motion.div>
       )}
 
 
