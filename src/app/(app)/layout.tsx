@@ -305,7 +305,8 @@ function AppContent({ children }: { children: ReactNode }) {
         sessionStorage.setItem('planModalShown', 'true');
       }
       
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      const notificationPromptDismissed = localStorage.getItem('notificationPromptDismissed');
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default' && !notificationPromptDismissed) {
           setTimeout(() => setIsNotificationModalOpen(true), 3000);
       }
     }

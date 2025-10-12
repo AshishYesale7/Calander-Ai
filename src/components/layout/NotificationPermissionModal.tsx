@@ -18,6 +18,8 @@ interface NotificationPermissionModalProps {
   onConfirm: () => void;
 }
 
+const NOTIFICATION_PROMPT_DISMISSED_KEY = 'notificationPromptDismissed';
+
 export default function NotificationPermissionModal({
   isOpen,
   onOpenChange,
@@ -27,6 +29,14 @@ export default function NotificationPermissionModal({
     onConfirm();
     onOpenChange(false);
   };
+
+  const handleDismiss = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(NOTIFICATION_PROMPT_DISMISSED_KEY, 'true');
+    }
+    onOpenChange(false);
+  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -44,7 +54,7 @@ export default function NotificationPermissionModal({
         </DialogHeader>
         <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
           <Button onClick={handleConfirm} className="bg-accent hover:bg-accent/90">Enable Notifications</Button>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Maybe Later</Button>
+          <Button type="button" variant="ghost" onClick={handleDismiss}>Maybe Later</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
