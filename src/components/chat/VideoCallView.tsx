@@ -91,87 +91,68 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     return () => { isMountedRef.current = false; };
   }, []);
 
-  const flipCamera = async () => {
-    if (!localStreamRef.current) return;
-    
-    // Stop all current tracks to release the camera
-    localStreamRef.current.getTracks().forEach(track => track.stop());
-
-    const newFacingMode = isFrontCamera ? 'environment' : 'user';
-    
+  const setupStreamsAndPC = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
     try {
-        const newStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: { exact: newFacingMode } },
-            audio: true
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { ideal: facingMode } }, 
+            audio: true 
         });
-        
-        if (!isMountedRef.current) return;
-        
-        localStreamRef.current = newStream;
+
+        if (!isMountedRef.current) {
+            stream.getTracks().forEach(track => track.stop());
+            return false;
+        }
+      
+        localStreamRef.current = stream;
         if (localVideoRef.current) {
-            localVideoRef.current.srcObject = newStream;
+            localVideoRef.current.srcObject = stream;
         }
+        setHasPermission(true);
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(device => device.kind === 'videoinput');
+        setHasMultipleCameras(videoInputs.length > 1);
+
+        const pc = peerConnectionRef.current;
+        if (!pc || pc.signalingState === 'closed') return false;
+      
+        // Replace tracks instead of adding if they already exist
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+        const videoSender = pc.getSenders().find(s => s.track?.kind === 'video');
+        const audioSender = pc.getSenders().find(s => s.track?.kind === 'audio');
         
-        const videoTrack = newStream.getVideoTracks()[0];
-        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
-        
-        if (sender) {
-            await sender.replaceTrack(videoTrack);
-            setIsFrontCamera(!isFrontCamera);
+        if (videoSender) {
+            videoSender.replaceTrack(videoTrack);
         } else {
-            console.warn("Could not find video sender to replace track.");
+            pc.addTrack(videoTrack, stream);
         }
-    } catch (error) {
-        console.error("Error flipping camera:", error);
-        toast({ title: "Camera Switch Failed", description: "Could not switch to the other camera.", variant: 'destructive' });
-        // Attempt to re-acquire the original stream to recover the call
-        setupStreamsAndPC();
-    }
-  };
-
-
-  // Combined effect for WebRTC setup, signaling, and cleanup
-  const setupStreamsAndPC = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (!isMountedRef.current) { stream.getTracks().forEach(track => track.stop()); return false; }
-      
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      setHasPermission(true);
-
-      // Check for multiple cameras after getting permissions
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter(device => device.kind === 'videoinput');
-      setHasMultipleCameras(videoInputs.length > 1);
-
-      const pc = peerConnectionRef.current;
-      if (!pc || pc.signalingState === 'closed') return false;
-      
-      stream.getTracks().forEach((track) => {
-        if (pc.signalingState !== 'closed') {
-          pc.addTrack(track, stream);
+        
+        if (audioSender) {
+            audioSender.replaceTrack(audioTrack);
+        } else {
+            pc.addTrack(audioTrack, stream);
         }
-      });
 
-      remoteStreamRef.current = new MediaStream();
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-      }
+        if (!remoteStreamRef.current) {
+            remoteStreamRef.current = new MediaStream();
+            if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStreamRef.current;
+            }
+        }
+        
+        pc.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => {
+                remoteStreamRef.current?.addTrack(track);
+            });
+        };
 
-      pc.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-          remoteStreamRef.current?.addTrack(track);
-        });
-      };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error setting up streams or peer connection.', error);
       toast({
         variant: 'destructive',
         title: 'Media Access Denied',
-        description: 'Please enable camera and microphone permissions to use video calling.',
+        description: error.message || 'Please enable camera and microphone permissions to use video calling.',
         duration: 7000,
       });
       setHasPermission(false);
@@ -181,6 +162,54 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     return true;
   }, [toast, onEndCall]);
   
+  const flipCamera = async () => {
+    if (!localStreamRef.current || !hasMultipleCameras) return;
+
+    const newFacingMode = isFrontCamera ? 'environment' : 'user';
+    
+    try {
+        // Attempt to get the new stream WITHOUT stopping the old one
+        const newStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { exact: newFacingMode } },
+            audio: true
+        });
+        
+        if (!isMountedRef.current) return;
+        
+        // If successful, replace the track and update state
+        const videoTrack = newStream.getVideoTracks()[0];
+        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
+        
+        if (sender) {
+            await sender.replaceTrack(videoTrack);
+
+            // Now we can stop the OLD stream tracks
+            localStreamRef.current?.getTracks().forEach(track => track.stop());
+            
+            // And update our refs and state
+            localStreamRef.current = newStream;
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = newStream;
+            }
+            setIsFrontCamera(!isFrontCamera);
+
+        } else {
+            console.warn("Could not find video sender to replace track.");
+        }
+    } catch (error) {
+        console.error("Error flipping camera:", error);
+        toast({ 
+            title: "Camera Switch Failed", 
+            description: "Could not find a second camera to switch to.", 
+            variant: 'destructive' 
+        });
+        // Since we didn't stop the original stream, the call continues without interruption.
+        // No fallback logic is needed here because nothing broke.
+    }
+  };
+
+
+  // Combined effect for WebRTC setup, signaling, and cleanup
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
         return;
@@ -346,7 +375,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <motion.div 
             className={cn(
                 "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
-                pipSizeMode === 'small' && 'hidden',
+                pipSizeMode === 'small' && isPipMode && 'hidden', // Hide local view in small PiP
                 isPipMode 
                     ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
                     : "h-48 w-36 top-4 right-4"
@@ -389,7 +418,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
-        {isMobile && hasMultipleCameras && (
+        {hasMultipleCameras && (
             <Button onClick={flipCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
                <SwitchCamera className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
             </Button>
@@ -411,3 +440,4 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
+
