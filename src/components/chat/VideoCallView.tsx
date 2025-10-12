@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, CameraReverse, AspectRatio, FlipHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
@@ -14,6 +13,7 @@ import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from 
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 interface VideoCallViewProps {
@@ -22,6 +22,8 @@ interface VideoCallViewProps {
   onEndCall: () => void;
   isPipMode: boolean;
   onTogglePipMode: () => void;
+  pipSizeMode: 'small' | 'medium' | 'large';
+  onTogglePipSizeMode: () => void;
 }
 
 const servers = {
@@ -61,12 +63,14 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 
-export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode }: VideoCallViewProps) {
+export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode, pipSizeMode, onTogglePipSizeMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const isMobile = useIsMobile();
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -85,10 +89,98 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     return () => { isMountedRef.current = false; };
   }, []);
 
+  const flipCamera = async () => {
+    if (!localStreamRef.current || !navigator.mediaDevices?.enumerateDevices) {
+        toast({ title: "Camera Error", description: "Could not detect multiple cameras.", variant: 'destructive'});
+        return;
+    }
+    
+    // Stop all current tracks to release the camera
+    localStreamRef.current.getTracks().forEach(track => track.stop());
+
+    const newFacingMode = isFrontCamera ? 'environment' : 'user';
+    setIsFrontCamera(!isFrontCamera);
+
+    try {
+        const newStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { exact: newFacingMode } },
+            audio: true // We need to request audio again as well
+        });
+        if (!isMountedRef.current) return;
+        
+        localStreamRef.current = newStream;
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = newStream;
+        }
+        
+        // Replace the video track in the peer connection
+        const videoTrack = newStream.getVideoTracks()[0];
+        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
+        
+        if (sender) {
+            await sender.replaceTrack(videoTrack);
+        } else {
+            console.warn("Could not find video sender to replace track.");
+        }
+    } catch (error) {
+        console.error("Error flipping camera:", error);
+        toast({ title: "Camera Switch Failed", description: "Could not switch to the other camera.", variant: 'destructive' });
+        // Try to revert back to the original state
+        setIsFrontCamera(isFrontCamera);
+        // And re-acquire the initial stream
+        setupStreamsAndPC();
+    }
+  };
+
+
   // Combined effect for WebRTC setup, signaling, and cleanup
+  const setupStreamsAndPC = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (!isMountedRef.current) { stream.getTracks().forEach(track => track.stop()); return false; }
+      
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      setHasPermission(true);
+
+      const pc = peerConnectionRef.current;
+      if (!pc || pc.signalingState === 'closed') return false;
+      
+      stream.getTracks().forEach((track) => {
+        if (pc.signalingState !== 'closed') {
+          pc.addTrack(track, stream);
+        }
+      });
+
+      remoteStreamRef.current = new MediaStream();
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      }
+
+      pc.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => {
+          remoteStreamRef.current?.addTrack(track);
+        });
+      };
+    } catch (error) {
+      console.error('Error setting up streams or peer connection.', error);
+      toast({
+        variant: 'destructive',
+        title: 'Media Access Denied',
+        description: 'Please enable camera and microphone permissions to use video calling.',
+        duration: 7000,
+      });
+      setHasPermission(false);
+      onEndCall();
+      return false;
+    }
+    return true;
+  }, [toast, onEndCall]);
+  
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
-        console.warn("This browser session is not the active participant for this call. WebRTC setup will not proceed.");
         return;
     }
     
@@ -100,48 +192,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     const pc = new RTCPeerConnection(servers);
     peerConnectionRef.current = pc;
     
-    const setupStreamsAndPC = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (!isMountedRef.current) { stream.getTracks().forEach(track => track.stop()); return false; }
-        
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-        setHasPermission(true);
-        
-        stream.getTracks().forEach((track) => {
-          if (pc.signalingState !== 'closed') {
-            pc.addTrack(track, stream);
-          }
-        });
-  
-        remoteStreamRef.current = new MediaStream();
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        }
-  
-        pc.ontrack = (event) => {
-          event.streams[0].getTracks().forEach((track) => {
-            remoteStreamRef.current?.addTrack(track);
-          });
-        };
-      } catch (error) {
-        console.error('Error setting up streams or peer connection.', error);
-        toast({
-          variant: 'destructive',
-          title: 'Media Access Denied',
-          description: 'Please enable camera and microphone permissions to use video calling.',
-          duration: 7000,
-        });
-        setHasPermission(false);
-        onEndCall();
-        return false;
-      }
-      return true;
-    };
-
     const setupSignaling = () => {
         pc.onicecandidate = event => {
           if (event.candidate) {
@@ -234,7 +284,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         if (unsubCandidates) unsubCandidates();
     }
 
-  }, [user, call, toast]);
+  }, [user, call, toast, setupStreamsAndPC]);
 
   useEffect(() => {
     return () => {
@@ -253,7 +303,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             }
             peerConnectionRef.current = null;
         }
-        console.log("Video call resources cleaned up on unmount.");
     }
   }, [])
 
@@ -280,35 +329,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     onEndCall();
   };
 
-  const handleTogglePipMode = useCallback(async () => {
-    if (!remoteVideoRef.current) return;
-    
-    if (remoteVideoRef.current.readyState === 0) {
-        toast({
-            title: "Video Not Ready",
-            description: "Please wait for the video to load before using Picture-in-Picture.",
-            variant: "default",
-        });
-        return;
-    }
-
-    try {
-        if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-        } else {
-            await remoteVideoRef.current.requestPictureInPicture();
-        }
-    } catch (error) {
-        console.error("Native PiP Error:", error);
-        toast({
-            title: 'Picture-in-Picture Error',
-            description: 'Your browser may not support this feature or it was blocked.',
-            variant: 'destructive',
-        });
-    }
-  }, [toast]);
-
-
   return (
     <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
       {/* Remote Video */}
@@ -324,6 +344,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <motion.div 
             className={cn(
                 "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
+                isPipMode && pipSizeMode === 'small' && 'hidden', // Hide local video in smallest PiP mode
                 isPipMode 
                     ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
                     : "h-48 w-36 top-4 right-4"
@@ -332,7 +353,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
             dragMomentum={false}
         >
-            <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline style={{ transform: isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)' }} />
             {isCameraOff && hasPermission && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
                 Camera is off
@@ -366,9 +387,19 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
+        {isMobile && (
+            <Button onClick={flipCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+               <CameraReverse className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
+            </Button>
+        )}
         <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
             {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
+         {isPipMode && (
+            <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipSizeMode}>
+                <AspectRatio className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
+            </Button>
+         )}
          {!isPipMode && (
             <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
                 <Users className="h-6 w-6" />
