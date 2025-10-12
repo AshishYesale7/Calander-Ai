@@ -54,7 +54,7 @@ const useCallNotifications = () => {
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
     const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
-
+    const [pipSizeMode, setPipSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
@@ -62,6 +62,17 @@ const useCallNotifications = () => {
         }
         return null;
     });
+
+    useEffect(() => {
+        const sizes = {
+            small: { width: 240, height: 180 },
+            medium: { width: 320, height: 240 },
+            large: { width: 400, height: 300 },
+        };
+        if (isPipMode) {
+            setPipSize(sizes[pipSizeMode]);
+        }
+    }, [pipSizeMode, isPipMode]);
 
     const setAndStoreActiveCallId = (callId: string | null) => {
         setActiveCallId(callId);
@@ -218,7 +229,9 @@ const useCallNotifications = () => {
       pipControls,
       isResetting,
       pipSize,
-      setPipSize
+      setPipSize,
+      pipSizeMode,
+      setPipSizeMode,
     };
 };
 
@@ -238,7 +251,7 @@ function AppContent({ children }: { children: ReactNode }) {
       ongoingCall, outgoingCall, initiateCall, 
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize
+      pipSize, setPipSize, pipSizeMode, setPipSizeMode
   } = useCallNotifications();
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -505,11 +518,13 @@ function AppContent({ children }: { children: ReactNode }) {
             dragMomentum={false}
             animate={pipControls}
             resize={isPipMode ? "both" : undefined}
-            onResize={(event, info) => {
-              const target = event.target as HTMLElement;
-              if (isPipMode && target) {
-                setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
-              }
+            onResize={(event) => {
+                if (isPipMode) {
+                    const target = event.target as HTMLElement;
+                    if (target) {
+                        setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
+                    }
+                }
             }}
             className={cn(
                 "fixed bg-black z-[100] border border-white/20",
@@ -525,6 +540,10 @@ function AppContent({ children }: { children: ReactNode }) {
                 onEndCall={endCall}
                 isPipMode={isPipMode}
                 onTogglePipMode={onTogglePipMode}
+                pipSizeMode={pipSizeMode}
+                onTogglePipSizeMode={() => {
+                  setPipSizeMode(prev => prev === 'medium' ? 'large' : prev === 'large' ? 'small' : 'medium');
+                }}
             />
         </motion.div>
       )}
@@ -551,5 +570,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
