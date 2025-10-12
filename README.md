@@ -23,38 +23,29 @@ Calendar.ai is a web application built with a modern tech stack, designed to be 
 
 *   **AI-Powered Dashboard & Timeline:** The core of the app. It syncs with your Google Calendar and Tasks to pull in existing events. It features multiple views:
     *   **Calendar View:** A traditional monthly calendar with dots indicating event days.
-    *   **Day & Week Timetable View:** A detailed, hourly breakdown for any selected day that can be expanded into a full-screen, multi-faceted weekly planner. This view accurately visualizes overlapping events, includes a sticky header for easy navigation, and allows for smooth vertical scrolling through a 24-hour timeline.
-    *   **Interactive Event Popovers:** Hovering over any event in the day or week view to see a detailed popover with its full title, notes, and direct buttons to edit or delete the event.
-    *   **Sliding Timeline View:** A chronological, vertical feed of upcoming and past events.
-    *   **List View:** A simple, scannable list of all events.
+    *   **Maximized Weekly Planner:** A full-screen, multi-panel weekly planner with drag-and-drop event management, a sticky header for easy navigation, and accurate rendering for overlapping events.
+    *   **Interactive Event Popovers:** Hover over any event to see a detailed popover with its full title, notes, and direct buttons to edit or delete the event.
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
-*   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas (technical, soft, and hard skills), an actionable multi-step roadmap, and suggested learning resources.
-*   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels. Items from the AI-generated Career Vision can be added here with a single click.
-*   **Gamified Motivation & Leaderboard:**
-    *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal. It’s not just about logging in; it’s about active engagement to keep your flame alive.
-    *   **Competitive Leaderboard:** See how you stack up against other ambitious users. The leaderboard ranks users based on their total time spent and engagement (XP), not just their streak, promoting consistent effort over time.
-    *   **User Profiles & Social Features:** Every user has a dedicated, shareable profile page to showcase their bio, social links, and activity streak. Users can follow each other to build a community.
-*   **Extension Marketplace :** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers and software engineering students:
-    *   **Unified Dashboard:** By simply entering your usernames for Codeforces, LeetCode, and CodeChef, you get a centralized dashboard that visualizes your coding progress.
-    *   **Aggregated Stats:** See your total problems solved across all platforms, your current ratings, and your problem-solving streak.
-    *   **Contribution Graph:** A GitHub-style contribution graph provides a year-long overview of your daily coding activity.
-    *   **Weekly Target Tracker:** A visual, donut-shaped chart tracks your problem-solving progress for each day of the week, helping you build a consistent habit.
-    *   **Contest Integration:** The dashboard automatically fetches upcoming Codeforces contests. You can add any contest directly to your timeline with a single click, ensuring you never miss a competition.
-    *   **Persistent & Synced:** Your installed extensions are saved to your cloud account, providing a consistent experience across all your devices.
-*   **Intelligent Integrations:**
+*   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas, an actionable multi-step roadmap, and suggested learning resources.
+*   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels.
+*   **Real-time Communication Suite:**
+    *   **Chat & Video Calling:** A collapsible sidebar allows for one-on-one text and video calls with other users.
+    *   **Picture-in-Picture (PiP) Mode:** Video calls can be minimized to a draggable PiP window, allowing for seamless navigation while on a call.
+    *   **WebRTC Integration:** Built with a peer-to-peer WebRTC architecture, using Firestore for signaling to ensure efficient and direct media streaming.
+*   **Gamified Motivation & Social Features:**
+    *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal.
+    *   **Competitive Leaderboard & Profiles:** See how you stack up against others on the leaderboard and connect with them via their public profiles.
+    *   **Follow System:** Follow other users to build a community of motivated peers.
+*   **Extension Marketplace :** A dedicated "Extensions" page serves as a marketplace for plugins that enhance the app's functionality. The flagship extension is **Codefolio Ally**, designed for competitive programmers.
+*   **Intelligent Integrations & Data Management:**
     *   **Google Sync:** Seamlessly syncs with Google Calendar and Google Tasks.
-    *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails, summarizes them, and displays them on your dashboard to ensure you don't miss key information. It intelligently filters out OTPs, password resets, and other security-related emails.
-*   **Personalized News & Resources:**
-    *   An **AI Opportunity Tracker** that can find and track important upcoming deadlines for any topic, exam, or company you provide.
-    *   A resources page where you can bookmark your own learning materials and also receive AI-generated suggestions based on your unique goals and skills.
+    *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails and summarizes them on your dashboard.
+    *   **Data Backup & Restore:** Export your entire account to a JSON file and import it later to restore your data.
 *   **Advanced User Experience:**
     *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
-    *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
-    *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
-    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and allows for quick navigation, plugin management (install/open), user search (`@`), and falls back to a conversational AI assistant for natural language event creation.
-    *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
-    *   **Collapsible Sidebar:** The main navigation sidebar can be collapsed to maximize content view, with its state saved per-device.
-    *   **Mobile App Download Section:** The landing page features a dedicated section with a dynamic "gravity well" animation, prompting users to download the mobile applications for iOS and Android.
+    *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines.
+    *   **Extensive Customization:** Personalize the entire app's appearance, from themes and custom backgrounds to unique "frosted glass" UI effects.
+    *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) for quick navigation, plugin management, user search (`@`), and conversational AI event creation.
 
 ## 3. Link to Prototype
 
@@ -71,7 +62,7 @@ This project utilizes a suite of modern technologies to deliver a robust, intell
 *   **Google AI (Gemini Pro & Gemini Flash via Genkit):** The core intelligence of the application, used for generating career plans, daily schedules, parsing natural language, and summarizing content.
 *   **Firebase:** Serves as the complete backend infrastructure.
     *   **Firebase Authentication:** Provides secure user management (Email, Google, Phone).
-    *   **Firestore:** A scalable NoSQL database for all user data.
+    *   **Firestore:** A scalable NoSQL database for all user data and real-time signaling.
     *   **Firebase Cloud Messaging:** Powers the native browser push notifications.
     *   **Firebase App Hosting:** The project is configured for seamless deployment on Firebase.
 *   **Google Workspace APIs:**
@@ -84,6 +75,7 @@ This project utilizes a suite of modern technologies to deliver a robust, intell
 *   **React:** A JavaScript library for building user interfaces with a component-based architecture.
 *   **TypeScript:** A statically typed superset of JavaScript that adds type safety to the codebase.
 *   **Genkit:** The open-source AI framework from Google used to build all generative AI features.
+*   **WebRTC:** For peer-to-peer real-time video and audio communication.
 
 ### UI & Styling
 
@@ -163,7 +155,7 @@ You can also deploy this application to Heroku with a single click using the but
 
 For comprehensive information about this repository, please refer to these detailed documentation files:
 
-- **[Update Catalog](./updates-catalog.md)** - A summary of all recent features, enhancements, and bug fixes.
+- **[Update Catalog](./src/updates-catalog.md)** - A summary of all recent features, enhancements, and bug fixes.
 - **[Repository Summary](./REPOSITORY_SUMMARY.md)** - Quick overview and key highlights
 - **[Repository Explanation](./REPOSITORY_EXPLANATION.md)** - Comprehensive project documentation
 - **[Technical Architecture](./TECHNICAL_ARCHITECTURE.md)** - Detailed technical specifications and architecture diagrams
