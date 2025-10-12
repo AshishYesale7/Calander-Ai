@@ -504,11 +504,9 @@ function AppContent({ children }: { children: ReactNode }) {
             drag={isPipMode && !isResetting}
             dragMomentum={false}
             animate={pipControls}
-            resize="both"
+            resize={isPipMode ? "both" : undefined}
             onResize={(event, info) => {
               if (isPipMode) {
-                // In framer-motion, the `event` is a mouse/touch event.
-                // We need to get the size from the DOM element itself.
                 const target = event.target as HTMLElement;
                 setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
               }
