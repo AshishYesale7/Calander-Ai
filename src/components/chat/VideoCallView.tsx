@@ -165,18 +165,11 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   
   const flipCamera = async () => {
     if (!localStreamRef.current || !hasMultipleCameras) {
-        if (!hasMultipleCameras) {
-            toast({ 
-                title: "Camera Switch Failed", 
-                description: "Could not find a second camera to switch to.", 
-                variant: 'destructive' 
-            });
-        }
         return;
     }
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
-    const oldStream = localStreamRef.current; // Keep a reference to the old stream
+    const oldStream = localStreamRef.current;
     
     try {
         const newStream = await navigator.mediaDevices.getUserMedia({ 
@@ -198,7 +191,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             }
             setIsFrontCamera(!isFrontCamera);
 
-            // Now that the switch is successful, stop the old stream tracks.
             oldStream.getTracks().forEach(track => track.stop());
 
         } else {
@@ -211,7 +203,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             description: "Could not find a second camera to switch to.", 
             variant: 'destructive' 
         });
-        // The original stream was never stopped, so no need for fallback logic.
     }
   };
 
@@ -282,7 +273,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             }
           });
           
-          if (pc.signalingState !== 'closed') {
+          if (pc.signalingState === 'stable') { // Only create offer if not already in progress
             pc.createOffer().then(offerDescription => {
                if (pc.signalingState !== 'closed') {
                  pc.setLocalDescription(offerDescription);
