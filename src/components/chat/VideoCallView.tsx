@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, CameraReverse, AspectRatio, FlipHorizontal } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, CameraReverse, FlipHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
@@ -397,7 +398,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         </Button>
          {isPipMode && (
             <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipSizeMode}>
-                <AspectRatio className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
+                <FlipHorizontal className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
             </Button>
          )}
          {!isPipMode && (
