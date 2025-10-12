@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -44,6 +45,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { Sidebar, useSidebar } from '../ui/sidebar';
 import { getUserProfile } from '@/services/userService';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -135,21 +137,28 @@ export default function SidebarNav({
         </div>
         <nav className="flex-1 space-y-2 overflow-y-auto p-2">
           {filteredNavItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                pathname === item.href
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground',
-                sidebarState === 'collapsed' && 'justify-center'
+            <Tooltip key={item.label}>
+              <TooltipTrigger asChild>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                    pathname === item.href
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground',
+                    sidebarState === 'collapsed' && 'justify-center'
+                  )}
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {sidebarState === 'expanded' && <span className="animate-in fade-in duration-300">{item.label}</span>}
+                </Link>
+              </TooltipTrigger>
+              {sidebarState === 'collapsed' && (
+                  <TooltipContent side="left">
+                      <p>{item.label}</p>
+                  </TooltipContent>
               )}
-              title={sidebarState === 'collapsed' ? item.label : undefined}
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {sidebarState === 'expanded' && <span className="animate-in fade-in duration-300">{item.label}</span>}
-            </Link>
+            </Tooltip>
           ))}
         </nav>
         <div className="mt-auto p-2">
