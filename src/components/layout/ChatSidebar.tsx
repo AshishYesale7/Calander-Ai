@@ -146,12 +146,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                             </TooltipTrigger>
                              <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
-                        </Tooltip>
+                         
                     </div>
                 </TooltipProvider>
                 <div className="relative h-9 w-full">
@@ -186,9 +181,6 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
     if (isCollapsed) {
         return (
             <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
-                <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="h-9 w-9">
-                    <PanelLeftOpen className="h-5 w-5" />
-                </Button>
                 
                 <TooltipProvider delayDuration={0}>
                     <div className="space-y-2">
@@ -198,12 +190,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                             </TooltipTrigger>
                              <TooltipContent side="left"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="left"><p>Add Friend</p></TooltipContent>
-                        </Tooltip>
+                         
                     </div>
                 </TooltipProvider>
 
