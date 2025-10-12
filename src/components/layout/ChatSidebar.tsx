@@ -191,11 +191,28 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <PanelLeftOpen className="h-5 w-5" />
                 </Button>
                 
-                 <div className="relative group w-full flex justify-center focus-within:w-[16rem] focus-within:absolute focus-within:left-0 focus-within:top-2 focus-within:z-10 transition-all duration-300">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none group-focus-within:text-primary" />
+                <TooltipProvider delayDuration={0}>
+                    <div className="space-y-2">
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="left"><p>Close Chats</p></TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="left"><p>Add Friend</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                </TooltipProvider>
+
+                 <div className="relative group w-full flex justify-center focus-within:w-[16rem] focus-within:absolute focus-within:right-0 focus-within:top-2 focus-within:z-10 transition-all duration-300">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none group-focus-within:text-primary" />
                     <Input
                         placeholder="Search..."
-                        className="pl-10 h-9 w-10 group-focus-within:w-full transition-all duration-300"
+                        className="pl-3 pr-10 h-9 w-10 group-focus-within:w-full transition-all duration-300 text-right"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -215,30 +232,13 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                                             </Avatar>
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="right">
+                                    <TooltipContent side="left">
                                         <p>{friend.displayName}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             ))}
                         </div>
                     </ScrollArea>
-                </TooltipProvider>
-                <Separator />
-                <TooltipProvider delayDuration={0}>
-                    <div className="space-y-2">
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9"><UserPlus className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="right"><p>Add Friend</p></TooltipContent>
-                        </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><MessageSquare className="h-5 w-5"/></Button>
-                            </TooltipTrigger>
-                             <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
-                        </Tooltip>
-                    </div>
                 </TooltipProvider>
             </div>
         )
