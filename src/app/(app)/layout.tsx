@@ -56,12 +56,7 @@ const useCallNotifications = () => {
     const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
     const [pipSizeMode, setPipSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
 
-    const [activeCallId, setActiveCallId] = useState<string | null>(() => {
-        if (typeof window !== 'undefined') {
-            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
-        }
-        return null;
-    });
+    const [activeCallId, setActiveCallId] = useState<string | null>(null);
 
     useEffect(() => {
         const sizes = {
@@ -96,6 +91,21 @@ const useCallNotifications = () => {
             setOtherUserInCall(null);
         }
     }, [activeCallId, setOngoingCall, setOutgoingCall]);
+
+    // This new effect handles cleanup when the user refreshes or closes the tab.
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (activeCallId) {
+                endCall(activeCallId);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [activeCallId, endCall]);
 
     useEffect(() => {
         if (!outgoingCall || !user) return;
