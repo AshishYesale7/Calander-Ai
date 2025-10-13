@@ -280,6 +280,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                 <div
                                     className={cn(
                                     'max-w-[70%] px-3 py-2 text-sm flex flex-col',
+                                    'mt-1', // Add margin-top here
                                     isMe
                                         ? 'bg-blue-500 text-white rounded-3xl'
                                         : 'bg-[#262626] text-white rounded-3xl',
