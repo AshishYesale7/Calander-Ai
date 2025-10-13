@@ -154,16 +154,15 @@ const CallLogView = () => {
         }
         setIsLoading(true);
         const callsCollectionRef = collection(db, 'calls');
-        // Simplified query to avoid composite index requirement
+        
         const q = query(
             callsCollectionRef, 
             where('participantIds', 'array-contains', user.uid),
-            orderBy('createdAt', 'desc'),
             limit(50)
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            // Client-side filtering for status
+            
             const filteredDocs = snapshot.docs.filter(doc => ['ended', 'declined'].includes(doc.data().status));
 
             const callLogPromises = filteredDocs.map(async (callDoc) => {
@@ -188,6 +187,10 @@ const CallLogView = () => {
             });
 
             const resolvedCalls = (await Promise.all(callLogPromises)).filter(c => c !== null) as CallLogItem[];
+            
+            // Sort client-side
+            resolvedCalls.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
             setCallLog(resolvedCalls);
             setIsLoading(false);
         });
