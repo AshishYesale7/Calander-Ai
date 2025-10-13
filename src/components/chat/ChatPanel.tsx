@@ -359,24 +359,24 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </footer>
     </div>
     <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Delete Message?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Choose how you want to delete this message. This action cannot be undone.
+        <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl">
+            <AlertDialogHeader className="text-center">
+                <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
+                <AlertDialogDescription className="text-xs">
+                    Choose how to delete this message. This action cannot be undone.
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <AlertDialogAction onClick={() => handleDelete('me')}>
+            <div className="flex flex-col gap-2 mt-2">
+                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete for me
                 </AlertDialogAction>
-                <AlertDialogAction onClick={() => handleDelete('everyone')} className="bg-destructive hover:bg-destructive/90">
+                <AlertDialogAction onClick={() => handleDelete('everyone')} className="w-full justify-center bg-destructive hover:bg-destructive/90">
                     <Users className="mr-2 h-4 w-4" />
                     Delete for Everyone
                 </AlertDialogAction>
-            </AlertDialogFooter>
-             <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
+            </div>
         </AlertDialogContent>
     </AlertDialog>
     </>
