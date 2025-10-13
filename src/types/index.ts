@@ -226,8 +226,9 @@ export interface ChatMessage {
   senderId: string;
   timestamp: Date;
   type: 'message'; // Differentiator
-  isDeleted?: boolean; // For soft deletes
+  isDeleted?: boolean; // For soft deletes for everyone
   isEdited?: boolean;
+  deletedFor?: string[]; // Array of user IDs for whom the message is deleted
 }
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';

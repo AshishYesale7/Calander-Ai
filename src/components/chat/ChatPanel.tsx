@@ -10,7 +10,7 @@ import { sendMessage, deleteMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2 } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, Users } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -178,10 +178,10 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     setChattingWith(null);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (mode: 'me' | 'everyone') => {
     if (!messageToDelete || !currentUser || !otherUser) return;
     try {
-        await deleteMessage(currentUser.uid, otherUser.uid, messageToDelete.id);
+        await deleteMessage(currentUser.uid, otherUser.uid, messageToDelete.id, mode);
         toast({ title: "Message Deleted" });
     } catch (error) {
         toast({ title: "Error", description: "Could not delete message.", variant: "destructive" });
@@ -363,13 +363,20 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             <AlertDialogHeader>
                 <AlertDialogTitle>Delete Message?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will permanently delete this message for everyone in the chat. This action cannot be undone.
+                    Choose how you want to delete this message. This action cannot be undone.
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <AlertDialogAction onClick={() => handleDelete('me')}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete for me
+                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleDelete('everyone')} className="bg-destructive hover:bg-destructive/90">
+                    <Users className="mr-2 h-4 w-4" />
+                    Delete for Everyone
+                </AlertDialogAction>
             </AlertDialogFooter>
+             <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
         </AlertDialogContent>
     </AlertDialog>
     </>

@@ -8,7 +8,8 @@ import {
   Timestamp,
   doc,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  arrayUnion
 } from 'firebase/firestore';
 
 // This helper function is duplicated here to keep the server action self-contained.
@@ -37,6 +38,7 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
         timestamp: Timestamp.now(),
         isDeleted: false,
         isEdited: false,
+        deletedFor: [],
     });
   } catch(error) {
       console.error("Error sending message:", error);
@@ -45,27 +47,32 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 };
 
 /**
- * Deletes a message for all users. This is a Server Action.
+ * Deletes a message for the current user or for everyone. This is a Server Action.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  * @param messageId The ID of the message to delete.
+ * @param mode Determines if the deletion is for 'me' or 'everyone'.
  */
-export const deleteMessage = async (currentUserId: string, otherUserId: string, messageId: string): Promise<void> => {
+export const deleteMessage = async (currentUserId: string, otherUserId: string, messageId: string, mode: 'me' | 'everyone'): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
     const chatRoomId = getChatRoomId(currentUserId, otherUserId);
     const messageRef = doc(db, 'chats', chatRoomId, 'messages', messageId);
 
-    // For a "delete for everyone" feature, we can either truly delete the document
-    // or update it with a "deleted" flag. Updating is often better for preserving
-    // conversation flow and allowing for "This message was deleted" placeholders.
     try {
-        await updateDoc(messageRef, {
-            text: 'This message was deleted.',
-            isDeleted: true,
-        });
-        // Or, to permanently delete:
-        // await deleteDoc(messageRef);
+        if (mode === 'everyone') {
+            await updateDoc(messageRef, {
+                text: 'This message was deleted.',
+                isDeleted: true,
+                deletedFor: [], // Clear individual deletes if it's deleted for everyone
+            });
+        } else if (mode === 'me') {
+            // Add the current user's ID to the `deletedFor` array.
+            // arrayUnion ensures no duplicates are added.
+            await updateDoc(messageRef, {
+                deletedFor: arrayUnion(currentUserId),
+            });
+        }
     } catch(error) {
         console.error("Error deleting message:", error);
         throw new Error("Failed to delete message.");

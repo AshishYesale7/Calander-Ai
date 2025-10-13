@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -43,13 +44,17 @@ export const getMessages = (
   const q = query(messagesCollection, orderBy('timestamp', 'asc'));
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
-    const messages = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      text: doc.data().text,
-      senderId: doc.data().senderId,
-      timestamp: (doc.data().timestamp as Timestamp).toDate(),
-      type: 'message' as const, // Add type differentiator
-    }));
+    const messages = querySnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: (doc.data().timestamp as Timestamp).toDate(),
+        type: 'message' as const,
+      } as ChatMessage))
+      .filter(msg => {
+        // Filter out messages that are marked as deleted for the current user
+        return !msg.deletedFor?.includes(currentUserId);
+      });
     callback(messages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
