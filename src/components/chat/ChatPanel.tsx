@@ -3,14 +3,14 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
-import type { ChatMessage } from '@/types';
+import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { getMessages } from '@/services/chatService';
+import { getMessages, getCallHistory } from '@/services/chatService';
 import { sendMessage } from '@/actions/chatActions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -24,9 +24,42 @@ interface ChatPanelProps {
   onInitiateCall: (receiver: PublicUserProfile) => void;
 }
 
+type MergedChatItem = (ChatMessage | CallData);
+
+const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }) => {
+    const isMissed = item.status === 'declined' && item.receiverId === currentUser?.uid;
+    const isOutgoing = item.callerId === currentUser?.uid;
+
+    let icon = <PhoneOutgoing className="h-4 w-4" />;
+    let text = 'Outgoing video call';
+    if (isMissed) {
+        icon = <PhoneMissed className="h-4 w-4" />;
+        text = "Missed video call";
+    } else if (!isOutgoing) {
+        icon = <PhoneIncoming className="h-4 w-4" />;
+        text = "Incoming video call";
+    }
+    
+    if (item.status === 'ended' && item.duration) {
+        const mins = Math.floor(item.duration / 60);
+        const secs = item.duration % 60;
+        text = `Video call - ${mins > 0 ? `${mins}m ` : ''}${secs}s`;
+    }
+
+    return (
+        <div className="text-center text-xs text-gray-500 my-4 flex items-center justify-center gap-2">
+            {icon}
+            <span>{text}</span>
+            <span>·</span>
+            <span>{format(item.timestamp, 'p')}</span>
+        </div>
+    );
+};
+
+
 export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatItems, setChatItems] = useState<MergedChatItem[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -64,16 +97,16 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     }
   };
   
-  const groupedMessages = useMemo(() => {
-    return messages.reduce((acc, msg) => {
-      const dateKey = format(msg.timestamp, 'yyyy-MM-dd');
+  const groupedChatItems = useMemo(() => {
+    return chatItems.reduce((acc, item) => {
+      const dateKey = format(item.timestamp, 'yyyy-MM-dd');
       if (!acc[dateKey]) {
         acc[dateKey] = [];
       }
-      acc[dateKey].push(msg);
+      acc[dateKey].push(item);
       return acc;
-    }, {} as Record<string, ChatMessage[]>);
-  }, [messages]);
+    }, {} as Record<string, MergedChatItem[]>);
+  }, [chatItems]);
 
 
   useEffect(() => {
@@ -83,18 +116,36 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     }
 
     setIsLoading(true);
-    const unsubscribe = getMessages(currentUser.uid, otherUser.uid, (newMessages) => {
-      setMessages(newMessages);
+
+    const unsubMessages = getMessages(currentUser.uid, otherUser.uid, (newMessages) => {
+      setChatItems(prev => {
+        const calls = prev.filter(item => item.type === 'call');
+        const sorted = [...calls, ...newMessages].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+        return sorted;
+      });
       setIsLoading(false);
       scrollToBottom('auto');
     });
 
-    return () => unsubscribe();
+    const unsubCalls = getCallHistory(currentUser.uid, otherUser.uid, (newCalls) => {
+      setChatItems(prev => {
+        const messages = prev.filter(item => item.type === 'message');
+        const sorted = [...messages, ...newCalls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+        return sorted;
+      });
+      setIsLoading(false);
+      scrollToBottom('auto');
+    });
+
+    return () => {
+      unsubMessages();
+      unsubCalls();
+    };
   }, [currentUser, otherUser]);
   
   useEffect(() => {
     scrollToBottom('smooth');
-  }, [messages]);
+  }, [chatItems]);
 
   const handleSend = async () => {
     if (!currentUser?.uid || !otherUser?.uid || !inputMessage.trim()) {
@@ -168,15 +219,20 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
               <div className="flex justify-center items-center h-full py-10"><LoadingSpinner /></div>
             )}
             
-            {Object.entries(groupedMessages).map(([date, msgs]) => (
+            {Object.entries(groupedChatItems).map(([date, items]) => (
                 <div key={date}>
                     <div className="text-center text-xs text-gray-500 my-4">
-                        {format(new Date(date), 'MM/dd/yy, h:mm a')}
+                        {format(new Date(date), 'MMMM d, yyyy')}
                     </div>
-                    {msgs.map((msg, index) => {
+                    {items.map((item, index) => {
+                      if (item.type === 'call') {
+                        return <CallLogItem key={item.id} item={item} currentUser={currentUser} />
+                      }
+                      
+                      const msg = item as ChatMessage;
                       const isMe = msg.senderId === currentUser?.uid;
-                      const nextMsg = msgs[index + 1];
-                      const isLastInBlock = !nextMsg || nextMsg.senderId !== msg.senderId;
+                      const nextItem = items[index + 1];
+                      const isLastInBlock = !nextItem || nextItem.type === 'call' || (nextItem.type === 'message' && nextItem.senderId !== msg.senderId);
 
                       return (
                         <div

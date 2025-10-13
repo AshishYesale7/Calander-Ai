@@ -3,7 +3,6 @@
 
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
-import type { RTCSessionDescriptionInit } from 'react';
 
 export interface SocialLinks {
     github?: string;
@@ -226,7 +225,7 @@ export interface ChatMessage {
   text: string;
   senderId: string;
   timestamp: Date;
-  type?: 'message';
+  type: 'message'; // Differentiator
 }
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
@@ -244,7 +243,8 @@ export interface CallData {
   duration?: number; // in seconds
   offer?: RTCSessionDescriptionInit;
   answer?: RTCSessionDescriptionInit;
-  type?: 'call';
+  type: 'call'; // Differentiator
+  timestamp: Date;
 }
 
 

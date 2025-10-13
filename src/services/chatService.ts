@@ -7,8 +7,9 @@ import {
   onSnapshot,
   Timestamp,
   type Unsubscribe,
+  where,
 } from 'firebase/firestore';
-import type { ChatMessage } from '@/types';
+import type { ChatMessage, CallData } from '@/types';
 
 /**
  * Creates a unique chat room ID for two users.
@@ -48,11 +49,70 @@ export const getMessages = (
       text: doc.data().text,
       senderId: doc.data().senderId,
       timestamp: (doc.data().timestamp as Timestamp).toDate(),
+      type: 'message' as const, // Add type differentiator
     }));
     callback(messages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
       // You might want to handle this error in the UI
+  });
+
+  return unsubscribe;
+};
+
+/**
+ * Listens for real-time call history between two users.
+ */
+export const getCallHistory = (
+  userId1: string,
+  userId2: string,
+  callback: (calls: CallData[]) => void
+): Unsubscribe => {
+  if (!db) {
+    console.error("Firestore is not initialized.");
+    return () => {};
+  }
+  
+  const callsCollectionRef = collection(db, 'calls');
+  const participantIds = [userId1, userId2].sort();
+
+  // This query finds all calls where both users were participants
+  // NOTE: Firestore does not support array-contains-all, so we use two array-contains queries.
+  // This requires participantIds to be sorted consistently.
+  const q = query(
+    callsCollectionRef,
+    where('participantIds', '==', participantIds),
+    orderBy('createdAt', 'asc')
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const calls = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        // Ensure endedAt exists and is a timestamp before converting
+        const endedAt = data.endedAt ? (data.endedAt as Timestamp).toDate() : undefined;
+        const createdAt = (data.createdAt as Timestamp).toDate();
+
+        let duration;
+        if (endedAt) {
+          duration = Math.floor((endedAt.getTime() - createdAt.getTime()) / 1000);
+        }
+
+        return {
+          id: doc.id,
+          ...data,
+          createdAt,
+          endedAt,
+          duration,
+          timestamp: endedAt || createdAt, // Use endedAt for sorting if available, else createdAt
+          type: 'call' as const, // Add type differentiator
+        };
+      })
+      .filter(call => call.status === 'ended' || call.status === 'declined') as CallData[];
+      
+    callback(calls);
+  }, (error) => {
+    console.error("Error listening to call history:", error);
   });
 
   return unsubscribe;

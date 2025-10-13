@@ -35,7 +35,7 @@ export async function createCall(callData: {
   
   await setDoc(callDocRef, {
     ...callData,
-    participantIds: [callData.callerId, callData.receiverId],
+    participantIds: [callData.callerId, callData.receiverId].sort(), // Store sorted array for querying
     status: 'ringing',
     createdAt: serverTimestamp(),
   });
