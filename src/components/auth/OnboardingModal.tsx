@@ -22,13 +22,20 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Form, FormField } from '@/components/ui/form';
 
-const MALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?size=626&ext=jpg&ga=GA1.1.2082379227.1717027200&semt=sph';
-const FEMALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?size=626&ext=jpg';
+const avatarOptions = [
+    { id: 'male1', gender: 'male', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?w=740' },
+    { id: 'female1', gender: 'female', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?w=740' },
+    { id: 'male2', gender: 'male', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?w=740' },
+    { id: 'female2', gender: 'female', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671140.jpg?w=740' },
+    { id: 'male3', gender: 'male', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436196.jpg?w=740' },
+    { id: 'female3', gender: 'female', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671113.jpg?w=740' },
+];
+
 
 const onboardingSchema = z.object({
   displayName: z.string().min(3, { message: "Display name must be at least 3 characters." }),
   username: z.string().min(3, { message: "Username must be at least 3 characters." }).regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores." }),
-  gender: z.enum(['male', 'female'], { required_error: "Please select a gender." }),
+  avatarUrl: z.string({ required_error: "Please select an avatar." }),
 });
 
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
@@ -55,7 +62,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
     defaultValues: {
       displayName: user?.displayName || '',
       username: user?.email?.split('@')[0] || '',
-      gender: undefined,
+      avatarUrl: user?.photoURL || undefined,
     },
   });
 
@@ -105,11 +112,10 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
     }
     setIsSaving(true);
     try {
-      const avatarUrl = values.gender === 'male' ? MALE_AVATAR_URL : FEMALE_AVATAR_URL;
       await updateUserProfile(user.uid, {
         displayName: values.displayName,
         username: values.username,
-        photoURL: user.photoURL || avatarUrl, // Use Google's photo if available, otherwise set default
+        photoURL: values.avatarUrl,
       });
       await refreshUser();
       setStep(2);
@@ -163,7 +169,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   return (
     <Dialog open={true}>
-      <DialogContent className="sm:max-w-md frosted-glass p-0 overflow-hidden" hideCloseButton={true}>
+      <DialogContent className="sm:max-w-xl frosted-glass p-0 overflow-hidden" hideCloseButton={true}>
         <AnimatePresence mode="wait">
             <motion.div
                 key={step}
@@ -200,22 +206,19 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                                          {form.formState.errors.username && <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>}
                                     </div>
                                 )}/>
-                                <Controller control={form.control} name="gender" render={({ field }) => (
+                                <Controller control={form.control} name="avatarUrl" render={({ field }) => (
                                    <div>
                                        <Label>Choose Your Avatar</Label>
-                                       <div className="flex justify-center gap-6 mt-2">
-                                          <div className="flex flex-col items-center gap-2">
-                                              <button type="button" onClick={() => field.onChange('male')} className={cn("rounded-full border-4 p-1 transition-all", field.value === 'male' ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                                                <Avatar className="h-20 w-20"><AvatarImage src={MALE_AVATAR_URL}/><AvatarFallback><User/></AvatarFallback></Avatar>
-                                              </button>
-                                          </div>
-                                          <div className="flex flex-col items-center gap-2">
-                                               <button type="button" onClick={() => field.onChange('female')} className={cn("rounded-full border-4 p-1 transition-all", field.value === 'female' ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                                                <Avatar className="h-20 w-20"><AvatarImage src={FEMALE_AVATAR_URL}/><AvatarFallback><User/></AvatarFallback></Avatar>
-                                               </button>
-                                          </div>
+                                       <div className="grid grid-cols-3 gap-4 mt-2">
+                                            {avatarOptions.map((avatar) => (
+                                                <div key={avatar.id} className="flex flex-col items-center gap-2">
+                                                    <button type="button" onClick={() => field.onChange(avatar.url)} className={cn("rounded-full border-4 p-1 transition-all", field.value === avatar.url ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
+                                                        <Avatar className="h-20 w-20"><AvatarImage src={avatar.url}/><AvatarFallback><User/></AvatarFallback></Avatar>
+                                                    </button>
+                                                </div>
+                                            ))}
                                        </div>
-                                       {form.formState.errors.gender && <p className="text-xs text-destructive text-center mt-2">{form.formState.errors.gender.message}</p>}
+                                       {form.formState.errors.avatarUrl && <p className="text-xs text-destructive text-center mt-2">{form.formState.errors.avatarUrl.message}</p>}
                                    </div>
                                 )}/>
                                  {isPhoneUser && !isGoogleLinked && (
