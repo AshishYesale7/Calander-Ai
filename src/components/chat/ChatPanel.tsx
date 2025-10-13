@@ -291,7 +291,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                     ) : (
                                         <span>{msg.text}</span>
                                     )}
-                                     <span className={cn("text-[10px] text-white/70 self-end mt-1", isMe ? 'text-right' : 'text-left')}>{format(msg.timestamp, 'p')}</span>
+                                     <span className={cn("text-white/70 self-end mt-1", isMe ? 'text-right' : 'text-left', 'text-[10px]')}>{format(msg.timestamp, 'p')}</span>
                                 </div>
                                 </div>
                             </ContextMenuTrigger>
