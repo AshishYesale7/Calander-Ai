@@ -6,15 +6,12 @@ import {
   doc,
   setDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   collection,
   addDoc,
-  query,
-  onSnapshot,
-  type Unsubscribe,
   getDocs,
   writeBatch,
+  Timestamp,
 } from 'firebase/firestore';
 import type { CallStatus } from '@/types';
 
@@ -38,6 +35,7 @@ export async function createCall(callData: {
   
   await setDoc(callDocRef, {
     ...callData,
+    participantIds: [callData.callerId, callData.receiverId],
     status: 'ringing',
     createdAt: serverTimestamp(),
   });
@@ -50,8 +48,13 @@ export async function createCall(callData: {
  */
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   const callDocRef = getCallDocRef(callId);
+  
+  const updateData: { status: CallStatus, endedAt?: Timestamp } = { status };
+  
   if (status === 'declined' || status === 'ended') {
-    // Soft delete the call and clean up subcollections
+    updateData.endedAt = Timestamp.now();
+    
+    // Clean up ICE candidate subcollections, but leave the main call doc for history
     const callerCandidatesRef = collection(db, 'calls', callId, 'callerCandidates');
     const receiverCandidatesRef = collection(db, 'calls', callId, 'receiverCandidates');
 
@@ -62,17 +65,11 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     
     callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
-
-    batch.update(callDocRef, { 
-      status: status,
-      deletedAt: serverTimestamp() // Soft delete
-    });
     
     await batch.commit();
-
-  } else {
-    await updateDoc(callDocRef, { status });
   }
+  
+  await updateDoc(callDocRef, updateData);
 }
 
 /**
@@ -80,7 +77,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
  */
 export async function saveOffer(callId: string, offer: RTCSessionDescriptionInit): Promise<void> {
     const callDocRef = getCallDocRef(callId);
-    await updateDoc(callDocRef, { offer });
+    await updateDoc(callDocRef, { offer: { type: offer.type, sdp: offer.sdp } });
 }
 
 /**
@@ -88,7 +85,7 @@ export async function saveOffer(callId: string, offer: RTCSessionDescriptionInit
  */
 export async function saveAnswer(callId: string, answer: RTCSessionDescriptionInit): Promise<void> {
     const callDocRef = getCallDocRef(callId);
-    await updateDoc(callDocRef, { answer });
+    await updateDoc(callDocRef, { answer: { type: answer.type, sdp: answer.sdp } });
 }
 
 /**

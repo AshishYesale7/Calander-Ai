@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { LucideIcon } from 'lucide-react';
@@ -227,6 +226,7 @@ export interface ChatMessage {
   text: string;
   senderId: string;
   timestamp: Date;
+  type?: 'message';
 }
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
@@ -237,11 +237,14 @@ export interface CallData {
   callerName: string;
   callerPhotoURL: string | null;
   receiverId: string;
+  participantIds: string[];
   status: CallStatus;
-  createdAt: any; // Can be Timestamp or Date
-  // WebRTC signaling fields
+  createdAt: any;
+  endedAt?: any;
+  duration?: number; // in seconds
   offer?: RTCSessionDescriptionInit;
   answer?: RTCSessionDescriptionInit;
+  type?: 'call';
 }
 
 
