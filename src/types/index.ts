@@ -226,6 +226,8 @@ export interface ChatMessage {
   senderId: string;
   timestamp: Date;
   type: 'message'; // Differentiator
+  isDeleted?: boolean; // For soft deletes
+  isEdited?: boolean;
 }
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
