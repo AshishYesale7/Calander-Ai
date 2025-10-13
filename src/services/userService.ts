@@ -21,46 +21,67 @@ const getUserDocRef = (userId: string) => {
     return doc(db, 'users', userId);
 };
 
-export const createUserProfile = async (user: User): Promise<void> => {
+export const createUserProfile = async (user: User): Promise<UserProfile> => {
     const userDocRef = getUserDocRef(user.uid);
     try {
         const docSnap = await getDoc(userDocRef);
-        if (!docSnap.exists()) {
-            const displayName = user.displayName || user.email?.split('@')[0] || 'Anonymous User';
-            const username = user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`;
-            
-            const defaultProfile: Omit<UserProfile, 'uid'> = {
-                email: user.email,
-                displayName: displayName,
-                username: username,
-                // Create a searchable index for case-insensitive search
-                searchableIndex: Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()])),
-                photoURL: user.photoURL || null,
-                coverPhotoURL: null,
-                createdAt: new Date(),
-                bio: '',
-                socials: {
-                    github: '',
-                    linkedin: '',
-                    twitter: ''
-                },
-                statusEmoji: null,
-                countryCode: null,
-                preferences: {
-                    routine: []
-                },
-                codingUsernames: {},
-                installedPlugins: [],
-                geminiApiKey: null,
-                followersCount: 0,
-                followingCount: 0,
-            };
-            await setDoc(userDocRef, defaultProfile);
+        if (docSnap.exists()) {
+             // If profile exists, just return it.
+            const existingData = docSnap.data();
+             return {
+                uid: user.uid,
+                displayName: existingData.displayName || user.displayName || 'Anonymous',
+                username: existingData.username || user.email?.split('@')[0] || `user_${user.uid.substring(0,5)}`,
+                onboardingCompleted: existingData.onboardingCompleted || false,
+                ...existingData,
+            } as UserProfile;
         }
+
+        const displayName = user.displayName || user.email?.split('@')[0] || 'Anonymous User';
+        const username = user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`;
+        
+        const defaultProfile: Omit<UserProfile, 'uid'> = {
+            email: user.email,
+            displayName: displayName,
+            username: username,
+            searchableIndex: Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()])),
+            photoURL: user.photoURL || null,
+            coverPhotoURL: null,
+            createdAt: new Date(),
+            bio: '',
+            socials: {
+                github: '',
+                linkedin: '',
+                twitter: ''
+            },
+            statusEmoji: null,
+            countryCode: null,
+            preferences: {
+                routine: []
+            },
+            codingUsernames: {},
+            installedPlugins: [],
+            geminiApiKey: null,
+            followersCount: 0,
+            followingCount: 0,
+            onboardingCompleted: false, // New flag
+        };
+        await setDoc(userDocRef, defaultProfile);
+        return { uid: user.uid, ...defaultProfile };
+
     } catch (error) {
-        console.error("Failed to create user profile in Firestore:", error);
+        console.error("Failed to create/get user profile in Firestore:", error);
+        throw new Error("Could not create user profile.");
     }
 }
+
+export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+    if (!db) throw new Error("Firestore not initialized.");
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where("username", "==", username));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.empty;
+};
 
 export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
@@ -138,6 +159,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     if (profileData.socials !== undefined) dataToUpdate['socials'] = profileData.socials;
     if (profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
     if (profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
+    if (profileData.onboardingCompleted !== undefined) dataToUpdate['onboardingCompleted'] = profileData.onboardingCompleted;
 
     // If username or displayName changed, fetch the document to correctly build the new index.
     if (needsIndexUpdate) {
@@ -207,6 +229,12 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 dataToUpdate.preferences = { routine: [] };
                 needsUpdate = true;
             }
+            
+            if (data.onboardingCompleted === undefined) {
+                dataToUpdate.onboardingCompleted = false; // Default new users to NOT completed
+                needsUpdate = true;
+            }
+
 
             if (needsUpdate) {
                 updateDoc(userDocRef, dataToUpdate).catch(err => {
@@ -227,6 +255,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 routine: data.preferences?.routine || [],
                 followersCount: data.followersCount || 0,
                 followingCount: data.followingCount || 0,
+                onboardingCompleted: data.onboardingCompleted ?? false,
             } as UserProfile;
         }
         return null;

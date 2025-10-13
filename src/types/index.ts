@@ -24,6 +24,7 @@ export interface UserProfile {
   followersCount: number;
   followingCount: number;
   routine: RoutineItem[];
+  onboardingCompleted: boolean; // New flag
 }
 
 

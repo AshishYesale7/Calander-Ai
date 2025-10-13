@@ -8,7 +8,7 @@ import { auth } from '@/lib/firebase';
 import { Preloader } from '@/components/ui/Preloader';
 import { AlertCircle } from 'lucide-react';
 import { getUserSubscription } from '@/services/subscriptionService';
-import { getUserProfile } from '@/services/userService';
+import { getUserProfile, createUserProfile } from '@/services/userService';
 import type { UserSubscription, UserProfile } from '@/types';
 
 // The user object in the context will now be the combination of Auth user and Firestore profile
@@ -19,6 +19,8 @@ interface AuthContextType {
   loading: boolean;
   subscription: UserSubscription | null;
   isSubscribed: boolean;
+  onboardingCompleted: boolean;
+  setOnboardingCompleted: (completed: boolean) => void;
   refreshSubscription: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -56,6 +58,7 @@ const MissingConfiguration = () => (
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -69,14 +72,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       getUserProfile(firebaseUser.uid),
       getUserSubscription(firebaseUser.uid)
     ]);
+    
+    // Ensure profile exists, create if not
+    const userProfile = profile || await createUserProfile(firebaseUser);
 
-    if (profile) {
-      setUser({ ...firebaseUser, ...profile });
-    } else {
-      // Fallback if profile doesn't exist yet
-      setUser(firebaseUser as AppUser);
-    }
+    setUser({ ...firebaseUser, ...userProfile });
     setSubscription(userSub);
+    setOnboardingCompleted(userProfile.onboardingCompleted ?? false);
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -122,6 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setSubscription(null);
+        setOnboardingCompleted(true);
         setAuthLoading(false);
         setSubscriptionLoading(false);
       }
@@ -144,7 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loading = authLoading || subscriptionLoading;
 
-  if (loading) {
+  if (loading && !user) { // Show preloader longer on initial load without a user
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#15161f' }}>
         <Preloader />
@@ -153,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, refreshSubscription, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

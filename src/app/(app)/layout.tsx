@@ -1,5 +1,4 @@
 
-
 'use client';
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -44,6 +43,7 @@ import VideoCallView from '@/components/chat/VideoCallView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
+import OnboardingModal from '@/components/auth/OnboardingModal';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -256,7 +256,7 @@ const useCallNotifications = () => {
 
 
 function AppContent({ children }: { children: ReactNode }) {
-  const { user, loading, isSubscribed } = useAuth();
+  const { user, loading, isSubscribed, onboardingCompleted, setOnboardingCompleted } = useAuth();
   useStreakTracker();
   const router = useRouter();
   const pathname = usePathname();
@@ -337,7 +337,7 @@ function AppContent({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!loading && user && isSubscribed && pathname === '/dashboard') {
+    if (!loading && user && isSubscribed && pathname === '/dashboard' && onboardingCompleted) {
       const alreadyShown = sessionStorage.getItem('planModalShown');
       if (!alreadyShown) {
         setIsPlanModalOpen(true);
@@ -349,7 +349,7 @@ function AppContent({ children }: { children: ReactNode }) {
           setTimeout(() => setIsNotificationModalOpen(true), 3000);
       }
     }
-  }, [user, loading, isSubscribed, pathname, toast]);
+  }, [user, loading, isSubscribed, pathname, toast, onboardingCompleted]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -431,6 +431,16 @@ function AppContent({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Preloader />
+      </div>
+    );
+  }
+  
+  if (!onboardingCompleted) {
+    return (
+      <div className="h-screen w-full flex-col">
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+        <OnboardingModal onFinish={() => { if(setOnboardingCompleted) setOnboardingCompleted(true) }} />
+        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
       </div>
     );
   }
@@ -604,7 +614,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
-
-    
