@@ -15,6 +15,7 @@ import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
@@ -61,26 +62,38 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
 
         return () => unsubscribe();
     }, [user]);
+
+    const filteredFollowing = useMemo(() => {
+        if (!searchTerm) return following;
+        return following.filter(friend => friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [following, searchTerm]);
     
     return (
         <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
             <TooltipProvider delayDuration={0}>
                 <div className="space-y-2">
-                     <Tooltip>
-                        <TooltipTrigger asChild>
+                     <Popover>
+                        <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9">
                                 <Search className="h-5 w-5"/>
                             </Button>
-                        </TooltipTrigger>
-                         <TooltipContent side="left"><p>Search</p></TooltipContent>
-                    </Tooltip>
+                        </PopoverTrigger>
+                        <PopoverContent side="left" className="p-1 w-48">
+                            <Input 
+                                placeholder="Search friends..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-8"
+                            />
+                        </PopoverContent>
+                     </Popover>
                 </div>
             </TooltipProvider>
             <Separator />
             <TooltipProvider delayDuration={0}>
                 <ScrollArea className="flex-1 w-full">
                     <div className="space-y-2">
-                        {following.map(friend => (
+                        {filteredFollowing.map(friend => (
                             <Tooltip key={friend.id}>
                                 <TooltipTrigger asChild>
                                     <button onClick={() => setChattingWith(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
