@@ -462,24 +462,28 @@ function AppContent({ children }: { children: ReactNode }) {
           </main>
         </div>
         
-        <aside className={cn("h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
+        <aside className={cn(
+            "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
             "hidden md:flex",
             ongoingCall && !isPipMode && "hidden",
-            isChatSidebarOpen && "w-[calc(18rem+5rem)]"
+            isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
+            isChatSidebarOpen && isChatPanelVisible && "w-[calc(18rem+22rem)]",
+            !isChatSidebarOpen && isChatPanelVisible && "w-[calc(5rem+22rem)]",
+            !isChatSidebarOpen && !isChatPanelVisible && "w-20"
         )}>
-           <div className={cn("transition-all duration-300 ease-in-out h-full", isChatPanelVisible ? 'w-[22rem]' : 'w-0')}>
+           <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
               {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />)}
            </div>
-            {isChatSidebarOpen && (
-              <>
-                <div className="w-[18rem] h-full hidden chat:block">
+            {isChatSidebarOpen ? (
+                <div className="w-[18rem] h-full">
                   <DesktopChatSidebar />
                 </div>
-                <div className="w-20 h-full hidden md:block chat:hidden">
-                    <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(false)} />
+              ) : (
+                <div className="w-20 h-full">
+                    <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
                 </div>
-              </>
-            )}
+              )
+            }
         </aside>
       </div>
 
@@ -552,7 +556,7 @@ function AppContent({ children }: { children: ReactNode }) {
             className={cn(
                 "fixed bg-black z-[100] border border-white/20",
                 isPipMode 
-                    ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4"
+                    ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
                     : "inset-0"
             )}
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
