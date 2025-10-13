@@ -7,6 +7,7 @@ import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getMessages, getCallHistory } from '@/services/chatService';
 import { sendMessage, deleteMessage } from '@/actions/chatActions';
+import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,6 +78,9 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const { toast } = useToast();
 
   const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
   const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
@@ -149,9 +153,12 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       scrollToBottom('auto');
     });
 
+    const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
+
     return () => {
       unsubMessages();
       unsubCalls();
+      unsubTyping();
     };
   }, [currentUser, otherUser]);
   
@@ -168,11 +175,26 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     setInputMessage('');
     try {
       await sendMessage(currentUser.uid, otherUser.uid, messageToSend);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      updateTypingStatus(currentUser.uid, otherUser.uid, false);
     } catch (error) {
       console.error("Failed to send message:", error);
       setInputMessage(messageToSend);
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(e.target.value);
+    if (!currentUser || !otherUser) return;
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    updateTypingStatus(currentUser.uid, otherUser.uid, true);
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      updateTypingStatus(currentUser.uid, otherUser.uid, false);
+    }, 1000); // Stop typing after 1 second of inactivity
+  };
+
 
   const handleBackToChatList = () => {
     setChattingWith(null);
@@ -279,8 +301,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                 )}
                                 <div
                                     className={cn(
-                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col',
-                                    'mt-1', // Add margin-top here
+                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1', // Added mt-1
                                     isMe
                                         ? 'bg-blue-500 text-white rounded-3xl'
                                         : 'bg-[#262626] text-white rounded-3xl',
@@ -292,7 +313,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                     ) : (
                                         <span>{msg.text}</span>
                                     )}
-                                     <span className={cn("text-white/70 self-end mt-1", isMe ? 'text-right' : 'text-left', 'text-[10px]')}>{format(msg.timestamp, 'p')}</span>
+                                     <span className={cn("text-white/70 self-end mt-1 text-[10px]", isMe ? 'text-right' : 'text-left')}>{format(msg.timestamp, 'p')}</span>
                                 </div>
                                 </div>
                             </ContextMenuTrigger>
@@ -327,6 +348,15 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
         "flex-shrink-0 p-3 bg-black",
         isMobileChatFocus && "fixed bottom-0 left-0 right-0 z-50"
         )}>
+        {isOtherUserTyping && (
+          <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
+              <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="italic">typing...</span>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -337,7 +367,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
           <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
           <Input
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             onFocus={() => setIsChatInputFocused(true)}
             onBlur={() => setIsChatInputFocused(false)}
             placeholder="Message..."
