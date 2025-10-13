@@ -475,7 +475,7 @@ function AppContent({ children }: { children: ReactNode }) {
       </div>
 
       {isMobile && isChatSidebarOpen && !(ongoingCall && !isPipMode) && (
-          <div className="fixed inset-0 top-16 z-50 flex">
+          <div className="fixed inset-0 top-16 z-50 flex h-[calc(100%-4rem)]">
               <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]")}>
                   {chattingWith ? (
                     <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
