@@ -1,4 +1,5 @@
 
+
 'use client';
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -243,7 +244,13 @@ const useCallNotifications = () => {
       pipSize,
       setPipSize,
       pipSizeMode,
-      setPipSizeMode,
+      setPipSizeMode: (updater) => setPipSizeMode(prev => {
+          if (typeof updater === 'function') {
+              const nextState = updater(prev);
+              return nextState === 'small' ? 'medium' : nextState;
+          }
+          return updater === 'small' ? 'medium' : updater;
+      }),
     };
 };
 
@@ -569,7 +576,7 @@ function AppContent({ children }: { children: ReactNode }) {
                 onTogglePipMode={onTogglePipMode}
                 pipSizeMode={pipSizeMode}
                 onTogglePipSizeMode={() => {
-                  setPipSizeMode(prev => prev === 'medium' ? 'large' : prev === 'large' ? 'small' : 'medium');
+                  setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium');
                 }}
             />
         </motion.div>
@@ -597,5 +604,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
 
     
