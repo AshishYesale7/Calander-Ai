@@ -235,7 +235,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
 
       {/* Message Area */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-2">
             <div className="flex flex-col items-center pt-8 pb-4">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
@@ -279,7 +279,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                 )}
                                 <div
                                     className={cn(
-                                    'max-w-[70%] px-4 py-2.5 text-sm',
+                                    'max-w-[70%] px-4 py-2.5 text-sm flex items-end gap-2',
                                     isMe
                                         ? 'bg-blue-500 text-white rounded-3xl'
                                         : 'bg-[#262626] text-white rounded-3xl',
@@ -289,8 +289,9 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                     {msg.isDeleted ? (
                                         <span className="italic text-gray-400">{msg.text}</span>
                                     ) : (
-                                        msg.text
+                                        <span>{msg.text}</span>
                                     )}
+                                     <span className="text-[10px] text-white/70 whitespace-nowrap">{format(msg.timestamp, 'p')}</span>
                                 </div>
                                 </div>
                             </ContextMenuTrigger>
