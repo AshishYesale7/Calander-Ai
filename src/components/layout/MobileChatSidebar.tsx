@@ -76,7 +76,7 @@ const ChatListView = () => {
                         uid: userDocSnap.id,
                         displayName: data.displayName || 'Anonymous User',
                         photoURL: data.photoURL || null,
-                        username: data.username || `user_${userId.substring(0, 5)}`,
+                        username: data.username || `user_${userId.substring(0,5)}`,
                         status: 'online',
                         notification: Math.random() > 0.8,
                     } as FollowedUserWithPresence;
@@ -154,16 +154,19 @@ const CallLogView = () => {
         }
         setIsLoading(true);
         const callsCollectionRef = collection(db, 'calls');
+        // Simplified query to avoid composite index requirement
         const q = query(
             callsCollectionRef, 
-            where('status', 'in', ['ended', 'declined']),
             where('participantIds', 'array-contains', user.uid),
             orderBy('createdAt', 'desc'),
             limit(50)
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const callLogPromises = snapshot.docs.map(async (callDoc) => {
+            // Client-side filtering for status
+            const filteredDocs = snapshot.docs.filter(doc => ['ended', 'declined'].includes(doc.data().status));
+
+            const callLogPromises = filteredDocs.map(async (callDoc) => {
                 const callData = callDoc.data() as CallData;
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                 
