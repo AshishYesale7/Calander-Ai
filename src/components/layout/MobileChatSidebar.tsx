@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -241,14 +242,13 @@ const CallLogView = () => {
         const q = query(
             callsCollectionRef, 
             where('participantIds', 'array-contains', user.uid),
-            orderBy('createdAt', 'desc'),
             limit(50)
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const filteredDocs = snapshot.docs.filter(doc => ['ended', 'declined'].includes(doc.data().status));
+            const docs = snapshot.docs.filter(doc => ['ended', 'declined'].includes(doc.data().status));
 
-            const callLogPromises = filteredDocs.map(async (callDoc) => {
+            const callLogPromises = docs.map(async (callDoc) => {
                 const callData = callDoc.data() as CallData;
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                 
@@ -269,8 +269,12 @@ const CallLogView = () => {
                 return null;
             });
 
-            const resolvedCalls = (await Promise.all(callLogPromises)).filter(c => c !== null) as CallLogItem[];
+            const resolvedCalls = (await Promise.all(callLogPromises))
+                .filter(c => c !== null) as CallLogItem[];
             
+            // Sort client-side
+            resolvedCalls.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
             setCallLog(resolvedCalls);
             setIsLoading(false);
         });
