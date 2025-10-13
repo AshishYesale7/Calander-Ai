@@ -42,6 +42,7 @@ import OutgoingCallNotification from '@/components/chat/OutgoingCallNotification
 import VideoCallView from '@/components/chat/VideoCallView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
+import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -465,16 +466,26 @@ function AppContent({ children }: { children: ReactNode }) {
         <aside className={cn("h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
             "hidden md:flex",
             ongoingCall && !isPipMode && "hidden",
-            isChatSidebarOpen && !isChatPanelVisible && "w-20 chat:w-[18rem]",
+            isChatSidebarOpen && !isChatPanelVisible && "w-20",
+            isChatSidebarOpen && !isChatPanelVisible && isChatbarCollapsed && "w-20",
+            isChatSidebarOpen && !isChatPanelVisible && !isChatbarCollapsed && "chat:w-[18rem]",
             isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
         )}>
            <div className={cn("transition-all duration-300 ease-in-out h-full", isChatPanelVisible ? 'w-[22rem]' : 'w-0')}>
               {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />)}
            </div>
             {isChatSidebarOpen && (
-              <div className={cn("transition-all duration-300 ease-in-out h-full", "w-20 chat:w-[18rem]")}>
-                <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} isCollapsed={isChatbarCollapsed}/>
-              </div>
+              <>
+                <div className={cn("transition-all duration-300 ease-in-out h-full hidden chat:block", isChatbarCollapsed ? "w-0" : "w-[18rem]")}>
+                  {!isChatbarCollapsed && <DesktopChatSidebar />}
+                </div>
+                <div className={cn("transition-all duration-300 ease-in-out h-full chat:hidden", isChatbarCollapsed ? "w-20" : "w-0")}>
+                  {isChatbarCollapsed && <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} />}
+                </div>
+                <div className="w-20 h-full hidden md:block chat:hidden">
+                    <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} />
+                </div>
+              </>
             )}
         </aside>
       </div>
@@ -486,7 +497,7 @@ function AppContent({ children }: { children: ReactNode }) {
           )}>
               <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]", isMobileChatFocus && chattingWith ? "hidden" : "block")}>
                   {chattingWith ? (
-                    <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
+                    <ChatSidebar onToggleCollapse={() => {}} />
                   ) : (
                     <MobileChatSidebar />
                   )}
