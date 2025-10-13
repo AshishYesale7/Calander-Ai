@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } fro
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightOpen, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, MessageCircle } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightOpen, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, MessageCircle, PanelRightClose } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -110,7 +110,7 @@ const ChatListView = () => {
             transition: { duration: 0.2 }
         }
     };
-
+    
     const fabMenuItemVariants = {
         open: { opacity: 1, y: 0 },
         closed: { opacity: 0, y: 10 }
