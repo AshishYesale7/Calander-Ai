@@ -149,9 +149,11 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                          
                     </div>
                 </TooltipProvider>
-                <div className="relative h-9 w-full">
-                    <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-                </div>
+                {!chattingWith && (
+                    <div className="relative h-9 w-full">
+                        <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                    </div>
+                )}
                 <Separator />
                 <TooltipProvider delayDuration={0}>
                     <ScrollArea className="flex-1 w-full">
