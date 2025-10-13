@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import type { CallData } from '@/services/callService';
+import { motion } from 'framer-motion';
 
 interface IncomingCallNotificationProps {
   call: CallData;
@@ -33,7 +34,11 @@ export default function IncomingCallNotification({ call, onAccept, onDecline }: 
   }, []);
 
   return (
-    <div className="fixed bottom-5 right-5 z-[200] p-4 rounded-lg shadow-2xl bg-gray-900/80 backdrop-blur-md border border-gray-700 text-white animate-in slide-in-from-bottom-10 fade-in duration-300">
+    <motion.div
+      drag
+      dragMomentum={false}
+      className="fixed bottom-5 right-5 z-[200] p-4 rounded-lg shadow-2xl bg-gray-900/80 backdrop-blur-md border border-gray-700 text-white animate-in slide-in-from-bottom-10 fade-in duration-300 cursor-grab active:cursor-grabbing"
+    >
       <div className="flex items-center gap-4">
         <Avatar className="h-14 w-14 border-2 border-green-500">
           <AvatarImage src={call.callerPhotoURL || ''} alt={call.callerName} />
@@ -56,6 +61,6 @@ export default function IncomingCallNotification({ call, onAccept, onDecline }: 
       </div>
       {/* Audio element for the ringtone */}
       <audio ref={audioRef} src="/assets/ringtone.mp3" preload="auto"></audio>
-    </div>
+    </motion.div>
   );
 }
