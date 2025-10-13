@@ -68,14 +68,6 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
                 <div className="space-y-2">
                      <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleCollapse}>
-                                <PanelRightOpen className="h-6 w-6"/>
-                            </Button>
-                        </TooltipTrigger>
-                         <TooltipContent side="left"><p>Expand Sidebar</p></TooltipContent>
-                    </Tooltip>
-                     <Tooltip>
-                        <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9">
                                 <Search className="h-5 w-5"/>
                             </Button>
