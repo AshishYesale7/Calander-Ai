@@ -304,7 +304,7 @@ export default function DesktopChatSidebar() {
     const [activeView, setActiveView] = useState<'chats' | 'updates' | 'communities' | 'calls'>('chats');
     
     return (
-        <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30")}>
+        <div className={cn("flex flex-col h-full bg-black/80 backdrop-blur-lg border-l border-border/30")}>
              <div className="p-4 border-b border-border/30">
                  <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold font-headline text-primary">Chats</h1>
