@@ -41,6 +41,7 @@ import IncomingCallNotification from '@/components/chat/IncomingCallNotification
 import OutgoingCallNotification from '@/components/chat/OutgoingCallNotification';
 import VideoCallView from '@/components/chat/VideoCallView';
 import { useIsMobile } from '@/hooks/use-mobile';
+import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -475,16 +476,16 @@ function AppContent({ children }: { children: ReactNode }) {
 
       {isMobile && isChatSidebarOpen && !(ongoingCall && !isPipMode) && (
           <div className="fixed inset-0 top-16 z-50 flex">
-              <div className="w-[25%] h-full">
-                  <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
-              </div>
-              <div className="w-[75%] h-full">
+              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]")}>
                   {chattingWith ? (
-                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
+                    <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
                   ) : (
-                    <div className="h-full bg-black flex items-center justify-center text-center text-muted-foreground">
-                        <p>Select a chat to start messaging</p>
-                    </div>
+                    <MobileChatSidebar />
+                  )}
+              </div>
+              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[75%]" : "w-[1%]")}>
+                  {chattingWith && (
+                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
                   )}
               </div>
           </div>
