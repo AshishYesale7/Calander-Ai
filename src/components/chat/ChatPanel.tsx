@@ -36,7 +36,6 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
   const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
   
-  // The button should be disabled if there's any outgoing call, or if there's an ongoing call that's NOT with this user.
   const isCallButtonDisabled = (!!outgoingCall) || (!!ongoingCall && !isCallActiveWithThisUser);
 
 
@@ -47,7 +46,6 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
 
   const handleVideoClick = () => {
     if (isCallActiveWithThisUser) {
-        // Future: Add logic to bring PiP back to full screen
         console.log("Call is active, should maximize");
     } else {
         handleInitiateCall();
@@ -117,10 +115,15 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
     setChattingWith(null);
   };
   
+  const isMobileChatFocus = isMobile && isChatInputFocused;
+
   return (
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-black">
+      <header className={cn(
+        "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10",
+        isMobileChatFocus ? "chat-header-glassy" : "sticky top-0 bg-black"
+      )}>
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
               <ArrowLeft className="h-5 w-5" />
@@ -209,7 +212,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       {/* Input Form */}
       <footer className={cn(
         "flex-shrink-0 p-3 bg-black",
-        isMobile && isChatInputFocused && "fixed bottom-0 left-0 right-0 z-50"
+        isMobileChatFocus && "fixed bottom-0 left-0 right-0 z-50"
         )}>
         <form
           onSubmit={(e) => {
