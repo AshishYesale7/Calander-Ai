@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
-import type { UserPreferences, SocialLinks } from '@/types';
+import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
 import { deleteImageByUrl } from './storageService';
 
@@ -29,8 +29,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
             const displayName = user.displayName || user.email?.split('@')[0] || 'Anonymous User';
             const username = user.email?.split('@')[0] || `user_${user.uid.substring(0, 10)}`;
             
-            const defaultProfile = {
-                uid: user.uid,
+            const defaultProfile: Omit<UserProfile, 'uid'> = {
                 email: user.email,
                 displayName: displayName,
                 username: username,
@@ -118,7 +117,7 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
     }
 };
 
-export const updateUserProfile = async (userId: string, profileData: Partial<{ displayName: string; username: string; photoURL: string | null; coverPhotoURL: string | null; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>): Promise<void> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>): Promise<void> => {
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
@@ -171,7 +170,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<{ d
 };
 
 
-export const getUserProfile = async (userId: string): Promise<(Partial<UserPreferences & { uid: string; displayName: string; photoURL: string | null; coverPhotoURL: string | null; username: string; bio: string; socials: SocialLinks; statusEmoji: string | null, countryCode: string | null }>) | null> => {
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -187,7 +186,6 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
                 needsUpdate = true;
             }
 
-            // Ensure searchableIndex exists for older users (lazy migration)
             if (!data.searchableIndex) {
                  const displayName = data.displayName || 'Anonymous User';
                  dataToUpdate['searchableIndex'] = Array.from(new Set([displayName.toLowerCase(), username.toLowerCase()]));
@@ -216,7 +214,6 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
                 });
             }
 
-
             return {
                 uid: userId,
                 displayName: data.displayName,
@@ -228,7 +225,9 @@ export const getUserProfile = async (userId: string): Promise<(Partial<UserPrefe
                 statusEmoji: data.statusEmoji || null,
                 countryCode: data.countryCode || null,
                 routine: data.preferences?.routine || [],
-            };
+                followersCount: data.followersCount || 0,
+                followingCount: data.followingCount || 0,
+            } as UserProfile;
         }
         return null;
     } catch (error) {

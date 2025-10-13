@@ -3,12 +3,29 @@
 
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
+import type { GenerateAvatarOutput } from '@/components/profile/CustomizeAvatarModal';
 
 export interface SocialLinks {
     github?: string;
     linkedin?: string;
     twitter?: string;
 }
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  username: string;
+  photoURL: string | null;
+  coverPhotoURL: string | null;
+  bio: string;
+  socials: SocialLinks | null;
+  statusEmoji: string | null;
+  countryCode: string | null;
+  followersCount: number;
+  followingCount: number;
+  routine: RoutineItem[];
+}
+
 
 export interface RoutineItem {
   id: string;
@@ -19,16 +36,7 @@ export interface RoutineItem {
 }
 
 export interface UserPreferences {
-  username: string;
   routine: RoutineItem[];
-  countryCode?: string | null;
-  statusEmoji?: string | null;
-  bio?: string;
-  socials?: SocialLinks;
-  photoURL?: string | null;
-  coverPhotoURL?: string | null;
-  followersCount: number;
-  followingCount: number;
 }
 
 export type EarlyReminder = 'none' | 'on_day' | '1_day' | '2_days' | '1_week';

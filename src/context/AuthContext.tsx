@@ -1,3 +1,4 @@
+
 'use client';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -7,10 +8,14 @@ import { auth } from '@/lib/firebase';
 import { Preloader } from '@/components/ui/Preloader';
 import { AlertCircle } from 'lucide-react';
 import { getUserSubscription } from '@/services/subscriptionService';
-import type { UserSubscription } from '@/types';
+import { getUserProfile } from '@/services/userService';
+import type { UserSubscription, UserProfile } from '@/types';
+
+// The user object in the context will now be the combination of Auth user and Firestore profile
+type AppUser = User & UserProfile;
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   subscription: UserSubscription | null;
   isSubscribed: boolean;
@@ -49,7 +54,7 @@ const MissingConfiguration = () => (
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
@@ -58,6 +63,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isSubscribed = !!subscription && 
     (subscription.status === 'active' || subscription.status === 'trial') && 
     (subscription.endDate && new Date(subscription.endDate) > new Date());
+
+  const fetchFullUserProfile = useCallback(async (firebaseUser: User) => {
+    const [profile, userSub] = await Promise.all([
+      getUserProfile(firebaseUser.uid),
+      getUserSubscription(firebaseUser.uid)
+    ]);
+
+    if (profile) {
+      setUser({ ...firebaseUser, ...profile });
+    } else {
+      // Fallback if profile doesn't exist yet
+      setUser(firebaseUser as AppUser);
+    }
+    setSubscription(userSub);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const refreshedUser = auth.currentUser;
+      if (refreshedUser) {
+        await fetchFullUserProfile(refreshedUser);
+      }
+    }
+  }, [fetchFullUserProfile]);
 
   const refreshSubscription = useCallback(async () => {
     if (user) {
@@ -74,54 +104,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
-  const refreshUser = useCallback(async () => {
-    if (auth.currentUser) {
-      await auth.currentUser.reload();
-      const refreshedUser = auth.currentUser;
-      setUser(refreshedUser);
-    }
-  }, []);
-
-
   // Effect 1: Handle Firebase auth state changes
   useEffect(() => {
     setMounted(true);
     if (!auth) {
       setAuthLoading(false);
-      setSubscriptionLoading(false); // No auth means no sub loading
+      setSubscriptionLoading(false);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setAuthLoading(true);
+        setSubscriptionLoading(true);
+        await fetchFullUserProfile(currentUser);
+        setAuthLoading(false);
+        setSubscriptionLoading(false);
+      } else {
+        setUser(null);
+        setSubscription(null);
+        setAuthLoading(false);
+        setSubscriptionLoading(false);
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [fetchFullUserProfile]);
 
-  // Effect 2: Handle subscription fetching based on user state
-  useEffect(() => {
-    // Wait until the auth state is resolved
-    if (authLoading) {
-      return;
-    }
-
-    if (user) {
-      setSubscriptionLoading(true);
-      getUserSubscription(user.uid)
-        .then(setSubscription)
-        .catch((error) => {
-          console.error("Error in subscription fetch effect:", error);
-          setSubscription(null);
-        })
-        .finally(() => {
-          setSubscriptionLoading(false);
-        });
-    } else {
-      // If auth is done loading and there's no user, we're not loading subscription either.
-      setSubscription(null);
-      setSubscriptionLoading(false);
-    }
-  }, [user, authLoading]);
 
   if (!mounted) {
     return (
