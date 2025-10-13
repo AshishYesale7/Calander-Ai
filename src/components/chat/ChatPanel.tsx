@@ -235,7 +235,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
 
       {/* Message Area */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-4">
             <div className="flex flex-col items-center pt-8 pb-4">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
@@ -279,7 +279,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                 )}
                                 <div
                                     className={cn(
-                                    'max-w-[70%] px-4 py-2.5 text-sm flex items-end gap-2',
+                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col',
                                     isMe
                                         ? 'bg-blue-500 text-white rounded-3xl'
                                         : 'bg-[#262626] text-white rounded-3xl',
@@ -291,7 +291,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                     ) : (
                                         <span>{msg.text}</span>
                                     )}
-                                     <span className="text-[10px] text-white/70 whitespace-nowrap">{format(msg.timestamp, 'p')}</span>
+                                     <span className={cn("text-[10px] text-white/70 self-end mt-1", isMe ? 'text-right' : 'text-left')}>{format(msg.timestamp, 'p')}</span>
                                 </div>
                                 </div>
                             </ContextMenuTrigger>
@@ -360,7 +360,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </footer>
     </div>
     <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
-        <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl">
+        <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
             <AlertDialogHeader className="text-center">
                 <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
                 <AlertDialogDescription className="text-xs">
