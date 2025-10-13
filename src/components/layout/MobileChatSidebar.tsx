@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -16,11 +16,30 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ChatIcon } from '../logo/ChatIcon';
 
 type FollowedUserWithPresence = PublicUserProfile & {
     status?: 'online' | 'offline' | 'in-game';
     notification?: boolean;
 };
+
+const UpdatesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <circle cx="12" cy="12" r="10" />
+    </svg>
+);
+
+
+const NavItem = ({ icon: Icon, label, isActive }: { icon: React.ElementType, label: string, isActive?: boolean}) => (
+    <button className={cn(
+        "flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 transition-colors",
+        isActive ? "text-accent" : "hover:text-foreground"
+    )}>
+        <Icon className="h-5 w-5" />
+        <span className="text-xs">{label}</span>
+    </button>
+);
+
 
 export default function MobileChatSidebar() {
     const { user } = useAuth();
@@ -129,9 +148,12 @@ export default function MobileChatSidebar() {
                 </div>
             </ScrollArea>
              <div className="p-2 mt-auto border-t border-border/30">
-                <Button variant="ghost" className="w-full justify-center">
-                    <UserPlus className="mr-2 h-4 w-4"/> Add Friend
-                </Button>
+                <div className="flex justify-around items-center">
+                    <NavItem icon={ChatIcon} label="Chats" isActive />
+                    <NavItem icon={UpdatesIcon} label="Updates" />
+                    <NavItem icon={Users} label="Communities" />
+                    <NavItem icon={Phone} label="Calls" />
+                </div>
             </div>
         </div>
     );
