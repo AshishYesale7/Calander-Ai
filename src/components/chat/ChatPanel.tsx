@@ -236,7 +236,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
             <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-xs text-white">{otherUser.displayName}</h3>
+            <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
             <p className="text-xs text-gray-400">@{otherUser.username}</p>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                                 )}
                                 <div
                                     className={cn(
-                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1', // Added mt-1
+                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1',
                                     isMe
                                         ? 'bg-blue-500 text-white rounded-3xl'
                                         : 'bg-[#262626] text-white rounded-3xl',
