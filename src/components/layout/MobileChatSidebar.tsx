@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -97,7 +97,7 @@ export default function MobileChatSidebar() {
                         />
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
-                        <X className="h-5 w-5 text-muted-foreground" />
+                        <PanelRightClose className="h-5 w-5 text-muted-foreground" />
                     </Button>
                 </div>
             </div>
