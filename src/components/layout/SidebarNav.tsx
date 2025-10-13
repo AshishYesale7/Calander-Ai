@@ -154,7 +154,7 @@ export default function SidebarNav({
                 </Link>
               </TooltipTrigger>
               {sidebarState === 'collapsed' && (
-                  <TooltipContent side="left">
+                  <TooltipContent side="right">
                       <p>{item.label}</p>
                   </TooltipContent>
               )}
@@ -177,7 +177,7 @@ export default function SidebarNav({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className={cn("w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
                 <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || user?.email || 'User'} />
+                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
                   <AvatarFallback>
                     {user?.email ? user.email.charAt(0).toUpperCase() : <UserCircle size={20} />}
                   </AvatarFallback>
