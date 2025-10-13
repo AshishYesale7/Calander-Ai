@@ -30,7 +30,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { setChattingWith, outgoingCall, ongoingCall } = useChat();
+  const { setChattingWith, outgoingCall, ongoingCall, setIsChatInputFocused, isChatInputFocused } = useChat();
   const isMobile = useIsMobile();
 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
@@ -207,7 +207,10 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className="flex-shrink-0 p-3 bg-black">
+      <footer className={cn(
+        "flex-shrink-0 p-3 bg-black",
+        isMobile && isChatInputFocused && "fixed bottom-0 left-0 right-0 z-50"
+        )}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -219,6 +222,8 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
           <Input
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
+            onFocus={() => setIsChatInputFocused(true)}
+            onBlur={() => setIsChatInputFocused(false)}
             placeholder="Message..."
             className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12"
             autoComplete="off"

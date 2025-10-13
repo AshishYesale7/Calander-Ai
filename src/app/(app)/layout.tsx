@@ -256,7 +256,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
-  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen } = useChat();
+  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused } = useChat();
   const { 
       incomingCall, acceptCall, declineCall, 
       ongoingCall, outgoingCall, initiateCall, 
@@ -442,13 +442,18 @@ function AppContent({ children }: { children: ReactNode }) {
     setIsTimezoneModalOpen, handleToggleFullScreen, isFullScreen,
   };
   
+  const isMobileChatFocus = isMobile && isChatInputFocused;
+
   return (
-    <div className='relative z-0 flex h-screen w-full'>
-      <SidebarNav {...modalProps} />
+    <div className={cn('relative z-0 flex h-screen w-full', isMobileChatFocus && 'overflow-hidden')}>
+      <div className={cn(isMobileChatFocus ? 'hidden' : 'contents')}>
+        <SidebarNav {...modalProps} />
+      </div>
       
       <div className={cn( "flex flex-1 min-w-0",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
-        !isMobile && sidebarState === 'collapsed' && "md:ml-12"
+        !isMobile && sidebarState === 'collapsed' && "md:ml-12",
+        isMobileChatFocus && "hidden" // Hide main content on mobile chat focus
       )}>
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <Header {...modalProps} />
@@ -475,15 +480,18 @@ function AppContent({ children }: { children: ReactNode }) {
       </div>
 
       {isMobile && isChatSidebarOpen && !(ongoingCall && !isPipMode) && (
-          <div className="fixed inset-0 top-16 z-50 flex h-[calc(100%-4rem)]">
-              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]")}>
+          <div className={cn(
+            "fixed inset-0 top-0 z-50 flex h-full",
+            isMobileChatFocus ? "top-0 h-full" : "top-16 h-[calc(100%-4rem)]"
+          )}>
+              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]", isMobileChatFocus && chattingWith ? "hidden" : "block")}>
                   {chattingWith ? (
                     <ChatSidebar onToggleCollapse={() => {}} isCollapsed={true} />
                   ) : (
                     <MobileChatSidebar />
                   )}
               </div>
-              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[75%]" : "w-[1%]")}>
+              <div className={cn("h-full transition-all duration-300", chattingWith ? (isMobileChatFocus ? "w-full" : "w-[75%]") : "w-[1%]")}>
                   {chattingWith && (
                      <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
                   )}
@@ -496,7 +504,7 @@ function AppContent({ children }: { children: ReactNode }) {
       <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
       
       <AnimatePresence>
-        {isBottomNavVisible && isMobile && (
+        {isBottomNavVisible && isMobile && !isChatInputFocused && (
           <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
             transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
             className="fixed bottom-4 left-4 right-4 z-40 md:hidden"

@@ -16,6 +16,8 @@ interface ChatContextType {
   setOutgoingCall: Dispatch<SetStateAction<PublicUserProfile | null>>;
   ongoingCall: CallData | null;
   setOngoingCall: Dispatch<SetStateAction<CallData | null>>;
+  isChatInputFocused: boolean;
+  setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
   const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
   const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
 
 
   return (
@@ -32,7 +35,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         chattingWith, setChattingWith, 
         isChatSidebarOpen, setIsChatSidebarOpen,
         outgoingCall, setOutgoingCall,
-        ongoingCall, setOngoingCall
+        ongoingCall, setOngoingCall,
+        isChatInputFocused, setIsChatInputFocused,
     }}>
       {children}
     </ChatContext.Provider>
