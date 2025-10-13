@@ -207,7 +207,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className="flex-shrink-0 p-3">
+      <footer className="flex-shrink-0 p-3 sticky bottom-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
