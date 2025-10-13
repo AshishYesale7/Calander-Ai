@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon, Rss, UserCheck, Camera } from 'lucide-react';
+import { AtSign, Github, Linkedin, Twitter, MessageSquare, UserPlus, Flame, Edit, Save, X, Trash2, Image as ImageIcon, Link as LinkIcon, Rss, UserCheck, Camera, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import CountryFlag from '@/components/leaderboard/CountryFlag';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,8 @@ import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTheme } from '@/hooks/use-theme';
 import { useChat } from '@/context/ChatContext';
+import CustomizeAvatarModal from '@/components/profile/CustomizeAvatarModal';
+
 
 // Define a type for the editable fields to manage them in a single state
 type EditableProfileState = {
@@ -50,7 +52,7 @@ type EditableProfileState = {
     countryCode: string | null;
 };
 
-const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, onCoverFileSelect, uploadProgress, isOwnProfile }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, onCoverFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean }) => {
+const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, onCoverFileSelect, uploadProgress, isOwnProfile, onCustomizeAvatarClick }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, onCoverFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean, onCustomizeAvatarClick: () => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const coverFileInputRef = useRef<HTMLInputElement>(null);
     return (
@@ -93,9 +95,14 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                     </div>
                     <div className="flex gap-2">
                         {isOwnProfile && !isEditing && (
+                           <>
+                            <Button variant="outline" size="sm" className="mb-2" onClick={onCustomizeAvatarClick}>
+                                <Sparkles className="mr-2 h-4 w-4" /> Customize Avatar
+                            </Button>
                             <Button variant="outline" size="sm" className="mb-2" onClick={onEditToggle}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit Profile
                             </Button>
+                           </>
                         )}
                         {!isOwnProfile && (
                            <>
@@ -203,6 +210,8 @@ export default function UserProfilePage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [editableState, setEditableState] = useState<EditableProfileState | null>(null);
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+
     
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
     const [newCoverImageFile, setNewCoverImageFile] = useState<File | null>(null);
@@ -424,6 +433,35 @@ export default function UserProfilePage() {
             setIsFollowLoading(false);
         }
     };
+    
+    const handleAvatarSave = async (newAvatarUrl: string) => {
+        if (!currentUser || !profile) return;
+        
+        const oldPhotoURL = profile.photoURL;
+
+        // Optimistically update the UI
+        setProfile(prev => prev ? { ...prev, photoURL: newAvatarUrl } : null);
+        setEditableState(prev => prev ? { ...prev, photoURL: newAvatarUrl } : null);
+        setIsAvatarModalOpen(false);
+
+        try {
+            await updateUserProfile(currentUser.uid, { photoURL: newAvatarUrl });
+
+            // Delete the old one only after the new one is saved successfully
+            if (oldPhotoURL && oldPhotoURL.includes('firebasestorage.googleapis.com')) {
+                await deleteImageByUrl(oldPhotoURL);
+            }
+            
+            await refreshUser(); // Refresh user in context to update header avatar
+            toast({ title: "Avatar Updated", description: "Your new avatar has been saved." });
+
+        } catch (error) {
+            // Revert UI on failure
+            setProfile(prev => prev ? { ...prev, photoURL: oldPhotoURL } : null);
+            setEditableState(prev => prev ? { ...prev, photoURL: oldPhotoURL } : null);
+            toast({ title: "Error", description: "Could not save your new avatar.", variant: "destructive" });
+        }
+    };
 
     const countries = useMemo(() => {
         const countrySet = new Set<string>();
@@ -449,6 +487,7 @@ export default function UserProfilePage() {
     }
     
     return (
+       <>
         <div className="relative max-w-4xl mx-auto">
             <Card className="frosted-glass p-0">
                  <ProfileHeader 
@@ -462,6 +501,7 @@ export default function UserProfilePage() {
                     onCoverFileSelect={handleCoverFileSelect}
                     uploadProgress={uploadProgress}
                     isOwnProfile={isOwnProfile}
+                    onCustomizeAvatarClick={() => setIsAvatarModalOpen(true)}
                  >
                      {!isOwnProfile && (
                         <div className="flex gap-2">
@@ -615,7 +655,14 @@ export default function UserProfilePage() {
                 </div>
             </div>
         </div>
+        
+        {isOwnProfile && (
+            <CustomizeAvatarModal
+                isOpen={isAvatarModalOpen}
+                onOpenChange={setIsAvatarModalOpen}
+                onSave={handleAvatarSave}
+            />
+        )}
+      </>
     )
 }
-
-    
