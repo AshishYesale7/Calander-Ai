@@ -72,6 +72,14 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
         <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
             <TooltipProvider delayDuration={0}>
                 <div className="space-y-2">
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleCollapse}>
+                                <PanelRightOpen className="h-5 w-5"/>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left"><p>Expand Sidebar</p></TooltipContent>
+                    </Tooltip>
                      <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9">
