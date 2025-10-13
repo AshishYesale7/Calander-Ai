@@ -43,8 +43,8 @@ const NewGroupIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const MetaAiIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+const CalendarAiIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
         <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="currentColor"/>
         <path d="M12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18Z" fill="currentColor"/>
         <path d="M12 16C14.21 16 16 14.21 16 12C16 9.79 14.21 8 12 8C9.79 8 8 9.79 8 12C8 14.21 9.79 16 12 16Z" fill="currentColor"/>
@@ -140,7 +140,7 @@ const ChatListView = () => {
 
     return (
         <>
-            <div className="relative flex-1">
+            <div className="relative flex-shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     placeholder="Search chats..."
@@ -149,7 +149,7 @@ const ChatListView = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <div className="relative flex-1 mt-2">
+            <div className="relative flex-1 mt-2 min-h-0">
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
                       {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredFollowing.map(friend => (
@@ -190,7 +190,7 @@ const ChatListView = () => {
                                <motion.div variants={fabMenuItemVariants} className="flex items-center justify-end gap-2">
                                   <span className="text-sm bg-card p-2 rounded-md shadow-lg">New Chat with Calendar.ai</span>
                                   <Button size="icon" className="rounded-full shadow-lg h-10 w-10 bg-muted text-muted-foreground hover:bg-muted/80">
-                                      <MetaAiIcon className="h-5 w-5"/>
+                                      <CalendarAiIcon className="h-5 w-5"/>
                                   </Button>
                               </motion.div>
                               <motion.div variants={fabMenuItemVariants} className="flex items-center justify-end gap-2">
