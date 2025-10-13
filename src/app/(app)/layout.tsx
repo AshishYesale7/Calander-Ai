@@ -283,7 +283,6 @@ function AppContent({ children }: { children: ReactNode }) {
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   
-  const [isChatbarCollapsed, setIsChatbarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
@@ -466,21 +465,18 @@ function AppContent({ children }: { children: ReactNode }) {
         <aside className={cn("h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
             "hidden md:flex",
             ongoingCall && !isPipMode && "hidden",
-            isChatSidebarOpen && !isChatPanelVisible && "w-20",
-            isChatSidebarOpen && !isChatPanelVisible && isChatbarCollapsed && "w-20",
-            isChatSidebarOpen && !isChatPanelVisible && !isChatbarCollapsed && "chat:w-[18rem]",
-            isChatSidebarOpen && isChatPanelVisible && "w-[calc(22rem+5rem)] chat:w-[calc(18rem+22rem)]"
+            isChatSidebarOpen && "w-[calc(18rem+5rem)]"
         )}>
            <div className={cn("transition-all duration-300 ease-in-out h-full", isChatPanelVisible ? 'w-[22rem]' : 'w-0')}>
               {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />)}
            </div>
             {isChatSidebarOpen && (
               <>
-                <div className={cn("transition-all duration-300 ease-in-out h-full hidden chat:block", isChatbarCollapsed ? "w-0" : "w-[18rem]")}>
-                  {!isChatbarCollapsed && <DesktopChatSidebar />}
+                <div className="w-[18rem] h-full hidden chat:block">
+                  <DesktopChatSidebar />
                 </div>
                 <div className="w-20 h-full hidden md:block chat:hidden">
-                    <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} />
+                    <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(false)} />
                 </div>
               </>
             )}

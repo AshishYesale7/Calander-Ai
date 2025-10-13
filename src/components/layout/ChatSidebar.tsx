@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } fro
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightOpen } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -74,11 +74,11 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
                 <div className="space-y-2">
                      <Tooltip>
                         <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleCollapse}>
-                                <PanelRightOpen className="h-5 w-5"/>
+                             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}>
+                                <PanelRightClose className="h-5 w-5"/>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="left"><p>Expand Sidebar</p></TooltipContent>
+                        <TooltipContent side="left"><p>Close Sidebar</p></TooltipContent>
                     </Tooltip>
                      <Popover>
                         <PopoverTrigger asChild>
