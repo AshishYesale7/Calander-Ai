@@ -364,13 +364,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
 
   const handleDeleteAccount = async () => {
-    if (!user) {
+    if (!user || !auth.currentUser) {
         toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
         return;
     }
     
     try {
-        await deleteUser(user);
+        await deleteUser(auth.currentUser);
         toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
         router.push('/auth/signin');
         onOpenChange(false);
