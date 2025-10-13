@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Video } from 'lucide-react';
-import type { CallData } from '@/services/callService';
+import type { CallData } from '@/types';
 import { motion } from 'framer-motion';
 
 interface IncomingCallNotificationProps {
