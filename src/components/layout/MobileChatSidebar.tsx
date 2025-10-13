@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { onSnapshot, collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
@@ -267,3 +268,5 @@ export default function MobileChatSidebar() {
         </div>
     );
 
+
+}
