@@ -188,7 +188,7 @@ const ChatListView = () => {
                               className="mb-4 space-y-2 origin-bottom-right"
                           >
                                <motion.div variants={fabMenuItemVariants} className="flex items-center justify-end gap-2">
-                                  <span className="text-sm bg-card p-2 rounded-md shadow-lg">New Chat with Meta AI</span>
+                                  <span className="text-sm bg-card p-2 rounded-md shadow-lg">New Chat with Calendar.ai</span>
                                   <Button size="icon" className="rounded-full shadow-lg h-10 w-10 bg-muted text-muted-foreground hover:bg-muted/80">
                                       <MetaAiIcon className="h-5 w-5"/>
                                   </Button>
