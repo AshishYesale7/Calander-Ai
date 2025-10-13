@@ -120,7 +120,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   return (
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 sticky top-0 bg-black/80 backdrop-blur-sm z-10">
+      <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10">
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
               <ArrowLeft className="h-5 w-5" />
@@ -150,7 +150,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </header>
 
       {/* Message Area */}
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
         <div className="p-4 space-y-4">
             <div className="flex flex-col items-center pt-8 pb-4">
                 <Avatar className="h-24 w-24">
@@ -207,7 +207,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className="flex-shrink-0 p-3 sticky bottom-0">
+      <footer className="flex-shrink-0 p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
