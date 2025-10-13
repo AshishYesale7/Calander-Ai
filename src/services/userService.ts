@@ -64,7 +64,7 @@ export const createUserProfile = async (user: User): Promise<UserProfile> => {
             geminiApiKey: null,
             followersCount: 0,
             followingCount: 0,
-            onboardingCompleted: false, // New flag
+            onboardingCompleted: false, // New users always start with onboarding incomplete
         };
         await setDoc(userDocRef, defaultProfile);
         return { uid: user.uid, ...defaultProfile };

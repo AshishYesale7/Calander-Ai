@@ -148,6 +148,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
     if (!user) return;
     setIsSaving(true);
     await updateUserProfile(user.uid, { onboardingCompleted: true });
+    await refreshUser(); // Force a refresh of user data in the context
     setStep(3);
     setTimeout(() => {
         onFinish();
