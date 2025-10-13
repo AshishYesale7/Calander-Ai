@@ -479,9 +479,6 @@ function AppContent({ children }: { children: ReactNode }) {
                 <div className={cn("transition-all duration-300 ease-in-out h-full hidden chat:block", isChatbarCollapsed ? "w-0" : "w-[18rem]")}>
                   {!isChatbarCollapsed && <DesktopChatSidebar />}
                 </div>
-                <div className={cn("transition-all duration-300 ease-in-out h-full chat:hidden", isChatbarCollapsed ? "w-20" : "w-0")}>
-                  {isChatbarCollapsed && <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} />}
-                </div>
                 <div className="w-20 h-full hidden md:block chat:hidden">
                     <ChatSidebar onToggleCollapse={() => setIsChatbarCollapsed(prev => !prev)} />
                 </div>
@@ -600,3 +597,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
