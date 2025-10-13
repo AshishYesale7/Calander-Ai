@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -77,12 +79,11 @@ export const getCallHistory = (
   const participantIds = [userId1, userId2].sort();
 
   // This query finds all calls where both users were participants
-  // NOTE: Firestore does not support array-contains-all, so we use two array-contains queries.
-  // This requires participantIds to be sorted consistently.
+  // The orderBy clause was removed to prevent the need for a composite index.
+  // Sorting will be handled client-side.
   const q = query(
     callsCollectionRef,
-    where('participantIds', '==', participantIds),
-    orderBy('createdAt', 'asc')
+    where('participantIds', '==', participantIds)
   );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -90,8 +91,8 @@ export const getCallHistory = (
       .map(doc => {
         const data = doc.data();
         // Ensure endedAt exists and is a timestamp before converting
-        const endedAt = data.endedAt ? (data.endedAt as Timestamp).toDate() : undefined;
         const createdAt = (data.createdAt as Timestamp).toDate();
+        const endedAt = data.endedAt ? (data.endedAt as Timestamp).toDate() : undefined;
 
         let duration;
         if (endedAt) {
@@ -109,6 +110,9 @@ export const getCallHistory = (
         };
       })
       .filter(call => call.status === 'ended' || call.status === 'declined') as CallData[];
+      
+    // Sort the results by timestamp on the client
+    calls.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
       
     callback(calls);
   }, (error) => {
