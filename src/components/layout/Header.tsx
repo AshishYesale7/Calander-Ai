@@ -126,6 +126,7 @@ export default function Header({
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
   const [isStreakPopoverOpen, setIsStreakPopoverOpen] = useState(false);
   const [isExtensionsPopoverOpen, setIsExtensionsPopoverOpen] = useState(false);
+  const [isWidgetPopoverOpen, setIsWidgetPopoverOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { streakData } = useStreak();
   const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
@@ -161,18 +162,20 @@ export default function Header({
     }
   };
   
-  const handleMouseEnter = (popover: 'streak' | 'extensions') => {
+  const handleMouseEnter = (popover: 'streak' | 'extensions' | 'widget') => {
     if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
     }
     if (popover === 'streak') setIsStreakPopoverOpen(true);
     if (popover === 'extensions') setIsExtensionsPopoverOpen(true);
+    if (popover === 'widget') setIsWidgetPopoverOpen(true);
   };
 
-  const handleMouseLeave = (popover: 'streak' | 'extensions') => {
+  const handleMouseLeave = (popover: 'streak' | 'extensions' | 'widget') => {
     hoverTimeoutRef.current = setTimeout(() => {
         if (popover === 'streak') setIsStreakPopoverOpen(false);
         if (popover === 'extensions') setIsExtensionsPopoverOpen(false);
+        if (popover === 'widget') setIsWidgetPopoverOpen(false);
     }, 1000); // 1000ms delay
   };
 
@@ -390,10 +393,22 @@ export default function Header({
                   </PopoverContent>
               </Popover>
 
-              <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(prev => !prev)}>
-                <WidgetIcon />
-                <span className="sr-only">Widget</span>
-              </Button>
+              <Popover open={isWidgetPopoverOpen} onOpenChange={setIsWidgetPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <div onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')}>
+                    <Button variant="ghost" size="icon">
+                      <WidgetIcon />
+                      <span className="sr-only">Widget</span>
+                    </Button>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')} className="w-64 frosted-glass">
+                  <div className="space-y-4">
+                    <h4 className="font-medium leading-none">Widgets</h4>
+                    <p className="text-sm text-muted-foreground">No widgets available yet.</p>
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               <NotificationPanel />
             </>
