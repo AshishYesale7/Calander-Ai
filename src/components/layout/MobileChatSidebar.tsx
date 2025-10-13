@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile } from '@/services/userService';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, X } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -23,7 +24,7 @@ type FollowedUserWithPresence = PublicUserProfile & {
 
 export default function MobileChatSidebar() {
     const { user } = useAuth();
-    const { chattingWith, setChattingWith } = useChat();
+    const { chattingWith, setChattingWith, setIsChatSidebarOpen } = useChat();
     const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -85,14 +86,19 @@ export default function MobileChatSidebar() {
     return (
         <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl border-r border-border/30")}>
              <div className="p-4 border-b border-border/30">
-                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                        placeholder="Search..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                 <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            placeholder="Search..."
+                            className="pl-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
+                        <X className="h-5 w-5 text-muted-foreground" />
+                    </Button>
                 </div>
             </div>
 
