@@ -142,7 +142,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <div className="space-y-2">
                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-5 w-5"/></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-6 w-6 text-black dark:text-white"/></Button>
                             </TooltipTrigger>
                              <TooltipContent side="right"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
@@ -198,7 +198,7 @@ const ChatListContent = ({ onToggleCollapse }: ChatListContentProps) => {
                     <div className="space-y-2">
                          <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-5 w-5"/></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsChatSidebarOpen(false)}><PanelRightClose className="h-6 w-6 text-black dark:text-white"/></Button>
                             </TooltipTrigger>
                              <TooltipContent side="left"><p>Close Chats</p></TooltipContent>
                         </Tooltip>
@@ -343,5 +343,3 @@ export function ChatSidebar({ onToggleCollapse, isCollapsed }: { onToggleCollaps
       </div>
     )
 }
-
-    

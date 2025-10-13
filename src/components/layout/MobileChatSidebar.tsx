@@ -97,7 +97,7 @@ export default function MobileChatSidebar() {
                         />
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
-                        <PanelRightClose className="h-5 w-5 text-muted-foreground" />
+                        <PanelRightClose className="h-6 w-6 text-black dark:text-white" />
                     </Button>
                 </div>
             </div>
