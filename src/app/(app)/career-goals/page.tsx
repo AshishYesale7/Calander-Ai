@@ -72,13 +72,13 @@ export default function CareerGoalsPage() {
           setGoals(firestoreGoals);
           syncToLocalStorage(firestoreGoals);
         } catch (error: any) {
-          if (error.message.includes('Failed to fetch')) {
+           if (error.message.includes('Failed to fetch')) {
              console.warn("Could not sync goals, likely offline.");
              toast({ title: "Offline Mode" });
-          } else {
+           } else {
             console.error("Failed to fetch from Firestore, using local data.", error);
             toast({ title: "Sync Error", description: "Could not sync goals.", variant: "destructive"});
-          }
+           }
         }
       }
     };
