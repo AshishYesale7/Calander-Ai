@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { PublicUserProfile, CallData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, PhoneOff } from 'lucide-react';
@@ -13,11 +13,21 @@ interface AudioCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 }
 
-export default function AudioCallView({ call, otherUser, onEndCall }: AudioCallViewProps) {
+export default function AudioCallView({ call, otherUser, onEndCall, localStream, remoteStream }: AudioCallViewProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (remoteStream && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,8 +43,12 @@ export default function AudioCallView({ call, otherUser, onEndCall }: AudioCallV
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
-    // In a real implementation, you would also mute the local audio track here.
+    if (localStream) {
+        localStream.getAudioTracks().forEach(track => {
+            track.enabled = !track.enabled;
+            setIsMuted(!track.enabled);
+        });
+    }
   };
 
   return (
@@ -65,6 +79,8 @@ export default function AudioCallView({ call, otherUser, onEndCall }: AudioCallV
           <PhoneOff className="h-6 w-6" />
         </Button>
       </div>
+       {/* Audio element to play the remote stream */}
+      <audio ref={remoteAudioRef} autoPlay playsInline />
     </motion.div>
   );
 }

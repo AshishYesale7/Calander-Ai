@@ -33,10 +33,10 @@ import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { CallData } from '@/types';
-import { createCall, updateCallStatus } from '@/services/callService';
+import type { CallData, CallType } from '@/types';
+import { createCall, updateCallStatus, saveOffer, saveAnswer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
 import OutgoingCallNotification from '@/components/chat/OutgoingCallNotification';
 import VideoCallView from '@/components/chat/VideoCallView';
@@ -51,8 +51,34 @@ import AudioCallView from '@/components/chat/AudioCallView';
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
 
+// Client-side listener functions
+const listenForReceiverCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
+    return onSnapshot(candidatesCollection, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                callback(new RTCIceCandidate(change.doc.data()));
+            }
+        });
+    });
+};
+
+const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(db, 'calls', callId, 'callerCandidates');
+    return onSnapshot(candidatesCollection, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                callback(new RTCIceCandidate(change.doc.data()));
+            }
+        });
+    });
+};
+
 const useCallNotifications = () => {
     const { user } = useAuth();
+    const { toast } = useToast();
     const { 
         outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall,
         outgoingAudioCall, setOutgoingAudioCall, ongoingAudioCall, setOngoingAudioCall
@@ -60,27 +86,28 @@ const useCallNotifications = () => {
 
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
     const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
-
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
+    
+    // WebRTC State
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+    const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+    const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
+
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
     const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
     const [pipSizeMode, setPipSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
 
-    const [activeCallId, setActiveCallId] = useState<string | null>(null);
-
-    useEffect(() => {
-        const sizes = {
-            small: { width: 240, height: 180 },
-            medium: { width: 320, height: 240 },
-            large: { width: 400, height: 300 },
-        };
-        if (isPipMode) {
-            setPipSize(sizes[pipSizeMode]);
-        }
-    }, [pipSizeMode, isPipMode]);
-
+    const [activeCallId, setActiveCallId] = useState<string | null>(() => {
+      if (typeof window !== 'undefined') {
+        return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
+      }
+      return null;
+    });
+    
     const setAndStoreActiveCallId = (callId: string | null) => {
         setActiveCallId(callId);
         if (typeof window !== 'undefined') {
@@ -92,138 +119,185 @@ const useCallNotifications = () => {
             }
         }
     };
+
+    const cleanupWebRTC = useCallback(() => {
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            setLocalStream(null);
+        }
+        if (remoteStream) {
+            remoteStream.getTracks().forEach(track => track.stop());
+            setRemoteStream(null);
+        }
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+    }, [localStream, remoteStream]);
     
     const endCall = useCallback((callIdToEnd?: string) => {
         const id = callIdToEnd || activeCallId;
         if (id) {
             updateCallStatus(id, 'ended');
-            setOngoingCall(null);
-            setOutgoingCall(null);
-            setOngoingAudioCall(null);
-            setOutgoingAudioCall(null);
-            setAndStoreActiveCallId(null);
-            setOtherUserInCall(null);
         }
-    }, [activeCallId, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
+        setOngoingCall(null);
+        setOutgoingCall(null);
+        setOngoingAudioCall(null);
+        setOutgoingAudioCall(null);
+        setAndStoreActiveCallId(null);
+        setOtherUserInCall(null);
+        cleanupWebRTC();
+    }, [activeCallId, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall, cleanupWebRTC]);
 
-    // This new effect handles cleanup when the user refreshes or closes the tab.
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (activeCallId) {
                 endCall(activeCallId);
             }
         };
-
         window.addEventListener('beforeunload', handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [activeCallId, endCall]);
 
+    // This effect initializes the WebRTC connection for an ongoing call
     useEffect(() => {
-        if (!user) return;
-        const callToWatch = outgoingCall || outgoingAudioCall;
-        if (!callToWatch) return;
+        if (!user || !db || (!ongoingCall && !ongoingAudioCall)) {
+            return;
+        }
         
-        const callTimeout = setTimeout(() => {
-            const isStillRinging = (outgoingCall && !ongoingCall) || (outgoingAudioCall && !ongoingAudioCall);
-            if (isStillRinging) {
-                const callIdToCancel = [user.uid, callToWatch.uid].sort().join('_');
-                endCall(callIdToCancel);
-            }
-        }, 20000);
+        let unsubCall: Unsubscribe | undefined;
+        let unsubCandidates: Unsubscribe | undefined;
+        
+        const call = ongoingCall || ongoingAudioCall;
+        if (!call) return;
 
-        return () => clearTimeout(callTimeout);
-    }, [outgoingCall, outgoingAudioCall, ongoingCall, ongoingAudioCall, user, endCall]);
-    
-    useEffect(() => {
-        if (!activeCallId || !db || !user) return;
+        const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        peerConnectionRef.current = pc;
 
-        const callDocRef = doc(db, 'calls', activeCallId);
-        const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-            if (docSnap.exists()) {
-                const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
-                
-                if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
-                    const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
-                    const userDoc = await getDoc(doc(db, 'users', otherUserId));
-                    if (userDoc.exists()) {
-                        setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
-                    }
-                    
-                    if (callData.callType === 'video') {
-                        setOutgoingCall(null);
-                        setOngoingCall(callData);
-                        setIncomingCall(null);
-                    } else {
-                        setOutgoingAudioCall(null);
-                        setOngoingAudioCall(callData);
-                        setIncomingAudioCall(null);
-                    }
-                } else if (callData.status === 'declined' || callData.status === 'ended') {
-                    setOngoingCall(null);
-                    setOutgoingCall(null);
-                    setIncomingCall(null);
-                    setOngoingAudioCall(null);
-                    setOutgoingAudioCall(null);
-                    setIncomingAudioCall(null);
-                    setOtherUserInCall(null);
-                    setAndStoreActiveCallId(null);
+        const isCaller = call.callerId === user.uid;
+
+        const setupStreams = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: call.callType === 'video',
+                audio: true
+            });
+            setLocalStream(stream);
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            const newRemoteStream = new MediaStream();
+            setRemoteStream(newRemoteStream);
+            pc.ontrack = (event) => {
+                event.streams[0].getTracks().forEach(track => newRemoteStream.addTrack(track));
+            };
+        };
+
+        const setupSignaling = () => {
+            pc.onicecandidate = event => {
+              if (event.candidate) {
+                  if (isCaller) addCallerCandidate(call.id, event.candidate.toJSON());
+                  else addReceiverCandidate(call.id, event.candidate.toJSON());
+              }
+            };
+            
+            const candidatesCollection = isCaller ? 'receiverCandidates' : 'callerCandidates';
+            const candidatesListener = isCaller ? listenForReceiverCandidates : listenForCallerCandidates;
+            unsubCandidates = candidatesListener(call.id, candidate => {
+                if (pc.currentRemoteDescription) pc.addIceCandidate(candidate);
+                else {
+                    if (isCaller) receiverCandidatesQueue.current.push(candidate);
+                    else callerCandidatesQueue.current.push(candidate);
                 }
-            } else {
-                setOngoingCall(null);
-                setOutgoingCall(null);
-                setIncomingCall(null);
-                setOngoingAudioCall(null);
-                setOutgoingAudioCall(null);
-                setIncomingAudioCall(null);
-                setOtherUserInCall(null);
-                setAndStoreActiveCallId(null);
+            });
+
+            unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
+                const data = snapshot.data();
+                if (!data) return;
+
+                if (isCaller && !pc.currentRemoteDescription && data.answer) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
+                    receiverCandidatesQueue.current = [];
+                } else if (!isCaller && !pc.currentRemoteDescription && data.offer) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    await saveAnswer(call.id, answer);
+                    callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
+                    callerCandidatesQueue.current = [];
+                }
+            });
+        };
+
+        setupStreams().then(() => {
+            if (isCaller) {
+                pc.createOffer().then(offer => {
+                    pc.setLocalDescription(offer);
+                    saveOffer(call.id, offer);
+                });
             }
+            setupSignaling();
         });
 
-        return () => unsubscribe();
-    }, [activeCallId, user, ongoingCall, ongoingAudioCall, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
+        return () => {
+            if (unsubCall) unsubCall();
+            if (unsubCandidates) unsubCandidates();
+        };
+
+    }, [ongoingCall, ongoingAudioCall, user, toast]);
+
 
     useEffect(() => {
         if (!user || !db) return;
-        
-        const callsCollectionRef = collection(db, 'calls');
-        const q = query(
-            callsCollectionRef,
-            where("receiverId", "==", user.uid),
-            where("status", "==", "ringing")
-        );
-
+        const q = query(collection(db, 'calls'), where("receiverId", "==", user.uid), where("status", "==", "ringing"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
                 if (!activeCallId) { 
-                    if (callData.callType === 'video') {
-                        setIncomingCall(callData);
-                    } else {
-                        setIncomingAudioCall(callData);
-                    }
+                    if (callData.callType === 'video') setIncomingCall(callData);
+                    else setIncomingAudioCall(callData);
                 }
             } else {
                 setIncomingCall(null);
                 setIncomingAudioCall(null);
             }
         });
-
         return () => unsubscribe();
     }, [user, activeCallId]);
+    
+     useEffect(() => {
+        if (!activeCallId || !db) return;
+        const callDocRef = doc(db, 'calls', activeCallId);
+        const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
+            if (docSnap.exists()) {
+                const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
+                if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
+                    const otherUserId = callData.callerId === user?.uid ? callData.receiverId : callData.callerId;
+                    const userDoc = await getDoc(doc(db, 'users', otherUserId));
+                    if (userDoc.exists()) setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
+                    
+                    if (callData.callType === 'video') {
+                        setOutgoingCall(null); setOngoingCall(callData); setIncomingCall(null);
+                    } else {
+                        setOutgoingAudioCall(null); setOngoingAudioCall(callData); setIncomingAudioCall(null);
+                    }
+                } else if (callData.status === 'declined' || callData.status === 'ended') {
+                    endCall();
+                }
+            } else {
+                endCall();
+            }
+        });
+        return () => unsubscribe();
+    }, [activeCallId, user, ongoingCall, ongoingAudioCall, endCall, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
+
 
     const acceptCall = useCallback(async () => {
-        if (incomingCall) {
-            setAndStoreActiveCallId(incomingCall.id); 
-            await updateCallStatus(incomingCall.id, 'answered');
+        const callToAccept = incomingCall || incomingAudioCall;
+        if (callToAccept) {
+            setAndStoreActiveCallId(callToAccept.id); 
+            await updateCallStatus(callToAccept.id, 'answered');
             setIncomingCall(null);
-        } else if (incomingAudioCall) {
-            setAndStoreActiveCallId(incomingAudioCall.id);
-            await updateCallStatus(incomingAudioCall.id, 'answered');
             setIncomingAudioCall(null);
         }
     }, [incomingCall, incomingAudioCall]);
@@ -242,11 +316,7 @@ const useCallNotifications = () => {
     const onTogglePipMode = useCallback(() => {
         if (isPipMode) {
             setIsResetting(true);
-            pipControls.start({
-                x: 0,
-                y: 0,
-                transition: { duration: 0.3, ease: 'easeOut' }
-            }).then(() => {
+            pipControls.start({ x: 0, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }).then(() => {
                 setIsPipMode(false);
                 setIsResetting(false);
             });
@@ -255,13 +325,26 @@ const useCallNotifications = () => {
         }
     }, [isPipMode, pipControls]);
 
-    const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: 'video' | 'audio') => {
+    return {
+      incomingCall, incomingAudioCall,
+      acceptCall, declineCall,
+      otherUserInCall, endCall, 
+      localStream, remoteStream,
+      isPipMode, onTogglePipMode, pipControls, isResetting,
+      pipSize, setPipSize, pipSizeMode, 
+      setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
+    };
+};
+
+function AppContentWrapper({ children }: { children: ReactNode }) {
+    const { user, loading: authLoading, setOnboardingCompleted } = useAuth();
+
+    const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
         if (!user) return;
-        if (callType === 'video') {
-            setOutgoingCall(receiver);
-        } else {
-            setOutgoingAudioCall(receiver);
-        }
+        
+        const callSetter = callType === 'video' ? setOutgoingCall : setOutgoingAudioCall;
+        callSetter(receiver);
+
         const callId = await createCall({
             callerId: user.uid,
             callerName: user.displayName || 'Anonymous',
@@ -270,23 +353,42 @@ const useCallNotifications = () => {
             status: 'ringing',
             callType,
         });
+        
         setAndStoreActiveCallId(callId);
-    }, [user, setOutgoingCall, setOutgoingAudioCall]);
-    
-    return {
-      incomingCall, incomingAudioCall,
-      acceptCall, declineCall, onInitiateCall,
-      otherUserInCall, endCall, 
-      setActiveCallId: setAndStoreActiveCallId, 
-      isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, 
-      setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
+        
+    }, [user]);
+
+    const { 
+        chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, 
+        isChatInputFocused, setIsChatInputFocused,
+        outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall,
+        outgoingAudioCall, setOutgoingAudioCall, ongoingAudioCall, setOngoingAudioCall
+    } = useChat();
+
+    const setAndStoreActiveCallId = (callId: string | null) => {
+        // This function would be defined in a higher-level state management,
+        // for now, we'll just log it. In a real app, it would set state.
+        console.log("Setting active call ID:", callId);
+        if (typeof window !== 'undefined') {
+          if (callId) {
+            sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
+          } else {
+            sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
+          }
+        }
     };
-};
 
+    return (
+        <ChatProvider>
+            <AppContent onFinishOnboarding={() => { if (setOnboardingCompleted) setOnboardingCompleted(true); }}>
+                {children}
+            </AppContent>
+        </ChatProvider>
+    )
+}
 
-function AppContent({ children }: { children: ReactNode }) {
-  const { user, loading, isSubscribed, onboardingCompleted, setOnboardingCompleted } = useAuth();
+function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+  const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   useStreakTracker();
   const router = useRouter();
   const pathname = usePathname();
@@ -294,13 +396,20 @@ function AppContent({ children }: { children: ReactNode }) {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
-  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused, ongoingCall, outgoingCall, ongoingAudioCall, outgoingAudioCall } = useChat();
   const { 
-      incomingCall, incomingAudioCall, acceptCall, declineCall, onInitiateCall,
-      otherUserInCall, endCall, 
+      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
+      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall
+  } = useChat();
+
+  const { 
+      incomingCall, incomingAudioCall, acceptCall, declineCall,
+      otherUserInCall, endCall, localStream, remoteStream,
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, setPipSize, pipSizeMode, setPipSizeMode
   } = useCallNotifications();
+
+  const { onInitiateCall } = useChat();
+
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -468,7 +577,7 @@ function AppContent({ children }: { children: ReactNode }) {
     return (
       <div className="h-screen w-full flex-col">
         <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={() => { if(setOnboardingCompleted) setOnboardingCompleted(true) }} />
+        <OnboardingModal onFinish={onFinishOnboarding} />
         <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
       </div>
     );
@@ -630,6 +739,8 @@ function AppContent({ children }: { children: ReactNode }) {
               call={ongoingAudioCall!}
               otherUser={otherUserInCall!}
               onEndCall={endCall}
+              localStream={localStream}
+              remoteStream={remoteStream}
           />
       )}
 
@@ -648,7 +759,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <PluginProvider>
         <StreakProvider>
           <ChatProvider>
-            <AppContent>{children}</AppContent>
+            <AppContentWrapper>{children}</AppContentWrapper>
           </ChatProvider>
         </StreakProvider>
       </PluginProvider>
