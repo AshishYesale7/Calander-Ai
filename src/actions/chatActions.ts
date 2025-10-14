@@ -127,9 +127,9 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
     const messagesSnapshot = await getDocs(messagesCollectionRef);
     messagesSnapshot.forEach(doc => batch.delete(doc.ref));
 
-    // 2. Query and delete all associated call logs
+    // 2. Query and delete all associated call logs from the user's call history
     const callsCollectionRef = collection(db, 'users', currentUserId, 'calls');
-    const callQuery = query(callsCollectionRef, where('callerId', '==', otherUserId), where('receiverId', '==', otherUserId));
+    const callQuery = query(callsCollectionRef, where('otherUser.uid', '==', otherUserId));
     const callSnapshot = await getDocs(callQuery);
     callSnapshot.forEach(doc => batch.delete(doc.ref));
 

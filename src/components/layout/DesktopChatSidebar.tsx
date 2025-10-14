@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -83,52 +82,75 @@ const ChatListView = () => {
         setIsLoading(true);
         const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
-        
+
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const changes = snapshot.docChanges();
-            
-            // Process changes efficiently
-            for (const change of changes) {
-                const otherUserId = change.doc.id;
-                const recentChatData = change.doc.data();
 
-                if (change.type === 'removed') {
-                    setRecentChats(prev => prev.filter(chat => chat.id !== otherUserId));
-                    continue;
-                }
-                
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    const chatPartner = {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
+            if (isLoading && changes.length > 0) {
+              // Initial load or first batch of changes, process them all
+              const initialChats: RecentChatUser[] = [];
+              for (const change of changes) {
+                  const otherUserId = change.doc.id;
+                  const recentChatData = change.doc.data();
+                  const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                  if (userDocSnap.exists()) {
+                      const userData = userDocSnap.data();
+                      initialChats.push({
+                          id: userDocSnap.id,
+                          uid: userDocSnap.id,
+                          displayName: userData.displayName || 'Anonymous User',
+                          photoURL: userData.photoURL || null,
+                          username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                          lastMessage: recentChatData.lastMessage,
+                          timestamp: recentChatData.timestamp?.toDate(),
+                      } as RecentChatUser);
+                  }
+              }
+              setRecentChats(current => [...initialChats, ...current.filter(c => !initialChats.some(ic => ic.id === c.id))].sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0)));
+            } else {
+              // Subsequent updates
+              for (const change of changes) {
+                  const otherUserId = change.doc.id;
+                  
+                  if (change.type === 'removed') {
+                      setRecentChats(prev => prev.filter(chat => chat.id !== otherUserId));
+                      continue;
+                  }
+                  
+                  const recentChatData = change.doc.data();
+                  const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
 
-                    setRecentChats(prev => {
-                        const existingIndex = prev.findIndex(c => c.id === chatPartner.id);
-                        if (existingIndex > -1) {
-                            const newChats = [...prev];
-                            newChats[existingIndex] = chatPartner;
-                            return newChats;
-                        } else {
-                            return [chatPartner, ...prev];
-                        }
-                    });
-                }
+                  if (userDocSnap.exists()) {
+                      const userData = userDocSnap.data();
+                      const chatPartner = {
+                          id: userDocSnap.id,
+                          uid: userDocSnap.id,
+                          displayName: userData.displayName || 'Anonymous User',
+                          photoURL: userData.photoURL || null,
+                          username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                          lastMessage: recentChatData.lastMessage,
+                          timestamp: recentChatData.timestamp?.toDate(),
+                      } as RecentChatUser;
+
+                      setRecentChats(prev => {
+                          const existingIndex = prev.findIndex(c => c.id === chatPartner.id);
+                          let newChats;
+                          if (existingIndex > -1) {
+                              newChats = [...prev];
+                              newChats[existingIndex] = chatPartner;
+                          } else {
+                              newChats = [chatPartner, ...prev];
+                          }
+                          return newChats.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+                      });
+                  }
+              }
             }
-             // Sort after processing all changes
-            setRecentChats(prev => prev.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0)));
             setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, isLoading]);
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>
@@ -143,28 +165,31 @@ const ChatListView = () => {
     const handleDeleteChat = async () => {
         if (!chatToDelete || !user) return;
 
-        const chatPartner = chatToDelete;
-        setChatToDelete(null);
+        const chatPartnerId = chatToDelete.uid;
+        setChatToDelete(null); // Close dialog
 
         try {
-            await deleteConversationForCurrentUser(user.uid, chatPartner.uid);
+            await deleteConversationForCurrentUser(user.uid, chatPartnerId);
             
-            const messageCacheKey = `chatMessages_${user.uid}_${chatPartner.uid}`;
+            // The onSnapshot listener will automatically remove the chat from the UI state.
+            
+            const messageCacheKey = `chatMessages_${user.uid}_${chatPartnerId}`;
             localStorage.removeItem(messageCacheKey);
             
-            if (chattingWith?.uid === chatPartner.uid) {
+            if (chattingWith?.uid === chatPartnerId) {
                 setChattingWith(null);
             }
             
             toast({
                 title: "Chat Deleted",
-                description: `Your chat history with ${chatPartner.displayName} has been cleared.`
+                description: `Your chat history has been cleared.`
             });
 
         } catch (err) {
             toast({ title: "Error", description: "Failed to delete chat history from the cloud.", variant: "destructive"});
         }
     };
+
 
     const fabMenuVariants = {
         open: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24, staggerChildren: 0.05 } },
