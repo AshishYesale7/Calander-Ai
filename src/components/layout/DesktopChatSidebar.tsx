@@ -98,31 +98,47 @@ const ChatListView = () => {
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id, uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
+            const updatedChats: RecentChatUser[] = [...recentChats];
+            
+            for (const change of snapshot.docChanges()) {
+                const docId = change.doc.id;
+                const docData = change.doc.data();
+                const existingIndex = updatedChats.findIndex(c => c.id === docId);
+
+                if (change.type === 'removed') {
+                    if (existingIndex > -1) {
+                        updatedChats.splice(existingIndex, 1);
+                    }
+                } else { // 'added' or 'modified'
+                    const userDocSnap = await getDoc(doc(db, 'users', docId));
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        const newOrUpdatedChat: RecentChatUser = {
+                            id: userDocSnap.id, uid: userDocSnap.id,
+                            displayName: userData.displayName || 'Anonymous User',
+                            photoURL: userData.photoURL || null,
+                            username: userData.username || `user_${docId.substring(0,5)}`,
+                            lastMessage: docData.lastMessage,
+                            timestamp: docData.timestamp?.toDate(),
+                        };
+                        if (existingIndex > -1) {
+                            updatedChats[existingIndex] = newOrUpdatedChat;
+                        } else {
+                            updatedChats.push(newOrUpdatedChat);
+                        }
+                    }
                 }
-                return null;
-            });
-            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
-            setRecentChats(fetchedChats);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(fetchedChats));
+            }
+            
+            // Sort after processing all changes
+            updatedChats.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+
+            setRecentChats(updatedChats);
+            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedChats));
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, recentChats]); // Depend on recentChats to allow updating the list
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>

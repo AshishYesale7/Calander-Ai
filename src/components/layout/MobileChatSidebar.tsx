@@ -98,31 +98,46 @@ const ChatListView = () => {
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id, uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
+            const updatedChats: RecentChatUser[] = [...recentChats];
+            
+            for (const change of snapshot.docChanges()) {
+                const docId = change.doc.id;
+                const docData = change.doc.data();
+                const existingIndex = updatedChats.findIndex(c => c.id === docId);
+
+                if (change.type === 'removed') {
+                    if (existingIndex > -1) {
+                        updatedChats.splice(existingIndex, 1);
+                    }
+                } else { // 'added' or 'modified'
+                    const userDocSnap = await getDoc(doc(db, 'users', docId));
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        const newOrUpdatedChat: RecentChatUser = {
+                            id: userDocSnap.id, uid: userDocSnap.id,
+                            displayName: userData.displayName || 'Anonymous User',
+                            photoURL: userData.photoURL || null,
+                            username: userData.username || `user_${docId.substring(0,5)}`,
+                            lastMessage: docData.lastMessage,
+                            timestamp: docData.timestamp?.toDate(),
+                        };
+                        if (existingIndex > -1) {
+                            updatedChats[existingIndex] = newOrUpdatedChat;
+                        } else {
+                            updatedChats.push(newOrUpdatedChat);
+                        }
+                    }
                 }
-                return null;
-            });
-            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
-            setRecentChats(fetchedChats);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(fetchedChats));
+            }
+            
+            updatedChats.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+
+            setRecentChats(updatedChats);
+            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedChats));
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, recentChats]);
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>
@@ -138,32 +153,19 @@ const ChatListView = () => {
         if (!chatToDelete || !user) return;
         
         const chatPartner = chatToDelete;
-        setChatToDelete(null); // Close the dialog
+        setChatToDelete(null);
         
-        toast({
-            title: "Deleting Chat...",
-            description: `Removing your conversation with ${chatPartner.displayName}.`
-        });
-
         try {
             await deleteConversationForCurrentUser(user.uid, chatPartner.uid);
-            
-            // The onSnapshot listener will automatically update the UI.
-            // We just need to ensure the local cache is also cleared.
-            const updatedLocalChats = recentChats.filter(c => c.uid !== chatPartner.uid);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedLocalChats));
-            
             if (chattingWith?.uid === chatPartner.uid) {
                 setChattingWith(null);
             }
-            
             toast({
                 title: "Chat Deleted",
                 description: `Your chat history with ${chatPartner.displayName} has been cleared.`
             });
-
         } catch (err) {
-            toast({ title: "Error", description: "Failed to delete chat history from the cloud.", variant: "destructive"});
+            toast({ title: "Error", description: "Failed to delete chat history.", variant: "destructive"});
         }
     };
 
@@ -271,7 +273,7 @@ const ChatListView = () => {
                           animate={{ rotate: isFabMenuOpen ? 45 : 0 }}
                           transition={{ duration: 0.2 }}
                       >
-                          <X className="h-7 w-7" />
+                          <Plus className="h-7 w-7" />
                       </motion.div>
                   </Button>
               </div>

@@ -75,10 +75,6 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 
 /**
  * Deletes a message for the current user or for everyone.
- * @param currentUserId The ID of the user requesting the deletion.
- * @param otherUserId The ID of the other user in the chat.
- * @param messageId The ID of the message to delete.
- * @param mode Determines if the deletion is for 'me' or 'everyone'.
  */
 export const deleteMessage = async (
     currentUserId: string,
@@ -106,7 +102,6 @@ export const deleteMessage = async (
 
     } else { // mode === 'me'
         // For "me", we just perform a hard delete on the user's copy of the message.
-        // This is simpler and safer now with the duplicated data model.
         const currentUserMsgRef = doc(db, 'users', currentUserId, 'chats', otherUserId, 'messages', messageId);
         await deleteDoc(currentUserMsgRef);
     }
@@ -124,21 +119,27 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
 
     const batch = writeBatch(db);
 
-    // Deletes the top-level chat document, which contains metadata like lastMessage.
+    // 1. Delete the top-level chat document, which contains metadata like lastMessage.
     const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
     batch.delete(recentChatRef);
     
-    // It's also safe to delete the corresponding call history directly
+    // 2. Delete the corresponding call history for that user.
     const callsCollectionRef = collection(db, 'users', currentUserId, 'calls');
-    const callDocsToDelete = await getDocs(query(callsCollectionRef, where('otherUser.uid', '==', otherUserId)));
-    callDocsToDelete.forEach(doc => batch.delete(doc.ref));
-
+    const callQuery = query(callsCollectionRef, where('callerId', '==', otherUserId), where('receiverId', '==', currentUserId));
+    const callQuery2 = query(callsCollectionRef, where('callerId', '==', currentUserId), where('receiverId', '==', otherUserId));
+    
     try {
+        const [callDocs1, callDocs2] = await Promise.all([getDocs(callQuery), getDocs(callQuery2)]);
+        callDocs1.forEach(doc => batch.delete(doc.ref));
+        callDocs2.forEach(doc => batch.delete(doc.ref));
+
         await batch.commit();
-        // The cleanup of the `messages` subcollection will be handled by a scheduled Cloud Function
-        // to avoid high read/write costs on the client for large conversations.
+
+        // NOTE: The deletion of the `messages` subcollection should be handled by a scheduled Cloud Function
+        // to avoid high read/write costs on the client for large conversations. This server action
+        // only deletes the entry points to the conversation from the user's side.
     } catch (error) {
-        console.error("Error deleting conversation metadata:", error);
+        console.error("Error deleting conversation metadata and calls:", error);
         throw new Error("Failed to delete conversation from your view.");
     }
 };
