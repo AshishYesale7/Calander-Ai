@@ -28,6 +28,17 @@ import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { getUserProfile, reclaimUserAccount } from '@/services/userService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 
 
 const formSchema = z.object({
@@ -53,6 +64,7 @@ export default function SignInForm() {
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
+  const [pendingReclamationUser, setPendingReclamationUser] = useState<{ uid: string; email: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -91,7 +103,7 @@ export default function SignInForm() {
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
       if (event.data === 'auth-success-google' || event.data === 'auth-success-notion') {
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 2000);
       }
     };
     window.addEventListener('message', handleAuthSuccess);
@@ -109,32 +121,53 @@ export default function SignInForm() {
 
     try {
         if (!auth) throw new Error("Firebase Auth is not initialized.");
-        await signInWithPopup(auth, provider);
-        toast({ title: 'Success!', description: 'Signed in with Google successfully.' });
+        const result = await signInWithPopup(auth, provider);
+        
+        // After successful sign-in, check if this account is pending deletion
+        const profile = await getUserProfile(result.user.uid);
+        if (profile?.deletionStatus === 'PENDING_DELETION') {
+            setPendingReclamationUser({ uid: result.user.uid, email: result.user.email || ''});
+            // The AlertDialog will open via the state change
+        } else {
+            toast({ title: 'Success!', description: 'Signed in with Google successfully.' });
+            router.push('/dashboard');
+        }
+
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
-            console.log("Sign-in popup closed by user.");
             toast({ title: 'Sign-in cancelled', description: 'You closed the Google Sign-In window.', variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData.email;
              const methods = await fetchSignInMethodsForEmail(auth, email);
              toast({
                 title: 'Account Exists',
-                description: `You've previously signed in with ${methods.join(', ')}. Please use that method to sign in first, then link your accounts from the settings page.`,
+                description: `You've previously signed in with ${methods.join(', ')}. Please use that method to sign in.`,
                 variant: 'destructive',
                 duration: 9000,
             });
         } else {
-            toast({
-                title: 'Error',
-                description: error.message || 'Failed to sign in with Google.',
-                variant: 'destructive',
-            });
+            toast({ title: 'Error', description: error.message || 'Failed to sign in with Google.', variant: 'destructive' });
         }
     } finally {
       setLoading(false); 
     }
   };
+  
+  const handleReclaimAccount = async () => {
+    if (!pendingReclamationUser) return;
+    setLoading(true);
+    try {
+      await reclaimUserAccount(pendingReclamationUser.uid);
+      toast({ title: 'Account Reclaimed!', description: 'Welcome back! Your account has been restored.' });
+      window.location.reload();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to reclaim account. Please contact support.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      setPendingReclamationUser(null);
+    }
+  };
+
 
   const handleSendOtp = async () => {
     if (!auth) {
@@ -148,8 +181,6 @@ export default function SignInForm() {
     }
     setLoading(true);
     try {
-      // Create a new RecaptchaVerifier instance on demand.
-      // The container 'recaptcha-container' must be visible in the DOM.
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': () => { console.log("reCAPTCHA callback") },
@@ -243,6 +274,7 @@ export default function SignInForm() {
   }
 
   return (
+    <>
     <Card className="frosted-glass p-6 md:p-8 w-full max-w-sm ml-0 md:ml-12 lg:ml-24">
       <div className="flex justify-center mb-6">
         <Image
@@ -384,5 +416,22 @@ export default function SignInForm() {
         </p>
       </CardContent>
     </Card>
+      <AlertDialog open={!!pendingReclamationUser} onOpenChange={(open) => !open && setPendingReclamationUser(null)}>
+        <AlertDialogContent className="frosted-glass">
+            <AlertDialogHeader>
+                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    An account with {pendingReclamationUser?.email} was recently deleted. You have 30 days to reclaim it before the data is permanently erased.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPendingReclamationUser(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReclaimAccount} disabled={loading}>
+                    {loading ? <LoadingSpinner size="sm" /> : 'Yes, Reclaim My Account'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

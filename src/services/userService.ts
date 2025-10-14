@@ -1,8 +1,8 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy, writeBatch, Timestamp } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
@@ -258,6 +258,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 followersCount: data.followersCount || 0,
                 followingCount: data.followingCount || 0,
                 onboardingCompleted: data.onboardingCompleted ?? false,
+                deletionStatus: data.deletionStatus, // Include deletion status
             } as UserProfile;
         }
         return null;
@@ -279,6 +280,7 @@ export type PublicUserProfile = {
     countryCode: string | null;
     followersCount: number;
     followingCount: number;
+    deletionStatus?: 'PENDING_DELETION' | 'DELETED'; // Add deletion status
 }
 
 export const getUserByUsername = async (username: string): Promise<PublicUserProfile | null> => {
@@ -435,13 +437,22 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
     }
 };
 
-/**
- * Performs a "soft delete" by anonymizing user data, disabling their auth account,
- * and marking the document for future cleanup via a scheduled function.
- */
 export async function anonymizeUserAccount(userId: string): Promise<void> {
     const userDocRef = doc(adminDb, 'users', userId);
+    const privateDataRef = doc(collection(userDocRef, '_private'), 'profile');
     const deletionDate = addDays(new Date(), 30);
+
+    const docSnap = await getDoc(userDocRef);
+    if (!docSnap.exists()) {
+        throw new Error("User profile not found to anonymize.");
+    }
+    const currentData = docSnap.data();
+
+    // Store original info for potential recovery
+    await setDoc(privateDataRef, {
+        originalDisplayName: currentData.displayName,
+        originalUsername: currentData.username,
+    });
 
     const anonymizedData = {
         displayName: 'Deleted User',
@@ -466,21 +477,43 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
         console.error(`Failed to disable auth user ${userId}:`, error);
     }
 }
+
+export async function reclaimUserAccount(userId: string): Promise<void> {
+    if (!adminDb) throw new Error("Admin Firestore not initialized.");
+    const userDocRef = doc(adminDb, 'users', userId);
+    const privateDataRef = doc(collection(userDocRef, '_private'), 'profile');
+
+    const privateDocSnap = await getDoc(privateDataRef);
+    if (!privateDocSnap.exists()) {
+        throw new Error("Cannot reclaim account: Private recovery data not found.");
+    }
+    const originalData = privateDocSnap.data();
+
+    await updateDoc(userDocRef, {
+        displayName: originalData.originalDisplayName,
+        username: originalData.originalUsername,
+        deletionStatus: deleteField(),
+        deletionScheduledAt: deleteField(),
+    });
+
+    try {
+        const { getAuth } = await import('firebase-admin/auth');
+        await getAuth().updateUser(userId, { disabled: false });
+    } catch (error) {
+        console.error(`Failed to re-enable auth user ${userId}:`, error);
+        throw new Error("Failed to re-enable account.");
+    }
+}
     
-/**
- * Permanently deletes all data associated with a user, leaving only their UID and email.
- * This function should be called by a scheduled backend job.
- */
 export async function permanentlyDeleteUserData(userId: string): Promise<void> {
     if (!adminDb) throw new Error("Admin Firestore not initialized.");
 
     const batch = adminDb.batch();
 
-    // List all user-specific sub-collections to be purged.
     const collectionsToClear = [
         'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
         'fcmTokens', 'notifications', 'resources', 'skills', 
-        'timelineEvents', 'trackedKeywords', 'followers', 'following'
+        'timelineEvents', 'trackedKeywords', 'followers', 'following', '_private'
     ];
 
     for (const collectionName of collectionsToClear) {
@@ -489,11 +522,9 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
 
-    // Delete the separate streak document.
     const streakDocRef = doc(adminDb, 'streaks', userId);
     batch.delete(streakDocRef);
 
-    // Finally, update the main user document to its minimal, permanently deleted state.
     const userDocRef = doc(adminDb, 'users', userId);
     batch.update(userDocRef, {
         displayName: 'Deleted User',
@@ -512,13 +543,10 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         followersCount: 0,
         followingCount: 0,
         onboardingCompleted: deleteField(),
-        subscription: deleteField(), // Assuming subscription should also be cleared
+        subscription: deleteField(), 
         deletionStatus: 'DELETED',
         deletionScheduledAt: deleteField(),
     });
 
     await batch.commit();
-
-    // The user's auth account is already disabled from the initial step.
-    // A separate cleanup job could delete the auth account entirely if desired.
 }

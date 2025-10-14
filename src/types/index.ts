@@ -25,6 +25,7 @@ export interface UserProfile {
   followingCount: number;
   routine: RoutineItem[];
   onboardingCompleted: boolean; // New flag
+  deletionStatus?: 'PENDING_DELETION' | 'DELETED';
 }
 
 

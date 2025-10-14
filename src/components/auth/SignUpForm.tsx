@@ -28,7 +28,18 @@ import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { createUserProfile } from '@/services/userService';
+import { createUserProfile, getUserProfile, reclaimUserAccount } from '@/services/userService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -56,6 +67,7 @@ export default function SignUpForm() {
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const [pendingReclamationUser, setPendingReclamationUser] = useState<{ uid: string; email: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -95,8 +107,8 @@ export default function SignUpForm() {
 
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success') {
-        window.location.reload();
+      if (event.data === 'auth-success-google') {
+        setTimeout(() => window.location.reload(), 2000);
       }
     };
     window.addEventListener('message', handleAuthSuccess);
@@ -116,16 +128,20 @@ export default function SignUpForm() {
       if (!auth) throw new Error("Firebase Auth is not initialized.");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      await createUserProfile(user);
 
-      toast({ title: 'Account Created! Connecting Google...', description: 'Please authorize access in the popup window.' });
-      const state = Buffer.from(JSON.stringify({ userId: user.uid })).toString('base64');
-      const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
-      window.open(authUrl, '_blank', 'width=500,height=600');
+      // After successful sign-in, check if this account is pending deletion
+      const profile = await getUserProfile(user.uid);
+      
+      if (profile?.deletionStatus === 'PENDING_DELETION') {
+        setPendingReclamationUser({ uid: user.uid, email: user.email || ''});
+      } else {
+        await createUserProfile(user); // Creates profile if it doesn't exist
+        toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
+        router.push('/dashboard'); // Go to dashboard directly
+      }
 
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-          console.log("Sign-up popup closed by user.");
           toast({ title: 'Sign-up cancelled', description: 'You closed the Google Sign-Up window.', variant: 'default' });
       } else if (error.code === 'auth/account-exists-with-different-credential') {
         const email = error.customData.email;
@@ -145,6 +161,21 @@ export default function SignUpForm() {
       }
     } finally {
         setLoading(false);
+    }
+  };
+  
+  const handleReclaimAccount = async () => {
+    if (!pendingReclamationUser) return;
+    setLoading(true);
+    try {
+      await reclaimUserAccount(pendingReclamationUser.uid);
+      toast({ title: 'Account Reclaimed!', description: 'Welcome back! Your account has been restored.' });
+      window.location.reload();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to reclaim account. Please contact support.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      setPendingReclamationUser(null);
     }
   };
 
@@ -233,6 +264,7 @@ export default function SignUpForm() {
 
 
   return (
+    <>
     <Card className="frosted-glass p-6 md:p-8 w-full max-w-sm ml-0 md:ml-12 lg:ml-24">
       <div className="flex justify-center mb-6">
         <Image
@@ -397,5 +429,22 @@ export default function SignUpForm() {
         </p>
       </CardContent>
     </Card>
+      <AlertDialog open={!!pendingReclamationUser} onOpenChange={(open) => !open && setPendingReclamationUser(null)}>
+        <AlertDialogContent className="frosted-glass">
+            <AlertDialogHeader>
+                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    An account with {pendingReclamationUser?.email} was recently deleted. You have 30 days to reclaim it before the data is permanently erased.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPendingReclamationUser(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReclaimAccount} disabled={loading}>
+                    {loading ? <LoadingSpinner size="sm" /> : 'Yes, Reclaim My Account'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
