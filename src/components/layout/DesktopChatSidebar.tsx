@@ -16,10 +16,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ChatIcon } from '../logo/ChatIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { NewGroupIcon } from '../logo/NewGroupIcon';
-import { ChatIcon } from '../logo/ChatIcon';
 import { UpdatesIcon } from '../logo/UpdatesIcon';
 import { deleteCalls } from '@/services/callService';
 import { Checkbox } from '../ui/checkbox';
@@ -396,8 +396,8 @@ const CallLogView = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'audio')}><Phone className="h-5 w-5 text-accent"/></Button>
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'video')}><Video className="h-5 w-5 text-accent"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'audio')}><Phone className="h-5 w-5 text-accent hover:text-black"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'video')}><Video className="h-5 w-5 text-accent hover:text-black"/></Button>
                             </div>
                         </div>
                     ))}
