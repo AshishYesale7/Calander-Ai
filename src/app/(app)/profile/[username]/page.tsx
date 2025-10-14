@@ -494,12 +494,19 @@ export default function UserProfilePage() {
         return null;
     }
     
+    const profileForHeader = {
+      ...profile,
+      photoURL: isEditing ? editableState.photoURL : profile.photoURL,
+      coverPhotoURL: isEditing ? editableState.coverPhotoURL : profile.coverPhotoURL,
+      displayName: isEditing ? editableState.displayName : profile.displayName,
+    };
+    
     return (
        <>
         <div className="relative max-w-4xl mx-auto">
             <Card className="frosted-glass p-0">
                  <ProfileHeader 
-                    profile={{ ...profile, photoURL: isEditing ? editableState.photoURL : profile.photoURL, coverPhotoURL: isEditing ? editableState.coverPhotoURL : profile.coverPhotoURL }}
+                    profile={profileForHeader}
                     isEditing={isEditing}
                     onEditToggle={() => setIsEditing(true)}
                     onSave={handleSave}
