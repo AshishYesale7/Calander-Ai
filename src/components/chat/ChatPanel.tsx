@@ -31,7 +31,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
-  onInitiateCall: (receiver: PublicUserProfile) => void;
+  onInitiateCall: (receiver: PublicUserProfile, callType: 'video' | 'audio') => void;
 }
 
 type MergedChatItem = (ChatMessage | CallData);
@@ -42,21 +42,26 @@ const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }
 
     let icon = <PhoneOutgoing className="h-4 w-4" />;
     let text = 'Outgoing video call';
+    if (item.callType === 'audio') {
+        text = 'Outgoing audio call';
+    }
+
     if (isMissed) {
         icon = <PhoneMissed className="h-4 w-4" />;
-        text = "Missed video call";
+        text = item.callType === 'audio' ? 'Missed audio call' : 'Missed video call';
     } else if (!isOutgoing) {
         icon = <PhoneIncoming className="h-4 w-4" />;
-        text = "Incoming video call";
+        text = item.callType === 'audio' ? 'Incoming audio call' : 'Incoming video call';
     }
     
     if (item.status === 'ended' && typeof item.duration === 'number') {
         const mins = Math.floor(item.duration / 60);
         const secs = item.duration % 60;
+        const callTypeLabel = item.callType === 'audio' ? 'Audio call' : 'Video call';
         if (mins > 0) {
-            text = `Video call - ${mins}m ${secs}s`;
+            text = `${callTypeLabel} - ${mins}m ${secs}s`;
         } else {
-            text = `Video call - ${secs}s`;
+            text = `${callTypeLabel} - ${secs}s`;
         }
     }
 
@@ -77,7 +82,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { setChattingWith, outgoingCall, ongoingCall, setIsChatInputFocused, isChatInputFocused } = useChat();
+  const { setChattingWith, outgoingCall, ongoingCall, setIsChatInputFocused, isChatInputFocused, outgoingAudioCall, ongoingAudioCall } = useChat();
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -86,23 +91,24 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
-  const isCallingThisUser = outgoingCall?.uid === otherUser.uid;
-  const isCallActiveWithThisUser = ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid);
+  const isCallingThisUser = outgoingCall?.uid === otherUser.uid || outgoingAudioCall?.uid === otherUser.uid;
+  const isCallActiveWithThisUser = (ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid)) || 
+                                   (ongoingAudioCall && [ongoingAudioCall.callerId, ongoingAudioCall.receiverId].includes(otherUser.uid));
   
-  const isCallButtonDisabled = (!!outgoingCall) || (!!ongoingCall && !isCallActiveWithThisUser);
+  const isAnyCallActive = !!ongoingCall || !!ongoingAudioCall;
+  const isAnyCallOutgoing = !!outgoingCall || !!outgoingAudioCall;
+
+  const isCallButtonDisabled = isAnyCallOutgoing || (isAnyCallActive && !isCallActiveWithThisUser);
 
 
-  const handleInitiateCall = async () => {
+  const handleInitiateVideoCall = async () => {
     if (!currentUser || !otherUser) return;
-    onInitiateCall(otherUser);
+    onInitiateCall(otherUser, 'video');
   };
 
-  const handleVideoClick = () => {
-    if (isCallActiveWithThisUser) {
-        console.log("Call is active, should maximize");
-    } else {
-        handleInitiateCall();
-    }
+  const handleInitiateAudioCall = async () => {
+    if (!currentUser || !otherUser) return;
+    onInitiateCall(otherUser, 'audio');
   };
 
 
@@ -245,9 +251,11 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
           </div>
         </div>
         <div className="flex items-center gap-1 text-white">
-            <Button variant="ghost" size="icon" disabled><Phone className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" onClick={handleVideoClick} disabled={isCallButtonDisabled}>
-              {isCallingThisUser ? <Loader2 className="h-5 w-5 animate-spin"/> : (
+            <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
+                {isCallingThisUser && outgoingAudioCall ? <Loader2 className="h-5 w-5 animate-spin"/> : <Phone className="h-5 w-5" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
+              {isCallingThisUser && outgoingCall ? <Loader2 className="h-5 w-5 animate-spin"/> : (
                 <div className="relative">
                   <Video className="h-5 w-5" />
                   {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}

@@ -44,14 +44,23 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
+import IncomingAudioCall from '@/components/chat/IncomingAudioCall';
+import OutgoingAudioCall from '@/components/chat/OutgoingAudioCall';
+import AudioCallView from '@/components/chat/AudioCallView';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
 
 const useCallNotifications = () => {
     const { user } = useAuth();
-    const { outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall } = useChat();
+    const { 
+        outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall,
+        outgoingAudioCall, setOutgoingAudioCall, ongoingAudioCall, setOngoingAudioCall
+    } = useChat();
+
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
+    const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
+
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
@@ -90,10 +99,12 @@ const useCallNotifications = () => {
             updateCallStatus(id, 'ended');
             setOngoingCall(null);
             setOutgoingCall(null);
+            setOngoingAudioCall(null);
+            setOutgoingAudioCall(null);
             setAndStoreActiveCallId(null);
             setOtherUserInCall(null);
         }
-    }, [activeCallId, setOngoingCall, setOutgoingCall]);
+    }, [activeCallId, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
 
     // This new effect handles cleanup when the user refreshes or closes the tab.
     useEffect(() => {
@@ -111,17 +122,20 @@ const useCallNotifications = () => {
     }, [activeCallId, endCall]);
 
     useEffect(() => {
-        if (!outgoingCall || !user) return;
+        if (!user) return;
+        const callToWatch = outgoingCall || outgoingAudioCall;
+        if (!callToWatch) return;
         
         const callTimeout = setTimeout(() => {
-            if (outgoingCall && !ongoingCall) {
-                const callIdToCancel = [user.uid, outgoingCall.uid].sort().join('_');
+            const isStillRinging = (outgoingCall && !ongoingCall) || (outgoingAudioCall && !ongoingAudioCall);
+            if (isStillRinging) {
+                const callIdToCancel = [user.uid, callToWatch.uid].sort().join('_');
                 endCall(callIdToCancel);
             }
         }, 20000);
 
         return () => clearTimeout(callTimeout);
-    }, [outgoingCall, ongoingCall, user, endCall]);
+    }, [outgoingCall, outgoingAudioCall, ongoingCall, ongoingAudioCall, user, endCall]);
     
     useEffect(() => {
         if (!activeCallId || !db || !user) return;
@@ -131,20 +145,29 @@ const useCallNotifications = () => {
             if (docSnap.exists()) {
                 const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
                 
-                if (callData.status === 'answered' && !ongoingCall) {
-                    setOutgoingCall(null);
-                    setOngoingCall(callData);
-                    setIncomingCall(null);
-                    
+                if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
                     const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                     const userDoc = await getDoc(doc(db, 'users', otherUserId));
                     if (userDoc.exists()) {
                         setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
                     }
+                    
+                    if (callData.callType === 'video') {
+                        setOutgoingCall(null);
+                        setOngoingCall(callData);
+                        setIncomingCall(null);
+                    } else {
+                        setOutgoingAudioCall(null);
+                        setOngoingAudioCall(callData);
+                        setIncomingAudioCall(null);
+                    }
                 } else if (callData.status === 'declined' || callData.status === 'ended') {
                     setOngoingCall(null);
                     setOutgoingCall(null);
                     setIncomingCall(null);
+                    setOngoingAudioCall(null);
+                    setOutgoingAudioCall(null);
+                    setIncomingAudioCall(null);
                     setOtherUserInCall(null);
                     setAndStoreActiveCallId(null);
                 }
@@ -152,13 +175,16 @@ const useCallNotifications = () => {
                 setOngoingCall(null);
                 setOutgoingCall(null);
                 setIncomingCall(null);
+                setOngoingAudioCall(null);
+                setOutgoingAudioCall(null);
+                setIncomingAudioCall(null);
                 setOtherUserInCall(null);
                 setAndStoreActiveCallId(null);
             }
         });
 
         return () => unsubscribe();
-    }, [activeCallId, user, ongoingCall, setOngoingCall, setOutgoingCall]);
+    }, [activeCallId, user, ongoingCall, ongoingAudioCall, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
 
     useEffect(() => {
         if (!user || !db) return;
@@ -175,10 +201,15 @@ const useCallNotifications = () => {
                 const callDoc = snapshot.docs[0];
                 const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
                 if (!activeCallId) { 
-                    setIncomingCall(callData);
+                    if (callData.callType === 'video') {
+                        setIncomingCall(callData);
+                    } else {
+                        setIncomingAudioCall(callData);
+                    }
                 }
             } else {
                 setIncomingCall(null);
+                setIncomingAudioCall(null);
             }
         });
 
@@ -186,18 +217,28 @@ const useCallNotifications = () => {
     }, [user, activeCallId]);
 
     const acceptCall = useCallback(async () => {
-        if (!incomingCall) return;
-        setAndStoreActiveCallId(incomingCall.id); 
-        await updateCallStatus(incomingCall.id, 'answered');
-        setIncomingCall(null);
-    }, [incomingCall]);
+        if (incomingCall) {
+            setAndStoreActiveCallId(incomingCall.id); 
+            await updateCallStatus(incomingCall.id, 'answered');
+            setIncomingCall(null);
+        } else if (incomingAudioCall) {
+            setAndStoreActiveCallId(incomingAudioCall.id);
+            await updateCallStatus(incomingAudioCall.id, 'answered');
+            setIncomingAudioCall(null);
+        }
+    }, [incomingCall, incomingAudioCall]);
 
     const declineCall = useCallback(() => {
-        if (!incomingCall) return;
-        updateCallStatus(incomingCall.id, 'declined');
-        setIncomingCall(null);
-    }, [incomingCall]);
-
+        if (incomingCall) {
+            updateCallStatus(incomingCall.id, 'declined');
+            setIncomingCall(null);
+        }
+        if (incomingAudioCall) {
+            updateCallStatus(incomingAudioCall.id, 'declined');
+            setIncomingAudioCall(null);
+        }
+    }, [incomingCall, incomingAudioCall]);
+    
     const onTogglePipMode = useCallback(() => {
         if (isPipMode) {
             setIsResetting(true);
@@ -214,43 +255,32 @@ const useCallNotifications = () => {
         }
     }, [isPipMode, pipControls]);
 
-    const initiateCall = useCallback(async (receiver: PublicUserProfile) => {
-      if (!user) return;
-      setOutgoingCall(receiver);
-      const callId = await createCall({
-        callerId: user.uid,
-        callerName: user.displayName || 'Anonymous',
-        callerPhotoURL: user.photoURL,
-        receiverId: receiver.uid,
-        status: 'ringing'
-      });
-      setAndStoreActiveCallId(callId);
-    }, [user, setOutgoingCall]);
+    const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: 'video' | 'audio') => {
+        if (!user) return;
+        if (callType === 'video') {
+            setOutgoingCall(receiver);
+        } else {
+            setOutgoingAudioCall(receiver);
+        }
+        const callId = await createCall({
+            callerId: user.uid,
+            callerName: user.displayName || 'Anonymous',
+            callerPhotoURL: user.photoURL,
+            receiverId: receiver.uid,
+            status: 'ringing',
+            callType,
+        });
+        setAndStoreActiveCallId(callId);
+    }, [user, setOutgoingCall, setOutgoingAudioCall]);
     
-    return { 
-      incomingCall, 
-      acceptCall, 
-      declineCall, 
-      ongoingCall,
-      outgoingCall,
-      initiateCall,
-      otherUserInCall, 
-      endCall, 
+    return {
+      incomingCall, incomingAudioCall,
+      acceptCall, declineCall, onInitiateCall,
+      otherUserInCall, endCall, 
       setActiveCallId: setAndStoreActiveCallId, 
-      isPipMode,
-      onTogglePipMode,
-      pipControls,
-      isResetting,
-      pipSize,
-      setPipSize,
-      pipSizeMode,
-      setPipSizeMode: (updater) => setPipSizeMode(prev => {
-          if (typeof updater === 'function') {
-              const nextState = updater(prev);
-              return nextState === 'small' ? 'medium' : nextState;
-          }
-          return updater === 'small' ? 'medium' : updater;
-      }),
+      isPipMode, onTogglePipMode, pipControls, isResetting,
+      pipSize, setPipSize, pipSizeMode, 
+      setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
     };
 };
 
@@ -264,10 +294,9 @@ function AppContent({ children }: { children: ReactNode }) {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   
-  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused } = useChat();
+  const { chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused, ongoingCall, outgoingCall, ongoingAudioCall, outgoingAudioCall } = useChat();
   const { 
-      incomingCall, acceptCall, declineCall, 
-      ongoingCall, outgoingCall, initiateCall, 
+      incomingCall, incomingAudioCall, acceptCall, declineCall, onInitiateCall,
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, setPipSize, pipSizeMode, setPipSizeMode
@@ -460,6 +489,8 @@ function AppContent({ children }: { children: ReactNode }) {
   };
   
   const isMobileChatFocus = isMobile && isChatInputFocused;
+  const isVideoCallActive = !!(ongoingCall && otherUserInCall);
+  const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
 
   return (
     <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
@@ -482,14 +513,14 @@ function AppContent({ children }: { children: ReactNode }) {
         <aside className={cn(
             "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
             "hidden md:flex",
-            ongoingCall && !isPipMode && "hidden",
+            (ongoingCall || ongoingAudioCall) && !isPipMode && "hidden",
             isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
             isChatSidebarOpen && isChatPanelVisible && "w-[calc(18rem+22rem)]",
             !isChatSidebarOpen && isChatPanelVisible && "w-[calc(5rem+22rem)]",
             !isChatSidebarOpen && !isChatPanelVisible && "w-20"
         )}>
            <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
-              {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />)}
+              {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={onInitiateCall} />)}
            </div>
             {isChatSidebarOpen ? (
                 <div className="w-[18rem] h-full">
@@ -504,7 +535,7 @@ function AppContent({ children }: { children: ReactNode }) {
         </aside>
       </div>
 
-      {isMobile && isChatSidebarOpen && !(ongoingCall && !isPipMode) && (
+      {isMobile && isChatSidebarOpen && !((ongoingCall || ongoingAudioCall) && !isPipMode) && (
           <div className={cn(
             "fixed inset-0 top-0 z-50 flex h-full",
             isMobileChatFocus && "fixed inset-0"
@@ -518,7 +549,7 @@ function AppContent({ children }: { children: ReactNode }) {
               </div>
               <div className={cn("h-full transition-all duration-300 flex flex-col", chattingWith ? (isMobileChatFocus ? "w-full" : "w-[75%]") : "w-[1%]")}>
                   {chattingWith && (
-                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={initiateCall} />
+                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={onInitiateCall} />
                   )}
               </div>
           </div>
@@ -555,14 +586,16 @@ function AppContent({ children }: { children: ReactNode }) {
       
       {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
       {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall()} />)}
+      {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
+      {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall()} />}
       
-      {ongoingCall && otherUserInCall && (
+      {isVideoCallActive && (
         <motion.div
             drag={isPipMode && !isResetting}
             dragMomentum={false}
             animate={pipControls}
             resize={isPipMode ? "both" : undefined}
-            onResize={(event) => {
+            onResize={(event: any) => {
                 if (isPipMode) {
                     const target = event.target as HTMLElement;
                     if (target) {
@@ -579,8 +612,8 @@ function AppContent({ children }: { children: ReactNode }) {
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
         >
             <VideoCallView 
-                call={ongoingCall} 
-                otherUser={otherUserInCall} 
+                call={ongoingCall!} 
+                otherUser={otherUserInCall!} 
                 onEndCall={endCall}
                 isPipMode={isPipMode}
                 onTogglePipMode={onTogglePipMode}
@@ -590,6 +623,14 @@ function AppContent({ children }: { children: ReactNode }) {
                 }}
             />
         </motion.div>
+      )}
+
+      {isAudioCallActive && (
+          <AudioCallView
+              call={ongoingAudioCall!}
+              otherUser={otherUserInCall!}
+              onEndCall={endCall}
+          />
       )}
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
