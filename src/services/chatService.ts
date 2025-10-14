@@ -1,4 +1,3 @@
-
 'use client';
 
 import { db } from '@/lib/firebase';
@@ -60,51 +59,60 @@ export const subscribeToRecentChats = (
   const recentChatsRef = collection(db, 'users', userId, 'chats');
   const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const promises: Promise<void>[] = [];
-    
-    snapshot.docChanges().forEach(change => {
-      const docData = change.doc.data();
-      const otherUserId = change.doc.id;
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const changes = snapshot.docChanges();
+    const profilePromises: Promise<void>[] = [];
 
-      if (change.type === "added" || change.type === "modified") {
-        const promise = getDoc(doc(db, 'users', otherUserId)).then(userDocSnap => {
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            const chatPartner: PublicUserProfile = {
-              id: userDocSnap.id,
-              uid: userDocSnap.id,
-              displayName: userData.displayName || 'Anonymous User',
-              photoURL: userData.photoURL || null,
-              username: userData.username || `user_${otherUserId.substring(0,5)}`,
-              lastMessage: docData.lastMessage,
-              timestamp: docData.timestamp?.toDate(),
-              notification: Math.random() > 0.8, // Mock notification
-            };
+    for (const change of changes) {
+        const otherUserId = change.doc.id;
+        const docData = change.doc.data();
 
-            if (change.type === "added") {
-              currentChats.push(chatPartner);
-            } else { // modified
-              const index = currentChats.findIndex(c => c.id === otherUserId);
-              if (index !== -1) {
-                currentChats[index] = chatPartner;
-              } else {
-                currentChats.push(chatPartner);
-              }
+        if (change.type === "added") {
+            const promise = getDoc(doc(db, 'users', otherUserId)).then(userDocSnap => {
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    const chatPartner: PublicUserProfile = {
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0, 5)}`,
+                        lastMessage: docData.lastMessage,
+                        timestamp: docData.timestamp?.toDate(),
+                        notification: Math.random() > 0.8,
+                    };
+                    currentChats.push(chatPartner);
+                }
+            });
+            profilePromises.push(promise);
+        }
+
+        if (change.type === "modified") {
+            const index = currentChats.findIndex(c => c.id === otherUserId);
+            if (index !== -1) {
+                currentChats[index] = {
+                    ...currentChats[index],
+                    lastMessage: docData.lastMessage,
+                    timestamp: docData.timestamp?.toDate(),
+                };
             }
-          }
-        });
-        promises.push(promise);
-      } else if (change.type === "removed") {
-        currentChats = currentChats.filter(c => c.id !== otherUserId);
-      }
-    });
+        }
 
-    // After processing all changes, update the state once.
-    Promise.all(promises).then(() => {
-      currentChats.sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
-      callback([...currentChats]); // Use spread to ensure a new array reference for React state update
-    });
+        if (change.type === "removed") {
+            currentChats = currentChats.filter(c => c.id !== otherUserId);
+        }
+    }
+
+    // Wait for any new profiles to be fetched before updating the UI
+    if (profilePromises.length > 0) {
+        await Promise.all(profilePromises);
+    }
+    
+    // Always sort after processing all changes
+    currentChats.sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
+    
+    // Update the UI with the final list
+    callback([...currentChats]);
 
   }, (error) => {
     console.error("Error listening to recent chats:", error);
