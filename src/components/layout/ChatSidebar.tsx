@@ -16,6 +16,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { subscribeToRecentChats } from '@/services/chatService';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -36,34 +37,9 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
             setIsLoading(false);
             return;
         }
-
         setIsLoading(true);
-        const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
-        const q = query(recentChatsRef, orderBy('timestamp', 'desc'), limit(10));
-        
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                        notification: Math.random() > 0.8, // Mock notification
-                    } as RecentChatUser;
-                }
-                return null;
-            });
-            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
-            setRecentChats(fetchedChats);
+        const unsubscribe = subscribeToRecentChats(user.uid, (chats) => {
+            setRecentChats(chats as RecentChatUser[]);
             setIsLoading(false);
         });
 
