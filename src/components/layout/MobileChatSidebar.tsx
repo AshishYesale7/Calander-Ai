@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video, Trash2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video, Trash2, ArrowUpRight, ArrowDownLeft, Archive, EyeOff } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -35,6 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
+import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -63,10 +65,12 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.Element
 const ChatListView = () => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith } = useChat();
+    const { toast } = useToast();
     const [recentChats, setRecentChats] = useState<RecentChatUser[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+    const [chatToDelete, setChatToDelete] = useState<RecentChatUser | null>(null);
 
      useEffect(() => {
         if (!user || !db) {
@@ -117,6 +121,24 @@ const ChatListView = () => {
         setChattingWith(chatPartner);
     };
     
+    const handleDeleteChat = async () => {
+        if (!chatToDelete || !user) return;
+        try {
+            await deleteConversationForCurrentUser(user.uid, chatToDelete.uid);
+            toast({
+                title: "Chat Deleted",
+                description: `Your chat history with ${chatToDelete.displayName} has been cleared.`
+            });
+             if (chattingWith?.uid === chatToDelete.uid) {
+                setChattingWith(null);
+            }
+        } catch (err) {
+            toast({ title: "Error", description: "Failed to delete chat history.", variant: "destructive"});
+        } finally {
+            setChatToDelete(null);
+        }
+    };
+
     const fabMenuVariants = {
         open: {
             opacity: 1,
@@ -150,26 +172,41 @@ const ChatListView = () => {
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
                       {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredChats.map(chat => (
-                          <button
-                              key={chat.id}
-                              className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
-                              onClick={() => handleUserClick(chat)}
-                          >
-                              <Avatar className="h-12 w-12">
-                                  <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
-                                  <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                  <div className="flex justify-between items-center">
-                                      <h3 className="font-semibold text-sm truncate">{chat.displayName}</h3>
-                                      {chat.timestamp && <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</p>}
-                                  </div>
-                                  <div className="flex justify-between items-start">
-                                      <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
-                                      {chat.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
-                                  </div>
-                              </div>
-                          </button>
+                        <ContextMenu key={chat.id}>
+                            <ContextMenuTrigger>
+                                <button
+                                    className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
+                                    onClick={() => handleUserClick(chat)}
+                                >
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
+                                        <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-semibold text-sm truncate">{chat.displayName}</h3>
+                                            {chat.timestamp && <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</p>}
+                                        </div>
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
+                                            {chat.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
+                                        </div>
+                                    </div>
+                                </button>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent>
+                                <ContextMenuItem>
+                                    <Archive className="mr-2 h-4 w-4" /> Archive Chat
+                                </ContextMenuItem>
+                                <ContextMenuItem>
+                                    <EyeOff className="mr-2 h-4 w-4" /> Hide Contact
+                                </ContextMenuItem>
+                                <ContextMenuSeparator />
+                                <ContextMenuItem className="text-red-500" onSelect={() => setChatToDelete(chat)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Chat
+                                </ContextMenuItem>
+                            </ContextMenuContent>
+                        </ContextMenu>
                       ))}
                   </div>
               </ScrollArea>
@@ -219,6 +256,21 @@ const ChatListView = () => {
                   </Button>
               </div>
             </div>
+            {/* Delete Confirmation Dialog */}
+             <AlertDialog open={!!chatToDelete} onOpenChange={(open) => !open && setChatToDelete(null)}>
+                <AlertDialogContent className="frosted-glass">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Chat with {chatToDelete?.displayName}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete your copy of the message history. The other person will still be able to see the conversation. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteChat}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 };
