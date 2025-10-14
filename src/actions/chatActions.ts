@@ -13,7 +13,9 @@ import {
   setDoc,
   serverTimestamp,
   getDocs,
-  writeBatch
+  writeBatch,
+  query,
+  where
 } from 'firebase/firestore';
 
 // This helper function is duplicated here to keep the server action self-contained.
@@ -103,46 +105,39 @@ export const deleteMessage = async (currentUserId: string, otherUserId: string, 
 
 /**
  * Deletes an entire conversation history for the current user only.
- * It soft-deletes messages by adding the user's ID to the `deletedFor` array.
+ * It removes the conversation from their recent chats list and deletes associated call logs.
+ * It does NOT modify the messages themselves, preserving them for the other user.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  */
 export const deleteConversationForCurrentUser = async (currentUserId: string, otherUserId: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
 
-    const chatRoomId = getChatRoomId(currentUserId, otherUserId);
-    const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
-    
     const batch = writeBatch(db);
 
     try {
-        // 1. Soft-delete all messages for the current user
-        const messagesSnapshot = await getDocs(messagesCollection);
-        messagesSnapshot.forEach(messageDoc => {
-            const messageRef = doc(db, 'chats', chatRoomId, 'messages', messageDoc.id);
-            batch.update(messageRef, {
-                deletedFor: arrayUnion(currentUserId)
-            });
-        });
-
-        // 2. Delete the conversation from the current user's recent chats list
+        // 1. Delete the conversation from the current user's recent chats list.
+        // This effectively removes it from their UI.
         const recentChatRef = doc(db, 'users', currentUserId, 'recentChats', otherUserId);
         batch.delete(recentChatRef);
         
-        // 3. Delete call logs between the two users (this action is destructive but call logs are less critical)
-        // In a real app, you might soft-delete these too. For now, we delete.
+        // 2. Find and delete all call logs between the two users.
+        // This is safe because call logs are individual documents and not shared state.
         const callsCollectionRef = collection(db, 'calls');
         const participantIds = [currentUserId, otherUserId].sort();
         const callsQuery = query(callsCollectionRef, where('participantIds', '==', participantIds));
+        
         const callsSnapshot = await getDocs(callsQuery);
         callsSnapshot.forEach(callDoc => {
             batch.delete(doc(db, 'calls', callDoc.id));
         });
 
+        // Commit all batched operations.
         await batch.commit();
 
     } catch (error) {
         console.error("Error deleting conversation for user:", error);
-        throw new Error("Failed to delete conversation.");
+        // Re-throw a more user-friendly error.
+        throw new Error("Failed to delete conversation from your view.");
     }
 };
