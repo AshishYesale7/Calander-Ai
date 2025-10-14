@@ -1,7 +1,8 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase'; // Correct: import client-side db
+import { adminDb } from '@/lib/firebase-admin'; // Correct: import admin-side db
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
@@ -432,3 +433,39 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
         throw new Error("Could not retrieve your preferences.");
     }
 };
+
+/**
+ * Performs a "soft delete" by anonymizing user data and disabling their auth account.
+ */
+export async function anonymizeUserAccount(userId: string): Promise<void> {
+    const userDocRef = getUserDocRef(userId);
+
+    // Anonymize Firestore data
+    const anonymizedData = {
+        displayName: 'Deleted User',
+        username: `deleted_${userId.substring(0, 8)}`,
+        photoURL: null,
+        coverPhotoURL: null,
+        bio: 'This account has been deleted.',
+        socials: {},
+        statusEmoji: null,
+        searchableIndex: [],
+        geminiApiKey: null,
+        'preferences.routine': [],
+    };
+
+    await updateDoc(userDocRef, anonymizedData);
+
+    // Disable user in Firebase Auth
+    // This requires the Firebase Admin SDK.
+    try {
+        await adminDb.collection('users').doc(userId).update(anonymizedData); // Using adminDb to be sure
+        const { getAuth } = await import('firebase-admin/auth');
+        await getAuth().updateUser(userId, { disabled: true });
+    } catch (error) {
+        console.error(`Failed to disable auth user ${userId}:`, error);
+        throw new Error('Failed to disable user account.');
+    }
+}
+
+    

@@ -11,6 +11,9 @@ const hasProdCredentials = !!(
 );
 
 let app: App;
+let auth: Auth;
+let db: Firestore;
+
 
 if (!getApps().length) {
   if (hasProdCredentials) {
@@ -35,7 +38,16 @@ if (!getApps().length) {
   app = getApp();
 }
 
-const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
+try {
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch (e) {
+  console.error("Failed to initialize Firebase Admin services", e);
+  // @ts-ignore
+  auth = null;
+  // @ts-ignore
+  db = null;
+}
+
 
 export { app, auth, db as adminDb };

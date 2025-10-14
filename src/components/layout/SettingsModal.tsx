@@ -38,7 +38,7 @@ import {
 import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
-import { saveUserFCMToken } from '@/services/userService';
+import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 
@@ -364,32 +364,25 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
 
   const handleDeleteAccount = async () => {
-    if (!user || !auth.currentUser) {
+    if (!user) {
         toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
         return;
     }
     
     try {
-        await deleteUser(auth.currentUser);
+        await anonymizeUserAccount(user.uid);
         toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
+        // The user's auth account is disabled, so we should sign them out on the client.
+        await auth.signOut();
         router.push('/auth/signin');
         onOpenChange(false);
     } catch (error: any) {
         console.error("Account deletion error:", error);
-        if (error.code === 'auth/requires-recent-login') {
-            toast({
-                title: 'Re-authentication Required',
-                description: 'For your security, please sign out and sign back in before deleting your account.',
-                variant: 'destructive',
-                duration: 8000,
-            });
-        } else {
-            toast({
-                title: 'Error',
-                description: 'Failed to delete account. Please try again.',
-                variant: 'destructive',
-            });
-        }
+        toast({
+            title: 'Error',
+            description: 'Failed to delete account. Please try again.',
+            variant: 'destructive',
+        });
     }
   };
 
