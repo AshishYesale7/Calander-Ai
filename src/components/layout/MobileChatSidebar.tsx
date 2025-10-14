@@ -447,7 +447,7 @@ export default function MobileChatSidebar() {
                  <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold font-headline text-primary">Chats</h1>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
-                        <PanelRightClose className="h-6 w-6 text-black dark:text-white" />
+                        <X className="h-6 w-6 text-black dark:text-white" />
                     </Button>
                 </div>
             </div>
