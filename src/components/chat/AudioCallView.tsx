@@ -21,20 +21,79 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameId = useRef<number>();
 
-  useEffect(() => {
-    if (remoteStream && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
-
-
+  // Effect for the call duration timer
   useEffect(() => {
     const timer = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Effect for Web Audio API and canvas visualization
+  useEffect(() => {
+    if (remoteStream && canvasRef.current) {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(remoteStream);
+      source.connect(analyser);
+
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const canvas = canvasRef.current;
+      const canvasCtx = canvas.getContext('2d');
+      if (!canvasCtx) return;
+
+      const draw = () => {
+        animationFrameId.current = requestAnimationFrame(draw);
+        analyser.getByteTimeDomainData(dataArray);
+        
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeStyle = '#6ee7b7'; // A pleasant teal color
+        canvasCtx.shadowBlur = 5;
+        canvasCtx.shadowColor = '#6ee7b7';
+
+        canvasCtx.beginPath();
+        const sliceWidth = canvas.width * 1.0 / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0; // value between 0 and 2
+          const y = v * canvas.height / 2;
+
+          if (i === 0) {
+            canvasCtx.moveTo(x, y);
+          } else {
+            canvasCtx.lineTo(x, y);
+          }
+          x += sliceWidth;
+        }
+        canvasCtx.lineTo(canvas.width, canvas.height / 2);
+        canvasCtx.stroke();
+      };
+      draw();
+      
+      return () => {
+        if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+        source.disconnect();
+        analyser.disconnect();
+        audioContext.close();
+      };
+    }
+  }, [remoteStream]);
+
+  // Effect to connect stream to the audio element for playback
+  useEffect(() => {
+    if (remoteStream && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -70,7 +129,13 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
         )}>
           {formatDuration(callDuration)}
         </p>
+
+        {/* Canvas for Waveform */}
+        <div className="w-full h-16 mt-4">
+          <canvas ref={canvasRef} width="300" height="60" className="w-full h-full"></canvas>
+        </div>
       </div>
+      
       <div className="flex justify-center gap-4 mt-6">
         <Button onClick={toggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
           {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
