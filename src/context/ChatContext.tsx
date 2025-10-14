@@ -12,27 +12,50 @@ interface ChatContextType {
   setChattingWith: Dispatch<SetStateAction<PublicUserProfile | null>>;
   isChatSidebarOpen: boolean;
   setIsChatSidebarOpen: Dispatch<SetStateAction<boolean>>;
+  isChatInputFocused: boolean;
+  setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
+  
+  // Video Call State
   outgoingCall: PublicUserProfile | null;
   setOutgoingCall: Dispatch<SetStateAction<PublicUserProfile | null>>;
   ongoingCall: CallData | null;
   setOngoingCall: Dispatch<SetStateAction<CallData | null>>;
-  isChatInputFocused: boolean;
-  setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
-  // Add state for audio calls
+  incomingCall: CallData | null;
+  setIncomingCall: Dispatch<SetStateAction<CallData | null>>;
+
+  // Audio Call State
   outgoingAudioCall: PublicUserProfile | null;
   setOutgoingAudioCall: Dispatch<SetStateAction<PublicUserProfile | null>>;
   ongoingAudioCall: CallData | null;
   setOngoingAudioCall: Dispatch<SetStateAction<CallData | null>>;
+  incomingAudioCall: CallData | null;
+  setIncomingAudioCall: Dispatch<SetStateAction<CallData | null>>;
+
+  // Call Actions
   onInitiateCall: (receiver: PublicUserProfile, callType: CallType) => void;
+  acceptCall: () => void;
+  declineCall: () => void;
+  endCall: (callId?: string) => void;
+  
+  // WebRTC related state
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  isPipMode: boolean;
+  onTogglePipMode: () => void;
+  pipControls: any; // AnimationControls from framer-motion
+  isResetting: boolean;
+  pipSize: { width: number; height: number };
+  setPipSize: Dispatch<SetStateAction<{ width: number; height: number }>>;
+  pipSizeMode: 'small' | 'medium' | 'large';
+  setPipSizeMode: Dispatch<SetStateAction<'small' | 'medium' | 'large'>>;
+  isMuted: boolean;
+  onToggleMute: () => void;
+  otherUserInCall: PublicUserProfile | null;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider = ({ children, value }: { children: ReactNode, value: Omit<ChatContextType, 'chattingWith' | 'isChatSidebarOpen' | 'isChatInputFocused'> & {
-    setChattingWith: Dispatch<SetStateAction<PublicUserProfile | null>>;
-    setIsChatSidebarOpen: Dispatch<SetStateAction<boolean>>;
-    setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
-} }) => {
+export const ChatProvider = ({ children, value }: { children: ReactNode, value: Omit<ChatContextType, 'chattingWith' | 'isChatSidebarOpen' | 'isChatInputFocused' | 'setChattingWith' | 'setIsChatSidebarOpen' | 'setIsChatInputFocused'> }) => {
   const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
   const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);

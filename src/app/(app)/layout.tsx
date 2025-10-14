@@ -76,16 +76,19 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-const useCallNotifications = () => {
+function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
     const { user } = useAuth();
-    const { toast } = useToast();
-    const { 
-        outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall,
-        outgoingAudioCall, setOutgoingAudioCall, ongoingAudioCall, setOngoingAudioCall
-    } = useChat();
-
+    
+    // State for video calls
+    const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
+    const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
+
+    // State for audio calls
+    const [outgoingAudioCall, setOutgoingAudioCall] = useState<PublicUserProfile | null>(null);
+    const [ongoingAudioCall, setOngoingAudioCall] = useState<CallData | null>(null);
     const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
+
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     
     // WebRTC State
@@ -100,6 +103,8 @@ const useCallNotifications = () => {
     const pipControls = useAnimation();
     const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
     const [pipSizeMode, setPipSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
+    
+    const [isMuted, setIsMuted] = useState(false);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -147,7 +152,7 @@ const useCallNotifications = () => {
         setAndStoreActiveCallId(null);
         setOtherUserInCall(null);
         cleanupWebRTC();
-    }, [activeCallId, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall, cleanupWebRTC]);
+    }, [activeCallId, cleanupWebRTC]);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -199,7 +204,6 @@ const useCallNotifications = () => {
               }
             };
             
-            const candidatesCollection = isCaller ? 'receiverCandidates' : 'callerCandidates';
             const candidatesListener = isCaller ? listenForReceiverCandidates : listenForCallerCandidates;
             unsubCandidates = candidatesListener(call.id, candidate => {
                 if (pc.currentRemoteDescription) pc.addIceCandidate(candidate);
@@ -243,7 +247,7 @@ const useCallNotifications = () => {
             if (unsubCandidates) unsubCandidates();
         };
 
-    }, [ongoingCall, ongoingAudioCall, user, toast]);
+    }, [ongoingCall, ongoingAudioCall, user]);
 
 
     useEffect(() => {
@@ -333,7 +337,7 @@ const useCallNotifications = () => {
         
         setAndStoreActiveCallId(callId);
         
-    }, [user, setOutgoingCall, setOutgoingAudioCall]);
+    }, [user]);
     
     const onTogglePipMode = useCallback(() => {
         if (isPipMode) {
@@ -347,29 +351,39 @@ const useCallNotifications = () => {
         }
     }, [isPipMode, pipControls]);
 
-    return {
-      incomingCall, incomingAudioCall,
-      acceptCall, declineCall, onInitiateCall,
-      otherUserInCall, endCall, 
-      localStream, remoteStream,
-      isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, 
-      setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
+    const onToggleMute = useCallback(() => {
+        if(localStream) {
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !track.enabled;
+                setIsMuted(!track.enabled);
+            });
+        }
+    }, [localStream]);
+
+    const contextValue = {
+        onInitiateCall,
+        outgoingCall, setOutgoingCall,
+        ongoingCall, setOngoingCall,
+        incomingCall, setIncomingCall,
+        outgoingAudioCall, setOutgoingAudioCall,
+        ongoingAudioCall, setOngoingAudioCall,
+        incomingAudioCall, setIncomingAudioCall,
+        acceptCall, declineCall,
+        otherUserInCall, endCall,
+        localStream, remoteStream,
+        isPipMode, onTogglePipMode, pipControls, isResetting,
+        pipSize, setPipSize, pipSizeMode,
+        setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
+        isMuted, onToggleMute,
     };
-};
-
-function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-    const { user } = useAuth();
-    const { onInitiateCall, ...callStates } = useCallNotifications();
-    const { setChattingWith, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused } = useChat();
-
+    
     return (
-        <ChatProvider value={{ onInitiateCall, setChattingWith, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused, ...callStates }}>
+        <ChatProvider value={contextValue}>
             <AppContent onFinishOnboarding={onFinishOnboarding}>
                 {children}
             </AppContent>
         </ChatProvider>
-    )
+    );
 }
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
@@ -384,10 +398,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
       outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
-      incomingCall, incomingAudioCall, acceptCall, declineCall, onInitiateCall,
-      otherUserInCall, endCall, localStream, remoteStream,
+      incomingCall, incomingAudioCall, acceptCall, declineCall, 
+      otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, setPipSizeMode
+      pipSize, setPipSize, pipSizeMode, setPipSizeMode,
   } = useChat();
 
 
@@ -719,8 +733,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               call={ongoingAudioCall!}
               otherUser={otherUserInCall!}
               onEndCall={endCall}
-              localStream={localStream}
-              remoteStream={remoteStream}
+              localStream={useChat().localStream}
+              remoteStream={useChat().remoteStream}
           />
       )}
 
@@ -739,11 +753,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <PluginProvider>
         <StreakProvider>
-          <ChatProvider>
             <AppContentWrapper onFinishOnboarding={() => setOnboardingCompleted(true)}>
               {children}
             </AppContentWrapper>
-          </ChatProvider>
         </StreakProvider>
       </PluginProvider>
     </SidebarProvider>
