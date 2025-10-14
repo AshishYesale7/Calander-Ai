@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { subscribeToRecentChats } from '@/services/chatService'; // MODIFIED: Import new service
+import { subscribeToRecentChats } from '@/services/chatService'; 
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
 import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video, Trash2, ArrowUpRight, ArrowDownLeft, Archive, EyeOff } from 'lucide-react';
@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal } from '@/services/chatService';
-import { db } from '@/lib/firebase'; // MODIFIED: Added for direct db check
+import { db } from '@/lib/firebase';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -72,7 +72,6 @@ const ChatListView = () => {
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
     const [chatToDelete, setChatToDelete] = useState<RecentChatUser | null>(null);
 
-    // MODIFIED: Simplified useEffect hook
     useEffect(() => {
         if (!user || !db) {
             setIsLoading(false);
@@ -80,13 +79,11 @@ const ChatListView = () => {
         }
 
         setIsLoading(true);
-        // Subscribe to the new service
         const unsubscribe = subscribeToRecentChats(user.uid, (chats) => {
             setRecentChats(chats as RecentChatUser[]);
             if (isLoading) setIsLoading(false);
         });
 
-        // Cleanup on unmount
         return () => unsubscribe();
     }, [user, isLoading]);
 

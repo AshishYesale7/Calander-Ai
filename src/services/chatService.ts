@@ -59,77 +59,37 @@ export const subscribeToRecentChats = (
   const recentChatsRef = collection(db, 'users', userId, 'chats');
   const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
 
-  let chats: PublicUserProfile[] = [];
-
   const unsubscribe = onSnapshot(q, async (snapshot) => {
-    const changes = snapshot.docChanges();
+    // This is the full, up-to-date list of recent chats every time the listener fires.
+    const recentChatDocs = snapshot.docs;
 
-    // A flag to check if we need to fetch user profiles
-    const profilesToFetch = new Set<string>();
-
-    for (const change of changes) {
-        const docId = change.doc.id;
-        const recentChatData = change.doc.data();
-
-        if (change.type === "added") {
-            profilesToFetch.add(docId);
-        }
-        else if (change.type === "modified") {
-            const index = chats.findIndex(c => c.id === docId);
-            if (index > -1) {
-                // Update in place if user profile already exists
-                chats[index] = {
-                    ...chats[index],
-                    lastMessage: recentChatData.lastMessage,
-                    timestamp: recentChatData.timestamp?.toDate(),
-                };
-            } else {
-                 profilesToFetch.add(docId);
-            }
-        }
-        else if (change.type === "removed") {
-            chats = chats.filter(c => c.id !== docId);
-        }
-    }
-    
-    if (profilesToFetch.size > 0) {
-        const fetchedProfiles = await Promise.all(
-            Array.from(profilesToFetch).map(async (otherUserId) => {
-                const recentChatData = snapshot.docs.find(d => d.id === otherUserId)?.data();
-                if (!recentChatData) return null;
-
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as PublicUserProfile;
-                }
-                return null;
-            })
-        );
+    const chatPartnersPromises = recentChatDocs.map(async (docSnapshot) => {
+        const recentChatData = docSnapshot.data();
+        const otherUserId = docSnapshot.id;
+        const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
         
-        fetchedProfiles.forEach(profile => {
-            if (profile) {
-                const existingIndex = chats.findIndex(c => c.id === profile.id);
-                if (existingIndex > -1) {
-                    chats[existingIndex] = profile; // Update
-                } else {
-                    chats.push(profile); // Add
-                }
-            }
-        });
-    }
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            return {
+                id: userDocSnap.id,
+                uid: userDocSnap.id,
+                displayName: userData.displayName || 'Anonymous User',
+                photoURL: userData.photoURL || null,
+                username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                lastMessage: recentChatData.lastMessage,
+                timestamp: recentChatData.timestamp?.toDate(),
+                // Mock notification logic remains for now
+                notification: Math.random() > 0.8,
+            } as PublicUserProfile; // Cast to PublicUserProfile with extra fields
+        }
+        return null;
+    });
 
-    // Always re-sort and call the callback
-    chats.sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
-    callback([...chats]);
+    const fetchedChats = (await Promise.all(chatPartnersPromises))
+      .filter((c): c is PublicUserProfile => c !== null)
+      .sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
+
+    callback(fetchedChats);
 
   }, (error) => {
     console.error("Error listening to recent chats:", error);
@@ -223,5 +183,3 @@ export const subscribeToCallHistory = (
 
   return unsubscribe;
 };
-
-    
