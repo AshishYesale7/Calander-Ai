@@ -56,23 +56,26 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
         
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
         
-        const barWidth = (canvas.width / bufferLength) * 2;
-        let barHeight;
-        let x = 0;
-        
-        for (let i = 0; i < bufferLength; i++) {
-          barHeight = dataArray[i] / 2;
-          
-          const green = Math.min(255, barHeight + 100);
-          const blue = Math.min(255, barHeight + 25);
-          
-          canvasCtx.fillStyle = `rgba(${barHeight > 1 ? 50 : 0}, ${green}, ${blue}, 0.6)`;
-          canvasCtx.shadowBlur = 5;
-          canvasCtx.shadowColor = `rgba(50, ${green}, ${blue}, 0.3)`;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 56; // Slightly larger than avatar radius (h-24/2 = 48px)
+        const bars = 100; // Number of lines in the visualizer
 
-          canvasCtx.fillRect(x, canvas.height / 2 - barHeight / 2, barWidth, barHeight);
-          
-          x += barWidth + 1;
+        for (let i = 0; i < bars; i++) {
+          const barHeight = dataArray[i] * 0.5; // Adjust multiplier for sensitivity
+          const angle = (i / bars) * 2 * Math.PI;
+
+          const startX = centerX + (radius) * Math.cos(angle);
+          const startY = centerY + (radius) * Math.sin(angle);
+          const endX = centerX + (radius + barHeight) * Math.cos(angle);
+          const endY = centerY + (radius + barHeight) * Math.sin(angle);
+
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(startX, startY);
+          canvasCtx.lineTo(endX, endY);
+          canvasCtx.lineWidth = 2;
+          canvasCtx.strokeStyle = `rgba(50, 205, 255, ${barHeight / 255})`; // Fades with intensity
+          canvasCtx.stroke();
         }
       };
       draw();
@@ -117,12 +120,17 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
       className="fixed bottom-5 right-5 z-[200] p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
     >
       <div className="flex flex-col items-center text-center relative">
-        <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg">
+        {/* Canvas for Waveform - positioned absolutely behind the avatar */}
+        <canvas ref={canvasRef} width="200" height="200" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
+        
+        <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg relative z-10">
           <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
           <AvatarFallback className="text-3xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
+
         <p className="font-bold text-2xl mt-4">{otherUser.displayName}</p>
-        <div className="h-5">
+        
+        <div className="h-5 mt-1">
             {connectionStatus === 'disconnected' ? (
                 <div className="text-xs text-yellow-400 flex items-center gap-1.5 animate-pulse">
                     <LoadingSpinner size="sm" className="text-yellow-400"/>
@@ -136,11 +144,6 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
                   {formatDuration(callDuration)}
                 </p>
             )}
-        </div>
-
-        {/* Canvas for Waveform */}
-        <div className="w-full h-16 mt-4">
-          <canvas ref={canvasRef} width="300" height="60" className="w-full h-full"></canvas>
         </div>
       </div>
       
