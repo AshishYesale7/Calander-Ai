@@ -83,29 +83,52 @@ const ChatListView = () => {
         setIsLoading(true);
         const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
-        
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const promises = snapshot.docs.map(async (docSnapshot) => {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                if (userDocSnap.exists()) {
-                    return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userDocSnap.data().displayName || 'Anonymous',
-                        photoURL: userDocSnap.data().photoURL || null,
-                        username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
+            const changes = snapshot.docChanges();
+            
+            changes.forEach(async (change) => {
+                const docId = change.doc.id;
+                const recentChatData = change.doc.data();
+
+                if (change.type === "added" || change.type === "modified") {
+                    const userDocSnap = await getDoc(doc(db, 'users', docId));
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        const chatPartner: RecentChatUser = {
+                            id: userDocSnap.id,
+                            uid: userDocSnap.id,
+                            displayName: userData.displayName || 'Anonymous',
+                            photoURL: userData.photoURL || null,
+                            username: userData.username || `user_${docId.substring(0,5)}`,
+                            lastMessage: recentChatData.lastMessage,
+                            timestamp: recentChatData.timestamp?.toDate(),
+                        };
+                        
+                        setRecentChats(prevChats => {
+                            const existingIndex = prevChats.findIndex(c => c.id === chatPartner.id);
+                            let newChats;
+                            if (existingIndex > -1) {
+                                newChats = [...prevChats];
+                                newChats[existingIndex] = chatPartner;
+                            } else {
+                                newChats = [...prevChats, chatPartner];
+                            }
+                            // Re-sort after adding/updating
+                            return newChats.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+                        });
+                    }
                 }
-                return null;
+
+                if (change.type === "removed") {
+                    setRecentChats(prevChats => prevChats.filter(c => c.id !== docId));
+                }
             });
-            Promise.all(promises).then(fetchedChats => {
-                setRecentChats(fetchedChats.filter(Boolean) as RecentChatUser[]);
-                setIsLoading(false);
-            });
+
+            // If it's the initial load (not just modifications), mark loading as false.
+            if (isLoading) {
+              setIsLoading(false);
+            }
         }, (error) => {
             console.error("Error listening to recent chats:", error);
             setIsLoading(false);
@@ -455,3 +478,5 @@ export default function DesktopChatSidebar() {
         </div>
     );
 }
+
+    
