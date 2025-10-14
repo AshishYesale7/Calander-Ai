@@ -10,6 +10,7 @@ import {
   Timestamp,
   type Unsubscribe,
   where,
+  limit, // Import limit
 } from 'firebase/firestore';
 import type { ChatMessage, CallData } from '@/types';
 
@@ -86,11 +87,12 @@ export const getCallHistory = (
   // The orderBy clause was removed to prevent the need for a composite index.
   // Sorting will be handled client-side.
   const q = query(
-    callsCollectionRef,
-    where('participantIds', '==', participantIds)
+    callsCollectionRef, 
+    where('participantIds', '==', participantIds),
+    limit(50) // Limit the number of documents fetched for performance
   );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
     const calls = snapshot.docs
       .map(doc => {
         const data = doc.data();
