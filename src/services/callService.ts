@@ -49,7 +49,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   const callDocRef = getCallDocRef(callId);
   const docSnap = await callDocRef.get();
 
-  if (!docSnap.exists) {
+  if (!docSnap.exists()) {
     console.error(`Call document with ID ${callId} does not exist.`);
     return;
   }
