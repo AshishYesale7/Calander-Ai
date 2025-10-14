@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query,
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
 import { deleteImageByUrl } from './storageService';
+import { addDays } from 'date-fns';
 
 
 type CodingUsernames = {
@@ -436,23 +437,27 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
 
 /**
  * Performs a "soft delete" by anonymizing user data, disabling their auth account,
- * and marking the document for future cleanup.
+ * and marking the document for future cleanup via a scheduled function.
  */
 export async function anonymizeUserAccount(userId: string): Promise<void> {
     const userDocRef = doc(adminDb, 'users', userId);
 
-    // Anonymize Firestore data but add a `deletedAt` timestamp
+    // Calculate the deletion date 30 days from now
+    const deletionDate = addDays(new Date(), 30);
+
+    // Anonymize public-facing Firestore data and set deletion status
     const anonymizedData = {
         displayName: 'Deleted User',
         username: `deleted_${userId.substring(0, 8)}`,
         photoURL: null,
         coverPhotoURL: null,
-        bio: 'This account has been deleted.',
+        bio: 'This account is pending deletion.',
         socials: {},
         statusEmoji: null,
         searchableIndex: [],
         geminiApiKey: null,
-        deletedAt: Timestamp.now(), // Mark for future cleanup
+        deletionStatus: 'PENDING_DELETION',
+        deletionScheduledAt: Timestamp.fromDate(deletionDate),
     };
 
     await updateDoc(userDocRef, anonymizedData);
