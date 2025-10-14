@@ -4,8 +4,7 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { onSnapshot, collection, query, orderBy, doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { subscribeToRecentChats } from '@/services/chatService'; // MODIFIED: Import new service
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
 import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus } from 'lucide-react';
@@ -38,8 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal } from '@/services/chatService';
-
-const RECENT_CHATS_LOCAL_KEY = 'futureSightRecentChats';
+import { db } from '@/lib/firebase'; // MODIFIED: Added for direct db check
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -74,6 +72,7 @@ const ChatListView = () => {
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
     const [chatToDelete, setChatToDelete] = useState<RecentChatUser | null>(null);
 
+    // MODIFIED: Simplified useEffect hook
     useEffect(() => {
         if (!user || !db) {
             setIsLoading(false);
@@ -81,61 +80,15 @@ const ChatListView = () => {
         }
 
         setIsLoading(true);
-        const recentChatsRef = collection(db, 'users', user.uid, 'chats');
-        const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const changes = snapshot.docChanges();
-            
-            changes.forEach(async (change) => {
-                const docId = change.doc.id;
-                const recentChatData = change.doc.data();
-
-                if (change.type === "added" || change.type === "modified") {
-                    const userDocSnap = await getDoc(doc(db, 'users', docId));
-                    if (userDocSnap.exists()) {
-                        const userData = userDocSnap.data();
-                        const chatPartner: RecentChatUser = {
-                            id: userDocSnap.id,
-                            uid: userDocSnap.id,
-                            displayName: userData.displayName || 'Anonymous',
-                            photoURL: userData.photoURL || null,
-                            username: userData.username || `user_${docId.substring(0,5)}`,
-                            lastMessage: recentChatData.lastMessage,
-                            timestamp: recentChatData.timestamp?.toDate(),
-                        };
-                        
-                        setRecentChats(prevChats => {
-                            const existingIndex = prevChats.findIndex(c => c.id === chatPartner.id);
-                            let newChats;
-                            if (existingIndex > -1) {
-                                newChats = [...prevChats];
-                                newChats[existingIndex] = chatPartner;
-                            } else {
-                                newChats = [...prevChats, chatPartner];
-                            }
-                            // Re-sort after adding/updating
-                            return newChats.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-                        });
-                    }
-                }
-
-                if (change.type === "removed") {
-                    setRecentChats(prevChats => prevChats.filter(c => c.id !== docId));
-                }
-            });
-
-            // If it's the initial load (not just modifications), mark loading as false.
-            if (isLoading) {
-              setIsLoading(false);
-            }
-        }, (error) => {
-            console.error("Error listening to recent chats:", error);
-            setIsLoading(false);
+        // Subscribe to the new service
+        const unsubscribe = subscribeToRecentChats(user.uid, (chats) => {
+            setRecentChats(chats as RecentChatUser[]);
+            if (isLoading) setIsLoading(false);
         });
 
+        // Cleanup on unmount
         return () => unsubscribe();
-    }, [user]);
+    }, [user, isLoading]);
 
 
     const filteredChats = useMemo(() => {
@@ -478,5 +431,7 @@ export default function DesktopChatSidebar() {
         </div>
     );
 }
+
+    
 
     
