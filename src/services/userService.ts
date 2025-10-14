@@ -1,9 +1,9 @@
 
 'use server';
 
-import { db } from '@/lib/firebase'; // Correct: import client-side db
-import { adminDb } from '@/lib/firebase-admin'; // Correct: import admin-side db
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy, writeBatch, Timestamp } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
 import { deleteImageByUrl } from './storageService';
@@ -435,12 +435,13 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
 };
 
 /**
- * Performs a "soft delete" by anonymizing user data and disabling their auth account.
+ * Performs a "soft delete" by anonymizing user data, disabling their auth account,
+ * and marking the document for future cleanup.
  */
 export async function anonymizeUserAccount(userId: string): Promise<void> {
-    const userDocRef = getUserDocRef(userId);
+    const userDocRef = doc(adminDb, 'users', userId);
 
-    // Anonymize Firestore data
+    // Anonymize Firestore data but add a `deletedAt` timestamp
     const anonymizedData = {
         displayName: 'Deleted User',
         username: `deleted_${userId.substring(0, 8)}`,
@@ -451,21 +452,21 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
         statusEmoji: null,
         searchableIndex: [],
         geminiApiKey: null,
-        'preferences.routine': [],
+        deletedAt: Timestamp.now(), // Mark for future cleanup
     };
 
     await updateDoc(userDocRef, anonymizedData);
 
-    // Disable user in Firebase Auth
-    // This requires the Firebase Admin SDK.
+    // Disable user in Firebase Auth using the Admin SDK
     try {
-        await adminDb.collection('users').doc(userId).update(anonymizedData); // Using adminDb to be sure
         const { getAuth } = await import('firebase-admin/auth');
         await getAuth().updateUser(userId, { disabled: true });
     } catch (error) {
         console.error(`Failed to disable auth user ${userId}:`, error);
-        throw new Error('Failed to disable user account.');
+        // Do not re-throw, as the main data has been anonymized.
+        // Log this for manual review.
     }
 }
+    
 
     

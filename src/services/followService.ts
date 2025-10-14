@@ -9,6 +9,8 @@ import {
   getDoc,
   getDocs,
   Timestamp,
+  updateDoc,
+  increment,
 } from 'firebase/firestore';
 import { getUserProfile } from './userService';
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
@@ -36,15 +38,11 @@ export async function followUser(currentUserId: string, targetUserId: string) {
 
   // Increment following count for current user
   const currentUserDocRef = doc(db, 'users', currentUserId);
-  const currentUserSnap = await getDoc(currentUserDocRef);
-  const currentUserFollowingCount = (currentUserSnap.data()?.followingCount || 0) + 1;
-  batch.update(currentUserDocRef, { followingCount: currentUserFollowingCount });
+  batch.update(currentUserDocRef, { followingCount: increment(1) });
 
   // Increment followers count for target user
   const targetUserDocRef = doc(db, 'users', targetUserId);
-  const targetUserSnap = await getDoc(targetUserDocRef);
-  const targetUserFollowersCount = (targetUserSnap.data()?.followersCount || 0) + 1;
-  batch.update(targetUserDocRef, { followersCount: targetUserFollowersCount });
+  batch.update(targetUserDocRef, { followersCount: increment(1) });
   
   await batch.commit();
   
@@ -74,21 +72,20 @@ export async function unfollowUser(currentUserId: string, targetUserId: string) 
   if (!db) throw new Error("Firestore is not initialized.");
   const batch = writeBatch(db);
 
+  // Remove target from current user's following list
   const followingRef = doc(getFollowingCollection(currentUserId), targetUserId);
   batch.delete(followingRef);
 
+  // Remove current user from target's followers list
   const followerRef = doc(getFollowersCollection(targetUserId), currentUserId);
   batch.delete(followerRef);
   
+  // Decrement counts
   const currentUserDocRef = doc(db, 'users', currentUserId);
-  const currentUserSnap = await getDoc(currentUserDocRef);
-  const currentUserFollowingCount = Math.max(0, (currentUserSnap.data()?.followingCount || 1) - 1);
-  batch.update(currentUserDocRef, { followingCount: currentUserFollowingCount });
+  batch.update(currentUserDocRef, { followingCount: increment(-1) });
 
   const targetUserDocRef = doc(db, 'users', targetUserId);
-  const targetUserSnap = await getDoc(targetUserDocRef);
-  const targetUserFollowersCount = Math.max(0, (targetUserSnap.data()?.followersCount || 1) - 1);
-  batch.update(targetUserDocRef, { followersCount: targetUserFollowersCount });
+  batch.update(targetUserDocRef, { followersCount: increment(-1) });
   
   await batch.commit();
 };
@@ -108,3 +105,5 @@ export async function getFollowing(userId: string) {
   const users = await Promise.all(userPromises);
   return users.filter(u => u).map(u => ({ id: u!.uid, displayName: u!.displayName, photoURL: u!.photoURL, username: u!.username }));
 };
+
+    
