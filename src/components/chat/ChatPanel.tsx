@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeToMessages, subscribeToCallHistory, loadMessagesFromLocal, loadCallsFromLocal } from '@/services/chatService';
+import { subscribeToMessages, loadMessagesFromLocal } from '@/services/chatService';
 import { sendMessage, deleteMessage } from '@/actions/chatActions';
 import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -149,22 +149,15 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     }
 
     setIsLoading(true);
-    // Load initial data from local storage for instant view
     setMessages(loadMessagesFromLocal(currentUser.uid, otherUser.uid));
-    setCalls(loadCallsFromLocal(currentUser.uid).filter(c => c.otherUserId === otherUser.uid));
     setIsLoading(false);
     scrollToBottom('auto');
 
-    // Subscribe to real-time updates
     const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, setMessages);
-    const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
-        setCalls(allCalls.filter(c => c.otherUserId === otherUser.uid));
-    });
     const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
 
     return () => {
       unsubMessages();
-      unsubCalls();
       unsubTyping();
     };
   }, [currentUser, otherUser]);

@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
-import { subscribeToCallHistory, saveCallsToLocal, loadCallsFromLocal } from '@/services/chatService';
+import { subscribeToCallHistory, loadCallsFromLocal } from '@/services/chatService';
 
 const RECENT_CHATS_LOCAL_KEY = 'futureSightRecentChats';
 
@@ -75,7 +75,7 @@ const ChatListView = () => {
     const [chatToDelete, setChatToDelete] = useState<RecentChatUser | null>(null);
 
      useEffect(() => {
-        if (!user) {
+        if (!user || !db) {
             setIsLoading(false);
             return;
         }
@@ -94,7 +94,7 @@ const ChatListView = () => {
         }
         setIsLoading(false);
 
-        const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
+        const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -293,7 +293,7 @@ const CallLogView = () => {
     const { user } = useAuth();
     const { toast } = useToast();
     const { onInitiateCall } = useChat();
-    const [callLog, setCallLog] = useState<CallLogItem[]>([]);
+    const [callLog, setCallLog] = useState<CallData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -305,17 +305,17 @@ const CallLogView = () => {
         }
         setIsLoading(true);
         const localCalls = loadCallsFromLocal(user.uid);
-        setCallLog(localCalls as any);
+        setCallLog(localCalls);
         setIsLoading(false);
 
         const unsub = subscribeToCallHistory(user.uid, (calls) => {
-            setCallLog(calls as any); // Assume service provides the correct shape
+            setCallLog(calls);
         });
 
         return () => unsub();
     }, [user]);
 
-    const getCallIcon = (call: CallLogItem) => {
+    const getCallIcon = (call: CallData) => {
         if (!user) return null;
         
         const isOutgoing = call.callerId === user.uid;
@@ -324,13 +324,10 @@ const CallLogView = () => {
         const isMissed = isDeclined && !isOutgoing;
         const isRejected = isDeclined && isOutgoing;
 
-        const BaseIcon = call.callType === 'video' ? Video : Phone;
-        const baseClass = "h-4 w-4";
-
-        if (isMissed) return <PhoneMissed className={cn(baseClass, "text-red-500")} />;
-        if (isRejected) return <X className={cn(baseClass, "text-red-500")} />;
-        if (isOutgoing) return <ArrowUpRight className={cn(baseClass, "text-muted-foreground")} />;
-        return <ArrowDownLeft className={cn(baseClass, "text-muted-foreground")} />;
+        if (isMissed) return <PhoneMissed className="h-4 w-4 text-red-500" />;
+        if (isRejected) return <X className="h-4 w-4 text-red-500" />;
+        if (isOutgoing) return <ArrowUpRight className="h-4 w-4 text-muted-foreground" />;
+        return <ArrowDownLeft className="h-4 w-4 text-muted-foreground" />;
     };
     
     const isAllSelected = useMemo(() => callLog.length > 0 && selectedIds.size === callLog.length, [selectedIds, callLog]);
@@ -355,12 +352,9 @@ const CallLogView = () => {
     const handleBulkDelete = async () => {
         if (!user || selectedIds.size === 0) return;
         const idsToDelete = Array.from(selectedIds);
-        const originalLog = [...callLog];
         
-        // Optimistic UI update
-        const newLog = callLog.filter(c => !idsToDelete.includes(c.id));
-        setCallLog(newLog);
-        saveCallsToLocal(user.uid, newLog);
+        const originalLog = [...callLog];
+        setCallLog(prev => prev.filter(c => !idsToDelete.includes(c.id)));
         setSelectedIds(new Set());
 
         try {
@@ -368,7 +362,6 @@ const CallLogView = () => {
             toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
         } catch (error) {
             setCallLog(originalLog);
-            saveCallsToLocal(user.uid, originalLog);
             toast({ title: "Error", description: "Failed to delete call logs.", variant: "destructive" });
         }
     };
@@ -421,19 +414,19 @@ const CallLogView = () => {
                                 onCheckedChange={() => handleToggleSelection(call.id)}
                             />
                              <Avatar className="h-12 w-12">
-                                <AvatarImage src={call.otherUser.photoURL || ''} alt={call.otherUser.displayName} />
-                                <AvatarFallback>{call.otherUser.displayName.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={call.otherUser?.photoURL || ''} alt={call.otherUser?.displayName} />
+                                <AvatarFallback>{call.otherUser?.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm truncate">{call.otherUser.displayName}</h3>
+                                <h3 className="font-semibold text-sm truncate">{call.otherUser?.displayName}</h3>
                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     {getCallIcon(call)}
                                     <span>{formatDistanceToNow(new Date(call.createdAt.seconds * 1000), { addSuffix: true })}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'audio')}><Phone className="h-5 w-5 text-accent hover:text-black"/></Button>
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'video')}><Video className="h-5 w-5 text-accent hover:text-black"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'audio')}><Phone className="h-5 w-5 text-accent hover:text-black"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'video')}><Video className="h-5 w-5 text-accent hover:text-black"/></Button>
                             </div>
                         </div>
                     ))}

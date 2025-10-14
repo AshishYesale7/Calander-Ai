@@ -9,42 +9,40 @@ import {
   onSnapshot,
   Timestamp,
   type Unsubscribe,
+  where, // Added for call history query
 } from 'firebase/firestore';
-import type { ChatMessage, CallData } from '@/types';
+import type { ChatMessage, CallData, PublicUserProfile } from '@/types';
 
-// Centralized key generator for consistency
-const getLocalStorageKey = (userId: string, otherUserId: string, type: 'messages' | 'calls') => 
-  `futureSight_${type}_${[userId, otherUserId].sort().join('_')}`;
+// --- Local Storage Caching ---
 
+const getMessageCacheKey = (userId: string, otherUserId: string) => `chatMessages_${userId}_${otherUserId}`;
+const getCallHistoryCacheKey = (userId: string) => `callHistory_${userId}`;
 
-// --- Messages ---
-
-export const saveMessagesToLocal = (currentUserId: string, otherUserId: string, messages: ChatMessage[]) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const key = getLocalStorageKey(currentUserId, otherUserId, 'messages');
-    localStorage.setItem(key, JSON.stringify(messages));
-  } catch (error) {
-    console.warn('Failed to save messages to local storage', error);
+const saveToLocal = (key: string, data: any) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, JSON.stringify(data));
   }
 };
 
-export const loadMessagesFromLocal = (currentUserId: string, otherUserId: string): ChatMessage[] => {
+const loadFromLocal = (key: string): any[] => {
   if (typeof window === 'undefined') return [];
-  try {
-    const key = getLocalStorageKey(currentUserId, otherUserId, 'messages');
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      return JSON.parse(stored).map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      }));
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse from local storage", e);
+      return [];
     }
-    return [];
-  } catch (error) {
-    console.warn('Failed to load messages from local storage', error);
-    return [];
   }
+  return [];
+};
+
+// --- Messages ---
+
+export const loadMessagesFromLocal = (currentUserId: string, otherUserId: string): ChatMessage[] => {
+  const key = getMessageCacheKey(currentUserId, otherUserId);
+  return loadFromLocal(key).map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
 };
 
 export const subscribeToMessages = (
@@ -54,66 +52,43 @@ export const subscribeToMessages = (
 ): Unsubscribe => {
   if (!db) {
     console.error("Firestore is not initialized.");
-    // Immediately call back with local data if available, then return
     callback(loadMessagesFromLocal(currentUserId, otherUserId));
     return () => {};
   }
 
-  const messagesCollection = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
+  const messagesCollection = collection(db, 'users', currentUserId, 'chats', otherUserId, 'messages');
   const q = query(messagesCollection, orderBy('timestamp', 'asc'));
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
     const messages = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: (doc.data().timestamp as Timestamp).toDate(),
-        type: 'message' as const,
-      } as ChatMessage));
+      id: doc.id,
+      ...doc.data(),
+      timestamp: (doc.data().timestamp as Timestamp).toDate(),
+      type: 'message' as const,
+    } as ChatMessage));
       
     const filteredMessages = messages.filter(msg => !msg.deletedFor?.includes(currentUserId));
     
-    saveMessagesToLocal(currentUserId, otherUserId, filteredMessages);
+    saveToLocal(getMessageCacheKey(currentUserId, otherUserId), filteredMessages);
     callback(filteredMessages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
-      // On error, still provide local data as a fallback
       callback(loadMessagesFromLocal(currentUserId, otherUserId));
   });
 
   return unsubscribe;
 };
 
-
-// --- Calls ---
-
-export const saveCallsToLocal = (userId: string, calls: CallData[]) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const key = `futureSight_callHistory_${userId}`;
-    localStorage.setItem(key, JSON.stringify(calls));
-  } catch (error) {
-    console.warn('Failed to save calls to local storage', error);
-  }
-}
+// --- Call History ---
 
 export const loadCallsFromLocal = (userId: string): CallData[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-        const key = `futureSight_callHistory_${userId}`;
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            return JSON.parse(stored).map((call: any) => ({
-                ...call,
-                timestamp: new Date(call.timestamp),
-                createdAt: new Date(call.createdAt),
-            }));
-        }
-        return [];
-    } catch (error) {
-        console.warn('Failed to load calls from local storage', error);
-        return [];
-    }
-}
+    const key = getCallHistoryCacheKey(userId);
+    return loadFromLocal(key).map((call: any) => ({
+        ...call,
+        timestamp: new Date(call.timestamp),
+        createdAt: new Date(call.createdAt),
+    }));
+};
 
 export const subscribeToCallHistory = (
   userId: string,
@@ -125,10 +100,10 @@ export const subscribeToCallHistory = (
     return () => {};
   }
   
-  const callsCollectionRef = collection(db, 'users', userId, 'callHistory');
+  const callsCollectionRef = collection(db, 'users', userId, 'calls');
   const q = query(callsCollectionRef, orderBy('timestamp', 'desc'));
 
-  const unsubscribe = onSnapshot(q, async (snapshot) => {
+  const unsubscribe = onSnapshot(q, (snapshot) => {
     const calls = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -140,7 +115,7 @@ export const subscribeToCallHistory = (
         } as CallData;
       });
       
-    saveCallsToLocal(userId, calls);
+    saveToLocal(getCallHistoryCacheKey(userId), calls);
     callback(calls);
   }, (error) => {
     console.error("Error listening to call history:", error);

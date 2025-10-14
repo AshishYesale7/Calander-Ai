@@ -250,7 +250,6 @@ export interface CallData {
   callerName: string;
   callerPhotoURL: string | null;
   receiverId: string;
-  participantIds: string[];
   status: CallStatus;
   callType: CallType; 
   createdAt: any;
@@ -261,15 +260,18 @@ export interface CallData {
   type: 'call'; // Differentiator
   timestamp: Date;
   
-  // New fields for mute status
+  // For mute status on the shared signaling document
   callerMutedAudio?: boolean;
   callerMutedVideo?: boolean;
   receiverMutedAudio?: boolean;
   receiverMutedVideo?: boolean;
 
-  // New field for user-specific history
-  otherUserId?: string;
-  otherUser?: PublicUserProfile;
+  // For duplicated user-specific history records
+  otherUser?: {
+    uid: string;
+    displayName: string;
+    photoURL: string | null;
+  };
 }
 
 

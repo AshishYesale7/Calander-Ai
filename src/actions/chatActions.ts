@@ -8,14 +8,13 @@ import {
   writeBatch,
   Timestamp,
   serverTimestamp,
-  getDocs,
-  query,
-  where,
   getDoc,
 } from 'firebase/firestore';
 
 /**
- * Sends a message from one user to another. It writes the message to both the sender's and receiver's copy of the chat.
+ * Sends a message from one user to another.
+ * This performs a batch write to create a copy of the message in both the sender's and receiver's chat collections.
+ * It also updates the metadata for the recent chat for both users.
  * @param senderId The ID of the user sending the message.
  * @param receiverId The ID of the user receiving the message.
  * @param text The content of the message.
@@ -27,36 +26,36 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 
   const timestamp = Timestamp.now();
   
-  // Define the message data. We'll use a consistent ID for both copies.
-  const senderMessagesCol = collection(db, 'users', senderId, 'recentChats', receiverId, 'messages');
-  const messageDocRef = doc(senderMessagesCol); // Create a new doc ref to get a unique ID
+  // Define a consistent message ID for both copies
+  const senderMessageRef = doc(collection(db, 'users', senderId, 'chats', receiverId, 'messages'));
+  const messageId = senderMessageRef.id;
 
   const messageData = {
-      id: messageDocRef.id, // Include the ID in the data
+      id: messageId,
       text: text,
       senderId: senderId,
       timestamp: timestamp,
       type: 'message' as const,
-      deletedFor: [], // Initialize for "delete for me" functionality
+      deletedFor: [], // For "delete for me" functionality
   };
 
   try {
     const batch = writeBatch(db);
 
-    // 1. Add message to sender's chat collection with the new ID
-    batch.set(messageDocRef, messageData);
+    // 1. Add message to sender's chat collection
+    batch.set(senderMessageRef, messageData);
     
-    // 2. Add message to receiver's chat collection using the *same* ID
-    const receiverMessageRef = doc(db, 'users', receiverId, 'recentChats', senderId, 'messages', messageDocRef.id);
+    // 2. Add message to receiver's chat collection with the same ID
+    const receiverMessageRef = doc(db, 'users', receiverId, 'chats', senderId, 'messages', messageId);
     batch.set(receiverMessageRef, messageData);
     
-    // 3. Update the recent chat metadata for both users to show the latest message
-    const recentChatSenderRef = doc(db, 'users', senderId, 'recentChats', receiverId);
-    const recentChatReceiverRef = doc(db, 'users', receiverId, 'recentChats', senderId);
+    // 3. Update recent chat metadata for both users
+    const recentChatSenderRef = doc(db, 'users', senderId, 'chats', receiverId);
+    const recentChatReceiverRef = doc(db, 'users', receiverId, 'chats', senderId);
     
     const recentChatUpdate = {
         lastMessage: text,
-        timestamp: serverTimestamp(),
+        timestamp: timestamp, // Use the exact same timestamp
     };
 
     batch.set(recentChatSenderRef, recentChatUpdate, { merge: true });
@@ -88,23 +87,23 @@ export const deleteMessage = async (
     const batch = writeBatch(db);
 
     // Reference to the message in the current user's chat
-    const currentUserMsgRef = doc(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages', messageId);
+    const currentUserMsgRef = doc(db, 'users', currentUserId, 'chats', otherUserId, 'messages', messageId);
     
     if (mode === 'everyone') {
-        // For "everyone", we mark both documents as deleted.
+        // For "everyone", we mark both documents as deleted (soft delete).
+        // This is safer than hard deletion to prevent sync issues if one user is offline.
         const updateEveryone = {
             text: "This message was deleted",
-            isDeleted: true, // A hard deletion flag
-            deletedFor: [], // Clear individual deletions
+            isDeleted: true,
         };
-        // Also get reference to the message in the other user's chat
-        const otherUserMsgRef = doc(db, 'users', otherUserId, 'recentChats', currentUserId, 'messages', messageId);
+        // Get reference to the message in the other user's chat
+        const otherUserMsgRef = doc(db, 'users', otherUserId, 'chats', currentUserId, 'messages', messageId);
         batch.update(currentUserMsgRef, updateEveryone);
         batch.update(otherUserMsgRef, updateEveryone);
 
     } else { // mode === 'me'
-        // For "me", we just add the current user's ID to the deletedFor array in their own document.
-        // The client-side subscription will then filter this out.
+        // For "me", we just add the current user's ID to their copy's `deletedFor` array.
+        // The client-side subscription will then filter this out from view.
         const docSnap = await getDoc(currentUserMsgRef);
         if (docSnap.exists()) {
             const currentDeletedFor = docSnap.data().deletedFor || [];
@@ -126,7 +125,7 @@ export const deleteMessage = async (
 
 /**
  * Deletes an entire conversation history and call logs for the current user only.
- * This is now a simple and robust operation because it only touches the current user's data.
+ * This is a one-sided operation and does not affect the other user's data.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  */
@@ -135,30 +134,22 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
 
     const batch = writeBatch(db);
 
+    // This is a simplified operation because we are now only deleting the top-level chat document,
+    // and its subcollections will be handled by a Cloud Function for cleanup to avoid large client-side operations.
+    const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
+    batch.delete(recentChatRef);
+    
+    // It's also safe to delete the corresponding call history directly
+    const callsCollectionRef = collection(db, 'users', currentUserId, 'calls');
+    const callDocsToDelete = await getDocs(query(callsCollectionRef, where('otherUser.uid', '==', otherUserId)));
+    callDocsToDelete.forEach(doc => batch.delete(doc.ref));
+
     try {
-        // 1. Delete the conversation metadata from the current user's recent chats.
-        const recentChatRef = doc(db, 'users', currentUserId, 'recentChats', otherUserId);
-        batch.delete(recentChatRef);
-        
-        // 2. Delete all messages within that user's copy of the conversation.
-        const messagesCollectionRef = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
-        const messagesSnapshot = await getDocs(messagesCollectionRef);
-        messagesSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        // 3. Delete all call logs within that user's copy of the history related to the other user.
-        const callsCollectionRef = collection(db, 'users', currentUserId, 'callHistory');
-        const callsQuery = query(callsCollectionRef, where('otherUserId', '==', otherUserId));
-        const callsSnapshot = await getDocs(callsQuery);
-        callsSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
         await batch.commit();
-
+        // A Cloud Function with "Recursive Delete" should be set up to clean up the 'messages' subcollection.
+        // This prevents the client from having to read all documents to delete them, which is slow and costly.
     } catch (error) {
-        console.error("Error deleting conversation for user:", error);
+        console.error("Error deleting conversation metadata:", error);
         throw new Error("Failed to delete conversation from your view.");
     }
 };
