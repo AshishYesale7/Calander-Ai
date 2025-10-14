@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeToMessages, subscribeToCallHistory } from '@/services/chatService';
+import { subscribeToMessages, subscribeToCallHistory, loadMessagesFromLocal, loadCallsFromLocal } from '@/services/chatService';
 import { sendMessage, deleteMessage } from '@/actions/chatActions';
 import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -77,7 +77,8 @@ const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }
 
 export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
-  const [chatItems, setChatItems] = useState<MergedChatItem[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [calls, setCalls] = useState<CallData[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const chatItems = useMemo(() => {
+    return [...messages, ...calls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }, [messages, calls]);
 
   const isCallingThisUser = outgoingCall?.uid === otherUser.uid || outgoingAudioCall?.uid === otherUser.uid;
   const isCallActiveWithThisUser = (ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid)) || 
@@ -145,28 +149,17 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     }
 
     setIsLoading(true);
+    // Load initial data from local storage for instant view
+    setMessages(loadMessagesFromLocal(currentUser.uid, otherUser.uid));
+    setCalls(loadCallsFromLocal(currentUser.uid).filter(c => c.otherUserId === otherUser.uid));
+    setIsLoading(false);
+    scrollToBottom('auto');
 
-    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
-        setChatItems(prev => {
-            const calls = prev.filter(item => item.type === 'call');
-            const sorted = [...calls, ...newMessages].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-            return sorted;
-        });
-        setIsLoading(false);
-        scrollToBottom('auto');
+    // Subscribe to real-time updates
+    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, setMessages);
+    const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
+        setCalls(allCalls.filter(c => c.otherUserId === otherUser.uid));
     });
-
-    const unsubCalls = subscribeToCallHistory(currentUser.uid, (newCalls) => {
-      const relevantCalls = newCalls.filter(call => call.otherUserId === otherUser.uid);
-      setChatItems(prev => {
-        const messages = prev.filter(item => item.type === 'message');
-        const sorted = [...messages, ...relevantCalls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-        return sorted;
-      });
-      setIsLoading(false);
-      scrollToBottom('auto');
-    });
-
     const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
 
     return () => {
@@ -415,7 +408,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="flex flex-col gap-2 mt-2">
-                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center bg-destructive hover:bg-destructive/90">
+                 <AlertDialogAction onClick={() => handleDelete('everyone')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
+                    Delete for Everyone
+                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete for me
                 </AlertDialogAction>
