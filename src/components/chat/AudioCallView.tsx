@@ -14,17 +14,16 @@ interface AudioCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
-  localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   connectionStatus: RTCPeerConnectionState;
 }
 
-export default function AudioCallView({ call, otherUser, onEndCall, localStream, remoteStream, connectionStatus }: AudioCallViewProps) {
+export default function AudioCallView({ call, otherUser, onEndCall, remoteStream, connectionStatus }: AudioCallViewProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameId = useRef<number>();
+  const { onToggleMute } = useChat();
 
   // Effect for the call duration timer
   useEffect(() => {
@@ -91,13 +90,6 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
     }
   }, [remoteStream]);
 
-  // Effect to connect stream to the audio element for playback
-  useEffect(() => {
-    if (remoteStream && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
-
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -105,14 +97,10 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
     return `${mins}:${secs}`;
   };
 
-  const toggleMute = () => {
-    if (localStream) {
-        localStream.getAudioTracks().forEach(track => {
-            track.enabled = !track.enabled;
-            setIsMuted(!track.enabled);
-        });
-    }
-  };
+  const handleToggleMute = () => {
+    onToggleMute();
+    setIsMuted(prev => !prev);
+  }
 
   return (
     <motion.div
@@ -150,15 +138,13 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
       </div>
       
       <div className="flex justify-center gap-4 mt-6">
-        <Button onClick={toggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
+        <Button onClick={handleToggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
           {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
         </Button>
         <Button variant="destructive" size="icon" className="rounded-full h-14 w-14" onClick={onEndCall}>
           <PhoneOff className="h-6 w-6" />
         </Button>
       </div>
-       {/* Audio element to play the remote stream */}
-      <audio ref={remoteAudioRef} autoPlay playsInline />
     </motion.div>
   );
 }

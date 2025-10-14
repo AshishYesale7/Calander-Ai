@@ -144,7 +144,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const endCall = useCallback(() => {
         const id = activeCallId;
-        // Only send update if callId is a valid string
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
@@ -196,15 +195,20 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 audio: true
             });
             setLocalStream(stream);
-            stream.getTracks().forEach(track => {
-                if (pc.getSenders().find(sender => sender.track === track)) return;
-                pc.addTrack(track, stream)
-            });
 
             const newRemoteStream = new MediaStream();
             setRemoteStream(newRemoteStream);
+
+            stream.getTracks().forEach(track => {
+                if (!pc.getSenders().find(sender => sender.track === track)) {
+                    pc.addTrack(track, stream);
+                }
+            });
+            
             pc.ontrack = (event) => {
-                event.streams[0].getTracks().forEach(track => newRemoteStream.addTrack(track));
+                event.streams[0].getTracks().forEach(track => {
+                    newRemoteStream.addTrack(track);
+                });
             };
         };
 
@@ -406,7 +410,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         localStream, remoteStream,
         isPipMode, onTogglePipMode, pipControls, isResetting,
         pipSize, setPipSize, pipSizeMode,
-        setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
+        setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
     };
@@ -459,6 +463,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -664,6 +669,14 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const isVideoCallActive = !!(ongoingCall && otherUserInCall);
   const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
 
+  const { remoteStream } = useChat();
+  useEffect(() => {
+    if (remoteStream && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+
   return (
     <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
       <div className={cn(!isMobileChatFocus && 'contents')}>
@@ -789,9 +802,9 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 pipSizeMode={pipSizeMode}
                 onTogglePipSizeMode={() => {
                   setPipSizeMode(prev => {
-                      if (prev === 'medium') return 'large';
-                      if (prev === 'large') return 'small';
-                      return 'medium';
+                      const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+                      const currentIndex = sizes.indexOf(prev);
+                      return sizes[(currentIndex + 1) % sizes.length];
                   });
                 }}
             />
@@ -808,12 +821,14 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 call={ongoingAudioCall!}
                 otherUser={otherUserInCall!}
                 onEndCall={endCall}
-                localStream={useChat().localStream}
                 remoteStream={useChat().remoteStream}
                 connectionStatus={connectionStatus}
             />
           </motion.div>
       )}
+
+      {/* Central audio playback element */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
