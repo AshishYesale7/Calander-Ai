@@ -83,7 +83,7 @@ const ChatListView = () => {
         setIsLoading(true);
         const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
-
+        
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const changes = snapshot.docChanges();
             
@@ -110,12 +110,16 @@ const ChatListView = () => {
                         timestamp: recentChatData.timestamp?.toDate(),
                     } as RecentChatUser;
 
-                    if (change.type === 'added') {
-                        setRecentChats(prev => [chatPartner, ...prev.filter(c => c.id !== chatPartner.id)]);
-                    }
-                    if (change.type === 'modified') {
-                         setRecentChats(prev => prev.map(c => c.id === chatPartner.id ? chatPartner : c));
-                    }
+                    setRecentChats(prev => {
+                        const existingIndex = prev.findIndex(c => c.id === chatPartner.id);
+                        if (existingIndex > -1) {
+                            const newChats = [...prev];
+                            newChats[existingIndex] = chatPartner;
+                            return newChats;
+                        } else {
+                            return [chatPartner, ...prev];
+                        }
+                    });
                 }
             }
              // Sort after processing all changes
@@ -351,15 +355,12 @@ const CallLogView = () => {
         if (!user || selectedIds.size === 0) return;
         const idsToDelete = Array.from(selectedIds);
         
-        const originalLog = [...callLog];
-        setCallLog(prev => prev.filter(c => !idsToDelete.includes(c.id)));
-        setSelectedIds(new Set());
-
+        // No optimistic update here to prevent freezes. Let the listener handle it.
         try {
             await deleteCalls(user.uid, idsToDelete);
             toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
+            setSelectedIds(new Set());
         } catch (error) {
-            setCallLog(originalLog);
             toast({ title: "Error", description: "Failed to delete call logs.", variant: "destructive" });
         }
     };

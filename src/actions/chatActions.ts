@@ -122,36 +122,22 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
 
     const batch = writeBatch(db);
 
-    // 1. Delete the top-level chat metadata document.
-    const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
-    batch.delete(recentChatRef);
-    
-    // 2. Query and delete all messages in the subcollection
+    // 1. Delete all messages in the subcollection
     const messagesCollectionRef = collection(db, 'users', currentUserId, 'chats', otherUserId, 'messages');
     const messagesSnapshot = await getDocs(messagesCollectionRef);
     messagesSnapshot.forEach(doc => batch.delete(doc.ref));
 
-    // 3. Query and delete all associated call logs (both incoming and outgoing with this user)
+    // 2. Query and delete all associated call logs
     const callsCollectionRef = collection(db, 'users', currentUserId, 'calls');
-    const callQuery1 = query(callsCollectionRef, where('callerId', '==', otherUserId));
-    const callQuery2 = query(callsCollectionRef, where('receiverId', '==', otherUserId));
+    const callQuery = query(callsCollectionRef, where('callerId', '==', otherUserId), where('receiverId', '==', otherUserId));
+    const callSnapshot = await getDocs(callQuery);
+    callSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // 3. Delete the top-level chat metadata document.
+    const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
+    batch.delete(recentChatRef);
     
     try {
-        const [callDocs1, callDocs2] = await Promise.all([getDocs(callQuery1), getDocs(callQuery2)]);
-        
-        callDocs1.forEach(doc => {
-            // Ensure we don't accidentally delete calls between other users if the query is too broad.
-            // This is a safety check.
-            if(doc.data().receiverId === currentUserId) {
-                batch.delete(doc.ref)
-            }
-        });
-        callDocs2.forEach(doc => {
-            if(doc.data().callerId === currentUserId) {
-                batch.delete(doc.ref)
-            }
-        });
-
         // Commit all deletions at once.
         await batch.commit();
         
