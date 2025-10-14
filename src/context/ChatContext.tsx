@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { ReactNode, Dispatch, SetStateAction } from 'react';
+import type { ReactNode, Dispatch, SetStateAction, RefObject } from 'react';
 import { createContext, useContext, useState, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { CallData, CallType } from '@/types';
@@ -52,6 +52,7 @@ interface ChatContextType {
   onToggleMute: () => void;
   otherUserInCall: PublicUserProfile | null;
   connectionStatus: RTCPeerConnectionState;
+  peerConnectionRef: RefObject<RTCPeerConnection>; // Expose the ref
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);

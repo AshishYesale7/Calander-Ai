@@ -411,6 +411,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         pipSizeMode, setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
+        peerConnectionRef, // Expose the ref
     };
     
     return (
@@ -432,7 +433,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
-      connectionStatus, remoteStream, localStream
+      connectionStatus, remoteStream, localStream,
   } = useChat();
   const { toast } = useToast();
   const router = useRouter();
@@ -460,25 +461,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Conditional returns are now placed AFTER all hooks have been called.
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Preloader />
-      </div>
-    );
-  }
-  
-  if (!onboardingCompleted) {
-    return (
-      <div className="h-screen w-full flex-col">
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={onFinishOnboarding} />
-        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
-      </div>
-    );
-  }
 
   useEffect(() => {
     if (connectionStatus === 'disconnected') {
@@ -645,6 +627,24 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     }
   }, [remoteStream]);
 
+  // Conditional returns are now placed AFTER all hooks have been called.
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Preloader />
+      </div>
+    );
+  }
+  
+  if (!onboardingCompleted) {
+    return (
+      <div className="h-screen w-full flex-col">
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+        <OnboardingModal onFinish={onFinishOnboarding} />
+        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+      </div>
+    );
+  }
 
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
