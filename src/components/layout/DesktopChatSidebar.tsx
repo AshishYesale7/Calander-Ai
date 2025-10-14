@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
-import { subscribeToCallHistory, loadCallsFromLocal } from '@/services/chatService';
+import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -79,51 +79,8 @@ const ChatListView = () => {
         }
         setIsLoading(true);
 
-        const recentChatsRef = collection(db, 'users', user.uid, 'chats');
-        const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
-
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const newRecentChatData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // Find which users we need to fetch profiles for
-            const userIdsToFetch = newRecentChatData
-                .map(chat => chat.id)
-                .filter(id => !recentChats.some(rc => rc.uid === id));
-            
-            let newProfiles: PublicUserProfile[] = [];
-            if (userIdsToFetch.length > 0) {
-                const profilePromises = userIdsToFetch.map(id => getDoc(doc(db, 'users', id)));
-                const profileDocs = await Promise.all(profilePromises);
-                newProfiles = profileDocs
-                    .filter(docSnap => docSnap.exists())
-                    .map(docSnap => ({ uid: docSnap.id, ...docSnap.data() } as PublicUserProfile));
-            }
-
-            // Merge new data with existing data
-            setRecentChats(currentChats => {
-                const updatedChats = newRecentChatData.map(newChatData => {
-                    const existingChat = currentChats.find(c => c.uid === newChatData.id);
-                    const newProfile = newProfiles.find(p => p.uid === newChatData.id);
-
-                    const profileData = newProfile || existingChat;
-                    if (!profileData) return null;
-
-                    return {
-                        ...profileData,
-                        lastMessage: newChatData.lastMessage,
-                        timestamp: newChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
-                }).filter(c => c !== null) as RecentChatUser[];
-                
-                return updatedChats;
-            });
-            
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error listening to recent chats:", error);
+        const unsubscribe = subscribeToRecentChats(user.uid, (chats) => {
+            setRecentChats(chats);
             setIsLoading(false);
         });
 
@@ -190,8 +147,8 @@ const ChatListView = () => {
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
                       {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredChats.map(chat => (
-                        <ContextMenu>
-                            <ContextMenuTrigger key={chat.id}>
+                        <ContextMenu key={chat.id}>
+                            <ContextMenuTrigger>
                                 <button
                                     className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
                                     onClick={() => handleUserClick(chat)}
@@ -475,5 +432,6 @@ export default function DesktopChatSidebar() {
     
 
     
+
 
 
