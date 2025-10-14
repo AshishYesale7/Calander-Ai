@@ -34,7 +34,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
 
   // Effect for Web Audio API and canvas visualization
   useEffect(() => {
-    if (remoteStream && canvasRef.current) {
+    if (remoteStream && remoteStream.getAudioTracks().length > 0 && canvasRef.current) {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(remoteStream);
