@@ -178,8 +178,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         const call = ongoingCall || ongoingAudioCall;
         if (!call) return;
 
-        const isVideoCall = call.callType === 'video';
-
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         peerConnectionRef.current = pc;
         
@@ -189,7 +187,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
         const setupStreamsAndSignaling = async () => {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: isVideoCall,
+                video: call.callType === 'video',
                 audio: true
             });
 
@@ -230,15 +228,13 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 });
             }
             
-            // Perform Offer/Answer Exchange
             if (isCaller) {
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 await saveOffer(call.id, offer);
-            } // Receiver logic is handled by listening to the call doc
+            }
         };
 
-        // This listener handles the answer from the receiver
         unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
             const data = snapshot.data();
             if (!data || pc.signalingState === 'closed') return;
@@ -293,15 +289,13 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-             // First check: does the call still exist and is it active?
             if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
-                endCall(activeCallId); // If not, end the call immediately for this user.
+                endCall(activeCallId);
                 return;
             }
 
             const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
             
-            // Second check: is the call being answered for the first time?
             if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                 const userDoc = await getDoc(doc(db, 'users', otherUserId));
@@ -407,11 +401,11 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         localStream, remoteStream,
         isPipMode, onTogglePipMode, pipControls, isResetting,
         pipSize,
-        setPipSize: () => {}, // Placeholder, actual sizing controlled by pipSizeMode
+        setPipSize: () => {}, 
         pipSizeMode, setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
-        peerConnectionRef, // Expose the ref
+        peerConnectionRef,
     };
     
     return (
@@ -424,7 +418,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 }
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-  // All hooks are called at the top, unconditionally.
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused,
@@ -432,8 +425,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       incomingCall, incomingAudioCall, acceptCall, declineCall, 
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
-      connectionStatus, remoteStream, localStream,
+      pipSize, pipSizeMode, setPipSizeMode, isMuted,
+      connectionStatus, remoteStream,
   } = useChat();
   const { toast } = useToast();
   const router = useRouter();
@@ -444,23 +437,21 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const lastScrollY = useRef(0);
   
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (connectionStatus === 'disconnected') {
@@ -627,7 +618,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     }
   }, [remoteStream]);
 
-  // Conditional returns are now placed AFTER all hooks have been called.
   if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -811,7 +801,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           </motion.div>
       )}
 
-      {/* Central audio playback element */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />

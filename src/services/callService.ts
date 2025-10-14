@@ -31,11 +31,44 @@ export async function createCall(callData: {
     ...callData,
     participantIds: [callData.callerId, callData.receiverId].sort(),
     status: 'ringing',
-    createdAt: Timestamp.now(), // Use Timestamp.now() instead of FieldValue
+    createdAt: Timestamp.now(),
+    callerMutedAudio: false,
+    callerMutedVideo: false,
+    receiverMutedAudio: false,
+    receiverMutedVideo: false,
   });
   
   return docRef.id;
 }
+
+/**
+ * Updates the mute status for a participant in a call.
+ */
+export async function updateCallParticipantStatus(
+  callId: string,
+  userId: string,
+  updates: { audioMuted?: boolean; videoMuted?: boolean }
+): Promise<void> {
+  const callDocRef = getCallDocRef(callId);
+  const docSnap = await callDocRef.get();
+  if (!docSnap.exists) return;
+
+  const callData = docSnap.data();
+  const isCaller = callData?.callerId === userId;
+  
+  const firestoreUpdates: Record<string, boolean> = {};
+  if (updates.audioMuted !== undefined) {
+    firestoreUpdates[isCaller ? 'callerMutedAudio' : 'receiverMutedAudio'] = updates.audioMuted;
+  }
+  if (updates.videoMuted !== undefined) {
+    firestoreUpdates[isCaller ? 'callerMutedVideo' : 'receiverMutedVideo'] = updates.videoMuted;
+  }
+
+  if (Object.keys(firestoreUpdates).length > 0) {
+    await callDocRef.update(firestoreUpdates);
+  }
+}
+
 
 /**
  * Updates the status of an existing call.

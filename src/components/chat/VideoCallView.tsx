@@ -1,22 +1,20 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { PublicUserProfile } from '@/services/userService';
+import { useState, useEffect, useRef } from 'react';
+import type { PublicUserProfile, CallData } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureInPicture2, Maximize, Minimize, SwitchCamera, FlipHorizontal } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import type { CallData } from '@/types';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, PictureInPicture2, Maximize, Minimize, SwitchCamera } from 'lucide-react';
+import type { CallData as CallDataType } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useChat } from '@/context/ChatContext';
-
+import { updateCallParticipantStatus } from '@/services/callService';
 
 interface VideoCallViewProps {
-  call: CallData;
+  call: CallDataType;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
   isPipMode: boolean;
@@ -27,17 +25,21 @@ interface VideoCallViewProps {
 
 export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode, pipSizeMode, onTogglePipSizeMode }: VideoCallViewProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const { localStream, remoteStream, isMuted, onToggleMute, connectionStatus, peerConnectionRef } = useChat();
 
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(true);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [callData, setCallData] = useState<CallDataType>(call);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   
+  useEffect(() => {
+    setCallData(call);
+  }, [call]);
+
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
@@ -50,7 +52,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     }
   }, [remoteStream]);
   
-  // Check for multiple cameras
   useEffect(() => {
     const checkCameras = async () => {
       try {
@@ -64,58 +65,52 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     checkCameras();
   }, []);
 
-
-  const toggleCamera = () => {
+  const handleToggleCamera = () => {
     if (localStream) {
-      localStream.getVideoTracks().forEach(track => {
-        track.enabled = !track.enabled;
-        setIsCameraOff(!track.enabled);
-      });
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        const isOff = !videoTrack.enabled;
+        setIsCameraOff(isOff);
+        if (user) {
+          updateCallParticipantStatus(call.id, user.uid, { videoMuted: isOff });
+        }
+      }
+    }
+  };
+  
+  const handleToggleMute = () => {
+    onToggleMute(); // This function is from useChat and already handles local stream
+    if (user) {
+        // We read the NEW mute state, which is the opposite of the current one.
+        updateCallParticipantStatus(call.id, user.uid, { audioMuted: !isMuted });
     }
   };
 
+
   const flipCamera = async () => {
-    if (!localStream || !hasMultipleCameras) {
-        toast({
-          title: "Camera Switch Failed",
-          description: "Could not find a second camera to switch to.",
-          variant: 'destructive'
-        });
-        return;
-    }
+    if (!localStream || !hasMultipleCameras || !peerConnectionRef.current) return;
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
     
     try {
-        // Stop the current video track to release the camera
         localStream.getVideoTracks().forEach(track => track.stop());
 
-        // Get the new stream with the desired facing mode.
-        // We do not use `exact` to provide more flexibility for different devices.
         const newStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: newFacingMode },
         });
         
         const newVideoTrack = newStream.getVideoTracks()[0];
         
-        // Find the video sender in the peer connection
-        const pc = peerConnectionRef.current;
-        const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
-            // Replace the track in the peer connection
             await sender.replaceTrack(newVideoTrack);
-
-            // Update the local video element with a new stream containing the new video track
-            // and the existing audio tracks.
+            
             if (localVideoRef.current) {
-                const newLocalStream = new MediaStream([newVideoTrack, ...localStream.getAudioTracks()]);
-                localVideoRef.current.srcObject = newLocalStream;
-
-                // Stop old stream tracks to be clean, though they should be stopped already.
-                localStream.getTracks().forEach(t => {
-                    if (t.kind === 'video') t.stop();
-                });
+                // Important: Keep audio tracks from original stream!
+                const newLocalStreamForPreview = new MediaStream([newVideoTrack, ...localStream.getAudioTracks()]);
+                localVideoRef.current.srcObject = newLocalStreamForPreview;
             }
             setIsFrontCamera(!isFrontCamera);
         } else {
@@ -123,27 +118,32 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         }
     } catch (error) {
         console.error("Error flipping camera:", error);
-        toast({ 
-            title: "Camera Switch Failed", 
-            description: "Could not access the other camera. It might be in use or not supported.", 
-            variant: 'destructive' 
-        });
-        // As a fallback, try to restart the original stream if the switch fails
-        try {
-            const originalStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: isFrontCamera ? 'user' : 'environment' }, audio: true });
-            if (localVideoRef.current) localVideoRef.current.srcObject = originalStream;
-        } catch(restartError) {
-             console.error("Failed to restart original camera stream:", restartError);
-        }
     }
   };
-
+  
+  const isCurrentUserCaller = user?.uid === call.callerId;
+  const otherUserMutedAudio = isCurrentUserCaller ? callData.receiverMutedAudio : callData.callerMutedAudio;
+  const otherUserMutedVideo = isCurrentUserCaller ? callData.receiverMutedVideo : callData.callerMutedVideo;
 
   return (
     <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
-      {/* Remote Video */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
+        
+        {/* Remote User Mute Indicators */}
+        <AnimatePresence>
+        {(otherUserMutedAudio || otherUserMutedVideo) && (
+             <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg flex items-center gap-2"
+             >
+                {otherUserMutedAudio && <MicOff className="h-5 w-5 text-red-500"/>}
+                {otherUserMutedVideo && <VideoOff className="h-5 w-5 text-red-500"/>}
+             </motion.div>
+        )}
+        </AnimatePresence>
         
         {isPipMode && (
           <Button variant="ghost" size="icon" className="absolute top-1 left-1 h-7 w-7 text-white/70 hover:text-white" onClick={onTogglePipSizeMode}>
@@ -157,13 +157,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
                 Reconnecting...
             </div>
         )}
-        {!isPipMode && (
-           <div className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg">
-             <p className="font-semibold">{otherUser.displayName}</p>
-           </div>
-        )}
-
-        {/* Local Video Preview */}
+       
         {localStream && (
           <motion.div
             drag
@@ -181,6 +175,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               playsInline
               style={{ transform: 'scaleX(-1)' }}
             />
+            {/* Local User Mute Indicators */}
+            {(isMuted || isCameraOff) && (
+              <div className="absolute bottom-1 right-1 bg-black/50 p-1 rounded-full flex items-center gap-1">
+                  {isMuted && <MicOff className="h-3 w-3 text-white"/>}
+                  {isCameraOff && <VideoOff className="h-3 w-3 text-white"/>}
+              </div>
+            )}
             {isCameraOff && hasPermission && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
                 Camera is off
@@ -189,27 +190,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
           </motion.div>
         )}
       </div>
-      
-       {hasPermission === false && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10/12 max-w-md">
-            <Alert variant="destructive">
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>
-                Please allow camera and microphone access to use this feature.
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
 
-      {/* Call Controls */}
-      <div className={cn(
-          "flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", 
-          isPipMode && "p-2 gap-2"
-        )}>
-        <Button onClick={onToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+      <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", isPipMode && "p-2 gap-2")}>
+        <Button onClick={handleToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-        <Button onClick={toggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+        <Button onClick={handleToggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isCameraOff ? <VideoOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Video className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
         <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={onEndCall}>
@@ -223,11 +209,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
             {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-         {!isPipMode && (
-            <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
-                <Users className="h-6 w-6" />
-            </Button>
-         )}
       </div>
     </div>
   );

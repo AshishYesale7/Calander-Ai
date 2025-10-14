@@ -252,7 +252,7 @@ export interface CallData {
   receiverId: string;
   participantIds: string[];
   status: CallStatus;
-  callType: CallType; // New field
+  callType: CallType; 
   createdAt: any;
   endedAt?: any;
   duration?: number; // in seconds
@@ -260,6 +260,12 @@ export interface CallData {
   answer?: RTCSessionDescriptionInit;
   type: 'call'; // Differentiator
   timestamp: Date;
+  
+  // New fields for mute status
+  callerMutedAudio?: boolean;
+  callerMutedVideo?: boolean;
+  receiverMutedAudio?: boolean;
+  receiverMutedVideo?: boolean;
 }
 
 
