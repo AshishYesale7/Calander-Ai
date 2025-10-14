@@ -9,6 +9,9 @@ import {
   Timestamp,
   serverTimestamp,
   getDoc,
+  getDocs,
+  query,
+  where,
 } from 'firebase/firestore';
 
 /**
