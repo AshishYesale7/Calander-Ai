@@ -4,7 +4,8 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { subscribeToRecentChats } from '@/services/chatService'; 
+import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
 import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus } from 'lucide-react';
@@ -37,7 +38,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal } from '@/services/chatService';
-import { db } from '@/lib/firebase';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -77,15 +77,58 @@ const ChatListView = () => {
             setIsLoading(false);
             return;
         }
-
         setIsLoading(true);
-        const unsubscribe = subscribeToRecentChats(user.uid, (chats) => {
-            setRecentChats(chats as RecentChatUser[]);
-            if (isLoading) setIsLoading(false);
+
+        const recentChatsRef = collection(db, 'users', user.uid, 'chats');
+        const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
+
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            const newRecentChatData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            // Find which users we need to fetch profiles for
+            const userIdsToFetch = newRecentChatData
+                .map(chat => chat.id)
+                .filter(id => !recentChats.some(rc => rc.uid === id));
+            
+            let newProfiles: PublicUserProfile[] = [];
+            if (userIdsToFetch.length > 0) {
+                const profilePromises = userIdsToFetch.map(id => getDoc(doc(db, 'users', id)));
+                const profileDocs = await Promise.all(profilePromises);
+                newProfiles = profileDocs
+                    .filter(docSnap => docSnap.exists())
+                    .map(docSnap => ({ uid: docSnap.id, ...docSnap.data() } as PublicUserProfile));
+            }
+
+            // Merge new data with existing data
+            setRecentChats(currentChats => {
+                const updatedChats = newRecentChatData.map(newChatData => {
+                    const existingChat = currentChats.find(c => c.uid === newChatData.id);
+                    const newProfile = newProfiles.find(p => p.uid === newChatData.id);
+
+                    const profileData = newProfile || existingChat;
+                    if (!profileData) return null;
+
+                    return {
+                        ...profileData,
+                        lastMessage: newChatData.lastMessage,
+                        timestamp: newChatData.timestamp?.toDate(),
+                    } as RecentChatUser;
+                }).filter(c => c !== null) as RecentChatUser[];
+                
+                return updatedChats;
+            });
+            
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error listening to recent chats:", error);
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [user, isLoading]);
+    }, [user]);
 
 
     const filteredChats = useMemo(() => {
@@ -432,3 +475,4 @@ export default function DesktopChatSidebar() {
     
 
     
+
