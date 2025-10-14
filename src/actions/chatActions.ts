@@ -12,6 +12,8 @@ import {
   getDocs,
   query,
   where,
+  deleteDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 /**
@@ -39,7 +41,6 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
       senderId: senderId,
       timestamp: timestamp,
       type: 'message' as const,
-      deletedFor: [], // For "delete for me" functionality
   };
 
   try {
@@ -87,41 +88,27 @@ export const deleteMessage = async (
 ): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const batch = writeBatch(db);
-
-    // Reference to the message in the current user's chat
-    const currentUserMsgRef = doc(db, 'users', currentUserId, 'chats', otherUserId, 'messages', messageId);
-    
     if (mode === 'everyone') {
-        // For "everyone", we mark both documents as deleted (soft delete).
-        // This is safer than hard deletion to prevent sync issues if one user is offline.
+        const batch = writeBatch(db);
         const updateEveryone = {
             text: "This message was deleted",
             isDeleted: true,
         };
-        // Get reference to the message in the other user's chat
-        const otherUserMsgRef = doc(db, 'users', otherUserId, 'chats', currentUserId, 'messages', messageId);
+        // Mark as deleted in current user's chat
+        const currentUserMsgRef = doc(db, 'users', currentUserId, 'chats', otherUserId, 'messages', messageId);
         batch.update(currentUserMsgRef, updateEveryone);
+        
+        // Mark as deleted in other user's chat
+        const otherUserMsgRef = doc(db, 'users', otherUserId, 'chats', currentUserId, 'messages', messageId);
         batch.update(otherUserMsgRef, updateEveryone);
+        
+        await batch.commit();
 
     } else { // mode === 'me'
-        // For "me", we just add the current user's ID to their copy's `deletedFor` array.
-        // The client-side subscription will then filter this out from view.
-        const docSnap = await getDoc(currentUserMsgRef);
-        if (docSnap.exists()) {
-            const currentDeletedFor = docSnap.data().deletedFor || [];
-            if (!currentDeletedFor.includes(currentUserId)) {
-                const updatedDeletedFor = [...currentDeletedFor, currentUserId];
-                batch.update(currentUserMsgRef, { deletedFor: updatedDeletedFor });
-            }
-        }
-    }
-    
-    try {
-        await batch.commit();
-    } catch (error) {
-        console.error("Error deleting message:", error);
-        throw new Error("Failed to delete message.");
+        // For "me", we just perform a hard delete on the user's copy of the message.
+        // This is simpler and safer now with the duplicated data model.
+        const currentUserMsgRef = doc(db, 'users', currentUserId, 'chats', otherUserId, 'messages', messageId);
+        await deleteDoc(currentUserMsgRef);
     }
 };
 
@@ -137,8 +124,7 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
 
     const batch = writeBatch(db);
 
-    // This is a simplified operation because we are now only deleting the top-level chat document,
-    // and its subcollections will be handled by a Cloud Function for cleanup to avoid large client-side operations.
+    // Deletes the top-level chat document, which contains metadata like lastMessage.
     const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
     batch.delete(recentChatRef);
     
@@ -149,8 +135,8 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
 
     try {
         await batch.commit();
-        // A Cloud Function with "Recursive Delete" should be set up to clean up the 'messages' subcollection.
-        // This prevents the client from having to read all documents to delete them, which is slow and costly.
+        // The cleanup of the `messages` subcollection will be handled by a scheduled Cloud Function
+        // to avoid high read/write costs on the client for large conversations.
     } catch (error) {
         console.error("Error deleting conversation metadata:", error);
         throw new Error("Failed to delete conversation from your view.");

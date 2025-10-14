@@ -23,9 +23,10 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator
 } from "@/components/ui/context-menu"
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 
 
 interface ChatPanelProps {
@@ -74,6 +75,86 @@ const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }
     );
 };
 
+const MessageItem = ({
+  msg,
+  isMe,
+  isLastInBlock,
+  onDelete,
+}: {
+  msg: ChatMessage;
+  isMe: boolean;
+  isLastInBlock: boolean;
+  onDelete: (messageId: string, mode: 'me' | 'everyone') => void;
+}) => {
+  const { toast } = useToast();
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.text);
+    toast({ title: 'Copied to clipboard' });
+  };
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}>
+          {!isMe && !isLastInBlock && <div className="w-8 h-8"></div> /* Spacer */}
+          <div
+            className={cn(
+              'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1',
+              isMe ? 'bg-blue-500 text-white rounded-3xl' : 'bg-[#262626] text-white rounded-3xl',
+              isLastInBlock ? (isMe ? 'rounded-br-lg' : 'rounded-bl-lg') : 'rounded-lg'
+            )}
+          >
+            {msg.isDeleted ? (
+              <span className="italic text-gray-400">{msg.text}</span>
+            ) : (
+              <span>{msg.text}</span>
+            )}
+            <span className={cn('text-white/70 self-end mt-1 text-[10px]', isMe ? 'text-right' : 'text-left')}>
+              {format(msg.timestamp, 'p')}
+            </span>
+          </div>
+        </div>
+      </ContextMenuTrigger>
+      {!msg.isDeleted && (
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy
+          </ContextMenuItem>
+          {isMe && (
+            <>
+              <ContextMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <ContextMenuItem className="text-red-500" onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </ContextMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
+                    <AlertDialogHeader className="text-center">
+                        <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <div className="flex flex-col gap-2 mt-2">
+                        <AlertDialogAction onClick={() => onDelete(msg.id, 'everyone')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
+                            Delete for Everyone
+                        </AlertDialogAction>
+                        <AlertDialogAction onClick={() => onDelete(msg.id, 'me')} className="w-full justify-center">
+                            Delete for Me
+                        </AlertDialogAction>
+                        <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
+                    </div>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </ContextMenuContent>
+      )}
+    </ContextMenu>
+  );
+};
+
 
 export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
@@ -90,7 +171,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
-  const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -131,13 +211,14 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   };
   
   const groupedChatItems = useMemo(() => {
-    return chatItems.reduce((acc, item) => {
-      const dateKey = format(item.timestamp, 'yyyy-MM-dd');
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(item);
-      return acc;
+    return chatItems.reduce((acc, item, index) => {
+        if (!item || !item.timestamp) return acc;
+        const dateKey = format(item.timestamp, 'yyyy-MM-dd');
+        if (!acc[dateKey]) {
+            acc[dateKey] = [];
+        }
+        acc[dateKey].push(item);
+        return acc;
     }, {} as Record<string, MergedChatItem[]>);
   }, [chatItems]);
 
@@ -153,7 +234,9 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setIsLoading(false);
     scrollToBottom('auto');
 
-    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, setMessages);
+    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
+        setMessages(newMessages.filter(m => !m.deletedFor?.includes(currentUser.uid)));
+    });
     const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
 
     return () => {
@@ -200,22 +283,15 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setChattingWith(null);
   };
 
-  const handleDelete = async (mode: 'me' | 'everyone') => {
-    if (!messageToDelete || !currentUser || !otherUser) return;
+  const handleDelete = async (messageId: string, mode: 'me' | 'everyone') => {
+    if (!currentUser || !otherUser) return;
     try {
-        await deleteMessage(currentUser.uid, otherUser.uid, messageToDelete.id, mode);
+        await deleteMessage(currentUser.uid, otherUser.uid, messageId, mode);
         toast({ title: "Message Deleted" });
     } catch (error) {
         toast({ title: "Error", description: "Could not delete message.", variant: "destructive" });
-    } finally {
-        setMessageToDelete(null);
     }
   };
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied to clipboard" });
-  }
   
   const isMobileChatFocus = isMobile && isChatInputFocused;
 
@@ -284,60 +360,20 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                       }
                       
                       const msg = item as ChatMessage;
+                      if (!msg.senderId) return null; // Defensive check
+                      
                       const isMe = msg.senderId === currentUser?.uid;
                       const nextItem = items[index + 1];
                       const isLastInBlock = !nextItem || nextItem.type === 'call' || (nextItem.type === 'message' && nextItem.senderId !== msg.senderId);
 
                       return (
-                        <ContextMenu key={msg.id}>
-                            <ContextMenuTrigger asChild>
-                                <div
-                                className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}
-                                >
-                                {!isMe && !isLastInBlock && <div className="w-8 h-8"></div> /* Spacer */}
-                                {!isMe && isLastInBlock && (
-                                    <Avatar className="h-8 w-8 self-end">
-                                    <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
-                                    <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                )}
-                                <div
-                                    className={cn(
-                                    'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1',
-                                    isMe
-                                        ? 'bg-blue-500 text-white rounded-3xl'
-                                        : 'bg-[#262626] text-white rounded-3xl',
-                                    isLastInBlock ? (isMe ? 'rounded-br-lg' : 'rounded-bl-lg') : 'rounded-lg'
-                                    )}
-                                >
-                                    {msg.isDeleted ? (
-                                        <span className="italic text-gray-400">{msg.text}</span>
-                                    ) : (
-                                        <span>{msg.text}</span>
-                                    )}
-                                     <span className={cn("text-white/70 self-end mt-1 text-[10px]", isMe ? 'text-right' : 'text-left')}>{format(msg.timestamp, 'p')}</span>
-                                </div>
-                                </div>
-                            </ContextMenuTrigger>
-                            {!msg.isDeleted && (
-                                <ContextMenuContent className="w-48">
-                                    <ContextMenuItem onClick={() => handleCopy(msg.text)}>
-                                        <Copy className="mr-2 h-4 w-4" />
-                                        Copy
-                                    </ContextMenuItem>
-                                    {isMe && (
-                                        <>
-                                            {/* Edit feature to be added */}
-                                            {/* <ContextMenuItem>Edit</ContextMenuItem> */}
-                                            <ContextMenuItem className="text-red-500" onSelect={() => setMessageToDelete(msg)}>
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </ContextMenuItem>
-                                        </>
-                                    )}
-                                </ContextMenuContent>
-                            )}
-                        </ContextMenu>
+                        <MessageItem
+                            key={msg.id}
+                            msg={msg}
+                            isMe={isMe}
+                            isLastInBlock={isLastInBlock}
+                            onDelete={handleDelete}
+                        />
                       )
                     })}
                 </div>
@@ -392,26 +428,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         </form>
       </footer>
     </div>
-    <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
-        <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
-            <AlertDialogHeader className="text-center">
-                <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
-                <AlertDialogDescription className="text-xs">
-                    You can delete this message for everyone or just for yourself.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex flex-col gap-2 mt-2">
-                 <AlertDialogAction onClick={() => handleDelete('everyone')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
-                    Delete for Everyone
-                </AlertDialogAction>
-                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete for me
-                </AlertDialogAction>
-                <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
-            </div>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }

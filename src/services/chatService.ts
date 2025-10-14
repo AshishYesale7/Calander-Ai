@@ -9,7 +9,7 @@ import {
   onSnapshot,
   Timestamp,
   type Unsubscribe,
-  where, // Added for call history query
+  where,
 } from 'firebase/firestore';
 import type { ChatMessage, CallData, PublicUserProfile } from '@/types';
 
@@ -20,7 +20,11 @@ const getCallHistoryCacheKey = (userId: string) => `callHistory_${userId}`;
 
 const saveToLocal = (key: string, data: any) => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error(`Failed to save to localStorage with key "${key}":`, error);
+    }
   }
 };
 
@@ -31,7 +35,7 @@ const loadFromLocal = (key: string): any[] => {
     try {
       return JSON.parse(stored);
     } catch (e) {
-      console.error("Failed to parse from local storage", e);
+      console.error(`Failed to parse from local storage with key "${key}":`, e);
       return [];
     }
   }
@@ -67,10 +71,10 @@ export const subscribeToMessages = (
       type: 'message' as const,
     } as ChatMessage));
       
-    const filteredMessages = messages.filter(msg => !msg.deletedFor?.includes(currentUserId));
-    
-    saveToLocal(getMessageCacheKey(currentUserId, otherUserId), filteredMessages);
-    callback(filteredMessages);
+    // The component is now responsible for handling the `isDeleted` flag.
+    // The service provides the raw, unfiltered data.
+    saveToLocal(getMessageCacheKey(currentUserId, otherUserId), messages);
+    callback(messages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
       callback(loadMessagesFromLocal(currentUserId, otherUserId));
