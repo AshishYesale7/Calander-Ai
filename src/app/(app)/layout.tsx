@@ -160,12 +160,12 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (activeCallId) {
-                endCall();
+                cleanupWebRTC();
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [activeCallId, endCall]);
+    }, [activeCallId, cleanupWebRTC]);
     
     // This effect initializes the WebRTC connection for an ongoing call
     useEffect(() => {
@@ -410,7 +410,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  const { toast } = useToast();
   
   if (loading || !user) {
     return (
@@ -431,6 +430,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   }
 
   // All hooks are now safely called AFTER all conditional returns.
+  const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const mainScrollRef = useRef<HTMLDivElement>(null);
