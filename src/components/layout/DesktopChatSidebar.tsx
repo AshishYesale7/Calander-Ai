@@ -85,7 +85,7 @@ const ChatListView = () => {
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, isLoading]);
 
 
     const filteredChats = useMemo(() => {

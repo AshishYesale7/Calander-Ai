@@ -1,3 +1,4 @@
+
 'use client';
 
 import { db } from '@/lib/firebase';
@@ -54,65 +55,34 @@ export const subscribeToRecentChats = (
     console.error("Firestore is not initialized.");
     return () => {};
   }
-  
-  let currentChats: PublicUserProfile[] = [];
+
   const recentChatsRef = collection(db, 'users', userId, 'chats');
   const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
 
   const unsubscribe = onSnapshot(q, async (snapshot) => {
-    const changes = snapshot.docChanges();
-    const profilePromises: Promise<void>[] = [];
-
-    for (const change of changes) {
-        const otherUserId = change.doc.id;
-        const docData = change.doc.data();
-
-        if (change.type === "added") {
-            const promise = getDoc(doc(db, 'users', otherUserId)).then(userDocSnap => {
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    const chatPartner: PublicUserProfile = {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0, 5)}`,
-                        lastMessage: docData.lastMessage,
-                        timestamp: docData.timestamp?.toDate(),
-                        notification: Math.random() > 0.8,
-                    };
-                    currentChats.push(chatPartner);
-                }
-            });
-            profilePromises.push(promise);
+    const chatPromises = snapshot.docs.map(async (docSnapshot) => {
+        const recentChatData = docSnapshot.data();
+        const otherUserId = docSnapshot.id;
+        const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+        
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            return {
+                id: userDocSnap.id,
+                uid: userDocSnap.id,
+                displayName: userData.displayName || 'Anonymous User',
+                photoURL: userData.photoURL || null,
+                username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                lastMessage: recentChatData.lastMessage,
+                timestamp: recentChatData.timestamp?.toDate(),
+                notification: Math.random() > 0.8, // Mock notification
+            } as PublicUserProfile;
         }
+        return null;
+    });
 
-        if (change.type === "modified") {
-            const index = currentChats.findIndex(c => c.id === otherUserId);
-            if (index !== -1) {
-                currentChats[index] = {
-                    ...currentChats[index],
-                    lastMessage: docData.lastMessage,
-                    timestamp: docData.timestamp?.toDate(),
-                };
-            }
-        }
-
-        if (change.type === "removed") {
-            currentChats = currentChats.filter(c => c.id !== otherUserId);
-        }
-    }
-
-    // Wait for any new profiles to be fetched before updating the UI
-    if (profilePromises.length > 0) {
-        await Promise.all(profilePromises);
-    }
-    
-    // Always sort after processing all changes
-    currentChats.sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
-    
-    // Update the UI with the final list
-    callback([...currentChats]);
+    const fetchedChats = (await Promise.all(chatPromises)).filter(c => c !== null) as PublicUserProfile[];
+    callback(fetchedChats);
 
   }, (error) => {
     console.error("Error listening to recent chats:", error);
