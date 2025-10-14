@@ -26,6 +26,11 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
   if (!text.trim()) return;
 
   const timestamp = Timestamp.now();
+  
+  // Define the message data. We'll use a consistent ID for both copies.
+  const senderMessagesCol = collection(db, 'users', senderId, 'recentChats', receiverId, 'messages');
+  const messageDocRef = doc(senderMessagesCol); // Create a new doc ref to get a unique ID
+
   const messageData = {
       text: text,
       senderId: senderId,
@@ -36,18 +41,14 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
   try {
     const batch = writeBatch(db);
 
-    // 1. Add message to sender's chat collection
-    const senderMessagesCol = collection(db, 'users', senderId, 'recentChats', receiverId, 'messages');
-    // Use a consistent ID for both documents to make "delete for everyone" possible
-    const messageDocRef = doc(senderMessagesCol); 
+    // 1. Add message to sender's chat collection with the new ID
     batch.set(messageDocRef, messageData);
     
-    // 2. Add message to receiver's chat collection using the same ID
-    const receiverMessagesCol = collection(db, 'users', receiverId, 'recentChats', senderId, 'messages');
-    const receiverMessageRef = doc(receiverMessagesCol, messageDocRef.id); // Use the same ID
+    // 2. Add message to receiver's chat collection using the *same* ID
+    const receiverMessageRef = doc(db, 'users', receiverId, 'recentChats', senderId, 'messages', messageDocRef.id);
     batch.set(receiverMessageRef, messageData);
     
-    // 3. Update the recent chat metadata for both users
+    // 3. Update the recent chat metadata for both users to show the latest message
     const recentChatSenderRef = doc(db, 'users', senderId, 'recentChats', receiverId);
     const recentChatReceiverRef = doc(db, 'users', receiverId, 'recentChats', senderId);
     
