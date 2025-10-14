@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightOpen, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, MessageCircle, PanelRightClose } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -27,6 +27,7 @@ type RecentChatUser = PublicUserProfile & {
     timestamp?: Date;
     notification?: boolean;
 };
+
 
 type CallLogItem = CallData & {
     otherUser: PublicUserProfile;
@@ -210,6 +211,7 @@ const ChatListView = () => {
 
 const CallLogView = () => {
     const { user } = useAuth();
+    const { onInitiateCall } = useChat();
     const [callLog, setCallLog] = useState<CallLogItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -267,9 +269,12 @@ const CallLogView = () => {
         const isMissed = call.status === 'declined' && call.receiverId === user.uid;
         const isOutgoing = call.callerId === user.uid;
         
-        if (isMissed) return <PhoneMissed className="h-4 w-4 text-red-500" />;
-        if (isOutgoing) return <PhoneOutgoing className="h-4 w-4 text-muted-foreground" />;
-        return <PhoneIncoming className="h-4 w-4 text-muted-foreground" />;
+        const Icon = call.callType === 'video' ? Video : Phone;
+        const baseClass = "h-4 w-4";
+
+        if (isMissed) return <Icon className={cn(baseClass, "text-red-500")} />;
+        if (isOutgoing) return <Icon className={cn(baseClass, "text-muted-foreground")} />;
+        return <Icon className={cn(baseClass, "text-muted-foreground")} />;
     };
 
     return (
@@ -292,7 +297,10 @@ const CallLogView = () => {
                                     <span>{formatDistanceToNow(new Date(call.createdAt.seconds * 1000), { addSuffix: true })}</span>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon"><Phone className="h-5 w-5 text-accent"/></Button>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'audio')}><Phone className="h-5 w-5 text-accent"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser, 'video')}><Video className="h-5 w-5 text-accent"/></Button>
+                            </div>
                         </div>
                     ))}
                 </div>
