@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import {
   doc,
   setDoc,
@@ -17,8 +17,8 @@ import {
 import type { CallStatus, CallType } from '@/types';
 
 const getCallDocRef = (callId: string) => {
-  if (!db) throw new Error("Firestore is not initialized.");
-  return doc(db, 'calls', callId);
+  if (!adminDb) throw new Error("Firestore is not initialized.");
+  return doc(adminDb, 'calls', callId);
 };
 
 /**
@@ -32,8 +32,8 @@ export async function createCall(callData: {
   status: CallStatus;
   callType: CallType;
 }): Promise<string> {
-  if (!db) throw new Error("Firestore is not initialized.");
-  const callsCollection = collection(db, 'calls');
+  if (!adminDb) throw new Error("Firestore is not initialized.");
+  const callsCollection = collection(adminDb, 'calls');
   
   const docRef = await addDoc(callsCollection, {
     ...callData,
@@ -70,13 +70,13 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     }
     
     // Clean up ICE candidate subcollections, but leave the main call doc for history
-    const callerCandidatesRef = collection(db, 'calls', callId, 'callerCandidates');
-    const receiverCandidatesRef = collection(db, 'calls', callId, 'receiverCandidates');
+    const callerCandidatesRef = collection(adminDb, 'calls', callId, 'callerCandidates');
+    const receiverCandidatesRef = collection(adminDb, 'calls', callId, 'receiverCandidates');
 
     const callerCandidatesSnap = await getDocs(callerCandidatesRef);
     const receiverCandidatesSnap = await getDocs(receiverCandidatesRef);
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(adminDb);
     
     callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
@@ -108,8 +108,8 @@ export async function saveAnswer(callId: string, answer: RTCSessionDescriptionIn
  * Adds an ICE candidate to the caller's subcollection.
  */
 export async function addCallerCandidate(callId: string, candidate: RTCIceCandidateInit): Promise<void> {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'callerCandidates');
+    if (!adminDb) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(adminDb, 'calls', callId, 'callerCandidates');
     await addDoc(candidatesCollection, candidate);
 }
 
@@ -117,7 +117,7 @@ export async function addCallerCandidate(callId: string, candidate: RTCIceCandid
  * Adds an ICE candidate to the receiver's subcollection.
  */
 export async function addReceiverCandidate(callId: string, candidate: RTCIceCandidateInit): Promise<void> {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
+    if (!adminDb) throw new Error("Firestore is not initialized.");
+    const candidatesCollection = collection(adminDb, 'calls', callId, 'receiverCandidates');
     await addDoc(candidatesCollection, candidate);
 }
