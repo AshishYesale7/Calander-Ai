@@ -266,8 +266,9 @@ const CallLogView = () => {
     }, [user]);
 
     const getCallIcon = (call: CallLogItem) => {
-        const isMissed = call.status === 'declined' && call.receiverId === user?.uid;
-        const isOutgoing = call.callerId === user?.uid;
+        if (!user) return null;
+        const isMissed = call.status === 'declined' && call.receiverId === user.uid;
+        const isOutgoing = call.callerId === user.uid;
         
         if (isMissed) return <PhoneMissed className="h-4 w-4 text-red-500" />;
         if (isOutgoing) return <PhoneOutgoing className="h-4 w-4 text-muted-foreground" />;
