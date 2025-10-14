@@ -123,7 +123,7 @@ const MessageItem = ({
             <Copy className="mr-2 h-4 w-4" />
             Copy
           </ContextMenuItem>
-          {isMe && (
+          {isMe ? (
             <>
               <ContextMenuSeparator />
               <AlertDialog>
@@ -148,6 +148,14 @@ const MessageItem = ({
                     </div>
                 </AlertDialogContent>
               </AlertDialog>
+            </>
+          ) : (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem className="text-red-500" onClick={() => onDelete(msg.id, 'me')}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete for Me
+              </ContextMenuItem>
             </>
           )}
         </ContextMenuContent>
