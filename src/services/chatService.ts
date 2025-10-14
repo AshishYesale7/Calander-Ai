@@ -20,6 +20,7 @@ const getLocalStorageKey = (userId: string, otherUserId: string, type: 'messages
 // --- Messages ---
 
 export const saveMessagesToLocal = (currentUserId: string, otherUserId: string, messages: ChatMessage[]) => {
+  if (typeof window === 'undefined') return;
   try {
     const key = getLocalStorageKey(currentUserId, otherUserId, 'messages');
     localStorage.setItem(key, JSON.stringify(messages));
@@ -29,6 +30,7 @@ export const saveMessagesToLocal = (currentUserId: string, otherUserId: string, 
 };
 
 export const loadMessagesFromLocal = (currentUserId: string, otherUserId: string): ChatMessage[] => {
+  if (typeof window === 'undefined') return [];
   try {
     const key = getLocalStorageKey(currentUserId, otherUserId, 'messages');
     const stored = localStorage.getItem(key);
@@ -85,6 +87,7 @@ export const subscribeToMessages = (
 // --- Calls ---
 
 export const saveCallsToLocal = (userId: string, calls: CallData[]) => {
+  if (typeof window === 'undefined') return;
   try {
     const key = `futureSight_callHistory_${userId}`;
     localStorage.setItem(key, JSON.stringify(calls));
@@ -94,6 +97,7 @@ export const saveCallsToLocal = (userId: string, calls: CallData[]) => {
 }
 
 export const loadCallsFromLocal = (userId: string): CallData[] => {
+    if (typeof window === 'undefined') return [];
     try {
         const key = `futureSight_callHistory_${userId}`;
         const stored = localStorage.getItem(key);

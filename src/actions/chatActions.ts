@@ -32,9 +32,11 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
   const messageDocRef = doc(senderMessagesCol); // Create a new doc ref to get a unique ID
 
   const messageData = {
+      id: messageDocRef.id, // Include the ID in the data
       text: text,
       senderId: senderId,
       timestamp: timestamp,
+      type: 'message' as const,
       deletedFor: [], // Initialize for "delete for me" functionality
   };
 

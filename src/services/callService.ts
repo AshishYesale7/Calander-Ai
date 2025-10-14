@@ -82,32 +82,37 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   }
   if (!adminDb) throw new Error("Firestore is not initialized.");
 
-  // Fetch one of the history docs to get participant IDs
-  const callerHistoryDocRef = (await getCallHistoryCollection(adminDb.collection('users').doc().id).where('id', '==', callId).limit(1).get()).docs[0]?.ref;
-  if(!callerHistoryDocRef) {
-      const callDocSnap = await getCallDocRef(callId).get();
-      const callData = callDocSnap.data();
-      if(!callData) {
-        console.error(`Call document with ID ${callId} does not exist in history or shared collection.`);
-        return;
-      }
-      
-      const batch = adminDb.batch();
-      
-      const callerHistoryRef = getCallHistoryCollection(callData.callerId).doc(callId);
-      const receiverHistoryRef = getCallHistoryCollection(callData.receiverId).doc(callId);
-      
-      const updateData: { status: CallStatus, endedAt?: Timestamp, duration?: number } = { status };
-      
-      batch.update(callerHistoryRef, updateData);
-      batch.update(receiverHistoryRef, updateData);
-      
-      await batch.commit();
-
-      if (status === 'ended' || status === 'declined') {
-        await getCallDocRef(callId).delete();
-      }
+  // Fetch the shared document to get participant IDs
+  const callDocSnap = await getCallDocRef(callId).get();
+  if (!callDocSnap.exists) {
+      console.warn(`Call document ${callId} not found for status update, likely already cleaned up.`);
       return;
+  }
+  const callData = callDocSnap.data() as CallData;
+
+  const batch = adminDb.batch();
+
+  const callerHistoryRef = getCallHistoryCollection(callData.callerId).doc(callId);
+  const receiverHistoryRef = getCallHistoryCollection(callData.receiverId).doc(callId);
+
+  const updateData: { status: CallStatus, endedAt?: Timestamp, duration?: number } = { status };
+  
+  if (status === 'ended') {
+      const now = Timestamp.now();
+      const duration = now.seconds - callData.createdAt.seconds;
+      updateData.endedAt = now;
+      updateData.duration = duration > 0 ? duration : 0;
+  }
+  
+  // Update both user's persistent call logs
+  batch.update(callerHistoryRef, updateData);
+  batch.update(receiverHistoryRef, updateData);
+
+  await batch.commit();
+
+  // If the call is over, delete the temporary signaling document
+  if (status === 'ended' || status === 'declined') {
+    await getCallDocRef(callId).delete().catch(err => console.error(`Failed to delete shared call doc ${callId}:`, err));
   }
 }
 

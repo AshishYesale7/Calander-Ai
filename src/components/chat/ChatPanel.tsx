@@ -404,7 +404,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
             <AlertDialogHeader className="text-center">
                 <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
                 <AlertDialogDescription className="text-xs">
-                    This will only delete the message from your side.
+                    You can delete this message for everyone or just for yourself.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="flex flex-col gap-2 mt-2">
