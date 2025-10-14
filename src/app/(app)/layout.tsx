@@ -92,7 +92,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
-    const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
     
     // WebRTC State
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -145,6 +144,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const endCall = useCallback(() => {
         const id = activeCallId;
+        // Only send update if callId is a valid string
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
@@ -419,15 +419,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  const { 
-      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
-      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
-      incomingCall, incomingAudioCall, acceptCall, declineCall, 
-      otherUserInCall, endCall, 
-      isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
-      connectionStatus,
-  } = useChat();
   
   if (loading || !user) {
     return (
@@ -448,6 +439,15 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   }
 
   // All hooks are now safely called AFTER all conditional returns.
+  const { 
+      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
+      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
+      incomingCall, incomingAudioCall, acceptCall, declineCall, 
+      otherUserInCall, endCall, 
+      isPipMode, onTogglePipMode, pipControls, isResetting,
+      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
+      connectionStatus,
+  } = useChat();
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -828,5 +828,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
