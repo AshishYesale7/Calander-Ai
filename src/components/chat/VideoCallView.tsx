@@ -37,6 +37,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null); // Added for camera flipping logic
   
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -49,6 +50,20 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
+  
+  // Check for multiple cameras
+  useEffect(() => {
+    const checkCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        setHasMultipleCameras(videoInputs.length > 1);
+      } catch (err) {
+        console.error("Could not enumerate devices:", err);
+      }
+    };
+    checkCameras();
+  }, []);
 
 
   const toggleCamera = () => {
@@ -196,3 +211,5 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
+
+    
