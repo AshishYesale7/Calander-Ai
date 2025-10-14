@@ -142,8 +142,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const endCall = useCallback((callIdToEnd?: string) => {
         const id = callIdToEnd || activeCallId;
-        if (id) {
+        if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
+        } else {
+            console.warn("endCall invoked without a valid callId.");
         }
         setOngoingCall(null);
         setOutgoingCall(null);
@@ -234,15 +236,14 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     saveOffer(call.id, offer);
                 });
             } else {
-                // For receiver, wait for offer before creating answer
-                pc.ondatachannel = (event) => {
-                     pc.createAnswer().then(answer => {
+                pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
+                    pc.createAnswer().then(answer => {
                         pc.setLocalDescription(answer);
                         saveAnswer(call.id, answer);
                         callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
                         callerCandidatesQueue.current = [];
                     });
-                };
+                });
             }
             setupSignaling();
         });
