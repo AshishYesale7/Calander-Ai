@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -83,64 +84,28 @@ const ChatListView = () => {
         const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            if (isLoading) {
-                // Initial Load
-                const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
-                    const recentChatData = docSnapshot.data();
-                    const otherUserId = docSnapshot.id;
-                    const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                    if (userDocSnap.exists()) {
-                        return {
-                            id: userDocSnap.id,
-                            uid: userDocSnap.id,
-                            displayName: userDocSnap.data().displayName || 'Anonymous',
-                            photoURL: userDocSnap.data().photoURL || null,
-                            username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
-                            lastMessage: recentChatData.lastMessage,
-                            timestamp: recentChatData.timestamp?.toDate(),
-                        } as RecentChatUser;
-                    }
-                    return null;
-                });
-                const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(Boolean) as RecentChatUser[];
-                setRecentChats(fetchedChats);
-                setIsLoading(false);
-            } else {
-                // Process subsequent changes
-                for (const change of snapshot.docChanges()) {
-                    const docSnapshot = change.doc;
-                    const recentChatData = docSnapshot.data();
-                    const otherUserId = docSnapshot.id;
-
-                    if (change.type === 'added' || change.type === 'modified') {
-                         const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                         if (userDocSnap.exists()) {
-                            const newChat = {
-                                id: userDocSnap.id,
-                                uid: userDocSnap.id,
-                                displayName: userDocSnap.data().displayName || 'Anonymous',
-                                photoURL: userDocSnap.data().photoURL || null,
-                                username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
-                                lastMessage: recentChatData.lastMessage,
-                                timestamp: recentChatData.timestamp?.toDate(),
-                            } as RecentChatUser;
-                            setRecentChats(prev => {
-                                const existingIndex = prev.findIndex(c => c.id === newChat.id);
-                                if (existingIndex > -1) {
-                                    const updated = [...prev];
-                                    updated[existingIndex] = newChat;
-                                    return updated.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-                                } else {
-                                    return [newChat, ...prev].sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-                                }
-                            });
-                        }
-                    } else if (change.type === 'removed') {
-                        setRecentChats(prev => prev.filter(c => c.id !== otherUserId));
-                    }
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+             const promises = snapshot.docs.map(async (docSnapshot) => {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                if (userDocSnap.exists()) {
+                    return {
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: userDocSnap.data().displayName || 'Anonymous',
+                        photoURL: userDocSnap.data().photoURL || null,
+                        username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                    } as RecentChatUser;
                 }
-            }
+                return null;
+            });
+            Promise.all(promises).then(fetchedChats => {
+                setRecentChats(fetchedChats.filter(Boolean) as RecentChatUser[]);
+                setIsLoading(false);
+            });
         }, (error) => {
             console.error("Error listening to recent chats:", error);
             setIsLoading(false);
@@ -163,6 +128,7 @@ const ChatListView = () => {
         if (!chatToDelete || !user) return;
 
         const chatPartnerId = chatToDelete.uid;
+        const chatPartnerName = chatToDelete.displayName;
         setChatToDelete(null);
 
         try {
@@ -175,11 +141,11 @@ const ChatListView = () => {
                 setChattingWith(null);
             }
             toast({
-                title: "Chat Deleted",
-                description: `Your chat history has been cleared.`
+                title: "Chat History Cleared",
+                description: `Your conversation with ${chatPartnerName} has been cleared.`
             });
         } catch (err) {
-            toast({ title: "Error", description: "Failed to delete chat history.", variant: "destructive"});
+            toast({ title: "Error", description: "Failed to clear chat history.", variant: "destructive"});
         }
     };
 
@@ -296,14 +262,14 @@ const ChatListView = () => {
              <AlertDialog open={!!chatToDelete} onOpenChange={(open) => !open && setChatToDelete(null)}>
                 <AlertDialogContent className="frosted-glass">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Chat with {chatToDelete?.displayName}?</AlertDialogTitle>
+                        <AlertDialogTitle>Clear Chat History with {chatToDelete?.displayName}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete your copy of the message history. The other person will still be able to see the conversation. This action cannot be undone.
+                            This will permanently delete your copy of the message and call history. The other person will still see the conversation. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteChat}>Delete</AlertDialogAction>
+                        <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteChat}>Clear History</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

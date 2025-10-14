@@ -113,8 +113,6 @@ export const deleteMessage = async (
  * This is a one-sided operation and does not affect the other user's data.
  * This function will delete the chat metadata, all messages in the subcollection,
  * and all associated call logs.
- * @param currentUserId The ID of the user requesting the deletion.
- * @param otherUserId The ID of the other user in the chat.
  */
 export const deleteConversationForCurrentUser = async (currentUserId: string, otherUserId: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
@@ -133,16 +131,19 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
     const callSnapshot = await getDocs(callQuery);
     callSnapshot.forEach(doc => batch.delete(doc.ref));
 
-    // 3. Delete the top-level chat metadata document.
+    // 3. Instead of deleting the chat document, clear the last message to reset the preview.
     const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
-    batch.delete(recentChatRef);
+    batch.update(recentChatRef, {
+      lastMessage: 'Chat history cleared.',
+      timestamp: serverTimestamp(),
+    });
     
     try {
         // Commit all deletions at once.
         await batch.commit();
         
     } catch (error) {
-        console.error("Error deleting conversation and related data:", error);
-        throw new Error("Failed to delete the conversation completely.");
+        console.error("Error clearing conversation and related data:", error);
+        throw new Error("Failed to clear the conversation completely.");
     }
 };
