@@ -294,6 +294,7 @@ export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: 
                       }
                       
                       const msg = item as ChatMessage;
+                      const isMe = msg.senderId === currentUser?.uid;
                       const nextItem = items[index + 1];
                       const isLastInBlock = !nextItem || nextItem.type === 'call' || (nextItem.type === 'message' && nextItem.senderId !== msg.senderId);
 
