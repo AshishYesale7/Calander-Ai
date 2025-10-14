@@ -236,14 +236,18 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     saveOffer(call.id, offer);
                 });
             } else {
-                pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
-                    pc.createAnswer().then(answer => {
-                        pc.setLocalDescription(answer);
-                        saveAnswer(call.id, answer);
-                        callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
-                        callerCandidatesQueue.current = [];
+                if (call.offer) {
+                   pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
+                        if (pc.signalingState === 'have-remote-offer') {
+                            pc.createAnswer().then(answer => {
+                                pc.setLocalDescription(answer);
+                                saveAnswer(call.id, answer);
+                                callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
+                                callerCandidatesQueue.current = [];
+                            });
+                        }
                     });
-                });
+                }
             }
             setupSignaling();
         });
@@ -395,7 +399,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   
-  // This check MUST happen before any other hooks are called.
   if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -403,15 +406,25 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       </div>
     );
   }
+  
+  if (!onboardingCompleted) {
+    return (
+      <div className="h-screen w-full flex-col">
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+        <OnboardingModal onFinish={onFinishOnboarding} />
+        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+      </div>
+    );
+  }
 
-  // All other hooks are called AFTER the early return.
+  // All hooks are now safely called AFTER all conditional returns.
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  useStreakTracker(); // This is a custom hook
+  useStreakTracker();
   
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
@@ -574,16 +587,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       }
     }
   };
-  
-  if (!onboardingCompleted) {
-    return (
-      <div className="h-screen w-full flex-col">
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={onFinishOnboarding} />
-        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
-      </div>
-    );
-  }
   
   if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
       router.push('/subscription');
