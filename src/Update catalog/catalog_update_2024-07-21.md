@@ -280,4 +280,62 @@ Introduced a **guided onboarding modal** for new users to streamline profile set
 | **User Experience**    | Fragmented                            | Smooth, modern, PWA-ready experience                 |
 
 ---
- 
+
+## 🧑‍💻 **9. Credits**
+
+*   **Author:** Ashish Yesale
+
+---
+
+## 🛠️ **10. Technologies Used**
+
+### **Programming Languages**
+
+*   **TypeScript:** Primary language for type safety and modern JavaScript features.
+*   **JavaScript:** Used for configuration files and service worker logic.
+
+### **Core Frameworks & Libraries**
+
+*   **Next.js:** React framework for full-stack development, routing, and performance.
+*   **React:** Core UI library for building component-based interfaces.
+*   **Genkit:** Open-source framework from Google for building AI flows and features.
+*   **WebRTC:** For enabling peer-to-peer real-time audio and video communication.
+
+### **Backend & Database**
+
+*   **Firebase:**
+    *   **Firestore:** NoSQL database for real-time data storage (user profiles, chats, calls, events).
+    *   **Firebase Authentication:** Secure user management (Email/Password, Google, Phone).
+    *   **Firebase Cloud Messaging:** For native browser push notifications.
+    *   **Firebase Storage:** For user-uploaded assets like avatars.
+
+### **AI & Machine Learning**
+
+*   **Google Gemini:** The underlying large language model used for all generative AI tasks (summaries, planning, etc.).
+
+### **External APIs**
+
+*   **Google Workspace APIs:**
+    *   Google Calendar API
+    *   Google Tasks API
+    *   Google Gmail API
+*   **Competitive Programming APIs:**
+    *   Codeforces API
+    *   LeetCode GraphQL API
+    *   Third-party proxies for CodeChef data.
+
+### **UI & Styling**
+
+*   **Tailwind CSS:** Utility-first CSS framework for styling.
+*   **ShadCN UI:** A collection of accessible and reusable UI components.
+*   **Framer Motion:** For animations and interactive elements.
+*   **Lucide React:** Icon library.
+
+### **Key Libraries & Utilities**
+
+*   **Zod:** For schema declaration and validation of AI inputs/outputs.
+*   **Date-fns:** For reliable and modern date manipulation.
+*   **React Hook Form:** For managing complex forms and validation.
+*   **`react-phone-number-input`:** For international phone number input.
+
+---
