@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -85,36 +84,70 @@ const ChatListView = () => {
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
-                        displayName: userData.displayName || 'Anonymous User',
-                        photoURL: userData.photoURL || null,
-                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                        lastMessage: recentChatData.lastMessage,
-                        timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser;
+            if (isLoading) {
+                // Initial Load
+                const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
+                    const recentChatData = docSnapshot.data();
+                    const otherUserId = docSnapshot.id;
+                    const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                    if (userDocSnap.exists()) {
+                        return {
+                            id: userDocSnap.id,
+                            uid: userDocSnap.id,
+                            displayName: userDocSnap.data().displayName || 'Anonymous',
+                            photoURL: userDocSnap.data().photoURL || null,
+                            username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
+                            lastMessage: recentChatData.lastMessage,
+                            timestamp: recentChatData.timestamp?.toDate(),
+                        } as RecentChatUser;
+                    }
+                    return null;
+                });
+                const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(Boolean) as RecentChatUser[];
+                setRecentChats(fetchedChats);
+                setIsLoading(false);
+            } else {
+                // Process subsequent changes
+                for (const change of snapshot.docChanges()) {
+                    const docSnapshot = change.doc;
+                    const recentChatData = docSnapshot.data();
+                    const otherUserId = docSnapshot.id;
+
+                    if (change.type === 'added' || change.type === 'modified') {
+                         const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                         if (userDocSnap.exists()) {
+                            const newChat = {
+                                id: userDocSnap.id,
+                                uid: userDocSnap.id,
+                                displayName: userDocSnap.data().displayName || 'Anonymous',
+                                photoURL: userDocSnap.data().photoURL || null,
+                                username: userDocSnap.data().username || `user_${otherUserId.substring(0,5)}`,
+                                lastMessage: recentChatData.lastMessage,
+                                timestamp: recentChatData.timestamp?.toDate(),
+                            } as RecentChatUser;
+                            setRecentChats(prev => {
+                                const existingIndex = prev.findIndex(c => c.id === newChat.id);
+                                if (existingIndex > -1) {
+                                    const updated = [...prev];
+                                    updated[existingIndex] = newChat;
+                                    return updated.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+                                } else {
+                                    return [newChat, ...prev].sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+                                }
+                            });
+                        }
+                    } else if (change.type === 'removed') {
+                        setRecentChats(prev => prev.filter(c => c.id !== otherUserId));
+                    }
                 }
-                return null;
-            });
-            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
-            setRecentChats(fetchedChats);
-            setIsLoading(false);
+            }
         }, (error) => {
             console.error("Error listening to recent chats:", error);
             setIsLoading(false);
         });
 
-
         return () => unsubscribe();
-    }, [user, isLoading]);
+    }, [user]);
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>
@@ -130,7 +163,7 @@ const ChatListView = () => {
         if (!chatToDelete || !user) return;
 
         const chatPartnerId = chatToDelete.uid;
-        setChatToDelete(null); // Close dialog
+        setChatToDelete(null);
 
         try {
             await deleteConversationForCurrentUser(user.uid, chatPartnerId);
