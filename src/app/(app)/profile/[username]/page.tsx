@@ -255,6 +255,7 @@ export default function UserProfilePage() {
                 setStreakData(fetchedStreak);
             } else {
                 setError('User not found.');
+                notFound();
             }
         } catch (err) {
             setError('Failed to load profile.');
