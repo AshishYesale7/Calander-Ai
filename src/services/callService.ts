@@ -42,6 +42,7 @@ export async function createCall(callData: {
     ...callData,
     participantIds: [callData.callerId, callData.receiverId].sort(),
     createdAt: Timestamp.now(),
+    timestamp: Timestamp.now(), // For sorting call history
     callerMutedAudio: false,
     callerMutedVideo: false,
     receiverMutedAudio: false,

@@ -14,8 +14,39 @@ import {
 } from 'firebase/firestore';
 import type { ChatMessage, CallData } from '@/types';
 
+const getLocalStorageKey = (userId: string, otherUserId: string) => `futureSightMessages_${[userId, otherUserId].sort().join('_')}`;
+
+export const saveMessagesToLocal = (currentUserId: string, otherUserId: string, messages: ChatMessage[]) => {
+  try {
+    const key = getLocalStorageKey(currentUserId, otherUserId);
+    localStorage.setItem(key, JSON.stringify(messages));
+  } catch (error) {
+    console.warn('Failed to save messages to local storage', error);
+  }
+};
+
+export const loadMessagesFromLocal = (currentUserId: string, otherUserId: string): ChatMessage[] => {
+  try {
+    const key = getLocalStorageKey(currentUserId, otherUserId);
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      // Need to re-hydrate the Date objects from ISO strings
+      return JSON.parse(stored).map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.warn('Failed to load messages from local storage', error);
+    return [];
+  }
+};
+
+
 /**
  * Listens for real-time messages in a user's specific copy of a chat room.
+ * It also syncs the messages to local storage.
  * @param currentUserId The ID of the current user.
  * @param otherUserId The ID of the other user in the chat.
  * @param callback A function to be called with the array of messages whenever they update.
@@ -41,7 +72,12 @@ export const subscribeToMessages = (
         timestamp: (doc.data().timestamp as Timestamp).toDate(),
         type: 'message' as const,
       } as ChatMessage));
-    callback(messages);
+      
+    // Filter out messages that are deleted for the current user
+    const filteredMessages = messages.filter(msg => !msg.deletedFor?.includes(currentUserId));
+    
+    saveMessagesToLocal(currentUserId, otherUserId, filteredMessages);
+    callback(filteredMessages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
   });
@@ -51,6 +87,7 @@ export const subscribeToMessages = (
 
 /**
  * Listens for real-time call history for a specific user.
+ * This function remains a listener as call history is less dense than chat messages.
  * @param userId The ID of the user whose call history is being fetched.
  * @param callback A function to be called with the array of calls whenever they update.
  * @returns An unsubscribe function to stop listening to updates.

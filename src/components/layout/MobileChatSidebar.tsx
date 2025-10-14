@@ -37,13 +37,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
+import { subscribeToCallHistory } from '@/services/chatService';
+
+const RECENT_CHATS_LOCAL_KEY = 'futureSightRecentChats';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
     timestamp?: Date;
     notification?: boolean;
 };
-
 
 type CallLogItem = CallData & {
     otherUser: PublicUserProfile;
@@ -73,12 +75,25 @@ const ChatListView = () => {
     const [chatToDelete, setChatToDelete] = useState<RecentChatUser | null>(null);
 
      useEffect(() => {
-        if (!user || !db) {
+        if (!user) {
             setIsLoading(false);
             return;
         }
 
-        setIsLoading(true);
+        const storedChats = localStorage.getItem(RECENT_CHATS_LOCAL_KEY);
+        if (storedChats) {
+            try {
+                const parsedChats = JSON.parse(storedChats).map((c: any) => ({
+                    ...c,
+                    timestamp: c.timestamp ? new Date(c.timestamp) : new Date(),
+                }));
+                setRecentChats(parsedChats);
+            } catch (e) {
+                console.error("Failed to parse chats from local storage", e);
+            }
+        }
+        setIsLoading(false);
+
         const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
@@ -91,21 +106,19 @@ const ChatListView = () => {
                 if (userDocSnap.exists()) {
                     const userData = userDocSnap.data();
                     return {
-                        id: userDocSnap.id,
-                        uid: userDocSnap.id,
+                        id: userDocSnap.id, uid: userDocSnap.id,
                         displayName: userData.displayName || 'Anonymous User',
                         photoURL: userData.photoURL || null,
                         username: userData.username || `user_${otherUserId.substring(0,5)}`,
                         lastMessage: recentChatData.lastMessage,
                         timestamp: recentChatData.timestamp?.toDate(),
-                        notification: Math.random() > 0.8, // Mock notification
                     } as RecentChatUser;
                 }
                 return null;
             });
             const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
             setRecentChats(fetchedChats);
-            setIsLoading(false);
+            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(fetchedChats));
         });
 
         return () => unsubscribe();
@@ -123,33 +136,34 @@ const ChatListView = () => {
     
     const handleDeleteChat = async () => {
         if (!chatToDelete || !user) return;
+        
+        const originalChats = [...recentChats];
+        const newChats = recentChats.filter(c => c.uid !== chatToDelete.uid);
+        setRecentChats(newChats);
+        localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(newChats));
+
+        if (chattingWith?.uid === chatToDelete.uid) {
+            setChattingWith(null);
+        }
+        
+        toast({
+            title: "Chat Deleted",
+            description: `Your chat history with ${chatToDelete.displayName} has been cleared.`
+        });
+        setChatToDelete(null);
+        
         try {
             await deleteConversationForCurrentUser(user.uid, chatToDelete.uid);
-            toast({
-                title: "Chat Deleted",
-                description: `Your chat history with ${chatToDelete.displayName} has been cleared.`
-            });
-             if (chattingWith?.uid === chatToDelete.uid) {
-                setChattingWith(null);
-            }
         } catch (err) {
-            toast({ title: "Error", description: "Failed to delete chat history.", variant: "destructive"});
-        } finally {
-            setChatToDelete(null);
+            setRecentChats(originalChats);
+            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(originalChats));
+            toast({ title: "Error", description: "Failed to delete chat history from the cloud.", variant: "destructive"});
         }
     };
 
     const fabMenuVariants = {
-        open: {
-            opacity: 1,
-            y: 0,
-            transition: { type: "spring", stiffness: 300, damping: 24, staggerChildren: 0.05 }
-        },
-        closed: {
-            opacity: 0,
-            y: 20,
-            transition: { duration: 0.2 }
-        }
+        open: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24, staggerChildren: 0.05 } },
+        closed: { opacity: 0, y: 20, transition: { duration: 0.2 } }
     };
     
     const fabMenuItemVariants = {
@@ -290,49 +304,12 @@ const CallLogView = () => {
             return;
         }
         setIsLoading(true);
-        const callsCollectionRef = collection(db, 'calls');
-        
-        const q = query(
-            callsCollectionRef, 
-            where('participantIds', 'array-contains', user.uid),
-            limit(50)
-        );
-
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const docs = snapshot.docs.filter(doc => ['ended', 'declined'].includes(doc.data().status));
-
-            const callLogPromises = docs.map(async (callDoc) => {
-                const callData = callDoc.data() as CallData;
-                const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
-                
-                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-                if (userDocSnap.exists()) {
-                    const otherUserData = userDocSnap.data();
-                    return {
-                        ...callData,
-                        id: callDoc.id,
-                        otherUser: {
-                            uid: otherUserId,
-                            displayName: otherUserData.displayName || 'Anonymous',
-                            photoURL: otherUserData.photoURL || null,
-                            username: otherUserData.username || ''
-                        } as PublicUserProfile
-                    } as CallLogItem;
-                }
-                return null;
-            });
-
-            const resolvedCalls = (await Promise.all(callLogPromises))
-                .filter(c => c !== null) as CallLogItem[];
-            
-            // Sort client-side
-            resolvedCalls.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-            setCallLog(resolvedCalls);
+        const unsub = subscribeToCallHistory(user.uid, (calls) => {
+            setCallLog(calls as any); // Assume service provides the correct shape
             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => unsub();
     }, [user]);
 
     const getCallIcon = (call: CallLogItem) => {
@@ -373,7 +350,7 @@ const CallLogView = () => {
     };
     
     const handleBulkDelete = async () => {
-        if (selectedIds.size === 0) return;
+        if (!user || selectedIds.size === 0) return;
         const idsToDelete = Array.from(selectedIds);
         const originalLog = [...callLog];
         
@@ -382,7 +359,7 @@ const CallLogView = () => {
         setSelectedIds(new Set());
 
         try {
-            await deleteCalls(idsToDelete);
+            await deleteCalls(user.uid, idsToDelete);
             toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
         } catch (error) {
             setCallLog(originalLog);
@@ -406,7 +383,7 @@ const CallLogView = () => {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Call Logs?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will permanently delete the selected {selectedIds.size} call(s) from your history. This cannot be undone.
+                                    This will permanently delete the selected {selectedIds.size} call(s) from your history. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

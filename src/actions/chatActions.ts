@@ -84,34 +84,48 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
  * @param messageId The ID of the message to delete.
  * @param mode Determines if the deletion is for 'me' or 'everyone'.
  */
-export const deleteMessage = async (currentUserId: string, otherUserId: string, messageId: string, mode: 'me' | 'everyone'): Promise<void> => {
+export const deleteMessage = async (
+    currentUserId: string,
+    otherUserId: string,
+    messageId: string,
+    mode: 'me' | 'everyone'
+): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const currentUserMessagesCol = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
-    const messageRef = doc(currentUserMessagesCol, messageId);
+    const batch = writeBatch(db);
 
-    try {
-        if (mode === 'everyone') {
-            // If deleting for everyone, we must also delete it from the other user's collection.
-            const otherUserMessagesCol = collection(db, 'users', otherUserId, 'recentChats', currentUserId, 'messages');
-            const otherMessageRef = doc(otherUserMessagesCol, messageId);
-            
-            const batch = writeBatch(db);
-            // In a real "delete for everyone", you might update the text instead of deleting.
-            // For simplicity here, we'll just delete both copies.
-            batch.delete(messageRef);
-            batch.delete(otherMessageRef);
-            await batch.commit();
+    // Reference to the message in the current user's chat
+    const currentUserMsgRef = doc(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages', messageId);
+    
+    if (mode === 'everyone') {
+        const updateEveryone = {
+            text: "This message was deleted",
+            isDeleted: true,
+            deletedFor: [], // Clear individual deletions
+        };
+        // Also get reference to the message in the other user's chat
+        const otherUserMsgRef = doc(db, 'users', otherUserId, 'recentChats', currentUserId, 'messages', messageId);
+        batch.update(currentUserMsgRef, updateEveryone);
+        batch.update(otherUserMsgRef, updateEveryone);
 
-        } else if (mode === 'me') {
-            // "Delete for me" only deletes it from the current user's collection.
-            await deleteDoc(messageRef);
+    } else if (mode === 'me') {
+        const docSnap = await getDoc(currentUserMsgRef);
+        if (docSnap.exists()) {
+            const currentDeletedFor = docSnap.data().deletedFor || [];
+            if (!currentDeletedFor.includes(currentUserId)) {
+                const updatedDeletedFor = [...currentDeletedFor, currentUserId];
+                batch.update(currentUserMsgRef, { deletedFor: updatedDeletedFor });
+            }
         }
-    } catch(error) {
+    }
+    
+    try {
+        await batch.commit();
+    } catch (error) {
         console.error("Error deleting message:", error);
         throw new Error("Failed to delete message.");
     }
-}
+};
 
 
 /**
