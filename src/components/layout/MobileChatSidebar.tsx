@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video, Trash2 } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, MessageSquare, Plus, Video, Trash2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -285,15 +285,20 @@ const CallLogView = () => {
 
     const getCallIcon = (call: CallLogItem) => {
         if (!user) return null;
-        const isMissed = call.status === 'declined' && call.receiverId === user.uid;
-        const isOutgoing = call.callerId === user.uid;
         
-        const Icon = call.callType === 'video' ? Video : Phone;
+        const isOutgoing = call.callerId === user.uid;
+        const isDeclined = call.status === 'declined';
+        
+        const isMissed = isDeclined && !isOutgoing;
+        const isRejected = isDeclined && isOutgoing;
+
+        const BaseIcon = call.callType === 'video' ? Video : Phone;
         const baseClass = "h-4 w-4";
 
-        if (isMissed) return <Icon className={cn(baseClass, "text-red-500")} />;
-        if (isOutgoing) return <Icon className={cn(baseClass, "text-muted-foreground")} />;
-        return <Icon className={cn(baseClass, "text-muted-foreground")} />;
+        if (isMissed) return <PhoneMissed className={cn(baseClass, "text-red-500")} />;
+        if (isRejected) return <X className={cn(baseClass, "text-red-500")} />;
+        if (isOutgoing) return <ArrowUpRight className={cn(baseClass, "text-muted-foreground")} />;
+        return <ArrowDownLeft className={cn(baseClass, "text-muted-foreground")} />;
     };
     
     const isAllSelected = useMemo(() => callLog.length > 0 && selectedIds.size === callLog.length, [selectedIds, callLog]);
