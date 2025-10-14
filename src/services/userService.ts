@@ -299,10 +299,28 @@ export const getUserByUsername = async (username: string): Promise<PublicUserPro
         const userDoc = querySnapshot.docs[0];
         const userData = userDoc.data();
 
+        // If the user is pending deletion, show them as "Deleted User"
+        if (userData.deletionStatus === 'PENDING_DELETION' || userData.deletionStatus === 'DELETED') {
+            return {
+                uid: userDoc.id,
+                displayName: 'Deleted User',
+                username: userData.username, // Keep the username to prevent lookup issues
+                photoURL: null,
+                coverPhotoURL: null,
+                bio: 'This account has been deleted.',
+                socials: null,
+                statusEmoji: null,
+                countryCode: null,
+                followersCount: 0,
+                followingCount: 0,
+                deletionStatus: userData.deletionStatus,
+            };
+        }
+
         return {
             uid: userDoc.id,
             displayName: userData.displayName || 'Anonymous User',
-            username: userData.username || `user_${userDoc.id.substring(0, 10)}`,
+            username: userData.username,
             photoURL: userData.photoURL || null,
             coverPhotoURL: userData.coverPhotoURL || null,
             bio: userData.bio || '',
@@ -448,22 +466,21 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     }
     const currentData = docSnap.data();
 
-    // Store original info for potential recovery
+    // Store original info for potential recovery, but NOT the username
     await setDoc(privateDataRef, {
         originalDisplayName: currentData.displayName,
-        originalUsername: currentData.username,
     });
 
     const anonymizedData = {
         displayName: 'Deleted User',
-        username: `deleted_${userId.substring(0, 8)}`,
         photoURL: null,
         coverPhotoURL: null,
         bio: 'This account is pending deletion.',
         socials: {},
         statusEmoji: null,
-        searchableIndex: [],
+        searchableIndex: [], // Clear searchable index
         geminiApiKey: null,
+        // The username is intentionally NOT changed.
         deletionStatus: 'PENDING_DELETION',
         deletionScheduledAt: Timestamp.fromDate(deletionDate),
     };
@@ -488,18 +505,24 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
         throw new Error("Cannot reclaim account: Private recovery data not found.");
     }
     const originalData = privateDocSnap.data();
+    
+    // Fetch the current (anonymized) data to get the preserved username
+    const userDocSnap = await getDoc(userDocRef);
+    if (!userDocSnap.exists()) {
+        throw new Error("User document does not exist for reclamation.");
+    }
+    const currentUserData = userDocSnap.data();
 
     const restoredData: any = {
         displayName: originalData.originalDisplayName,
-        username: originalData.originalUsername,
-        deletionStatus: 'reclaimed', // Set status to 'reclaimed'
+        deletionStatus: 'reclaimed',
         deletionScheduledAt: deleteField(),
     };
     
     // Re-create the searchable index
     const indexSet = new Set<string>();
     if (originalData.originalDisplayName) indexSet.add(originalData.originalDisplayName.toLowerCase());
-    if (originalData.originalUsername) indexSet.add(originalData.originalUsername.toLowerCase());
+    if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase()); // Use the preserved username
     restoredData.searchableIndex = Array.from(indexSet);
 
     await updateDoc(userDocRef, restoredData);
@@ -542,7 +565,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
     const userDocRef = doc(adminDb, 'users', userId);
     batch.update(userDocRef, {
         displayName: 'Deleted User',
-        username: `deleted_${userId.substring(0, 8)}`,
+        // USERNAME AND EMAIL ARE PRESERVED
         photoURL: null,
         coverPhotoURL: null,
         bio: 'This account has been permanently deleted.',

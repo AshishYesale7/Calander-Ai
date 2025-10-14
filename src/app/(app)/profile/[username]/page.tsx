@@ -55,11 +55,13 @@ type EditableProfileState = {
 const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onCancel, isSaving, onFileSelect, onCoverFileSelect, uploadProgress, isOwnProfile, onCustomizeAvatarClick }: { profile: PublicUserProfile, children: React.ReactNode, isEditing: boolean, onEditToggle: () => void, onSave: () => void, onCancel: () => void, isSaving: boolean, onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, onCoverFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void, uploadProgress: number | null, isOwnProfile: boolean, onCustomizeAvatarClick: () => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const coverFileInputRef = useRef<HTMLInputElement>(null);
+    const isDeleted = profile.deletionStatus === 'PENDING_DELETION' || profile.deletionStatus === 'DELETED';
+
     return (
         <div className="relative">
             <div className="h-40 w-full relative bg-muted rounded-t-lg overflow-hidden group">
                 <Image
-                    src={profile.coverPhotoURL || "https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg"}
+                    src={isDeleted ? 'https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg' : profile.coverPhotoURL || "https://r4.wallpaperflare.com/wallpaper/126/117/95/quote-motivational-digital-art-typography-wallpaper-5856bc0a6f2cf779de90d962a2d90bb0.jpg"}
                     alt="Cover"
                     layout="fill"
                     objectFit="cover"
@@ -76,7 +78,7 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                 <div className="flex justify-between items-end -mt-16">
                     <div className="relative group">
                         <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                            <AvatarImage src={profile.photoURL || ''} alt={profile.displayName} />
+                            <AvatarImage src={isDeleted ? '' : profile.photoURL || ''} alt={profile.displayName} />
                             <AvatarFallback className="text-4xl">
                                 {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
                             </AvatarFallback>
@@ -87,14 +89,14 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                                 <input type="file" ref={fileInputRef} onChange={onFileSelect} accept="image/*" className="hidden"/>
                             </button>
                         )}
-                        {profile.countryCode && !isEditing && (
+                        {profile.countryCode && !isEditing && !isDeleted && (
                             <div className="absolute bottom-2 right-2">
                             <CountryFlag countryCode={profile.countryCode} className="h-8 w-8 border-2 border-background"/>
                             </div>
                         )}
                     </div>
                     <div className="flex gap-2">
-                        {isOwnProfile && !isEditing && (
+                        {isOwnProfile && !isEditing && !isDeleted && (
                            <>
                             <Button variant="outline" size="sm" className="mb-2" onClick={onCustomizeAvatarClick}>
                                 <Sparkles className="mr-2 h-4 w-4" /> Customize Avatar
@@ -104,7 +106,7 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                             </Button>
                            </>
                         )}
-                        {!isOwnProfile && (
+                        {!isOwnProfile && !isDeleted && (
                            <>
                                 {children}
                            </>
@@ -198,7 +200,6 @@ export default function UserProfilePage() {
     const params = useParams();
     const { toast } = useToast();
     
-    // Correctly get username from params
     const usernameParam = params?.username || '';
     const username = Array.isArray(usernameParam) ? usernameParam[0] : usernameParam;
     
@@ -224,6 +225,7 @@ export default function UserProfilePage() {
 
 
     const isOwnProfile = currentUser?.uid === profile?.uid;
+    const isDeleted = profile?.deletionStatus === 'PENDING_DELETION' || profile?.deletionStatus === 'DELETED';
     
     const setEditingFields = useCallback((profileData: PublicUserProfile) => {
         setEditableState({
@@ -250,9 +252,14 @@ export default function UserProfilePage() {
             if (fetchedProfile) {
                 setProfile(fetchedProfile);
                 setEditingFields(fetchedProfile);
+                
+                if (fetchedProfile.deletionStatus !== 'PENDING_DELETION' && fetchedProfile.deletionStatus !== 'DELETED') {
+                   const fetchedStreak = await getStreakData(fetchedProfile.uid);
+                   setStreakData(fetchedStreak);
+                } else {
+                   setStreakData(null); // No streak for deleted users
+                }
 
-                const fetchedStreak = await getStreakData(fetchedProfile.uid);
-                setStreakData(fetchedStreak);
             } else {
                 setError('User not found.');
                 notFound();
@@ -272,7 +279,7 @@ export default function UserProfilePage() {
     }, [username, fetchProfile]);
     
     useEffect(() => {
-        if (!profile?.uid || !currentUser?.uid || !db) return;
+        if (!profile?.uid || !currentUser?.uid || !db || isDeleted) return;
         
         const listenForFollowChanges = (
             profileUserId: string,
@@ -305,7 +312,7 @@ export default function UserProfilePage() {
 
         return () => unsubscribe();
 
-    }, [profile?.uid, currentUser?.uid]);
+    }, [profile?.uid, currentUser?.uid, isDeleted]);
 
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -504,7 +511,7 @@ export default function UserProfilePage() {
                     isOwnProfile={isOwnProfile}
                     onCustomizeAvatarClick={() => setIsAvatarModalOpen(true)}
                  >
-                     {!isOwnProfile && (
+                     {!isOwnProfile && !isDeleted && (
                         <div className="flex gap-2">
                            <Button variant="outline" onClick={() => setChattingWith(profile)}><MessageSquare className="mr-2 h-4 w-4" /> Message</Button>
                            <Button onClick={handleFollowToggle} disabled={isFollowLoading}>
@@ -534,25 +541,27 @@ export default function UserProfilePage() {
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <AtSign className="h-4 w-4" />
                                 <span>{profile.username}</span>
-                                {profile.statusEmoji && <span className="text-lg">{profile.statusEmoji}</span>}
+                                {profile.statusEmoji && !isDeleted && <span className="text-lg">{profile.statusEmoji}</span>}
                             </div>
                         </div>
                     )}
                     
-                    <div className="flex items-center gap-6 text-sm">
-                        <FollowListPopover
-                            key="following"
-                            profileId={profile.uid}
-                            fetchFunction={getFollowing}
-                            triggerText={<><span className="font-bold text-foreground">{followingCount}</span> Following</>}
-                        />
-                        <FollowListPopover
-                            key="followers"
-                            profileId={profile.uid}
-                            fetchFunction={getFollowers}
-                            triggerText={<><span className="font-bold text-foreground">{followersCount}</span> Followers</>}
-                        />
-                    </div>
+                    {!isDeleted && (
+                        <div className="flex items-center gap-6 text-sm">
+                            <FollowListPopover
+                                key="following"
+                                profileId={profile.uid}
+                                fetchFunction={getFollowing}
+                                triggerText={<><span className="font-bold text-foreground">{followingCount}</span> Following</>}
+                            />
+                            <FollowListPopover
+                                key="followers"
+                                profileId={profile.uid}
+                                fetchFunction={getFollowers}
+                                triggerText={<><span className="font-bold text-foreground">{followersCount}</span> Followers</>}
+                            />
+                        </div>
+                    )}
                 </div>
             </Card>
 
@@ -579,55 +588,59 @@ export default function UserProfilePage() {
                             </div>
                         ) : (
                             <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
-                                {profile.bio || 'This user has not written a bio yet.'}
+                                {isDeleted ? 'This account has been deleted.' : profile.bio || 'This user has not written a bio yet.'}
                             </p>
                         )}
                     </ProfileInfoCard>
                 </div>
                 <div className="space-y-6">
-                    <ProfileInfoCard title="Streak" icon={Flame}>
-                        {streakData ? (
-                             <div className="flex justify-around items-center text-center">
-                                <div>
-                                    <p className="text-3xl font-bold text-orange-400">{streakData.currentStreak}</p>
-                                    <p className="text-xs text-muted-foreground">Current</p>
+                    {!isDeleted && (
+                        <>
+                        <ProfileInfoCard title="Streak" icon={Flame}>
+                            {streakData ? (
+                                <div className="flex justify-around items-center text-center">
+                                    <div>
+                                        <p className="text-3xl font-bold text-orange-400">{streakData.currentStreak}</p>
+                                        <p className="text-xs text-muted-foreground">Current</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-3xl font-bold">{streakData.longestStreak}</p>
+                                        <p className="text-xs text-muted-foreground">Longest</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-3xl font-bold">{streakData.longestStreak}</p>
-                                    <p className="text-xs text-muted-foreground">Longest</p>
+                            ) : (
+                            <p className="text-sm text-muted-foreground">No streak data available.</p>
+                            )}
+                        </ProfileInfoCard>
+                        <ProfileInfoCard title="Socials" icon={Rss}>
+                            {isEditing ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                    <Github className="h-5 w-5 text-muted-foreground" />
+                                    <Input value={editableState.socials.github} onChange={(e) => handleSocialChange('github', e.target.value)} placeholder="GitHub URL" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                    <Linkedin className="h-5 w-5 text-muted-foreground" />
+                                    <Input value={editableState.socials.linkedin} onChange={(e) => handleSocialChange('linkedin', e.target.value)} placeholder="LinkedIn URL" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                    <Twitter className="h-5 w-5 text-muted-foreground" />
+                                    <Input value={editableState.socials.twitter} onChange={(e) => handleSocialChange('twitter', e.target.value)} placeholder="Twitter/X URL" />
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                           <p className="text-sm text-muted-foreground">No streak data available.</p>
-                        )}
-                    </ProfileInfoCard>
-                     <ProfileInfoCard title="Socials" icon={Rss}>
-                         {isEditing ? (
-                             <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                   <Github className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editableState.socials.github} onChange={(e) => handleSocialChange('github', e.target.value)} placeholder="GitHub URL" />
+                            ) : (
+                                <div className="flex flex-wrap gap-3">
+                                    {profile.socials?.github ? <Button variant="outline" size="icon" asChild><a href={profile.socials.github} target="_blank" rel="noopener noreferrer"><Github className="h-5 w-5"/></a></Button> : null}
+                                    {profile.socials?.linkedin ? <Button variant="outline" size="icon" asChild><a href={profile.socials.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin className="h-5 w-5"/></a></Button> : null}
+                                    {profile.socials?.twitter ? <Button variant="outline" size="icon" asChild><a href={profile.socials.twitter} target="_blank" rel="noopener noreferrer"><Twitter className="h-5 w-5"/></a></Button> : null}
+                                    {!profile.socials?.github && !profile.socials?.linkedin && !profile.socials?.twitter && (
+                                        <p className="text-xs text-muted-foreground">No social links added.</p>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                   <Linkedin className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editableState.socials.linkedin} onChange={(e) => handleSocialChange('linkedin', e.target.value)} placeholder="LinkedIn URL" />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                   <Twitter className="h-5 w-5 text-muted-foreground" />
-                                   <Input value={editableState.socials.twitter} onChange={(e) => handleSocialChange('twitter', e.target.value)} placeholder="Twitter/X URL" />
-                                </div>
-                            </div>
-                         ) : (
-                            <div className="flex flex-wrap gap-3">
-                                {profile.socials?.github ? <Button variant="outline" size="icon" asChild><a href={profile.socials.github} target="_blank" rel="noopener noreferrer"><Github className="h-5 w-5"/></a></Button> : null}
-                                {profile.socials?.linkedin ? <Button variant="outline" size="icon" asChild><a href={profile.socials.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin className="h-5 w-5"/></a></Button> : null}
-                                {profile.socials?.twitter ? <Button variant="outline" size="icon" asChild><a href={profile.socials.twitter} target="_blank" rel="noopener noreferrer"><Twitter className="h-5 w-5"/></a></Button> : null}
-                                {!profile.socials?.github && !profile.socials?.linkedin && !profile.socials?.twitter && (
-                                    <p className="text-xs text-muted-foreground">No social links added.</p>
-                                )}
-                            </div>
-                         )}
-                    </ProfileInfoCard>
+                            )}
+                        </ProfileInfoCard>
+                        </>
+                    )}
                      {isEditing && (
                         <ProfileInfoCard title="Location" icon={AtSign}>
                              <div className="space-y-2">
