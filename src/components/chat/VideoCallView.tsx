@@ -8,7 +8,7 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, PictureInPicture2, Maxim
 import type { CallData as CallDataType } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useChat } from '@/context/ChatContext';
 import { updateCallParticipantStatus } from '@/services/callService';
@@ -89,29 +89,33 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
 
   const flipCamera = async () => {
-    if (!localStream || !hasMultipleCameras || !peerConnectionRef.current) return;
-
-    const newFacingMode = isFrontCamera ? 'environment' : 'user';
+    if (!localStream || !hasMultipleCameras) return;
     
     try {
+        const newFacingMode = isFrontCamera ? 'environment' : 'user';
+
+        // Stop the current video track before getting a new one
         localStream.getVideoTracks().forEach(track => track.stop());
 
-        const newStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: newFacingMode },
+        // Get new stream with the flipped camera
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: newFacingMode }
         });
-        
         const newVideoTrack = newStream.getVideoTracks()[0];
-        
-        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+
+        // Find the video sender in the peer connection
+        const pc = peerConnectionRef.current;
+        const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
             await sender.replaceTrack(newVideoTrack);
-            
+
+            // Update the local video element with a new stream containing the new video and old audio tracks
+            const newLocalStreamForPreview = new MediaStream([newVideoTrack, ...localStream.getAudioTracks()]);
             if (localVideoRef.current) {
-                // Important: Keep audio tracks from original stream!
-                const newLocalStreamForPreview = new MediaStream([newVideoTrack, ...localStream.getAudioTracks()]);
                 localVideoRef.current.srcObject = newLocalStreamForPreview;
             }
+
             setIsFrontCamera(!isFrontCamera);
         } else {
             console.warn("Could not find video sender to replace track.");
@@ -119,7 +123,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     } catch (error) {
         console.error("Error flipping camera:", error);
     }
-  };
+};
   
   const isCurrentUserCaller = user?.uid === call.callerId;
   const otherUserMutedAudio = isCurrentUserCaller ? callData.receiverMutedAudio : callData.callerMutedAudio;
