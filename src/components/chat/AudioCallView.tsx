@@ -19,11 +19,10 @@ interface AudioCallViewProps {
 }
 
 export default function AudioCallView({ call, otherUser, onEndCall, connectionStatus }: AudioCallViewProps) {
-  const [isMuted, setIsMuted] = useState(false);
+  const { onToggleMute, remoteStream, isMuted } = useChat();
   const [callDuration, setCallDuration] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameId = useRef<number>();
-  const { onToggleMute, remoteStream } = useChat();
 
   // Effect for the call duration timer
   useEffect(() => {
@@ -97,11 +96,6 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
     return `${mins}:${secs}`;
   };
 
-  const handleToggleMute = () => {
-    onToggleMute();
-    setIsMuted(prev => !prev);
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -138,7 +132,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
       </div>
       
       <div className="flex justify-center gap-4 mt-6">
-        <Button onClick={handleToggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
+        <Button onClick={onToggleMute} variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
           {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
         </Button>
         <Button variant="destructive" size="icon" className="rounded-full h-14 w-14" onClick={onEndCall}>

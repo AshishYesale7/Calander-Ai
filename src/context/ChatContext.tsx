@@ -2,7 +2,7 @@
 'use client';
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { CallData, CallType } from '@/types';
 
@@ -46,8 +46,8 @@ interface ChatContextType {
   isResetting: boolean;
   pipSize: { width: number; height: number };
   setPipSize: Dispatch<SetStateAction<{ width: number; height: number }>>;
-  pipSizeMode: 'small' | 'medium' | 'large';
-  setPipSizeMode: Dispatch<SetStateAction<'small' | 'medium' | 'large'>>;
+  pipSizeMode: 'medium' | 'large';
+  setPipSizeMode: Dispatch<SetStateAction<'medium' | 'large'>>;
   isMuted: boolean;
   onToggleMute: () => void;
   otherUserInCall: PublicUserProfile | null;

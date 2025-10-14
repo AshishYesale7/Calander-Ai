@@ -8,13 +8,11 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MessageSquare, PictureIn
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { CallData } from '@/types';
-import { db } from '@/lib/firebase';
-import { doc, onSnapshot, collection, type Unsubscribe } from 'firebase/firestore';
-import { saveAnswer, saveOffer, addCallerCandidate, addReceiverCandidate } from '@/services/callService';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useChat } from '@/context/ChatContext';
 
 
 interface VideoCallViewProps {
@@ -27,144 +25,43 @@ interface VideoCallViewProps {
   onTogglePipSizeMode: () => void;
 }
 
-const servers = {
-  iceServers: [
-    {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
-const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
-
-// Client-side listener functions
-const listenForReceiverCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'receiverCandidates');
-    return onSnapshot(candidatesCollection, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                callback(new RTCIceCandidate(change.doc.data()));
-            }
-        });
-    });
-};
-
-const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceCandidate) => void): Unsubscribe => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(db, 'calls', callId, 'callerCandidates');
-    return onSnapshot(candidatesCollection, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                callback(new RTCIceCandidate(change.doc.data()));
-            }
-        });
-    });
-};
-
-
 export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode, pipSizeMode, onTogglePipSizeMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isMuted, setIsMuted] = useState(false);
+  const { localStream, remoteStream, isMuted, onToggleMute, connectionStatus } = useChat();
+
   const [isCameraOff, setIsCameraOff] = useState(false);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(true);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const remoteStreamRef = useRef<MediaStream | null>(null);
-
-  const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
-  const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
-
-  // A ref to track if the component is still mounted.
-  const isMountedRef = useRef(true);
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
-  }, []);
-
-  const setupStreamsAndPC = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: { ideal: facingMode } }, 
-            audio: true 
-        });
-
-        if (!isMountedRef.current) {
-            stream.getTracks().forEach(track => track.stop());
-            return false;
-        }
-      
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-            localVideoRef.current.srcObject = stream;
-        }
-        setHasPermission(true);
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoInputs = devices.filter(device => device.kind === 'videoinput');
-        setHasMultipleCameras(videoInputs.length > 1);
-
-        const pc = peerConnectionRef.current;
-        if (!pc || pc.signalingState === 'closed') return false;
-      
-        // Replace tracks instead of adding if they already exist
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
-        const videoSender = pc.getSenders().find(s => s.track?.kind === 'video');
-        const audioSender = pc.getSenders().find(s => s.track?.kind === 'audio');
-        
-        if (videoSender) {
-            videoSender.replaceTrack(videoTrack);
-        } else {
-            pc.addTrack(videoTrack, stream);
-        }
-        
-        if (audioSender) {
-            audioSender.replaceTrack(audioTrack);
-        } else {
-            pc.addTrack(audioTrack, stream);
-        }
-
-        if (!remoteStreamRef.current) {
-            remoteStreamRef.current = new MediaStream();
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = remoteStreamRef.current;
-            }
-        }
-        
-        pc.ontrack = (event) => {
-            event.streams[0].getTracks().forEach((track) => {
-                remoteStreamRef.current?.addTrack(track);
-            });
-        };
-
-    } catch (error: any) {
-      console.error('Error setting up streams or peer connection.', error);
-      toast({
-        variant: 'destructive',
-        title: 'Media Access Denied',
-        description: error.message || 'Please enable camera and microphone permissions to use video calling.',
-        duration: 7000,
-      });
-      setHasPermission(false);
-      onEndCall();
-      return false;
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
     }
-    return true;
-  }, [toast, onEndCall]);
-  
+  }, [localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+
+  const toggleCamera = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+        setIsCameraOff(!track.enabled);
+      });
+    }
+  };
+
   const flipCamera = async () => {
-    if (!localStreamRef.current || !hasMultipleCameras) {
+    if (!localStream || !hasMultipleCameras) {
         toast({
           title: "Camera Switch Failed",
           description: "Could not find a second camera to switch to.",
@@ -174,30 +71,30 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     }
 
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
-    const oldStream = localStreamRef.current;
     
     try {
+        const tracks = localStream.getVideoTracks();
+        for (const track of tracks) {
+            track.stop();
+        }
+
         const newStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: { exact: newFacingMode } },
-            audio: true
         });
         
-        if (!isMountedRef.current) return;
-        
         const videoTrack = newStream.getVideoTracks()[0];
-        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === 'video');
+        const pc = peerConnectionRef.current;
+        const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
             await sender.replaceTrack(videoTrack);
 
-            localStreamRef.current = newStream;
             if (localVideoRef.current) {
-                localVideoRef.current.srcObject = newStream;
+                const newLocalStream = new MediaStream([videoTrack, ...localStream.getAudioTracks()]);
+                localVideoRef.current.srcObject = newLocalStream;
+                localStream.getTracks().forEach(t => t.stop());
             }
             setIsFrontCamera(!isFrontCamera);
-
-            oldStream.getTracks().forEach(track => track.stop());
-
         } else {
             console.warn("Could not find video sender to replace track.");
         }
@@ -205,179 +102,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         console.error("Error flipping camera:", error);
         toast({ 
             title: "Camera Switch Failed", 
-            description: "Could not find a second camera to switch to.", 
+            description: "Could not access the other camera.", 
             variant: 'destructive' 
         });
     }
   };
 
-
-  // Combined effect for WebRTC setup, signaling, and cleanup
-  useEffect(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY) !== call.id) {
-        return;
-    }
-    
-    if (!user || !call) return;
-    
-    let unsubCall: Unsubscribe | undefined;
-    let unsubCandidates: Unsubscribe | undefined;
-    
-    const pc = new RTCPeerConnection(servers);
-    peerConnectionRef.current = pc;
-    
-    pc.onconnectionstatechange = () => {
-        if (!isMountedRef.current) return;
-        setConnectionStatus(pc.connectionState);
-
-        if (pc.connectionState === 'disconnected') {
-            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-            reconnectTimerRef.current = setTimeout(() => {
-                toast({ title: 'Call Failed', description: 'Connection lost. Please try again.', variant: 'destructive'});
-                onEndCall();
-            }, 15000); // 15-second timeout
-        } else if (pc.connectionState === 'connected') {
-            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-        }
-    };
-    
-    const setupSignaling = () => {
-        pc.onicecandidate = event => {
-          if (event.candidate) {
-            if (call.callerId === user.uid) {
-              addCallerCandidate(call.id, event.candidate.toJSON());
-            } else {
-              addReceiverCandidate(call.id, event.candidate.toJSON());
-            }
-          }
-        };
-
-        if (call.callerId === user.uid) { // We are the CALLER
-          unsubCandidates = listenForReceiverCandidates(call.id, candidate => {
-            if (!isMountedRef.current || pc.signalingState === 'closed') return;
-            if (pc.currentRemoteDescription) {
-              pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
-            } else {
-              receiverCandidatesQueue.current.push(candidate);
-            }
-          });
-
-          unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-            if (!isMountedRef.current || pc.signalingState === 'closed') return;
-            const data = snapshot.data();
-            if (!pc.currentRemoteDescription && data?.answer) {
-              const answerDescription = new RTCSessionDescription(data.answer);
-              if(pc.signalingState !== 'closed') await pc.setRemoteDescription(answerDescription);
-              
-              receiverCandidatesQueue.current.forEach(candidate => {
-                  if (pc.signalingState !== 'closed') {
-                     pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e))
-                  }
-              });
-              receiverCandidatesQueue.current = [];
-            }
-          });
-          
-          if (pc.signalingState === 'stable') { // Only create offer if not already in progress
-            pc.createOffer().then(offerDescription => {
-               if (pc.signalingState !== 'closed') {
-                 pc.setLocalDescription(offerDescription);
-                 saveOffer(call.id, { type: offerDescription.type, sdp: offerDescription.sdp });
-               }
-            });
-          }
-        
-        } else { // We are the RECEIVER
-          unsubCandidates = listenForCallerCandidates(call.id, candidate => {
-            if (!isMountedRef.current || pc.signalingState === 'closed') return;
-            if (pc.currentRemoteDescription) {
-              pc.addIceCandidate(candidate).catch(e => console.error("Error adding received ICE candidate:", e));
-            } else {
-              callerCandidatesQueue.current.push(candidate);
-            }
-          });
-          
-          unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-              if (!isMountedRef.current || pc.signalingState === 'closed') return; 
-              const data = snapshot.data();
-              if (data?.offer && !pc.currentRemoteDescription) {
-                  const offerDescription = new RTCSessionDescription(data.offer);
-                  if (pc.signalingState !== 'closed') await pc.setRemoteDescription(offerDescription);
-                  
-                  callerCandidatesQueue.current.forEach(candidate => {
-                      if (pc.signalingState !== 'closed') {
-                        pc.addIceCandidate(candidate).catch(e => console.error("Error adding queued ICE candidate:", e))
-                      }
-                  });
-                  callerCandidatesQueue.current = [];
-  
-                  if (pc.signalingState !== 'closed') {
-                    const answerDescription = await pc.createAnswer();
-                    await pc.setLocalDescription(answerDescription);
-                    await saveAnswer(call.id, { type: answerDescription.type, sdp: answerDescription.sdp });
-                  }
-              }
-          });
-        }
-    };
-    
-    setupStreamsAndPC().then(success => {
-        if (success && isMountedRef.current) {
-            setupSignaling();
-        }
-    });
-    
-    // Main cleanup function is now in its own effect
-    return () => {
-        if (unsubCall) unsubCall();
-        if (unsubCandidates) unsubCandidates();
-        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-    }
-
-  }, [user, call, toast, setupStreamsAndPC, onEndCall]);
-
-  useEffect(() => {
-    return () => {
-        isMountedRef.current = false;
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-            localStreamRef.current = null;
-        }
-        if (remoteStreamRef.current) {
-            remoteStreamRef.current.getTracks().forEach(track => track.stop());
-            remoteStreamRef.current = null;
-        }
-        if (peerConnectionRef.current) {
-            if (peerConnectionRef.current.signalingState !== 'closed') {
-                peerConnectionRef.current.close();
-            }
-            peerConnectionRef.current = null;
-        }
-    }
-  }, [])
-
-
-  const toggleMute = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = !track.enabled;
-        setIsMuted(!track.enabled);
-      });
-    }
-  };
-
-  const toggleCamera = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach(track => {
-        track.enabled = !track.enabled;
-        setIsCameraOff(!track.enabled);
-      });
-    }
-  };
-
-  const handleEndCall = () => {
-    onEndCall();
-  };
 
   return (
     <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
@@ -435,13 +165,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
           "flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", 
           isPipMode && "p-2 gap-2"
         )}>
-        <Button onClick={toggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
+        <Button onClick={onToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
         <Button onClick={toggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
           {isCameraOff ? <VideoOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Video className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-        <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={handleEndCall}>
+        <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={onEndCall}>
           <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
         </Button>
         {hasMultipleCameras && (

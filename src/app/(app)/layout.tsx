@@ -97,13 +97,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-    const callerCandidatesQueue = useRef<RTCIceCandidate[]>([]);
-    const receiverCandidatesQueue = useRef<RTCIceCandidate[]>([]);
 
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
-    const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
     const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
     
     const [isMuted, setIsMuted] = useState(false);
@@ -142,8 +139,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream, remoteStream]);
     
-    const endCall = useCallback(() => {
-        const id = activeCallId;
+    const endCall = useCallback((callIdToUpdate?: string) => {
+        const id = callIdToUpdate || activeCallId;
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
@@ -161,6 +158,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (activeCallId) {
+                // This doesn't call endCall because we don't want to update Firestore status on a refresh,
+                // just clean up local media. The other user's connectionState will handle the timeout.
                 cleanupWebRTC();
             }
         };
@@ -168,7 +167,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [activeCallId, cleanupWebRTC]);
     
-    // This effect initializes the WebRTC connection for an ongoing call
+    // This effect initializes and cleans up the WebRTC connection for an ongoing call
     useEffect(() => {
         if (!user || !db || (!ongoingCall && !ongoingAudioCall)) {
             return;
@@ -176,106 +175,98 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         let unsubCall: Unsubscribe | undefined;
         let unsubCandidates: Unsubscribe | undefined;
-        
+        let unsubReceiverCandidates: Unsubscribe | undefined;
+
         const call = ongoingCall || ongoingAudioCall;
         if (!call) return;
 
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         peerConnectionRef.current = pc;
         
-        pc.onconnectionstatechange = () => {
-            setConnectionStatus(pc.connectionState);
-        };
-
         const isCaller = call.callerId === user.uid;
 
-        const setupStreams = async () => {
+        pc.onconnectionstatechange = () => setConnectionStatus(pc.connectionState);
+
+        const setupStreamsAndSignaling = async () => {
             const isVideoCall = call.callType === 'video';
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: isVideoCall,
                 audio: true
             });
+
             setLocalStream(stream);
 
+            stream.getTracks().forEach(track => {
+                pc.addTrack(track, stream);
+            });
+            
             const newRemoteStream = new MediaStream();
             setRemoteStream(newRemoteStream);
-
-            stream.getTracks().forEach(track => {
-                if (!pc.getSenders().find(sender => sender.track === track)) {
-                    if (isVideoCall || track.kind === 'audio') {
-                       pc.addTrack(track, stream);
-                    }
-                }
-            });
             
             pc.ontrack = (event) => {
                 event.streams[0].getTracks().forEach(track => {
                     newRemoteStream.addTrack(track);
                 });
             };
-        };
 
-        const setupSignaling = () => {
+            // Setup ICE candidate listeners
             pc.onicecandidate = event => {
-              if (event.candidate) {
-                  if (isCaller) addCallerCandidate(call.id, event.candidate.toJSON());
-                  else addReceiverCandidate(call.id, event.candidate.toJSON());
-              }
+                if (event.candidate) {
+                    if (isCaller) addCallerCandidate(call.id, event.candidate.toJSON());
+                    else addReceiverCandidate(call.id, event.candidate.toJSON());
+                }
             };
+
+            if (isCaller) {
+                unsubReceiverCandidates = listenForReceiverCandidates(call.id, candidate => {
+                    if (pc.remoteDescription) {
+                        pc.addIceCandidate(candidate);
+                    }
+                });
+            } else {
+                unsubCandidates = listenForCallerCandidates(call.id, candidate => {
+                     if (pc.remoteDescription) {
+                        pc.addIceCandidate(candidate);
+                    }
+                });
+            }
             
-            const candidatesListener = isCaller ? listenForReceiverCandidates : listenForCallerCandidates;
-            unsubCandidates = candidatesListener(call.id, candidate => {
-                if (pc.currentRemoteDescription) pc.addIceCandidate(candidate);
-                else {
-                    if (isCaller) receiverCandidatesQueue.current.push(candidate);
-                    else callerCandidatesQueue.current.push(candidate);
-                }
-            });
-
-            unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
-                const data = snapshot.data();
-                if (!data) return;
-
-                if (isCaller && !pc.currentRemoteDescription && data.answer) {
-                   if (pc.signalingState === 'have-local-offer') {
-                       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-                       receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
-                       receiverCandidatesQueue.current = [];
-                   }
-                }
-            });
+            // Perform Offer/Answer Exchange
+            if (isCaller) {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await saveOffer(call.id, offer);
+            } // Receiver logic is handled by listening to the call doc
         };
 
-        setupStreams().then(() => {
-            if (isCaller) {
-                 if (pc.signalingState === 'stable') {
-                    pc.createOffer().then(offer => {
-                        pc.setLocalDescription(offer);
-                        saveOffer(call.id, offer);
-                    });
-                }
-            } else {
-                if (call.offer) {
-                   pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
-                        if (pc.signalingState === 'have-remote-offer') {
-                            pc.createAnswer().then(answer => {
-                                pc.setLocalDescription(answer);
-                                saveAnswer(call.id, answer);
-                                callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
-                                callerCandidatesQueue.current = [];
-                            });
-                        }
-                    });
-                }
+        // This listener handles the answer from the receiver
+        unsubCall = onSnapshot(doc(db, 'calls', call.id), async (snapshot) => {
+            const data = snapshot.data();
+            if (!data || pc.signalingState === 'closed') return;
+
+            if (isCaller && !pc.currentRemoteDescription && data.answer) {
+               const answerDescription = new RTCSessionDescription(data.answer);
+               await pc.setRemoteDescription(answerDescription);
+            } else if (!isCaller && !pc.currentLocalDescription && data.offer) {
+                const offerDescription = new RTCSessionDescription(data.offer);
+                await pc.setRemoteDescription(offerDescription);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await saveAnswer(call.id, answer);
             }
-            setupSignaling();
         });
+        
+        setupStreamsAndSignaling();
 
         return () => {
             if (unsubCall) unsubCall();
             if (unsubCandidates) unsubCandidates();
+            if (unsubReceiverCandidates) unsubReceiverCandidates();
+            if (peerConnectionRef.current) {
+                peerConnectionRef.current.close();
+                peerConnectionRef.current = null;
+            }
         };
-
     }, [ongoingCall, ongoingAudioCall, user]);
 
 
@@ -305,7 +296,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
              // First check: does the call still exist and is it active?
             if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
-                endCall(); // If not, end the call immediately for this user.
+                endCall(activeCallId); // If not, end the call immediately for this user.
                 return;
             }
 
@@ -400,6 +391,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream]);
 
+    const pipSize = useMemo(() => {
+        return pipSizeMode === 'large' ? { width: 384, height: 288 } : { width: 320, height: 240 };
+    }, [pipSizeMode]);
+
     const contextValue = {
         onInitiateCall,
         outgoingCall, setOutgoingCall,
@@ -412,8 +407,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         otherUserInCall, endCall,
         localStream, remoteStream,
         isPipMode, onTogglePipMode, pipControls, isResetting,
-        pipSize, setPipSize, pipSizeMode,
-        setPipSizeMode,
+        pipSize, setPipSize: () => {},
+        pipSizeMode, setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
     };
@@ -436,7 +431,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       incomingCall, incomingAudioCall, acceptCall, declineCall, 
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
+      pipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
       connectionStatus, remoteStream
   } = useChat();
   const { toast } = useToast();
@@ -792,17 +787,11 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             <VideoCallView 
                 call={ongoingCall!} 
                 otherUser={otherUserInCall!} 
-                onEndCall={endCall}
+                onEndCall={() => endCall(ongoingCall?.id)}
                 isPipMode={isPipMode}
                 onTogglePipMode={onTogglePipMode}
                 pipSizeMode={pipSizeMode}
-                onTogglePipSizeMode={() => {
-                  setPipSizeMode(prev => {
-                      const sizes: ('medium' | 'large')[] = ['medium', 'large'];
-                      const currentIndex = sizes.indexOf(prev);
-                      return sizes[(currentIndex + 1) % sizes.length];
-                  });
-                }}
+                onTogglePipSizeMode={() => setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium')}
             />
         </motion.div>
       )}
@@ -816,9 +805,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             <AudioCallView
                 call={ongoingAudioCall!}
                 otherUser={otherUserInCall!}
-                onEndCall={endCall}
+                onEndCall={() => endCall(ongoingAudioCall?.id)}
                 connectionStatus={connectionStatus}
-                remoteStream={remoteStream}
             />
           </motion.div>
       )}
