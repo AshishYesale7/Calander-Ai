@@ -391,7 +391,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [localStream]);
 
     const pipSize = useMemo(() => {
-        return pipSizeMode === 'large' ? { width: 384, height: 288 } : { width: 320, height: 240 };
+        return pipSizeMode === 'large' ? { width: 320, height: 240 } : { width: 256, height: 192 };
     }, [pipSizeMode]);
 
     const contextValue = {
