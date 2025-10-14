@@ -294,15 +294,12 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     }
   };
   
-  const isMobileChatFocus = isMobile && isChatInputFocused;
-
   return (
     <>
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
       <header className={cn(
-        "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10",
-        isMobileChatFocus ? "chat-header-glassy" : "sticky top-0 bg-black"
+        "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-black"
       )}>
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
@@ -381,10 +378,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className={cn(
-        "flex-shrink-0 p-3 bg-black",
-        isMobileChatFocus && "fixed bottom-0 left-0 right-0 z-50"
-        )}>
+      <footer className="flex-shrink-0 p-3 bg-black">
         {isOtherUserTyping && (
           <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
             <Avatar className="h-6 w-6">

@@ -668,11 +668,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   return (
     <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
       <OfflineIndicator />
-      <div className={cn(!isMobileChatFocus && 'contents')}>
+      <div className={cn(isMobileChatFocus ? 'hidden' : 'contents')}>
         <SidebarNav {...modalProps} />
       </div>
       
-      <div className={cn( "flex flex-1 min-w-0",
+      <div className={cn(
+        "flex flex-1 min-w-0",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
         !isMobile && sidebarState === 'collapsed' && "md:ml-12",
         isMobileChatFocus && "hidden"
@@ -709,23 +710,27 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         </aside>
       </div>
 
-      {isMobile && isChatSidebarOpen && !((ongoingCall || ongoingAudioCall) && !isPipMode) && (
-          <div className={cn(
-            "fixed inset-0 top-0 z-50 flex h-full",
-            isMobileChatFocus && "fixed inset-0"
-          )}>
-              <div className={cn("h-full transition-all duration-300", chattingWith ? "w-[25%]" : "w-[99%]", isMobileChatFocus && chattingWith ? "hidden" : "block")}>
+      {/* Mobile Chat View */}
+      {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
+          <div className="fixed inset-0 z-50 flex h-full w-full">
+              {/* Sidebar part */}
+              <div className={cn(
+                "h-full transition-all duration-300",
+                chattingWith ? "w-[25%]" : "w-full",
+                isMobileChatFocus && chattingWith && "hidden" // Hide sidebar when typing in chat
+              )}>
                   {chattingWith ? (
                     <ChatSidebar onToggleCollapse={() => {}} />
                   ) : (
                     <MobileChatSidebar />
                   )}
               </div>
-              <div className={cn("h-full transition-all duration-300 flex flex-col", chattingWith ? (isMobileChatFocus ? "w-full" : "w-[75%]") : "w-[1%]")}>
-                  {chattingWith && (
-                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
-                  )}
-              </div>
+              {/* Chat panel part */}
+              {chattingWith && (
+                  <div className="h-full w-[75%] flex-1 flex flex-col">
+                      <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+                  </div>
+              )}
           </div>
       )}
 
