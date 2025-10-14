@@ -77,7 +77,7 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-    const { user } = useAuth();
+    const { user, toast } = useAuth();
     
     // State for video calls
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
@@ -142,10 +142,11 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const endCall = useCallback(() => {
         const id = activeCallId;
+        // Ensure callId is a valid string before sending to the server
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
-            console.warn("endCall invoked without a valid callId.");
+            console.warn("endCall invoked without a valid callId. Cleaning up local state only.");
         }
         setOngoingCall(null);
         setOutgoingCall(null);
@@ -165,6 +166,31 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [activeCallId, endCall]);
+    
+    // This effect handles the 15-second timeout for unanswered calls.
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
+    
+        if (outgoingCall || outgoingAudioCall) {
+          // A call has been initiated, start a 15-second timer.
+          timeoutId = setTimeout(() => {
+            toast({
+              title: "Call Not Answered",
+              description: "The other user did not pick up.",
+              variant: "default"
+            });
+            endCall(); // This will hang up the call.
+          }, 15000); // 15 seconds
+        }
+    
+        // Cleanup function: This will run when the component unmounts OR when the dependencies change.
+        return () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        };
+    }, [outgoingCall, outgoingAudioCall, endCall, toast]);
+
 
     // This effect initializes the WebRTC connection for an ongoing call
     useEffect(() => {
@@ -238,7 +264,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             } else {
                 if (call.offer) {
                    pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
-                        if (pc.signalingState === 'have-remote-offer') {
+                        if (pc.signalingState === 'stable') { // Wait for stable state
                             pc.createAnswer().then(answer => {
                                 pc.setLocalDescription(answer);
                                 saveAnswer(call.id, answer);
@@ -285,17 +311,13 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
             // Priority 1: Check for call termination conditions first.
-            if (!docSnap.exists()) {
+            if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
                 endCall();
                 return;
             }
 
             const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
-            if (callData.status === 'declined' || callData.status === 'ended') {
-                endCall();
-                return;
-            }
-
+            
             // Priority 2: Check if we need to answer the call.
             if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
