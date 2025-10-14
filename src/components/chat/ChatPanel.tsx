@@ -11,7 +11,7 @@ import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Heart, PanelLeftOpen, Loader2, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, Users } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -26,7 +26,7 @@ import {
   ContextMenuSeparator
 } from "@/components/ui/context-menu"
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
 
 interface ChatPanelProps {
@@ -97,20 +97,21 @@ const MessageItem = ({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}>
-          {!isMe && !isLastInBlock && <div className="w-8 h-8"></div> /* Spacer */}
           <div
             className={cn(
               'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1',
-              isMe ? 'bg-blue-500 text-white rounded-3xl' : 'bg-[#262626] text-white rounded-3xl',
-              isLastInBlock ? (isMe ? 'rounded-br-lg' : 'rounded-bl-lg') : 'rounded-lg'
+              isMe ? 'bg-blue-500 text-white' : 'bg-[#262626] text-white',
+              isMe
+                ? isLastInBlock ? 'rounded-t-2xl rounded-bl-2xl rounded-br-lg' : 'rounded-2xl'
+                : isLastInBlock ? 'rounded-t-2xl rounded-br-2xl rounded-bl-lg' : 'rounded-2xl'
             )}
           >
             {msg.isDeleted ? (
-              <span className="italic text-gray-400">{msg.text}</span>
+              <span className="italic text-gray-300">{msg.text}</span>
             ) : (
               <span>{msg.text}</span>
             )}
-            <span className={cn('text-white/70 self-end mt-1 text-[10px]', isMe ? 'text-right' : 'text-left')}>
+            <span className={cn('text-white/70 self-end mt-1 text-[10px]', isMe ? 'text-right' : 'text-right')}>
               {format(msg.timestamp, 'p')}
             </span>
           </div>
@@ -235,7 +236,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     scrollToBottom('auto');
 
     const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
-        setMessages(newMessages.filter(m => !m.deletedFor?.includes(currentUser.uid)));
+        setMessages(newMessages);
     });
     const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
 
@@ -318,15 +319,13 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         </div>
         <div className="flex items-center gap-1 text-white">
             <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
-                {isCallingThisUser && outgoingAudioCall ? <Loader2 className="h-5 w-5 animate-spin"/> : <Phone className="h-5 w-5" />}
+                <Phone className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
-              {isCallingThisUser && outgoingCall ? <Loader2 className="h-5 w-5 animate-spin"/> : (
-                <div className="relative">
-                  <Video className="h-5 w-5" />
-                  {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
-                </div>
-              )}
+              <div className="relative">
+                <Video className="h-5 w-5" />
+                {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
+              </div>
             </Button>
             <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
             <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
@@ -419,7 +418,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                        <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
                    </>
                ) : null}
-               {isMobile && inputMessage.trim() !== '' ? (
+               {inputMessage.trim() !== '' ? (
                     <Button variant="ghost" size="icon" type="submit" className="text-accent hover:bg-transparent hover:text-accent/80">
                         <Send className="h-6 w-6"/>
                     </Button>
