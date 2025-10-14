@@ -1,5 +1,6 @@
 
 'use client';
+
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -77,7 +78,7 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 };
 
 function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-    const { user, toast } = useAuth();
+    const { user } = useAuth();
     
     // State for video calls
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
@@ -142,7 +143,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const endCall = useCallback(() => {
         const id = activeCallId;
-        // Ensure callId is a valid string before sending to the server
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
@@ -167,31 +167,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [activeCallId, endCall]);
     
-    // This effect handles the 15-second timeout for unanswered calls.
-    useEffect(() => {
-        let timeoutId: NodeJS.Timeout | null = null;
-    
-        if (outgoingCall || outgoingAudioCall) {
-          // A call has been initiated, start a 15-second timer.
-          timeoutId = setTimeout(() => {
-            toast({
-              title: "Call Not Answered",
-              description: "The other user did not pick up.",
-              variant: "default"
-            });
-            endCall(); // This will hang up the call.
-          }, 15000); // 15 seconds
-        }
-    
-        // Cleanup function: This will run when the component unmounts OR when the dependencies change.
-        return () => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-        };
-    }, [outgoingCall, outgoingAudioCall, endCall, toast]);
-
-
     // This effect initializes the WebRTC connection for an ongoing call
     useEffect(() => {
         if (!user || !db || (!ongoingCall && !ongoingAudioCall)) {
@@ -435,6 +410,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
+  const { toast } = useToast();
   
   if (loading || !user) {
     return (
@@ -457,7 +433,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   // All hooks are now safely called AFTER all conditional returns.
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -488,6 +463,30 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   
+  // This is the new home for the timeout effect
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (outgoingCall || outgoingAudioCall) {
+      // A call has been initiated, start a 15-second timer.
+      timeoutId = setTimeout(() => {
+        toast({
+          title: "Call Not Answered",
+          description: "The other user did not pick up.",
+          variant: "default"
+        });
+        endCall(); // This will hang up the call.
+      }, 15000); // 15 seconds
+    }
+
+    // Cleanup function: This will run when the component unmounts OR when the dependencies change.
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [outgoingCall, outgoingAudioCall, endCall, toast]);
+
 
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
