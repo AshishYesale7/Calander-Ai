@@ -56,40 +56,55 @@ export const subscribeToRecentChats = (
     return () => {};
   }
   
+  let currentChats: PublicUserProfile[] = [];
   const recentChatsRef = collection(db, 'users', userId, 'chats');
   const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
 
-  const unsubscribe = onSnapshot(q, async (snapshot) => {
-    // This is the full, up-to-date list of recent chats every time the listener fires.
-    const recentChatDocs = snapshot.docs;
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const promises: Promise<void>[] = [];
+    
+    snapshot.docChanges().forEach(change => {
+      const docData = change.doc.data();
+      const otherUserId = change.doc.id;
 
-    const chatPartnersPromises = recentChatDocs.map(async (docSnapshot) => {
-        const recentChatData = docSnapshot.data();
-        const otherUserId = docSnapshot.id;
-        const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
-        
-        if (userDocSnap.exists()) {
+      if (change.type === "added" || change.type === "modified") {
+        const promise = getDoc(doc(db, 'users', otherUserId)).then(userDocSnap => {
+          if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            return {
-                id: userDocSnap.id,
-                uid: userDocSnap.id,
-                displayName: userData.displayName || 'Anonymous User',
-                photoURL: userData.photoURL || null,
-                username: userData.username || `user_${otherUserId.substring(0,5)}`,
-                lastMessage: recentChatData.lastMessage,
-                timestamp: recentChatData.timestamp?.toDate(),
-                // Mock notification logic remains for now
-                notification: Math.random() > 0.8,
-            } as PublicUserProfile; // Cast to PublicUserProfile with extra fields
-        }
-        return null;
+            const chatPartner: PublicUserProfile = {
+              id: userDocSnap.id,
+              uid: userDocSnap.id,
+              displayName: userData.displayName || 'Anonymous User',
+              photoURL: userData.photoURL || null,
+              username: userData.username || `user_${otherUserId.substring(0,5)}`,
+              lastMessage: docData.lastMessage,
+              timestamp: docData.timestamp?.toDate(),
+              notification: Math.random() > 0.8, // Mock notification
+            };
+
+            if (change.type === "added") {
+              currentChats.push(chatPartner);
+            } else { // modified
+              const index = currentChats.findIndex(c => c.id === otherUserId);
+              if (index !== -1) {
+                currentChats[index] = chatPartner;
+              } else {
+                currentChats.push(chatPartner);
+              }
+            }
+          }
+        });
+        promises.push(promise);
+      } else if (change.type === "removed") {
+        currentChats = currentChats.filter(c => c.id !== otherUserId);
+      }
     });
 
-    const fetchedChats = (await Promise.all(chatPartnersPromises))
-      .filter((c): c is PublicUserProfile => c !== null)
-      .sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
-
-    callback(fetchedChats);
+    // After processing all changes, update the state once.
+    Promise.all(promises).then(() => {
+      currentChats.sort((a, b) => ((b as any).timestamp?.getTime() || 0) - ((a as any).timestamp?.getTime() || 0));
+      callback([...currentChats]); // Use spread to ensure a new array reference for React state update
+    });
 
   }, (error) => {
     console.error("Error listening to recent chats:", error);
