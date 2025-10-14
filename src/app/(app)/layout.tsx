@@ -239,7 +239,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             } else {
                 if (call.offer) {
                    pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
-                        if (pc.signalingState === 'stable') { // Wait for stable state
+                        if (pc.signalingState === 'have-remote-offer') {
                             pc.createAnswer().then(answer => {
                                 pc.setLocalDescription(answer);
                                 saveAnswer(call.id, answer);
@@ -285,7 +285,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-            // Priority 1: Check for call termination conditions first.
             if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
                 endCall();
                 return;
@@ -293,7 +292,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
             const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
             
-            // Priority 2: Check if we need to answer the call.
             if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                 const userDoc = await getDoc(doc(db, 'users', otherUserId));
@@ -462,24 +460,19 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
-  
-  // This is the new home for the timeout effect
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
-
     if (outgoingCall || outgoingAudioCall) {
-      // A call has been initiated, start a 15-second timer.
       timeoutId = setTimeout(() => {
         toast({
           title: "Call Not Answered",
           description: "The other user did not pick up.",
           variant: "default"
         });
-        endCall(); // This will hang up the call.
+        endCall();
       }, 15000); // 15 seconds
     }
-
-    // Cleanup function: This will run when the component unmounts OR when the dependencies change.
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -808,3 +801,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
