@@ -9,7 +9,11 @@ import {
   Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { getChatRoomId } from './chatService';
+
+// This helper function is now self-contained within this service.
+const getChatRoomId = (userId1: string, userId2: string): string => {
+  return [userId1, userId2].sort().join('_');
+};
 
 const getTypingDocRef = (currentUserId: string, otherUserId: string) => {
   if (!db) throw new Error("Firestore is not initialized.");
