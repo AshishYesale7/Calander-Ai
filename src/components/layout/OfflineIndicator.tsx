@@ -38,11 +38,11 @@ export default function OfflineIndicator() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-4 left-[45%] -translate-x-1/2 z-[200] pointer-events-none"
+          className="fixed top-4 left-[40%] -translate-x-1/2 z-[200] pointer-events-none"
         >
-          <div className="flex items-center gap-3 p-3 rounded-full bg-slate-800/90 text-slate-200 border border-slate-700 shadow-lg backdrop-blur-md">
-            <LoadingSpinner size="sm" className="text-slate-400" />
-            <span className="text-sm font-medium">Could not connect to the internet. Reconnecting...</span>
+          <div className="flex items-center gap-2 p-2 rounded-full bg-slate-800/90 text-slate-200 border border-slate-700 shadow-lg backdrop-blur-md">
+            <LoadingSpinner size="sm" className="text-slate-400 h-3 w-3" />
+            <span className="text-xs font-medium">Reconnecting...</span>
           </div>
         </motion.div>
       )}
