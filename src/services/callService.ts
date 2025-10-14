@@ -41,6 +41,11 @@ export async function createCall(callData: {
  * Updates the status of an existing call.
  */
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
+  if (!callId || typeof callId !== 'string') {
+    console.error(`updateCallStatus called with invalid callId: ${callId}`);
+    return; // Gracefully exit if callId is invalid
+  }
+
   const callDocRef = getCallDocRef(callId);
   const docSnap = await callDocRef.get();
 
@@ -61,6 +66,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
       updateData.duration = Math.max(0, durationInSeconds);
     }
     
+    // Clean up ICE candidates
     const callerCandidatesRef = callDocRef.collection('callerCandidates');
     const receiverCandidatesRef = callDocRef.collection('receiverCandidates');
 
@@ -72,7 +78,9 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     
-    await batch.commit();
+    if (callerCandidatesSnap.size > 0 || receiverCandidatesSnap.size > 0) {
+        await batch.commit();
+    }
   }
   
   await callDocRef.update(updateData);
