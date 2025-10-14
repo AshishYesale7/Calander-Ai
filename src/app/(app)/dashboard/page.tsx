@@ -155,9 +155,14 @@ export default function DashboardPage() {
           const firestoreEvents = await getTimelineEvents(user.uid);
           setAllTimelineEvents(firestoreEvents);
           syncToLocalStorage(firestoreEvents);
-        } catch (error) {
-          console.error("Failed to sync timeline from Firestore, using local data.", error);
-          toast({ title: "Offline Mode", description: "Could not sync timeline. Displaying local data.", variant: "destructive"});
+        } catch (error: any) {
+           if (error.message.includes('Failed to fetch')) {
+             console.warn("Could not sync timeline, likely offline.");
+             toast({ title: "Offline Mode" });
+           } else {
+             console.error("Failed to sync timeline from Firestore, using local data.", error);
+             toast({ title: "Sync Error", description: "Could not sync timeline.", variant: "destructive"});
+           }
         }
       }
   }, [user, toast]);

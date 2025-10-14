@@ -61,13 +61,18 @@ export const ApiKeyProvider = ({ children }: { children: ReactNode }) => {
                     // If local has a key but firestore doesn't, sync local to firestore
                     await saveUserGeminiApiKey(user.uid, localKey);
                 }
-            } catch (error) {
-                console.error("Failed to sync API key from Firestore:", error);
-                toast({
-                    title: 'Sync Error',
-                    description: 'Could not load your saved API key from the cloud.',
-                    variant: 'destructive',
-                });
+            } catch (error: any) {
+                if (error.message.includes('Failed to fetch')) {
+                    // This is likely an offline error, so we don't show a toast.
+                    console.warn("Could not sync API key, likely offline.");
+                } else {
+                    console.error("Failed to sync API key from Firestore:", error);
+                    toast({
+                        title: 'Sync Error',
+                        description: 'Could not load your saved API key from the cloud.',
+                        variant: 'destructive',
+                    });
+                }
             }
         };
         syncKeyFromFirestore();

@@ -48,6 +48,7 @@ import OnboardingModal from '@/components/auth/OnboardingModal';
 import IncomingAudioCall from '@/components/chat/IncomingAudioCall';
 import OutgoingAudioCall from '@/components/chat/OutgoingAudioCall';
 import AudioCallView from '@/components/chat/AudioCallView';
+import OfflineIndicator from '@/components/layout/OfflineIndicator';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -666,6 +667,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
   return (
     <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
+      <OfflineIndicator />
       <div className={cn(!isMobileChatFocus && 'contents')}>
         <SidebarNav {...modalProps} />
       </div>

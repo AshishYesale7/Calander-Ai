@@ -87,9 +87,14 @@ export default function ResourcesPage() {
           const firestoreResources = await getBookmarkedResources(user.uid);
           setBookmarkedResources(firestoreResources);
           syncToLocalStorage(RESOURCES_STORAGE_KEY, firestoreResources);
-        } catch (error) {
-          console.error("Failed to fetch resources from Firestore, using local data.", error);
-          toast({ title: "Offline Mode", description: "Could not sync resources. Displaying locally saved resources.", variant: "destructive"});
+        } catch (error: any) {
+          if (error.message.includes('Failed to fetch')) {
+            console.warn("Could not sync resources, likely offline.");
+            toast({ title: "Offline Mode" });
+          } else {
+            console.error("Failed to fetch resources from Firestore, using local data.", error);
+            toast({ title: "Sync Error", description: "Could not sync resources.", variant: "destructive"});
+          }
         }
       }
     };

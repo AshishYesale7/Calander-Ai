@@ -77,9 +77,14 @@ export default function SkillsPage() {
           const firestoreSkills = await getSkills(user.uid);
           setSkills(firestoreSkills);
           syncToLocalStorage(firestoreSkills);
-        } catch (error) {
-          console.error("Failed to fetch skills from Firestore, using local data.", error);
-          toast({ title: "Offline Mode", description: "Could not sync skills. Displaying local data.", variant: "destructive"});
+        } catch (error: any) {
+          if (error.message.includes('Failed to fetch')) {
+            console.warn("Could not sync skills, likely offline.");
+            toast({ title: "Offline Mode" });
+          } else {
+            console.error("Failed to fetch skills from Firestore, using local data.", error);
+            toast({ title: "Sync Error", description: "Could not sync skills.", variant: "destructive"});
+          }
         }
       }
     };
