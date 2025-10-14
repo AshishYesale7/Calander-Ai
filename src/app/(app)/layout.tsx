@@ -221,12 +221,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                     receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
                     receiverCandidatesQueue.current = [];
-                } else if (!isCaller && pc.signalingState === 'have-remote-offer' && data.offer) {
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    await saveAnswer(call.id, answer);
-                    callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
-                    callerCandidatesQueue.current = [];
+                } else if (!isCaller && pc.signalingState === 'stable' && data.offer) {
+                    // This was moved to be more robust, should already be handled by the 'have-remote-offer' state
                 }
             });
         };
@@ -237,6 +233,16 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     pc.setLocalDescription(offer);
                     saveOffer(call.id, offer);
                 });
+            } else {
+                // For receiver, wait for offer before creating answer
+                pc.ondatachannel = (event) => {
+                     pc.createAnswer().then(answer => {
+                        pc.setLocalDescription(answer);
+                        saveAnswer(call.id, answer);
+                        callerCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
+                        callerCandidatesQueue.current = [];
+                    });
+                };
             }
             setupSignaling();
         });
@@ -387,7 +393,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-
+  
   // This check MUST happen before any other hooks are called.
   if (loading || !user) {
     return (
@@ -398,12 +404,14 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   }
 
   // All other hooks are called AFTER the early return.
-  useStreakTracker(); // This is a custom hook
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  useStreakTracker(); // This is a custom hook
+  
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
       outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
@@ -426,7 +434,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
   const lastScrollY = useRef(0);
   
-  const isMobile = useIsMobile();
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   
