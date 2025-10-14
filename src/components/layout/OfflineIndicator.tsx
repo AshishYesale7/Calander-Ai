@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,7 +38,7 @@ export default function OfflineIndicator() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] pointer-events-none"
+          className="fixed top-4 left-[45%] -translate-x-1/2 z-[200] pointer-events-none"
         >
           <div className="flex items-center gap-3 p-3 rounded-full bg-slate-800/90 text-slate-200 border border-slate-700 shadow-lg backdrop-blur-md">
             <LoadingSpinner size="sm" className="text-slate-400" />
