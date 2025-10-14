@@ -86,6 +86,23 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   await callDocRef.update(updateData);
 }
 
+/**
+ * Deletes a list of call documents from Firestore using a batch write.
+ */
+export async function deleteCalls(callIds: string[]): Promise<void> {
+    if (!adminDb) throw new Error("Firestore is not initialized.");
+    if (!callIds || callIds.length === 0) return;
+
+    const batch = adminDb.batch();
+
+    callIds.forEach(id => {
+        const callDocRef = getCallDocRef(id);
+        batch.delete(callDocRef);
+    });
+
+    await batch.commit();
+}
+
 
 /**
  * Saves the WebRTC offer to the call document.
