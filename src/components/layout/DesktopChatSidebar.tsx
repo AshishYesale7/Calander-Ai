@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2 } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -98,47 +98,35 @@ const ChatListView = () => {
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const updatedChats: RecentChatUser[] = [...recentChats];
+            const updatedChats: RecentChatUser[] = [];
             
-            for (const change of snapshot.docChanges()) {
-                const docId = change.doc.id;
-                const docData = change.doc.data();
-                const existingIndex = updatedChats.findIndex(c => c.id === docId);
-
-                if (change.type === 'removed') {
-                    if (existingIndex > -1) {
-                        updatedChats.splice(existingIndex, 1);
-                    }
-                } else { // 'added' or 'modified'
-                    const userDocSnap = await getDoc(doc(db, 'users', docId));
-                    if (userDocSnap.exists()) {
-                        const userData = userDocSnap.data();
-                        const newOrUpdatedChat: RecentChatUser = {
-                            id: userDocSnap.id, uid: userDocSnap.id,
-                            displayName: userData.displayName || 'Anonymous User',
-                            photoURL: userData.photoURL || null,
-                            username: userData.username || `user_${docId.substring(0,5)}`,
-                            lastMessage: docData.lastMessage,
-                            timestamp: docData.timestamp?.toDate(),
-                        };
-                        if (existingIndex > -1) {
-                            updatedChats[existingIndex] = newOrUpdatedChat;
-                        } else {
-                            updatedChats.push(newOrUpdatedChat);
-                        }
-                    }
+            for (const docSnapshot of snapshot.docs) {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    updatedChats.push({
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                    } as RecentChatUser);
                 }
             }
             
-            // Sort after processing all changes
-            updatedChats.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-
             setRecentChats(updatedChats);
             localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedChats));
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [user, recentChats]); // Depend on recentChats to allow updating the list
+    }, [user]);
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>
@@ -154,25 +142,15 @@ const ChatListView = () => {
         if (!chatToDelete || !user) return;
 
         const chatPartner = chatToDelete;
-        setChatToDelete(null); // Close the dialog
-
-        toast({
-            title: "Deleting Chat...",
-            description: `Removing your conversation with ${chatPartner.displayName}.`
-        });
+        setChatToDelete(null);
 
         try {
             await deleteConversationForCurrentUser(user.uid, chatPartner.uid);
             
-            // The onSnapshot listener will automatically update the UI.
-            // We just need to ensure the local cache is also cleared.
-            const updatedLocalChats = recentChats.filter(c => c.uid !== chatPartner.uid);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedLocalChats));
-            
             if (chattingWith?.uid === chatPartner.uid) {
                 setChattingWith(null);
             }
-
+            
             toast({
                 title: "Chat Deleted",
                 description: `Your chat history with ${chatPartner.displayName} has been cleared.`
@@ -287,7 +265,7 @@ const ChatListView = () => {
                           animate={{ rotate: isFabMenuOpen ? 45 : 0 }}
                           transition={{ duration: 0.2 }}
                       >
-                          <X className="h-7 w-7" />
+                          <Plus className="h-7 w-7" />
                       </motion.div>
                   </Button>
               </div>

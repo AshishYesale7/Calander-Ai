@@ -98,46 +98,35 @@ const ChatListView = () => {
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const updatedChats: RecentChatUser[] = [...recentChats];
+             const updatedChats: RecentChatUser[] = [];
             
-            for (const change of snapshot.docChanges()) {
-                const docId = change.doc.id;
-                const docData = change.doc.data();
-                const existingIndex = updatedChats.findIndex(c => c.id === docId);
-
-                if (change.type === 'removed') {
-                    if (existingIndex > -1) {
-                        updatedChats.splice(existingIndex, 1);
-                    }
-                } else { // 'added' or 'modified'
-                    const userDocSnap = await getDoc(doc(db, 'users', docId));
-                    if (userDocSnap.exists()) {
-                        const userData = userDocSnap.data();
-                        const newOrUpdatedChat: RecentChatUser = {
-                            id: userDocSnap.id, uid: userDocSnap.id,
-                            displayName: userData.displayName || 'Anonymous User',
-                            photoURL: userData.photoURL || null,
-                            username: userData.username || `user_${docId.substring(0,5)}`,
-                            lastMessage: docData.lastMessage,
-                            timestamp: docData.timestamp?.toDate(),
-                        };
-                        if (existingIndex > -1) {
-                            updatedChats[existingIndex] = newOrUpdatedChat;
-                        } else {
-                            updatedChats.push(newOrUpdatedChat);
-                        }
-                    }
+            for (const docSnapshot of snapshot.docs) {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    updatedChats.push({
+                        id: userDocSnap.id,
+                        uid: userDocSnap.id,
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                    } as RecentChatUser);
                 }
             }
             
-            updatedChats.sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-
             setRecentChats(updatedChats);
             localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedChats));
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [user, recentChats]);
+    }, [user]);
 
     const filteredChats = useMemo(() => {
         return recentChats.filter(chat =>
