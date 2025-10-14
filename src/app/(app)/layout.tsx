@@ -158,14 +158,12 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (activeCallId) {
-                // This doesn't call endCall because we don't want to update Firestore status on a refresh,
-                // just clean up local media. The other user's connectionState will handle the timeout.
-                cleanupWebRTC();
+                endCall(activeCallId);
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [activeCallId, cleanupWebRTC]);
+    }, [activeCallId, endCall]);
     
     // This effect initializes and cleans up the WebRTC connection for an ongoing call
     useEffect(() => {
@@ -174,11 +172,13 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
         
         let unsubCall: Unsubscribe | undefined;
-        let unsubCandidates: Unsubscribe | undefined;
+        let unsubCallerCandidates: Unsubscribe | undefined;
         let unsubReceiverCandidates: Unsubscribe | undefined;
 
         const call = ongoingCall || ongoingAudioCall;
         if (!call) return;
+
+        const isVideoCall = call.callType === 'video';
 
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         peerConnectionRef.current = pc;
@@ -188,7 +188,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         pc.onconnectionstatechange = () => setConnectionStatus(pc.connectionState);
 
         const setupStreamsAndSignaling = async () => {
-            const isVideoCall = call.callType === 'video';
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: isVideoCall,
                 audio: true
@@ -224,7 +223,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     }
                 });
             } else {
-                unsubCandidates = listenForCallerCandidates(call.id, candidate => {
+                unsubCallerCandidates = listenForCallerCandidates(call.id, candidate => {
                      if (pc.remoteDescription) {
                         pc.addIceCandidate(candidate);
                     }
@@ -260,7 +259,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
         return () => {
             if (unsubCall) unsubCall();
-            if (unsubCandidates) unsubCandidates();
+            if (unsubCallerCandidates) unsubCallerCandidates();
             if (unsubReceiverCandidates) unsubReceiverCandidates();
             if (peerConnectionRef.current) {
                 peerConnectionRef.current.close();
@@ -407,7 +406,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         otherUserInCall, endCall,
         localStream, remoteStream,
         isPipMode, onTogglePipMode, pipControls, isResetting,
-        pipSize, setPipSize: () => {},
+        pipSize,
+        setPipSize: () => {}, // Placeholder, actual sizing controlled by pipSizeMode
         pipSizeMode, setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
@@ -432,7 +432,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
-      connectionStatus, remoteStream
+      connectionStatus, remoteStream, localStream
   } = useChat();
   const { toast } = useToast();
   const router = useRouter();

@@ -164,6 +164,11 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
                 Camera is off
               </div>
             )}
+             {isPipMode && (
+                <Button variant="ghost" size="icon" className="absolute top-0 left-0 h-7 w-7 text-white/70 hover:text-white" onClick={onTogglePipSizeMode}>
+                  {pipSizeMode === 'medium' ? <Maximize className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
+                </Button>
+            )}
           </motion.div>
         )}
       </div>
