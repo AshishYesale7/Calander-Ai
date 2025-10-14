@@ -441,11 +441,8 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
  */
 export async function anonymizeUserAccount(userId: string): Promise<void> {
     const userDocRef = doc(adminDb, 'users', userId);
-
-    // Calculate the deletion date 30 days from now
     const deletionDate = addDays(new Date(), 30);
 
-    // Anonymize public-facing Firestore data and set deletion status
     const anonymizedData = {
         displayName: 'Deleted User',
         username: `deleted_${userId.substring(0, 8)}`,
@@ -462,16 +459,66 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
 
     await updateDoc(userDocRef, anonymizedData);
 
-    // Disable user in Firebase Auth using the Admin SDK
     try {
         const { getAuth } = await import('firebase-admin/auth');
         await getAuth().updateUser(userId, { disabled: true });
     } catch (error) {
         console.error(`Failed to disable auth user ${userId}:`, error);
-        // Do not re-throw, as the main data has been anonymized.
-        // Log this for manual review.
     }
 }
     
+/**
+ * Permanently deletes all data associated with a user, leaving only their UID and email.
+ * This function should be called by a scheduled backend job.
+ */
+export async function permanentlyDeleteUserData(userId: string): Promise<void> {
+    if (!adminDb) throw new Error("Admin Firestore not initialized.");
 
-    
+    const batch = adminDb.batch();
+
+    // List all user-specific sub-collections to be purged.
+    const collectionsToClear = [
+        'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
+        'fcmTokens', 'notifications', 'resources', 'skills', 
+        'timelineEvents', 'trackedKeywords', 'followers', 'following'
+    ];
+
+    for (const collectionName of collectionsToClear) {
+        const collectionRef = collection(adminDb, 'users', userId, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    }
+
+    // Delete the separate streak document.
+    const streakDocRef = doc(adminDb, 'streaks', userId);
+    batch.delete(streakDocRef);
+
+    // Finally, update the main user document to its minimal, permanently deleted state.
+    const userDocRef = doc(adminDb, 'users', userId);
+    batch.update(userDocRef, {
+        displayName: 'Deleted User',
+        username: `deleted_${userId.substring(0, 8)}`,
+        photoURL: null,
+        coverPhotoURL: null,
+        bio: 'This account has been permanently deleted.',
+        socials: deleteField(),
+        statusEmoji: deleteField(),
+        countryCode: deleteField(),
+        searchableIndex: deleteField(),
+        geminiApiKey: deleteField(),
+        installedPlugins: deleteField(),
+        preferences: deleteField(),
+        codingUsernames: deleteField(),
+        followersCount: 0,
+        followingCount: 0,
+        onboardingCompleted: deleteField(),
+        subscription: deleteField(), // Assuming subscription should also be cleared
+        deletionStatus: 'DELETED',
+        deletionScheduledAt: deleteField(),
+    });
+
+    await batch.commit();
+
+    // The user's auth account is already disabled from the initial step.
+    // A separate cleanup job could delete the auth account entirely if desired.
+}
