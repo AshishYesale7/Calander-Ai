@@ -28,7 +28,7 @@ interface VideoCallViewProps {
 export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode, pipSizeMode, onTogglePipSizeMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { localStream, remoteStream, isMuted, onToggleMute, connectionStatus } = useChat();
+  const { localStream, remoteStream, isMuted, onToggleMute, connectionStatus, peerConnectionRef } = useChat();
 
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(true);
@@ -37,7 +37,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -88,26 +87,35 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     const newFacingMode = isFrontCamera ? 'environment' : 'user';
     
     try {
-        const tracks = localStream.getVideoTracks();
-        for (const track of tracks) {
-            track.stop();
-        }
+        // Stop the current video track to release the camera
+        localStream.getVideoTracks().forEach(track => track.stop());
 
+        // Get the new stream with the desired facing mode.
+        // We do not use `exact` to provide more flexibility for different devices.
         const newStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: { exact: newFacingMode } },
+            video: { facingMode: newFacingMode },
         });
         
-        const videoTrack = newStream.getVideoTracks()[0];
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        
+        // Find the video sender in the peer connection
         const pc = peerConnectionRef.current;
         const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
         
         if (sender) {
-            await sender.replaceTrack(videoTrack);
+            // Replace the track in the peer connection
+            await sender.replaceTrack(newVideoTrack);
 
+            // Update the local video element with a new stream containing the new video track
+            // and the existing audio tracks.
             if (localVideoRef.current) {
-                const newLocalStream = new MediaStream([videoTrack, ...localStream.getAudioTracks()]);
+                const newLocalStream = new MediaStream([newVideoTrack, ...localStream.getAudioTracks()]);
                 localVideoRef.current.srcObject = newLocalStream;
-                localStream.getTracks().forEach(t => t.stop());
+
+                // Stop old stream tracks to be clean, though they should be stopped already.
+                localStream.getTracks().forEach(t => {
+                    if (t.kind === 'video') t.stop();
+                });
             }
             setIsFrontCamera(!isFrontCamera);
         } else {
@@ -117,9 +125,16 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         console.error("Error flipping camera:", error);
         toast({ 
             title: "Camera Switch Failed", 
-            description: "Could not access the other camera.", 
+            description: "Could not access the other camera. It might be in use or not supported.", 
             variant: 'destructive' 
         });
+        // As a fallback, try to restart the original stream if the switch fails
+        try {
+            const originalStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: isFrontCamera ? 'user' : 'environment' }, audio: true });
+            if (localVideoRef.current) localVideoRef.current.srcObject = originalStream;
+        } catch(restartError) {
+             console.error("Failed to restart original camera stream:", restartError);
+        }
     }
   };
 
