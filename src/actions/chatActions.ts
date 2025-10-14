@@ -111,35 +111,52 @@ export const deleteMessage = async (
 /**
  * Deletes an entire conversation history and call logs for the current user only.
  * This is a one-sided operation and does not affect the other user's data.
+ * This function will delete the chat metadata, all messages in the subcollection,
+ * and all associated call logs.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  */
 export const deleteConversationForCurrentUser = async (currentUserId: string, otherUserId: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
+    if (!currentUserId || !otherUserId) throw new Error("User IDs are required.");
 
     const batch = writeBatch(db);
 
-    // 1. Delete the top-level chat document, which contains metadata like lastMessage.
+    // 1. Delete the top-level chat metadata document.
     const recentChatRef = doc(db, 'users', currentUserId, 'chats', otherUserId);
     batch.delete(recentChatRef);
     
-    // 2. Delete the corresponding call history for that user.
+    // 2. Query and delete all messages in the subcollection
+    const messagesCollectionRef = collection(db, 'users', currentUserId, 'chats', otherUserId, 'messages');
+    const messagesSnapshot = await getDocs(messagesCollectionRef);
+    messagesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // 3. Query and delete all associated call logs (both incoming and outgoing with this user)
     const callsCollectionRef = collection(db, 'users', currentUserId, 'calls');
-    const callQuery = query(callsCollectionRef, where('callerId', '==', otherUserId), where('receiverId', '==', currentUserId));
-    const callQuery2 = query(callsCollectionRef, where('callerId', '==', currentUserId), where('receiverId', '==', otherUserId));
+    const callQuery1 = query(callsCollectionRef, where('callerId', '==', otherUserId));
+    const callQuery2 = query(callsCollectionRef, where('receiverId', '==', otherUserId));
     
     try {
-        const [callDocs1, callDocs2] = await Promise.all([getDocs(callQuery), getDocs(callQuery2)]);
-        callDocs1.forEach(doc => batch.delete(doc.ref));
-        callDocs2.forEach(doc => batch.delete(doc.ref));
+        const [callDocs1, callDocs2] = await Promise.all([getDocs(callQuery1), getDocs(callQuery2)]);
+        
+        callDocs1.forEach(doc => {
+            // Ensure we don't accidentally delete calls between other users if the query is too broad.
+            // This is a safety check.
+            if(doc.data().receiverId === currentUserId) {
+                batch.delete(doc.ref)
+            }
+        });
+        callDocs2.forEach(doc => {
+            if(doc.data().callerId === currentUserId) {
+                batch.delete(doc.ref)
+            }
+        });
 
+        // Commit all deletions at once.
         await batch.commit();
-
-        // NOTE: The deletion of the `messages` subcollection should be handled by a scheduled Cloud Function
-        // to avoid high read/write costs on the client for large conversations. This server action
-        // only deletes the entry points to the conversation from the user's side.
+        
     } catch (error) {
-        console.error("Error deleting conversation metadata and calls:", error);
-        throw new Error("Failed to delete conversation from your view.");
+        console.error("Error deleting conversation and related data:", error);
+        throw new Error("Failed to delete the conversation completely.");
     }
 };

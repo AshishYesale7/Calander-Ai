@@ -80,35 +80,24 @@ const ChatListView = () => {
             return;
         }
 
-        const storedChats = localStorage.getItem(RECENT_CHATS_LOCAL_KEY);
-        if (storedChats) {
-            try {
-                const parsedChats = JSON.parse(storedChats).map((c: any) => ({
-                    ...c,
-                    timestamp: c.timestamp ? new Date(c.timestamp) : new Date(),
-                }));
-                setRecentChats(parsedChats);
-            } catch (e) {
-                console.error("Failed to parse chats from local storage", e);
-            }
-        }
-        setIsLoading(false);
-
+        setIsLoading(true);
         const recentChatsRef = collection(db, 'users', user.uid, 'chats');
         const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-             const updatedChats: RecentChatUser[] = [];
-            
-            for (const docSnapshot of snapshot.docs) {
-                const recentChatData = docSnapshot.data();
-                const otherUserId = docSnapshot.id;
+             const chatPartnersPromises = snapshot.docChanges().map(async (change) => {
+                 if (change.type === 'removed') {
+                    setRecentChats(prev => prev.filter(chat => chat.id !== change.doc.id));
+                    return null;
+                }
+                const recentChatData = change.doc.data();
+                const otherUserId = change.doc.id;
                 
                 const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
                 
                 if (userDocSnap.exists()) {
                     const userData = userDocSnap.data();
-                    updatedChats.push({
+                    return {
                         id: userDocSnap.id,
                         uid: userDocSnap.id,
                         displayName: userData.displayName || 'Anonymous User',
@@ -116,12 +105,18 @@ const ChatListView = () => {
                         username: userData.username || `user_${otherUserId.substring(0,5)}`,
                         lastMessage: recentChatData.lastMessage,
                         timestamp: recentChatData.timestamp?.toDate(),
-                    } as RecentChatUser);
+                    } as RecentChatUser;
                 }
-            }
-            
-            setRecentChats(updatedChats);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedChats));
+                return null;
+            });
+            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
+            setRecentChats(prev => {
+                const chatMap = new Map(prev.map(c => [c.id, c]));
+                fetchedChats.forEach(c => chatMap.set(c.id, c));
+                const sortedChats = Array.from(chatMap.values()).sort((a,b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+                localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(sortedChats));
+                return sortedChats;
+            });
             setIsLoading(false);
         });
 
@@ -146,6 +141,11 @@ const ChatListView = () => {
         
         try {
             await deleteConversationForCurrentUser(user.uid, chatPartner.uid);
+            
+            // Clear local cache for this chat's messages
+            const messageCacheKey = `chatMessages_${user.uid}_${chatPartner.uid}`;
+            localStorage.removeItem(messageCacheKey);
+
             if (chattingWith?.uid === chatPartner.uid) {
                 setChattingWith(null);
             }
