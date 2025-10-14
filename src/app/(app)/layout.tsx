@@ -221,8 +221,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                     receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
                     receiverCandidatesQueue.current = [];
-                } else if (!isCaller && !pc.currentRemoteDescription && data.offer) {
-                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                } else if (!isCaller && pc.signalingState === 'have-remote-offer' && data.offer) {
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
                     await saveAnswer(call.id, answer);
@@ -388,11 +387,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  useStreakTracker(); // This is a custom hook
-  const router = useRouter();
-  const pathname = usePathname();
-  const { toast } = useToast();
-  
+
   // This check MUST happen before any other hooks are called.
   if (loading || !user) {
     return (
@@ -403,6 +398,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   }
 
   // All other hooks are called AFTER the early return.
+  useStreakTracker(); // This is a custom hook
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toast } = useToast();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const { 
@@ -411,7 +410,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       incomingCall, incomingAudioCall, acceptCall, declineCall, 
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, setPipSizeMode,
+      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute
   } = useChat();
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
