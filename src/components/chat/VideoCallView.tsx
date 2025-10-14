@@ -37,7 +37,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null); // Added for camera flipping logic
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -142,24 +142,28 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
 
         {/* Local Video Preview */}
-        {pipSizeMode !== 'medium' && (
-          <motion.div 
-              className={cn(
-                  "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
-                  isPipMode 
-                      ? "w-24 h-32 top-2 right-2 cursor-grab active:cursor-grabbing" 
-                      : "h-48 w-36 top-4 right-4"
-              )}
-              drag={isPipMode}
-              dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
-              dragMomentum={false}
+        {localStream && (
+          <motion.div
+            drag
+            dragMomentum={false}
+            className={cn(
+              "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
+              isPipMode ? "w-24 h-32 top-2 right-2" : "h-48 w-36 top-4 right-4"
+            )}
           >
-              <video ref={localVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline style={{ transform: isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)' }} />
-              {isCameraOff && hasPermission && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
-                  Camera is off
-                </div>
-              )}
+            <video
+              ref={localVideoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+              style={{ transform: 'scaleX(-1)' }}
+            />
+            {isCameraOff && hasPermission && (
+              <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
+                Camera is off
+              </div>
+            )}
           </motion.div>
         )}
       </div>
@@ -197,11 +201,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
             {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
         </Button>
-         {isPipMode && (
-            <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipSizeMode}>
-                <FlipHorizontal className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
-            </Button>
-         )}
          {!isPipMode && (
             <Button variant="outline" size="icon" className="bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14">
                 <Users className="h-6 w-6" />
@@ -211,5 +210,3 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
-
-    
