@@ -1,4 +1,6 @@
 
+'use client';
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -114,7 +116,7 @@ export const getCallHistory = (
       .filter(call => call.status === 'ended' || call.status === 'declined') as CallData[];
       
     // Sort the results by timestamp on the client
-    calls.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    calls.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       
     callback(calls);
   }, (error) => {
