@@ -140,8 +140,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream, remoteStream]);
     
-    const endCall = useCallback((callIdToEnd?: string) => {
-        const id = callIdToEnd || activeCallId;
+    const endCall = useCallback(() => {
+        const id = activeCallId;
         if (id && typeof id === 'string') {
             updateCallStatus(id, 'ended');
         } else {
@@ -159,7 +159,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (activeCallId) {
-                endCall(activeCallId);
+                endCall();
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
@@ -223,18 +223,18 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                     receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
                     receiverCandidatesQueue.current = [];
-                } else if (!isCaller && pc.signalingState === 'stable' && data.offer) {
-                    // This was moved to be more robust, should already be handled by the 'have-remote-offer' state
                 }
             });
         };
 
         setupStreams().then(() => {
             if (isCaller) {
-                pc.createOffer().then(offer => {
-                    pc.setLocalDescription(offer);
-                    saveOffer(call.id, offer);
-                });
+                if (pc.signalingState === 'stable') {
+                    pc.createOffer().then(offer => {
+                        pc.setLocalDescription(offer);
+                        saveOffer(call.id, offer);
+                    });
+                }
             } else {
                 if (call.offer) {
                    pc.setRemoteDescription(new RTCSessionDescription(call.offer)).then(() => {
@@ -280,30 +280,45 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [user, activeCallId]);
     
      useEffect(() => {
-        if (!activeCallId || !db) return;
+        if (!activeCallId || !db || !user) return;
+        
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-            if (docSnap.exists()) {
-                const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
-                if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
-                    const otherUserId = callData.callerId === user?.uid ? callData.receiverId : callData.callerId;
-                    const userDoc = await getDoc(doc(db, 'users', otherUserId));
-                    if (userDoc.exists()) setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
-                    
-                    if (callData.callType === 'video') {
-                        setOutgoingCall(null); setOngoingCall(callData); setIncomingCall(null);
-                    } else {
-                        setOutgoingAudioCall(null); setOngoingAudioCall(callData); setIncomingAudioCall(null);
-                    }
-                } else if (callData.status === 'declined' || callData.status === 'ended') {
-                    endCall();
-                }
-            } else {
+            // Priority 1: Check for call termination conditions first.
+            if (!docSnap.exists()) {
                 endCall();
+                return;
+            }
+
+            const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
+            if (callData.status === 'declined' || callData.status === 'ended') {
+                endCall();
+                return;
+            }
+
+            // Priority 2: Check if we need to answer the call.
+            if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
+                const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
+                const userDoc = await getDoc(doc(db, 'users', otherUserId));
+                
+                if (userDoc.exists()) {
+                    setOtherUserInCall({ uid: userDoc.id, ...userDoc.data() } as PublicUserProfile);
+                }
+                
+                if (callData.callType === 'video') {
+                    setOutgoingCall(null); 
+                    setOngoingCall(callData); 
+                    setIncomingCall(null);
+                } else {
+                    setOutgoingAudioCall(null); 
+                    setOngoingAudioCall(callData); 
+                    setIncomingAudioCall(null);
+                }
             }
         });
+
         return () => unsubscribe();
-    }, [activeCallId, user, ongoingCall, ongoingAudioCall, endCall, setOngoingCall, setOutgoingCall, setOngoingAudioCall, setOutgoingAudioCall]);
+    }, [activeCallId, user?.uid, ongoingCall, ongoingAudioCall, endCall]);
 
 
     const acceptCall = useCallback(async () => {
