@@ -763,15 +763,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             drag={isPipMode && !isResetting}
             dragMomentum={false}
             animate={pipControls}
-            resize={isPipMode ? "both" : undefined}
-            onResize={(event: any) => {
-                if (isPipMode) {
-                    const target = event.target as HTMLElement;
-                    if (target) {
-                        setPipSize({ width: target.offsetWidth, height: target.offsetHeight });
-                    }
-                }
-            }}
             className={cn(
                 "fixed bg-black z-[100] border border-white/20",
                 isPipMode 
@@ -795,14 +786,20 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       )}
 
       {isAudioCallActive && (
-          <AudioCallView
-              call={ongoingAudioCall!}
-              otherUser={otherUserInCall!}
-              onEndCall={endCall}
-              localStream={useChat().localStream}
-              remoteStream={useChat().remoteStream}
-              connectionStatus={connectionStatus}
-          />
+          <motion.div
+            drag
+            dragMomentum={false}
+            className="fixed bottom-5 right-5 z-[200] cursor-grab active:cursor-grabbing"
+          >
+            <AudioCallView
+                call={ongoingAudioCall!}
+                otherUser={otherUserInCall!}
+                onEndCall={endCall}
+                localStream={useChat().localStream}
+                remoteStream={useChat().remoteStream}
+                connectionStatus={connectionStatus}
+            />
+          </motion.div>
       )}
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />

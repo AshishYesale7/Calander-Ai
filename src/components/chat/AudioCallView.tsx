@@ -28,11 +28,13 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
 
   // Effect for the call duration timer
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (connectionStatus === 'connected') {
+      const timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [connectionStatus]);
 
   // Effect for Web Audio API and canvas visualization
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed bottom-5 right-5 z-[200] p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
+      className="p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
     >
       <div className="flex flex-col items-center text-center relative">
         {/* Canvas for Waveform - positioned absolutely behind the avatar */}
