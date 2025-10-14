@@ -1,8 +1,8 @@
 
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
 import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy, writeBatch, Timestamp } from 'firebase/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
@@ -489,12 +489,23 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     }
     const originalData = privateDocSnap.data();
 
-    await updateDoc(userDocRef, {
+    const restoredData: any = {
         displayName: originalData.originalDisplayName,
         username: originalData.originalUsername,
-        deletionStatus: deleteField(),
+        deletionStatus: 'reclaimed', // Set status to 'reclaimed'
         deletionScheduledAt: deleteField(),
-    });
+    };
+    
+    // Re-create the searchable index
+    const indexSet = new Set<string>();
+    if (originalData.originalDisplayName) indexSet.add(originalData.originalDisplayName.toLowerCase());
+    if (originalData.originalUsername) indexSet.add(originalData.originalUsername.toLowerCase());
+    restoredData.searchableIndex = Array.from(indexSet);
+
+    await updateDoc(userDocRef, restoredData);
+
+    // Delete the private recovery data
+    await deleteDoc(privateDataRef);
 
     try {
         const { getAuth } = await import('firebase-admin/auth');
