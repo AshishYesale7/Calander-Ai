@@ -24,7 +24,7 @@ export interface UserProfile {
   followersCount: number;
   followingCount: number;
   routine: RoutineItem[];
-  onboardingCompleted: boolean; // New flag
+  onboardingCompleted: boolean;
   deletionStatus?: 'PENDING_DELETION' | 'DELETED';
 }
 
@@ -266,6 +266,10 @@ export interface CallData {
   callerMutedVideo?: boolean;
   receiverMutedAudio?: boolean;
   receiverMutedVideo?: boolean;
+
+  // New field for user-specific history
+  otherUserId?: string;
+  otherUser?: PublicUserProfile;
 }
 
 

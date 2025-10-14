@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { getMessages, getCallHistory } from '@/services/chatService';
+import { subscribeToMessages, subscribeToCallHistory } from '@/services/chatService';
 import { sendMessage, deleteMessage } from '@/actions/chatActions';
 import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -146,20 +146,21 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
 
     setIsLoading(true);
 
-    const unsubMessages = getMessages(currentUser.uid, otherUser.uid, (newMessages) => {
-      setChatItems(prev => {
-        const calls = prev.filter(item => item.type === 'call');
-        const sorted = [...calls, ...newMessages].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-        return sorted;
-      });
-      setIsLoading(false);
-      scrollToBottom('auto');
+    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
+        setChatItems(prev => {
+            const calls = prev.filter(item => item.type === 'call');
+            const sorted = [...calls, ...newMessages].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+            return sorted;
+        });
+        setIsLoading(false);
+        scrollToBottom('auto');
     });
 
-    const unsubCalls = getCallHistory(currentUser.uid, otherUser.uid, (newCalls) => {
+    const unsubCalls = subscribeToCallHistory(currentUser.uid, (newCalls) => {
+      const relevantCalls = newCalls.filter(call => call.otherUserId === otherUser.uid);
       setChatItems(prev => {
         const messages = prev.filter(item => item.type === 'message');
-        const sorted = [...messages, ...newCalls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+        const sorted = [...messages, ...relevantCalls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
         return sorted;
       });
       setIsLoading(false);
@@ -410,17 +411,13 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
             <AlertDialogHeader className="text-center">
                 <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
                 <AlertDialogDescription className="text-xs">
-                    Choose how to delete this message. This action cannot be undone.
+                    This will only delete the message from your side.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="flex flex-col gap-2 mt-2">
-                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center">
+                <AlertDialogAction onClick={() => handleDelete('me')} className="w-full justify-center bg-destructive hover:bg-destructive/90">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete for me
-                </AlertDialogAction>
-                <AlertDialogAction onClick={() => handleDelete('everyone')} className="w-full justify-center bg-destructive hover:bg-destructive/90">
-                    <Users className="mr-2 h-4 w-4" />
-                    Delete for Everyone
                 </AlertDialogAction>
                 <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
             </div>

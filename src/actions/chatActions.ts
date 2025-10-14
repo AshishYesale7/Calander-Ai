@@ -9,7 +9,6 @@ import {
   doc,
   deleteDoc,
   updateDoc,
-  arrayUnion,
   setDoc,
   serverTimestamp,
   getDocs,
@@ -25,6 +24,7 @@ const getChatRoomId = (userId1: string, userId2: string): string => {
 
 /**
  * Sends a message from one user to another. This is a Server Action.
+ * It writes the message to both the sender's and receiver's copy of the chat.
  * @param senderId The ID of the user sending the message.
  * @param receiverId The ID of the user receiving the message.
  * @param text The content of the message.
@@ -34,35 +34,42 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
   if (!senderId || !receiverId) throw new Error("Sender and Receiver IDs are required.");
   if (!text.trim()) return;
 
-  const chatRoomId = getChatRoomId(senderId, receiverId);
-  const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
   const timestamp = Timestamp.now();
+  const messageData = {
+      text: text,
+      senderId: senderId,
+      timestamp: timestamp,
+      isDeleted: false,
+      isEdited: false,
+      deletedFor: [],
+  };
 
   try {
-    // 1. Add the new message
-    await addDoc(messagesCollection, {
-        text: text,
-        senderId: senderId,
-        timestamp: timestamp,
-        isDeleted: false,
-        isEdited: false,
-        deletedFor: [],
-    });
+    const batch = writeBatch(db);
+
+    // 1. Add message to sender's chat collection
+    const senderMessagesCol = collection(db, 'users', senderId, 'recentChats', receiverId, 'messages');
+    const senderMessageRef = doc(senderMessagesCol);
+    batch.set(senderMessageRef, messageData);
     
-    // 2. Update the recent chat entry for both the sender and receiver
+    // 2. Add message to receiver's chat collection
+    const receiverMessagesCol = collection(db, 'users', receiverId, 'recentChats', senderId, 'messages');
+    const receiverMessageRef = doc(receiverMessagesCol);
+    batch.set(receiverMessageRef, messageData);
+    
+    // 3. Update the recent chat metadata for both users
     const recentChatSenderRef = doc(db, 'users', senderId, 'recentChats', receiverId);
     const recentChatReceiverRef = doc(db, 'users', receiverId, 'recentChats', senderId);
     
-    const recentChatData = {
+    const recentChatUpdate = {
         lastMessage: text,
-        timestamp: serverTimestamp(), // Use server timestamp for consistency
-        otherUserId: receiverId, // Storing this might simplify queries later
+        timestamp: serverTimestamp(),
     };
 
-    // Update for sender
-    await setDoc(recentChatSenderRef, { ...recentChatData, otherUserId: receiverId }, { merge: true });
-    // Update for receiver
-    await setDoc(recentChatReceiverRef, { ...recentChatData, otherUserId: senderId }, { merge: true });
+    batch.set(recentChatSenderRef, recentChatUpdate, { merge: true });
+    batch.set(recentChatReceiverRef, recentChatUpdate, { merge: true });
+
+    await batch.commit();
 
   } catch(error) {
       console.error("Error sending message:", error);
@@ -71,7 +78,7 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 };
 
 /**
- * Deletes a message for the current user or for everyone. This is a Server Action.
+ * Deletes a message for the current user or for everyone.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  * @param messageId The ID of the message to delete.
@@ -80,22 +87,25 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 export const deleteMessage = async (currentUserId: string, otherUserId: string, messageId: string, mode: 'me' | 'everyone'): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     
-    const chatRoomId = getChatRoomId(currentUserId, otherUserId);
-    const messageRef = doc(db, 'chats', chatRoomId, 'messages', messageId);
+    const currentUserMessagesCol = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
+    const messageRef = doc(currentUserMessagesCol, messageId);
 
     try {
         if (mode === 'everyone') {
-            await updateDoc(messageRef, {
-                text: 'This message was deleted.',
-                isDeleted: true,
-                deletedFor: [], // Clear individual deletes if it's deleted for everyone
-            });
+            // If deleting for everyone, we must also delete it from the other user's collection.
+            const otherUserMessagesCol = collection(db, 'users', otherUserId, 'recentChats', currentUserId, 'messages');
+            const otherMessageRef = doc(otherUserMessagesCol, messageId);
+            
+            const batch = writeBatch(db);
+            // In a real "delete for everyone", you might update the text instead of deleting.
+            // For simplicity here, we'll just delete both copies.
+            batch.delete(messageRef);
+            batch.delete(otherMessageRef);
+            await batch.commit();
+
         } else if (mode === 'me') {
-            // Add the current user's ID to the `deletedFor` array.
-            // arrayUnion ensures no duplicates are added.
-            await updateDoc(messageRef, {
-                deletedFor: arrayUnion(currentUserId),
-            });
+            // "Delete for me" only deletes it from the current user's collection.
+            await deleteDoc(messageRef);
         }
     } catch(error) {
         console.error("Error deleting message:", error);
@@ -103,10 +113,10 @@ export const deleteMessage = async (currentUserId: string, otherUserId: string, 
     }
 }
 
+
 /**
  * Deletes an entire conversation history for the current user only.
- * It removes the conversation from their recent chats list and deletes associated call logs.
- * It does NOT modify the messages themselves, preserving them for the other user.
+ * This is now a simple and robust operation.
  * @param currentUserId The ID of the user requesting the deletion.
  * @param otherUserId The ID of the other user in the chat.
  */
@@ -116,28 +126,29 @@ export const deleteConversationForCurrentUser = async (currentUserId: string, ot
     const batch = writeBatch(db);
 
     try {
-        // 1. Delete the conversation from the current user's recent chats list.
-        // This effectively removes it from their UI.
+        // 1. Delete the conversation metadata from the current user's recent chats.
         const recentChatRef = doc(db, 'users', currentUserId, 'recentChats', otherUserId);
         batch.delete(recentChatRef);
         
-        // 2. Find and delete all call logs between the two users.
-        // This is safe because call logs are individual documents and not shared state.
-        const callsCollectionRef = collection(db, 'calls');
-        const participantIds = [currentUserId, otherUserId].sort();
-        const callsQuery = query(callsCollectionRef, where('participantIds', '==', participantIds));
-        
-        const callsSnapshot = await getDocs(callsQuery);
-        callsSnapshot.forEach(callDoc => {
-            batch.delete(doc(db, 'calls', callDoc.id));
+        // 2. Delete all messages within that user's copy of the conversation.
+        const messagesCollectionRef = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
+        const messagesSnapshot = await getDocs(messagesCollectionRef);
+        messagesSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
         });
 
-        // Commit all batched operations.
+        // 3. Delete all call logs within that user's copy of the history.
+        const callsCollectionRef = collection(db, 'users', currentUserId, 'callHistory');
+        const callsQuery = query(callsCollectionRef, where('otherUserId', '==', otherUserId));
+        const callsSnapshot = await getDocs(callsQuery);
+        callsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
         await batch.commit();
 
     } catch (error) {
         console.error("Error deleting conversation for user:", error);
-        // Re-throw a more user-friendly error.
         throw new Error("Failed to delete conversation from your view.");
     }
 };

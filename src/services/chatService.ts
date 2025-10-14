@@ -10,69 +10,53 @@ import {
   Timestamp,
   type Unsubscribe,
   where,
-  limit, // Import limit
+  limit,
 } from 'firebase/firestore';
 import type { ChatMessage, CallData } from '@/types';
 
 /**
- * Creates a unique chat room ID for two users.
- * @param userId1 The ID of the first user.
- * @param userId2 The ID of the second user.
- * @returns A unique string ID for the chat room.
- */
-export const getChatRoomId = (userId1: string, userId2: string): string => {
-  return [userId1, userId2].sort().join('_');
-};
-
-/**
- * Listens for real-time messages in a chat room.
- * This function is intended to be called from client-side components.
+ * Listens for real-time messages in a user's specific copy of a chat room.
  * @param currentUserId The ID of the current user.
  * @param otherUserId The ID of the other user in the chat.
  * @param callback A function to be called with the array of messages whenever they update.
  * @returns An unsubscribe function to stop listening to updates.
  */
-export const getMessages = (
+export const subscribeToMessages = (
   currentUserId: string,
   otherUserId: string,
   callback: (messages: ChatMessage[]) => void
 ): Unsubscribe => {
   if (!db) {
     console.error("Firestore is not initialized.");
-    return () => {}; // Return a no-op unsubscribe function
+    return () => {};
   }
 
-  const chatRoomId = getChatRoomId(currentUserId, otherUserId);
-  const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
+  const messagesCollection = collection(db, 'users', currentUserId, 'recentChats', otherUserId, 'messages');
   const q = query(messagesCollection, orderBy('timestamp', 'asc'));
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
-    const messages = querySnapshot.docs
-      .map((doc) => ({
+    const messages = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         timestamp: (doc.data().timestamp as Timestamp).toDate(),
         type: 'message' as const,
-      } as ChatMessage))
-      .filter(msg => {
-        // Filter out messages that are marked as deleted for the current user
-        return !msg.deletedFor?.includes(currentUserId);
-      });
+      } as ChatMessage));
     callback(messages);
   }, (error) => {
       console.error("Error listening to chat messages:", error);
-      // You might want to handle this error in the UI
   });
 
   return unsubscribe;
 };
 
 /**
- * Listens for real-time call history between two users.
+ * Listens for real-time call history for a specific user.
+ * @param userId The ID of the user whose call history is being fetched.
+ * @param callback A function to be called with the array of calls whenever they update.
+ * @returns An unsubscribe function to stop listening to updates.
  */
-export const getCallHistory = (
-  userId1: string,
-  userId2: string,
+export const subscribeToCallHistory = (
+  userId: string,
   callback: (calls: CallData[]) => void
 ): Unsubscribe => {
   if (!db) {
@@ -80,47 +64,26 @@ export const getCallHistory = (
     return () => {};
   }
   
-  const callsCollectionRef = collection(db, 'calls');
-  
-  // Create a sorted list of participant IDs to query the array
-  const participantIds = [userId1, userId2].sort();
-
-  // This query finds all calls where both users were participants
-  // The orderBy clause was removed to prevent the need for a composite index.
-  // Sorting will be handled client-side.
+  const callsCollectionRef = collection(db, 'users', userId, 'callHistory');
   const q = query(
     callsCollectionRef, 
-    where('participantIds', '==', participantIds),
-    limit(50) // Limit the number of documents fetched for performance
+    orderBy('timestamp', 'desc'),
+    limit(50)
   );
 
   const unsubscribe = onSnapshot(q, async (snapshot) => {
     const calls = snapshot.docs
       .map(doc => {
         const data = doc.data();
-        // Ensure createdAt and endedAt exist and are timestamps before converting
-        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
-        const endedAt = data.endedAt instanceof Timestamp ? data.endedAt.toDate() : undefined;
-
-        let duration = data.duration;
-        if (endedAt && !duration) {
-          duration = Math.floor((endedAt.getTime() - createdAt.getTime()) / 1000);
-        }
+        const timestamp = data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date();
 
         return {
           id: doc.id,
           ...data,
-          createdAt,
-          endedAt,
-          duration: duration >= 0 ? duration : undefined,
-          timestamp: endedAt || createdAt, // Use endedAt for sorting if available, else createdAt
-          type: 'call' as const, // Add type differentiator
+          timestamp,
+          type: 'call' as const,
         };
-      })
-      .filter(call => call.status === 'ended' || call.status === 'declined') as CallData[];
-      
-    // Sort the results by timestamp on the client
-    calls.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      }) as CallData[];
       
     callback(calls);
   }, (error) => {
