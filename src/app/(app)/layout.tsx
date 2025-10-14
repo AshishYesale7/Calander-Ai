@@ -388,13 +388,23 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  useStreakTracker();
+  useStreakTracker(); // This is a custom hook
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  
+  // This check MUST happen before any other hooks are called.
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Preloader />
+      </div>
+    );
+  }
+
+  // All other hooks are called AFTER the early return.
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
-  
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
       outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
@@ -403,7 +413,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, setPipSize, pipSizeMode, setPipSizeMode,
   } = useChat();
-
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -558,14 +567,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       }
     }
   };
-  
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Preloader />
-      </div>
-    );
-  }
   
   if (!onboardingCompleted) {
     return (
