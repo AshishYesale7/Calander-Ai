@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
-import { subscribeToCallHistory } from '@/services/chatService';
+import { subscribeToCallHistory, saveCallsToLocal, loadCallsFromLocal } from '@/services/chatService';
 
 const RECENT_CHATS_LOCAL_KEY = 'futureSightRecentChats';
 
@@ -308,10 +308,14 @@ const CallLogView = () => {
             return;
         }
         setIsLoading(true);
+        // Immediately load from local storage
+        const localCalls = loadCallsFromLocal(user.uid);
+        setCallLog(localCalls as any);
+        setIsLoading(false);
+
+        // Subscribe to real-time updates
         const unsub = subscribeToCallHistory(user.uid, (calls) => {
-            // No need to fetch profiles here, `subscribeToCallHistory` should do it.
-            setCallLog(calls as any); // Assuming the service now provides CallLogItem
-            setIsLoading(false);
+            setCallLog(calls as any); // The service now provides CallLogItem
         });
 
         return () => unsub();
@@ -360,7 +364,9 @@ const CallLogView = () => {
         const originalLog = [...callLog];
         
         // Optimistic UI update
-        setCallLog(prev => prev.filter(c => !idsToDelete.includes(c.id)));
+        const newLog = callLog.filter(c => !idsToDelete.includes(c.id));
+        setCallLog(newLog);
+        saveCallsToLocal(user.uid, newLog);
         setSelectedIds(new Set());
 
         try {
@@ -368,6 +374,7 @@ const CallLogView = () => {
             toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
         } catch (error) {
             setCallLog(originalLog);
+            saveCallsToLocal(user.uid, originalLog);
             toast({ title: "Error", description: "Failed to delete call logs.", variant: "destructive" });
         }
     };
