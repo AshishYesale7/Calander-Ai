@@ -3,22 +3,14 @@
 
 import { adminDb } from '@/lib/firebase-admin';
 import {
-  doc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  collection,
-  addDoc,
-  getDocs,
-  writeBatch,
   Timestamp,
-  getDoc
-} from 'firebase/firestore';
+  FieldValue,
+} from 'firebase-admin/firestore';
 import type { CallStatus, CallType } from '@/types';
 
 const getCallDocRef = (callId: string) => {
   if (!adminDb) throw new Error("Firestore is not initialized.");
-  return doc(adminDb, 'calls', callId);
+  return adminDb.collection('calls').doc(callId);
 };
 
 /**
@@ -33,13 +25,13 @@ export async function createCall(callData: {
   callType: CallType;
 }): Promise<string> {
   if (!adminDb) throw new Error("Firestore is not initialized.");
-  const callsCollection = collection(adminDb, 'calls');
+  const callsCollection = adminDb.collection('calls');
   
-  const docRef = await addDoc(callsCollection, {
+  const docRef = await callsCollection.add({
     ...callData,
-    participantIds: [callData.callerId, callData.receiverId].sort(), // Store sorted array for querying
+    participantIds: [callData.callerId, callData.receiverId].sort(),
     status: 'ringing',
-    createdAt: serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
   
   return docRef.id;
@@ -50,9 +42,9 @@ export async function createCall(callData: {
  */
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   const callDocRef = getCallDocRef(callId);
-  const docSnap = await getDoc(callDocRef);
+  const docSnap = await callDocRef.get();
 
-  if (!docSnap.exists()) {
+  if (!docSnap.exists) {
     console.error(`Call document with ID ${callId} does not exist.`);
     return;
   }
@@ -64,28 +56,26 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     const endedAt = Timestamp.now();
     updateData.endedAt = endedAt;
 
-    if (callData.createdAt instanceof Timestamp) {
+    if (callData?.createdAt instanceof Timestamp) {
       const durationInSeconds = endedAt.seconds - callData.createdAt.seconds;
-      updateData.duration = Math.max(0, durationInSeconds); // Ensure duration is not negative
+      updateData.duration = Math.max(0, durationInSeconds);
     }
     
-    // Clean up ICE candidate subcollections, but leave the main call doc for history
-    const callerCandidatesRef = collection(adminDb, 'calls', callId, 'callerCandidates');
-    const receiverCandidatesRef = collection(adminDb, 'calls', callId, 'receiverCandidates');
+    const callerCandidatesRef = callDocRef.collection('callerCandidates');
+    const receiverCandidatesRef = callDocRef.collection('receiverCandidates');
 
-    const callerCandidatesSnap = await getDocs(callerCandidatesRef);
-    const receiverCandidatesSnap = await getDocs(receiverCandidatesRef);
+    const callerCandidatesSnap = await callerCandidatesRef.get();
+    const receiverCandidatesSnap = await receiverCandidatesRef.get();
 
-    const batch = writeBatch(adminDb);
+    const batch = adminDb.batch();
     
     callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     
-    // Only commit the candidate deletion here. The main doc update happens next.
     await batch.commit();
   }
   
-  await updateDoc(callDocRef, updateData);
+  await callDocRef.update(updateData);
 }
 
 /**
@@ -93,7 +83,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
  */
 export async function saveOffer(callId: string, offer: RTCSessionDescriptionInit): Promise<void> {
     const callDocRef = getCallDocRef(callId);
-    await updateDoc(callDocRef, { offer: { type: offer.type, sdp: offer.sdp } });
+    await callDocRef.update({ offer: { type: offer.type, sdp: offer.sdp } });
 }
 
 /**
@@ -101,7 +91,7 @@ export async function saveOffer(callId: string, offer: RTCSessionDescriptionInit
  */
 export async function saveAnswer(callId: string, answer: RTCSessionDescriptionInit): Promise<void> {
     const callDocRef = getCallDocRef(callId);
-    await updateDoc(callDocRef, { answer: { type: answer.type, sdp: answer.sdp } });
+    await callDocRef.update({ answer: { type: answer.type, sdp: answer.sdp } });
 }
 
 /**
@@ -109,8 +99,8 @@ export async function saveAnswer(callId: string, answer: RTCSessionDescriptionIn
  */
 export async function addCallerCandidate(callId: string, candidate: RTCIceCandidateInit): Promise<void> {
     if (!adminDb) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(adminDb, 'calls', callId, 'callerCandidates');
-    await addDoc(candidatesCollection, candidate);
+    const candidatesCollection = adminDb.collection('calls').doc(callId).collection('callerCandidates');
+    await candidatesCollection.add(candidate);
 }
 
 /**
@@ -118,6 +108,6 @@ export async function addCallerCandidate(callId: string, candidate: RTCIceCandid
  */
 export async function addReceiverCandidate(callId: string, candidate: RTCIceCandidateInit): Promise<void> {
     if (!adminDb) throw new Error("Firestore is not initialized.");
-    const candidatesCollection = collection(adminDb, 'calls', callId, 'receiverCandidates');
-    await addDoc(candidatesCollection, candidate);
+    const candidatesCollection = adminDb.collection('calls').doc(callId).collection('receiverCandidates');
+    await candidatesCollection.add(candidate);
 }
