@@ -81,6 +81,8 @@ export const getCallHistory = (
   }
   
   const callsCollectionRef = collection(db, 'calls');
+  
+  // Create a sorted list of participant IDs to query the array
   const participantIds = [userId1, userId2].sort();
 
   // This query finds all calls where both users were participants

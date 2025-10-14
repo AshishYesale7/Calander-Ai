@@ -242,7 +242,6 @@ const CallLogView = () => {
         const q = query(
             callsCollectionRef, 
             where('participantIds', 'array-contains', user.uid),
-            orderBy('createdAt', 'desc'),
             limit(50)
         );
 
@@ -272,6 +271,9 @@ const CallLogView = () => {
 
             const resolvedCalls = (await Promise.all(callLogPromises))
                 .filter(c => c !== null) as CallLogItem[];
+            
+            // Sort client-side now
+            resolvedCalls.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
             setCallLog(resolvedCalls);
             setIsLoading(false);
