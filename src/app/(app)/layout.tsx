@@ -196,7 +196,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 audio: true
             });
             setLocalStream(stream);
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            stream.getTracks().forEach(track => {
+                if (pc.getSenders().find(sender => sender.track === track)) return;
+                pc.addTrack(track, stream)
+            });
 
             const newRemoteStream = new MediaStream();
             setRemoteStream(newRemoteStream);
@@ -770,6 +773,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                     : "inset-0"
             )}
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
+            onResize={isPipMode ? (e, info) => {
+                setPipSize({
+                    width: info.point.x,
+                    height: info.point.y
+                });
+            } : undefined}
         >
             <VideoCallView 
                 call={ongoingCall!} 
@@ -779,7 +788,11 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 onTogglePipMode={onTogglePipMode}
                 pipSizeMode={pipSizeMode}
                 onTogglePipSizeMode={() => {
-                  setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium');
+                  setPipSizeMode(prev => {
+                      if (prev === 'medium') return 'large';
+                      if (prev === 'large') return 'small';
+                      return 'medium';
+                  });
                 }}
             />
         </motion.div>
