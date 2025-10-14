@@ -18,40 +18,20 @@ import { formatDistanceToNow } from 'date-fns';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ChatIcon } from '../logo/ChatIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { NewGroupIcon } from '../logo/NewGroupIcon';
+import { UpdatesIcon } from '../logo/UpdatesIcon';
 
-type FollowedUserWithPresence = PublicUserProfile & {
-    status?: 'online' | 'offline' | 'in-game';
+type RecentChatUser = PublicUserProfile & {
+    lastMessage?: string;
+    timestamp?: Date;
     notification?: boolean;
 };
+
 
 type CallLogItem = CallData & {
     otherUser: PublicUserProfile;
 };
-
-
-const UpdatesIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <circle cx="12" cy="12" r="10" />
-    </svg>
-);
-
-const NewGroupIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-        <path d="M20.49 16.51c.31-.25.51-.62.51-1.01V13h-2v2.51c0 .4-.2.76-.51 1.01l-4.5 3.51L16 22l-4.49-3.49z"/>
-        <path d="M3.51 16.51c-.31-.25-.51-.62-.51-1.01V13h2v2.51c0 .4.2.76.51 1.01l4.5 3.51L8 22l-4.49-3.49z"/>
-    </svg>
-);
-
-const CalendarAiIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="currentColor"/>
-        <path d="M12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18Z" fill="currentColor"/>
-        <path d="M12 16C14.21 16 16 14.21 16 12C16 9.79 14.21 8 12 8C9.79 8 8 9.79 8 12C8 14.21 9.79 16 12 16Z" fill="currentColor"/>
-    </svg>
-);
-
-
 
 const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType, label: string, isActive?: boolean, onClick?: () => void }) => (
     <button
@@ -69,55 +49,58 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.Element
 const ChatListView = () => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith } = useChat();
-    const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+    const [recentChats, setRecentChats] = useState<RecentChatUser[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
-    useEffect(() => {
+     useEffect(() => {
         if (!user || !db) {
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
-        const followingCollectionRef = collection(db, 'users', user.uid, 'following');
-        const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
-
+        const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
+        const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
+        
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
-                const userId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', userId));
+            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                
                 if (userDocSnap.exists()) {
-                    const data = userDocSnap.data();
+                    const userData = userDocSnap.data();
                     return {
                         id: userDocSnap.id,
                         uid: userDocSnap.id,
-                        displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL || null,
-                        username: data.username || `user_${userId.substring(0,5)}`,
-                        status: 'online',
-                        notification: Math.random() > 0.8,
-                    } as FollowedUserWithPresence;
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                        notification: Math.random() > 0.8, // Mock notification
+                    } as RecentChatUser;
                 }
                 return null;
             });
-            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
-            setFollowing(followedUsers);
+            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
+            setRecentChats(fetchedChats);
             setIsLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
 
-    const filteredFollowing = useMemo(() => {
-        return following.filter(friend =>
-            friend.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredChats = useMemo(() => {
+        return recentChats.filter(chat =>
+            chat.displayName.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [following, searchTerm]);
+    }, [recentChats, searchTerm]);
 
-    const handleUserClick = (friend: FollowedUserWithPresence) => {
-        setChattingWith(friend);
+    const handleUserClick = (chatPartner: RecentChatUser) => {
+        setChattingWith(chatPartner);
     };
     
     const fabMenuVariants = {
@@ -152,24 +135,24 @@ const ChatListView = () => {
             <div className="relative flex-1 mt-2 min-h-0">
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
-                      {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredFollowing.map(friend => (
+                      {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredChats.map(chat => (
                           <button
-                              key={friend.id}
-                              className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
-                              onClick={() => handleUserClick(friend)}
+                              key={chat.id}
+                              className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
+                              onClick={() => handleUserClick(chat)}
                           >
                               <Avatar className="h-12 w-12">
-                                  <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                                  <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                  <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
+                                  <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-center">
-                                      <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
-                                      <p className="text-xs text-muted-foreground">2m</p>
+                                      <h3 className="font-semibold text-sm truncate">{chat.displayName}</h3>
+                                      {chat.timestamp && <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</p>}
                                   </div>
                                   <div className="flex justify-between items-start">
-                                      <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
-                                      {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
+                                      <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
+                                      {chat.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
                                   </div>
                               </div>
                           </button>
@@ -190,7 +173,7 @@ const ChatListView = () => {
                                <motion.div variants={fabMenuItemVariants} className="flex items-center justify-end gap-2">
                                   <span className="text-sm bg-card p-2 rounded-md shadow-lg">New Chat with Calendar.ai</span>
                                   <Button size="icon" className="rounded-full shadow-lg h-10 w-10 bg-muted text-muted-foreground hover:bg-muted/80">
-                                      <CalendarAiIcon className="h-5 w-5"/>
+                                      <CalendarAiLogo className="h-5 w-5"/>
                                   </Button>
                               </motion.div>
                               <motion.div variants={fabMenuItemVariants} className="flex items-center justify-end gap-2">

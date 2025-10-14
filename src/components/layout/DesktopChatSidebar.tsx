@@ -22,8 +22,9 @@ import { NewGroupIcon } from '../logo/NewGroupIcon';
 import { ChatIcon } from '../logo/ChatIcon';
 import { UpdatesIcon } from '../logo/UpdatesIcon';
 
-type FollowedUserWithPresence = PublicUserProfile & {
-    status?: 'online' | 'offline' | 'in-game';
+type RecentChatUser = PublicUserProfile & {
+    lastMessage?: string;
+    timestamp?: Date;
     notification?: boolean;
 };
 
@@ -47,7 +48,7 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.Element
 const ChatListView = () => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith } = useChat();
-    const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+    const [recentChats, setRecentChats] = useState<RecentChatUser[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
@@ -59,43 +60,46 @@ const ChatListView = () => {
         }
 
         setIsLoading(true);
-        const followingCollectionRef = collection(db, 'users', user.uid, 'following');
-        const q = query(followingCollectionRef, orderBy('timestamp', 'desc'));
-
+        const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
+        const q = query(recentChatsRef, orderBy('timestamp', 'desc'));
+        
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
-                const userId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', userId));
+            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                
                 if (userDocSnap.exists()) {
-                    const data = userDocSnap.data();
+                    const userData = userDocSnap.data();
                     return {
                         id: userDocSnap.id,
                         uid: userDocSnap.id,
-                        displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL || null,
-                        username: data.username || `user_${userId.substring(0,5)}`,
-                        status: 'online',
-                        notification: Math.random() > 0.8,
-                    } as FollowedUserWithPresence;
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                        notification: Math.random() > 0.8, // Mock notification
+                    } as RecentChatUser;
                 }
                 return null;
             });
-            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
-            setFollowing(followedUsers);
+            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
+            setRecentChats(fetchedChats);
             setIsLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
 
-    const filteredFollowing = useMemo(() => {
-        return following.filter(friend =>
-            friend.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredChats = useMemo(() => {
+        return recentChats.filter(chat =>
+            chat.displayName.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [following, searchTerm]);
+    }, [recentChats, searchTerm]);
 
-    const handleUserClick = (friend: FollowedUserWithPresence) => {
-        setChattingWith(friend);
+    const handleUserClick = (chatPartner: RecentChatUser) => {
+        setChattingWith(chatPartner);
     };
 
     const fabMenuVariants = {
@@ -130,24 +134,24 @@ const ChatListView = () => {
             <div className="relative flex-1 mt-2 min-h-0">
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
-                      {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredFollowing.map(friend => (
+                      {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredChats.map(chat => (
                           <button
-                              key={friend.id}
-                              className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === friend.id && "bg-muted")}
-                              onClick={() => handleUserClick(friend)}
+                              key={chat.id}
+                              className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
+                              onClick={() => handleUserClick(chat)}
                           >
                               <Avatar className="h-12 w-12">
-                                  <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                                  <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                  <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
+                                  <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-center">
-                                      <h3 className="font-semibold text-sm truncate">{friend.displayName}</h3>
-                                      <p className="text-xs text-muted-foreground">2m</p>
+                                      <h3 className="font-semibold text-sm truncate">{chat.displayName}</h3>
+                                      {chat.timestamp && <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</p>}
                                   </div>
                                   <div className="flex justify-between items-start">
-                                      <p className="text-xs text-muted-foreground truncate">Sounds good, see you then!</p>
-                                      {friend.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
+                                      <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
+                                      {chat.notification && <div className="h-2 w-2 rounded-full bg-accent mt-1"></div>}
                                   </div>
                               </div>
                           </button>

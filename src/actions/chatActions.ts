@@ -9,7 +9,9 @@ import {
   doc,
   deleteDoc,
   updateDoc,
-  arrayUnion
+  arrayUnion,
+  setDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 
 // This helper function is duplicated here to keep the server action self-contained.
@@ -30,16 +32,34 @@ export const sendMessage = async (senderId: string, receiverId: string, text: st
 
   const chatRoomId = getChatRoomId(senderId, receiverId);
   const messagesCollection = collection(db, 'chats', chatRoomId, 'messages');
+  const timestamp = Timestamp.now();
 
   try {
+    // 1. Add the new message
     await addDoc(messagesCollection, {
         text: text,
         senderId: senderId,
-        timestamp: Timestamp.now(),
+        timestamp: timestamp,
         isDeleted: false,
         isEdited: false,
         deletedFor: [],
     });
+    
+    // 2. Update the recent chat entry for both the sender and receiver
+    const recentChatSenderRef = doc(db, 'users', senderId, 'recentChats', receiverId);
+    const recentChatReceiverRef = doc(db, 'users', receiverId, 'recentChats', senderId);
+    
+    const recentChatData = {
+        lastMessage: text,
+        timestamp: serverTimestamp(), // Use server timestamp for consistency
+        otherUserId: receiverId, // Storing this might simplify queries later
+    };
+
+    // Update for sender
+    await setDoc(recentChatSenderRef, { ...recentChatData, otherUserId: receiverId }, { merge: true });
+    // Update for receiver
+    await setDoc(recentChatReceiverRef, { ...recentChatData, otherUserId: senderId }, { merge: true });
+
   } catch(error) {
       console.error("Error sending message:", error);
       throw new Error("Failed to send message.");
