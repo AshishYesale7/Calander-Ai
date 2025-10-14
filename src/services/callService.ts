@@ -31,7 +31,7 @@ export async function createCall(callData: {
     ...callData,
     participantIds: [callData.callerId, callData.receiverId].sort(),
     status: 'ringing',
-    createdAt: FieldValue.serverTimestamp(),
+    createdAt: Timestamp.now(), // Use Timestamp.now() instead of FieldValue
   });
   
   return docRef.id;
@@ -43,7 +43,7 @@ export async function createCall(callData: {
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   if (!callId || typeof callId !== 'string') {
     console.error(`updateCallStatus called with invalid callId: ${callId}`);
-    return; // Gracefully exit if callId is invalid
+    return;
   }
 
   const callDocRef = getCallDocRef(callId);
