@@ -188,8 +188,8 @@ const ChatListView = () => {
               <ScrollArea className="absolute inset-0">
                   <div className="p-2 space-y-1">
                       {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : filteredChats.map(chat => (
-                        <ContextMenu key={chat.id}>
-                            <ContextMenuTrigger>
+                        <ContextMenu>
+                            <ContextMenuTrigger key={chat.id}>
                                 <button
                                     className={cn("w-full text-left p-2 rounded-lg flex items-center gap-3 hover:bg-muted", chattingWith?.id === chat.id && "bg-muted")}
                                     onClick={() => handleUserClick(chat)}
