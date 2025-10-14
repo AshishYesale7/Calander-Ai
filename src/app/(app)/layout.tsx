@@ -91,6 +91,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
 
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
+    const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
     
     // WebRTC State
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -181,6 +183,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         peerConnectionRef.current = pc;
+        
+        pc.onconnectionstatechange = () => {
+            setConnectionStatus(pc.connectionState);
+        };
 
         const isCaller = call.callerId === user.uid;
 
@@ -221,16 +227,18 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 if (!data) return;
 
                 if (isCaller && !pc.currentRemoteDescription && data.answer) {
-                    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
-                    receiverCandidatesQueue.current = [];
+                   if (pc.signalingState === 'have-local-offer') {
+                       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                       receiverCandidatesQueue.current.forEach(c => pc.addIceCandidate(c));
+                       receiverCandidatesQueue.current = [];
+                   }
                 }
             });
         };
 
         setupStreams().then(() => {
             if (isCaller) {
-                if (pc.signalingState === 'stable') {
+                 if (pc.signalingState === 'stable') {
                     pc.createOffer().then(offer => {
                         pc.setLocalDescription(offer);
                         saveOffer(call.id, offer);
@@ -285,13 +293,15 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
+             // First check: does the call still exist and is it active?
             if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
-                endCall();
+                endCall(); // If not, end the call immediately for this user.
                 return;
             }
 
             const callData = { id: docSnap.id, ...docSnap.data() } as CallData;
             
+            // Second check: is the call being answered for the first time?
             if (callData.status === 'answered' && !ongoingCall && !ongoingAudioCall) {
                 const otherUserId = callData.callerId === user.uid ? callData.receiverId : callData.callerId;
                 const userDoc = await getDoc(doc(db, 'users', otherUserId));
@@ -395,6 +405,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         pipSize, setPipSize, pipSizeMode,
         setPipSizeMode: (updater: any) => setPipSizeMode(typeof updater === 'function' ? updater(pipSizeMode) : updater),
         isMuted, onToggleMute,
+        connectionStatus,
     };
     
     return (
@@ -408,6 +419,15 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
+  const { 
+      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
+      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
+      incomingCall, incomingAudioCall, acceptCall, declineCall, 
+      otherUserInCall, endCall, 
+      isPipMode, onTogglePipMode, pipControls, isResetting,
+      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
+      connectionStatus,
+  } = useChat();
   
   if (loading || !user) {
     return (
@@ -431,20 +451,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
-  const mainScrollRef = useRef<HTMLDivElement>(null);
-  const bottomNavRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   useStreakTracker();
   
-  const { 
-      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
-      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
-      incomingCall, incomingAudioCall, acceptCall, declineCall, 
-      otherUserInCall, endCall, 
-      isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute
-  } = useChat();
-
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const bottomNavRef = useRef<HTMLDivElement>(null);
+  
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   
@@ -460,7 +472,21 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (connectionStatus === 'disconnected') {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = setTimeout(() => {
+        toast({ title: 'Call Failed', description: 'Connection lost. The call has been ended.', variant: 'destructive' });
+        endCall();
+      }, 15000); // 15-second timeout
+    } else if (connectionStatus === 'connected') {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    }
+    return () => { if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current) };
+  }, [connectionStatus, endCall, toast]);
+  
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
     if (outgoingCall || outgoingAudioCall) {
@@ -775,6 +801,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               onEndCall={endCall}
               localStream={useChat().localStream}
               remoteStream={useChat().remoteStream}
+              connectionStatus={connectionStatus}
           />
       )}
 

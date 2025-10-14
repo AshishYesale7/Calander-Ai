@@ -51,6 +51,7 @@ interface ChatContextType {
   isMuted: boolean;
   onToggleMute: () => void;
   otherUserInCall: PublicUserProfile | null;
+  connectionStatus: RTCPeerConnectionState;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);

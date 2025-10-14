@@ -8,6 +8,7 @@ import { Mic, MicOff, PhoneOff } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface AudioCallViewProps {
   call: CallData;
@@ -15,9 +16,10 @@ interface AudioCallViewProps {
   onEndCall: () => void;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  connectionStatus: RTCPeerConnectionState;
 }
 
-export default function AudioCallView({ call, otherUser, onEndCall, localStream, remoteStream }: AudioCallViewProps) {
+export default function AudioCallView({ call, otherUser, onEndCall, localStream, remoteStream, connectionStatus }: AudioCallViewProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -114,18 +116,27 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
       exit={{ opacity: 0, y: 20 }}
       className="fixed bottom-5 right-5 z-[200] p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
     >
-      <div className="flex flex-col items-center text-center">
+      <div className="flex flex-col items-center text-center relative">
         <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg">
           <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
           <AvatarFallback className="text-3xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
         <p className="font-bold text-2xl mt-4">{otherUser.displayName}</p>
-        <p className={cn(
-          "text-sm text-green-400 transition-opacity duration-500",
-          callDuration > 0 ? 'opacity-100' : 'opacity-0'
-        )}>
-          {formatDuration(callDuration)}
-        </p>
+        <div className="h-5">
+            {connectionStatus === 'disconnected' ? (
+                <div className="text-xs text-yellow-400 flex items-center gap-1.5 animate-pulse">
+                    <LoadingSpinner size="sm" className="text-yellow-400"/>
+                    Reconnecting...
+                </div>
+            ) : (
+                <p className={cn(
+                  "text-sm text-green-400 transition-opacity duration-500",
+                  callDuration > 0 ? 'opacity-100' : 'opacity-0'
+                )}>
+                  {formatDuration(callDuration)}
+                </p>
+            )}
+        </div>
 
         {/* Canvas for Waveform */}
         <div className="w-full h-16 mt-4">
