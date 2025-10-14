@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
@@ -224,6 +224,7 @@ const CallLogView = () => {
         const q = query(
             callsCollectionRef, 
             where('participantIds', 'array-contains', user.uid),
+            orderBy('createdAt', 'desc'),
             limit(50)
         );
 
@@ -253,8 +254,6 @@ const CallLogView = () => {
 
             const resolvedCalls = (await Promise.all(callLogPromises))
                 .filter(c => c !== null) as CallLogItem[];
-            
-            resolvedCalls.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
             setCallLog(resolvedCalls);
             setIsLoading(false);

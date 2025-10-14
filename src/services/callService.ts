@@ -12,6 +12,7 @@ import {
   getDocs,
   writeBatch,
   Timestamp,
+  getDoc
 } from 'firebase/firestore';
 import type { CallStatus } from '@/types';
 
@@ -30,17 +31,17 @@ export async function createCall(callData: {
   receiverId: string;
   status: CallStatus;
 }): Promise<string> {
-  const callId = [callData.callerId, callData.receiverId].sort().join('_');
-  const callDocRef = getCallDocRef(callId);
+  if (!db) throw new Error("Firestore is not initialized.");
+  const callsCollection = collection(db, 'calls');
   
-  await setDoc(callDocRef, {
+  const docRef = await addDoc(callsCollection, {
     ...callData,
     participantIds: [callData.callerId, callData.receiverId].sort(), // Store sorted array for querying
     status: 'ringing',
     createdAt: serverTimestamp(),
   });
   
-  return callId;
+  return docRef.id;
 }
 
 /**
@@ -48,11 +49,24 @@ export async function createCall(callData: {
  */
 export async function updateCallStatus(callId: string, status: CallStatus): Promise<void> {
   const callDocRef = getCallDocRef(callId);
+  const docSnap = await getDoc(callDocRef);
+
+  if (!docSnap.exists()) {
+    console.error(`Call document with ID ${callId} does not exist.`);
+    return;
+  }
   
-  const updateData: { status: CallStatus, endedAt?: Timestamp } = { status };
+  const callData = docSnap.data();
+  const updateData: { status: CallStatus, endedAt?: Timestamp, duration?: number } = { status };
   
   if (status === 'declined' || status === 'ended') {
-    updateData.endedAt = Timestamp.now();
+    const endedAt = Timestamp.now();
+    updateData.endedAt = endedAt;
+
+    if (callData.createdAt instanceof Timestamp) {
+      const durationInSeconds = endedAt.seconds - callData.createdAt.seconds;
+      updateData.duration = Math.max(0, durationInSeconds); // Ensure duration is not negative
+    }
     
     // Clean up ICE candidate subcollections, but leave the main call doc for history
     const callerCandidatesRef = collection(db, 'calls', callId, 'callerCandidates');
@@ -66,6 +80,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     callerCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     receiverCandidatesSnap.forEach(doc => batch.delete(doc.ref));
     
+    // Only commit the candidate deletion here. The main doc update happens next.
     await batch.commit();
   }
   

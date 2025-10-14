@@ -92,12 +92,12 @@ export const getCallHistory = (
     const calls = snapshot.docs
       .map(doc => {
         const data = doc.data();
-        // Ensure endedAt exists and is a timestamp before converting
-        const createdAt = (data.createdAt as Timestamp).toDate();
-        const endedAt = data.endedAt ? (data.endedAt as Timestamp).toDate() : undefined;
+        // Ensure createdAt and endedAt exist and are timestamps before converting
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+        const endedAt = data.endedAt instanceof Timestamp ? data.endedAt.toDate() : undefined;
 
-        let duration;
-        if (endedAt) {
+        let duration = data.duration;
+        if (endedAt && !duration) {
           duration = Math.floor((endedAt.getTime() - createdAt.getTime()) / 1000);
         }
 
@@ -106,7 +106,7 @@ export const getCallHistory = (
           ...data,
           createdAt,
           endedAt,
-          duration,
+          duration: duration >= 0 ? duration : undefined,
           timestamp: endedAt || createdAt, // Use endedAt for sorting if available, else createdAt
           type: 'call' as const, // Add type differentiator
         };

@@ -50,10 +50,14 @@ const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }
         text = "Incoming video call";
     }
     
-    if (item.status === 'ended' && item.duration) {
+    if (item.status === 'ended' && typeof item.duration === 'number') {
         const mins = Math.floor(item.duration / 60);
         const secs = item.duration % 60;
-        text = `Video call - ${mins > 0 ? `${mins}m ` : ''}${secs}s`;
+        if (mins > 0) {
+            text = `Video call - ${mins}m ${secs}s`;
+        } else {
+            text = `Video call - ${secs}s`;
+        }
     }
 
     return (
