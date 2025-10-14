@@ -527,15 +527,18 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         'timelineEvents', 'trackedKeywords', 'followers', 'following', '_private'
     ];
 
+    // 1. Delete all documents in subcollections
     for (const collectionName of collectionsToClear) {
         const collectionRef = collection(adminDb, 'users', userId, collectionName);
         const snapshot = await getDocs(collectionRef);
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
 
+    // 2. Delete the separate streak document
     const streakDocRef = doc(adminDb, 'streaks', userId);
     batch.delete(streakDocRef);
 
+    // 3. Update the main user document to its final anonymized state
     const userDocRef = doc(adminDb, 'users', userId);
     batch.update(userDocRef, {
         displayName: 'Deleted User',
