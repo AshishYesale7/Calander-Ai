@@ -242,6 +242,7 @@ export interface ChatMessage {
 }
 
 export type CallStatus = 'ringing' | 'answered' | 'declined' | 'ended';
+export type CallType = 'video' | 'audio';
 
 export interface CallData {
   id: string;
@@ -251,6 +252,7 @@ export interface CallData {
   receiverId: string;
   participantIds: string[];
   status: CallStatus;
+  callType: CallType; // New field
   createdAt: any;
   endedAt?: any;
   duration?: number; // in seconds

@@ -14,7 +14,7 @@ import {
   Timestamp,
   getDoc
 } from 'firebase/firestore';
-import type { CallStatus } from '@/types';
+import type { CallStatus, CallType } from '@/types';
 
 const getCallDocRef = (callId: string) => {
   if (!db) throw new Error("Firestore is not initialized.");
@@ -30,6 +30,7 @@ export async function createCall(callData: {
   callerPhotoURL: string | null;
   receiverId: string;
   status: CallStatus;
+  callType: CallType;
 }): Promise<string> {
   if (!db) throw new Error("Firestore is not initialized.");
   const callsCollection = collection(db, 'calls');
