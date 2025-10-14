@@ -104,7 +104,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
     const [pipSize, setPipSize] = useState({ width: 320, height: 240 });
-    const [pipSizeMode, setPipSizeMode] = useState<'small' | 'medium' | 'large'>('medium');
+    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
     
     const [isMuted, setIsMuted] = useState(false);
 
@@ -425,35 +425,16 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 }
 
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+  // All hooks are called at the top, unconditionally.
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Preloader />
-      </div>
-    );
-  }
-  
-  if (!onboardingCompleted) {
-    return (
-      <div className="h-screen w-full flex-col">
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={onFinishOnboarding} />
-        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
-      </div>
-    );
-  }
-
-  // All hooks are now safely called AFTER all conditional returns.
   const { 
-      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
+      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused,
       outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
       incomingCall, incomingAudioCall, acceptCall, declineCall, 
       otherUserInCall, endCall, 
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, setPipSize, pipSizeMode, setPipSizeMode, onInitiateCall, isMuted, onToggleMute,
-      connectionStatus,
+      connectionStatus, remoteStream
   } = useChat();
   const { toast } = useToast();
   const router = useRouter();
@@ -481,6 +462,25 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Conditional returns are now placed AFTER all hooks have been called.
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Preloader />
+      </div>
+    );
+  }
+  
+  if (!onboardingCompleted) {
+    return (
+      <div className="h-screen w-full flex-col">
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+        <OnboardingModal onFinish={onFinishOnboarding} />
+        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (connectionStatus === 'disconnected') {
@@ -640,6 +640,13 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
     return () => clearInterval(colorInterval);
   }, []);
+  
+  useEffect(() => {
+    if (remoteStream && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
 
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -668,14 +675,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const isMobileChatFocus = isMobile && isChatInputFocused;
   const isVideoCallActive = !!(ongoingCall && otherUserInCall);
   const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
-
-  const { remoteStream } = useChat();
-  useEffect(() => {
-    if (remoteStream && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
-
 
   return (
     <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
@@ -786,12 +785,14 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                     : "inset-0"
             )}
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
-            onResize={isPipMode ? (e, info) => {
-                setPipSize({
-                    width: info.point.x,
-                    height: info.point.y
-                });
-            } : undefined}
+            onResizeStop={(e, info) => {
+                if (isPipMode) {
+                    setPipSize({
+                        width: info.point.x,
+                        height: info.point.y
+                    });
+                }
+            }}
         >
             <VideoCallView 
                 call={ongoingCall!} 
@@ -821,7 +822,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 call={ongoingAudioCall!}
                 otherUser={otherUserInCall!}
                 onEndCall={endCall}
-                remoteStream={useChat().remoteStream}
                 connectionStatus={connectionStatus}
             />
           </motion.div>

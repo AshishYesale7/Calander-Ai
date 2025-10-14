@@ -15,16 +15,15 @@ interface AudioCallViewProps {
   call: CallData;
   otherUser: PublicUserProfile;
   onEndCall: () => void;
-  remoteStream: MediaStream | null;
   connectionStatus: RTCPeerConnectionState;
 }
 
-export default function AudioCallView({ call, otherUser, onEndCall, remoteStream, connectionStatus }: AudioCallViewProps) {
+export default function AudioCallView({ call, otherUser, onEndCall, connectionStatus }: AudioCallViewProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameId = useRef<number>();
-  const { onToggleMute } = useChat();
+  const { onToggleMute, remoteStream } = useChat();
 
   // Effect for the call duration timer
   useEffect(() => {
