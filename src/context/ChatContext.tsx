@@ -4,7 +4,7 @@
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import { createContext, useContext, useState } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
-import type { CallData } from '@/types';
+import type { CallData, CallType } from '@/types';
 
 
 interface ChatContextType {
@@ -23,31 +23,26 @@ interface ChatContextType {
   setOutgoingAudioCall: Dispatch<SetStateAction<PublicUserProfile | null>>;
   ongoingAudioCall: CallData | null;
   setOngoingAudioCall: Dispatch<SetStateAction<CallData | null>>;
+  onInitiateCall: (receiver: PublicUserProfile, callType: CallType) => void;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider = ({ children }: { children: ReactNode }) => {
+export const ChatProvider = ({ children, value }: { children: ReactNode, value: Omit<ChatContextType, 'chattingWith' | 'isChatSidebarOpen' | 'isChatInputFocused'> & {
+    setChattingWith: Dispatch<SetStateAction<PublicUserProfile | null>>;
+    setIsChatSidebarOpen: Dispatch<SetStateAction<boolean>>;
+    setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
+} }) => {
   const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
   const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
-  const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
-  const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-  // Define state for audio calls
-  const [outgoingAudioCall, setOutgoingAudioCall] = useState<PublicUserProfile | null>(null);
-  const [ongoingAudioCall, setOngoingAudioCall] = useState<CallData | null>(null);
-
 
   return (
     <ChatContext.Provider value={{ 
+        ...value,
         chattingWith, setChattingWith, 
         isChatSidebarOpen, setIsChatSidebarOpen,
-        outgoingCall, setOutgoingCall,
-        ongoingCall, setOngoingCall,
         isChatInputFocused, setIsChatInputFocused,
-        // Provide audio call state
-        outgoingAudioCall, setOutgoingAudioCall,
-        ongoingAudioCall, setOngoingAudioCall,
     }}>
       {children}
     </ChatContext.Provider>

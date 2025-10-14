@@ -313,6 +313,28 @@ const useCallNotifications = () => {
         }
     }, [incomingCall, incomingAudioCall]);
     
+    const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
+        if (!user) return;
+        
+        if (callType === 'video') {
+            setOutgoingCall(receiver);
+        } else {
+            setOutgoingAudioCall(receiver);
+        }
+
+        const callId = await createCall({
+            callerId: user.uid,
+            callerName: user.displayName || 'Anonymous',
+            callerPhotoURL: user.photoURL,
+            receiverId: receiver.uid,
+            status: 'ringing',
+            callType,
+        });
+        
+        setAndStoreActiveCallId(callId);
+        
+    }, [user, setOutgoingCall, setOutgoingAudioCall]);
+    
     const onTogglePipMode = useCallback(() => {
         if (isPipMode) {
             setIsResetting(true);
@@ -327,7 +349,7 @@ const useCallNotifications = () => {
 
     return {
       incomingCall, incomingAudioCall,
-      acceptCall, declineCall,
+      acceptCall, declineCall, onInitiateCall,
       otherUserInCall, endCall, 
       localStream, remoteStream,
       isPipMode, onTogglePipMode, pipControls, isResetting,
@@ -336,51 +358,14 @@ const useCallNotifications = () => {
     };
 };
 
-function AppContentWrapper({ children }: { children: ReactNode }) {
-    const { user, loading: authLoading, setOnboardingCompleted } = useAuth();
-
-    const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
-        if (!user) return;
-        
-        const callSetter = callType === 'video' ? setOutgoingCall : setOutgoingAudioCall;
-        callSetter(receiver);
-
-        const callId = await createCall({
-            callerId: user.uid,
-            callerName: user.displayName || 'Anonymous',
-            callerPhotoURL: user.photoURL,
-            receiverId: receiver.uid,
-            status: 'ringing',
-            callType,
-        });
-        
-        setAndStoreActiveCallId(callId);
-        
-    }, [user]);
-
-    const { 
-        chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, 
-        isChatInputFocused, setIsChatInputFocused,
-        outgoingCall, setOutgoingCall, ongoingCall, setOngoingCall,
-        outgoingAudioCall, setOutgoingAudioCall, ongoingAudioCall, setOngoingAudioCall
-    } = useChat();
-
-    const setAndStoreActiveCallId = (callId: string | null) => {
-        // This function would be defined in a higher-level state management,
-        // for now, we'll just log it. In a real app, it would set state.
-        console.log("Setting active call ID:", callId);
-        if (typeof window !== 'undefined') {
-          if (callId) {
-            sessionStorage.setItem(ACTIVE_CALL_SESSION_KEY, callId);
-          } else {
-            sessionStorage.removeItem(ACTIVE_CALL_SESSION_KEY);
-          }
-        }
-    };
+function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+    const { user } = useAuth();
+    const { onInitiateCall, ...callStates } = useCallNotifications();
+    const { setChattingWith, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused } = useChat();
 
     return (
-        <ChatProvider>
-            <AppContent onFinishOnboarding={() => { if (setOnboardingCompleted) setOnboardingCompleted(true); }}>
+        <ChatProvider value={{ onInitiateCall, setChattingWith, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused, ...callStates }}>
+            <AppContent onFinishOnboarding={onFinishOnboarding}>
                 {children}
             </AppContent>
         </ChatProvider>
@@ -398,17 +383,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   
   const { 
       chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused,
-      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall
-  } = useChat();
-
-  const { 
-      incomingCall, incomingAudioCall, acceptCall, declineCall,
+      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
+      incomingCall, incomingAudioCall, acceptCall, declineCall, onInitiateCall,
       otherUserInCall, endCall, localStream, remoteStream,
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, setPipSize, pipSizeMode, setPipSizeMode
-  } = useCallNotifications();
-
-  const { onInitiateCall } = useChat();
+  } = useChat();
 
 
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -629,7 +609,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             !isChatSidebarOpen && !isChatPanelVisible && "w-20"
         )}>
            <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
-              {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={onInitiateCall} />)}
+              {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />)}
            </div>
             {isChatSidebarOpen ? (
                 <div className="w-[18rem] h-full">
@@ -658,7 +638,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               </div>
               <div className={cn("h-full transition-all duration-300 flex flex-col", chattingWith ? (isMobileChatFocus ? "w-full" : "w-[75%]") : "w-[1%]")}>
                   {chattingWith && (
-                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} onInitiateCall={onInitiateCall} />
+                     <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
                   )}
               </div>
           </div>
@@ -754,12 +734,15 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  const { setOnboardingCompleted } = useAuth();
   return (
     <SidebarProvider>
       <PluginProvider>
         <StreakProvider>
           <ChatProvider>
-            <AppContentWrapper>{children}</AppContentWrapper>
+            <AppContentWrapper onFinishOnboarding={() => setOnboardingCompleted(true)}>
+              {children}
+            </AppContentWrapper>
           </ChatProvider>
         </StreakProvider>
       </PluginProvider>

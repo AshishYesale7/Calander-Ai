@@ -31,7 +31,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface ChatPanelProps {
   user: PublicUserProfile;
   onClose: () => void;
-  onInitiateCall: (receiver: PublicUserProfile, callType: 'video' | 'audio') => void;
 }
 
 type MergedChatItem = (ChatMessage | CallData);
@@ -76,13 +75,17 @@ const CallLogItem = ({ item, currentUser }: { item: CallData, currentUser: any }
 };
 
 
-export default function ChatPanel({ user: otherUser, onClose, onInitiateCall }: ChatPanelProps) {
+export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
   const { user: currentUser } = useAuth();
   const [chatItems, setChatItems] = useState<MergedChatItem[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { setChattingWith, outgoingCall, ongoingCall, setIsChatInputFocused, isChatInputFocused, outgoingAudioCall, ongoingAudioCall } = useChat();
+  const { 
+      setChattingWith, outgoingCall, ongoingCall, 
+      setIsChatInputFocused, isChatInputFocused, 
+      outgoingAudioCall, ongoingAudioCall, onInitiateCall 
+  } = useChat();
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
