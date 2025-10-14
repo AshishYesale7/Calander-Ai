@@ -23,7 +23,7 @@ interface VideoCallViewProps {
   onEndCall: () => void;
   isPipMode: boolean;
   onTogglePipMode: () => void;
-  pipSizeMode: 'small' | 'medium' | 'large';
+  pipSizeMode: 'medium' | 'large';
   onTogglePipSizeMode: () => void;
 }
 
@@ -397,7 +397,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
 
         {/* Local Video Preview */}
-        {pipSizeMode !== 'small' && (
+        {pipSizeMode !== 'medium' && (
           <motion.div 
               className={cn(
                   "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700",
@@ -466,9 +466,3 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
-
-    
-
-    
-
-    

@@ -190,8 +190,9 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         const isCaller = call.callerId === user.uid;
 
         const setupStreams = async () => {
+            const isVideoCall = call.callType === 'video';
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: call.callType === 'video',
+                video: isVideoCall,
                 audio: true
             });
             setLocalStream(stream);
@@ -201,7 +202,9 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
             stream.getTracks().forEach(track => {
                 if (!pc.getSenders().find(sender => sender.track === track)) {
-                    pc.addTrack(track, stream);
+                    if (isVideoCall || track.kind === 'audio') {
+                       pc.addTrack(track, stream);
+                    }
                 }
             });
             
@@ -785,14 +788,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                     : "inset-0"
             )}
             style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
-            onResizeStop={(e, info) => {
-                if (isPipMode) {
-                    setPipSize({
-                        width: info.point.x,
-                        height: info.point.y
-                    });
-                }
-            }}
         >
             <VideoCallView 
                 call={ongoingCall!} 
@@ -803,7 +798,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 pipSizeMode={pipSizeMode}
                 onTogglePipSizeMode={() => {
                   setPipSizeMode(prev => {
-                      const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+                      const sizes: ('medium' | 'large')[] = ['medium', 'large'];
                       const currentIndex = sizes.indexOf(prev);
                       return sizes[(currentIndex + 1) % sizes.length];
                   });
@@ -823,6 +818,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                 otherUser={otherUserInCall!}
                 onEndCall={endCall}
                 connectionStatus={connectionStatus}
+                remoteStream={remoteStream}
             />
           </motion.div>
       )}
