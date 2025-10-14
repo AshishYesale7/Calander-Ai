@@ -50,31 +50,28 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
 
       const draw = () => {
         animationFrameId.current = requestAnimationFrame(draw);
-        analyser.getByteTimeDomainData(dataArray);
+        analyser.getByteFrequencyData(dataArray);
         
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        canvasCtx.lineWidth = 2;
-        canvasCtx.strokeStyle = '#6ee7b7'; // A pleasant teal color
-        canvasCtx.shadowBlur = 5;
-        canvasCtx.shadowColor = '#6ee7b7';
-
-        canvasCtx.beginPath();
-        const sliceWidth = canvas.width * 1.0 / bufferLength;
+        
+        const barWidth = (canvas.width / bufferLength) * 2;
+        let barHeight;
         let x = 0;
-
+        
         for (let i = 0; i < bufferLength; i++) {
-          const v = dataArray[i] / 128.0; // value between 0 and 2
-          const y = v * canvas.height / 2;
+          barHeight = dataArray[i] / 2;
+          
+          const green = Math.min(255, barHeight + 100);
+          const blue = Math.min(255, barHeight + 25);
+          
+          canvasCtx.fillStyle = `rgba(${barHeight > 1 ? 50 : 0}, ${green}, ${blue}, 0.6)`;
+          canvasCtx.shadowBlur = 5;
+          canvasCtx.shadowColor = `rgba(50, ${green}, ${blue}, 0.3)`;
 
-          if (i === 0) {
-            canvasCtx.moveTo(x, y);
-          } else {
-            canvasCtx.lineTo(x, y);
-          }
-          x += sliceWidth;
+          canvasCtx.fillRect(x, canvas.height / 2 - barHeight / 2, barWidth, barHeight);
+          
+          x += barWidth + 1;
         }
-        canvasCtx.lineTo(canvas.width, canvas.height / 2);
-        canvasCtx.stroke();
       };
       draw();
       
@@ -82,7 +79,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, localStream,
         if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
         source.disconnect();
         analyser.disconnect();
-        audioContext.close();
+        audioContext.close().catch(e => console.warn("Error closing audio context", e));
       };
     }
   }, [remoteStream]);
