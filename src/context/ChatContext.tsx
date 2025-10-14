@@ -18,6 +18,11 @@ interface ChatContextType {
   setOngoingCall: Dispatch<SetStateAction<CallData | null>>;
   isChatInputFocused: boolean;
   setIsChatInputFocused: Dispatch<SetStateAction<boolean>>;
+  // Add state for audio calls
+  outgoingAudioCall: PublicUserProfile | null;
+  setOutgoingAudioCall: Dispatch<SetStateAction<PublicUserProfile | null>>;
+  ongoingAudioCall: CallData | null;
+  setOngoingAudioCall: Dispatch<SetStateAction<CallData | null>>;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -28,6 +33,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
   const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
+  // Define state for audio calls
+  const [outgoingAudioCall, setOutgoingAudioCall] = useState<PublicUserProfile | null>(null);
+  const [ongoingAudioCall, setOngoingAudioCall] = useState<CallData | null>(null);
 
 
   return (
@@ -37,6 +45,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         outgoingCall, setOutgoingCall,
         ongoingCall, setOngoingCall,
         isChatInputFocused, setIsChatInputFocused,
+        // Provide audio call state
+        outgoingAudioCall, setOutgoingAudioCall,
+        ongoingAudioCall, setOngoingAudioCall,
     }}>
       {children}
     </ChatContext.Provider>
