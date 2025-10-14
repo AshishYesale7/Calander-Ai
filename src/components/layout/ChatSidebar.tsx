@@ -17,15 +17,17 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
-type FollowedUserWithPresence = PublicUserProfile & {
-    status?: 'online' | 'offline' | 'in-game';
+type RecentChatUser = PublicUserProfile & {
+    lastMessage?: string;
+    timestamp?: Date;
     notification?: boolean;
 };
+
 
 export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void; }) {
     const { user } = useAuth();
     const { chattingWith, setChattingWith, setIsChatSidebarOpen } = useChat();
-    const [following, setFollowing] = useState<FollowedUserWithPresence[]>([]);
+    const [recentChats, setRecentChats] = useState<RecentChatUser[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -36,38 +38,42 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
         }
 
         setIsLoading(true);
-        const followingCollectionRef = collection(db, 'users', user.uid, 'following');
-        const q = query(followingCollectionRef, orderBy('timestamp', 'desc'), limit(10));
+        const recentChatsRef = collection(db, 'users', user.uid, 'recentChats');
+        const q = query(recentChatsRef, orderBy('timestamp', 'desc'), limit(10));
         
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const followedUserPromises = snapshot.docs.map(async (docSnapshot) => {
-                const userId = docSnapshot.id;
-                const userDocSnap = await getDoc(doc(db, 'users', userId));
+            const chatPartnersPromises = snapshot.docs.map(async (docSnapshot) => {
+                const recentChatData = docSnapshot.data();
+                const otherUserId = docSnapshot.id;
+                const userDocSnap = await getDoc(doc(db, 'users', otherUserId));
+                
                 if (userDocSnap.exists()) {
-                    const data = userDocSnap.data();
+                    const userData = userDocSnap.data();
                     return {
                         id: userDocSnap.id,
                         uid: userDocSnap.id,
-                        displayName: data.displayName || 'Anonymous User',
-                        photoURL: data.photoURL || null,
-                        username: data.username || `user_${userId.substring(0,5)}`,
-                        status: 'online',
-                    } as FollowedUserWithPresence;
+                        displayName: userData.displayName || 'Anonymous User',
+                        photoURL: userData.photoURL || null,
+                        username: userData.username || `user_${otherUserId.substring(0,5)}`,
+                        lastMessage: recentChatData.lastMessage,
+                        timestamp: recentChatData.timestamp?.toDate(),
+                        notification: Math.random() > 0.8, // Mock notification
+                    } as RecentChatUser;
                 }
                 return null;
             });
-            const followedUsers = (await Promise.all(followedUserPromises)).filter(u => u !== null) as FollowedUserWithPresence[];
-            setFollowing(followedUsers);
+            const fetchedChats = (await Promise.all(chatPartnersPromises)).filter(c => c !== null) as RecentChatUser[];
+            setRecentChats(fetchedChats);
             setIsLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
 
-    const filteredFollowing = useMemo(() => {
-        if (!searchTerm) return following;
-        return following.filter(friend => friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [following, searchTerm]);
+    const filteredChats = useMemo(() => {
+        if (!searchTerm) return recentChats;
+        return recentChats.filter(chat => chat.displayName.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [recentChats, searchTerm]);
     
     return (
         <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
@@ -89,7 +95,7 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
                         </PopoverTrigger>
                         <PopoverContent side="left" className="p-1 w-48">
                             <Input 
-                                placeholder="Search friends..."
+                                placeholder="Search chats..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="h-8"
@@ -102,18 +108,18 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
             <TooltipProvider delayDuration={0}>
                 <ScrollArea className="flex-1 w-full">
                     <div className="space-y-2">
-                        {filteredFollowing.map(friend => (
-                            <Tooltip key={friend.id}>
+                        {filteredChats.map(chat => (
+                            <Tooltip key={chat.id}>
                                 <TooltipTrigger asChild>
-                                    <button onClick={() => setChattingWith(friend)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === friend.id && "bg-muted")}>
+                                    <button onClick={() => setChattingWith(chat)} className={cn("w-full flex justify-center p-1 rounded-lg", chattingWith?.id === chat.id && "bg-muted")}>
                                         <Avatar className="h-10 w-10">
-                                            <AvatarImage src={friend.photoURL || ''} alt={friend.displayName} />
-                                            <AvatarFallback>{friend.displayName.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
+                                            <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="left">
-                                    <p>{friend.displayName}</p>
+                                    <p>{chat.displayName}</p>
                                 </TooltipContent>
                             </Tooltip>
                         ))}
