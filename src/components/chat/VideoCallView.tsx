@@ -129,6 +129,13 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
       {/* Remote Video */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
+        
+        {isPipMode && (
+          <Button variant="ghost" size="icon" className="absolute top-1 left-1 h-7 w-7 text-white/70 hover:text-white" onClick={onTogglePipSizeMode}>
+            {pipSizeMode === 'medium' ? <Maximize className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
+          </Button>
+        )}
+
         {connectionStatus === 'disconnected' && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
                 <LoadingSpinner className="text-white" />
@@ -163,11 +170,6 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 text-center text-xs">
                 Camera is off
               </div>
-            )}
-             {isPipMode && (
-                <Button variant="ghost" size="icon" className="absolute top-0 left-0 h-7 w-7 text-white/70 hover:text-white" onClick={onTogglePipSizeMode}>
-                  {pipSizeMode === 'medium' ? <Maximize className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
-                </Button>
             )}
           </motion.div>
         )}
@@ -215,3 +217,5 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     </div>
   );
 }
+
+    
