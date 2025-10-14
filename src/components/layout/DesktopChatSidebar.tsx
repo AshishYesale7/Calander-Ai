@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2 } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
