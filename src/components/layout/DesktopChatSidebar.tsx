@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit, Time
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -137,26 +137,32 @@ const ChatListView = () => {
     const handleDeleteChat = async () => {
         if (!chatToDelete || !user) return;
 
-        const originalChats = [...recentChats];
-        const newChats = recentChats.filter(c => c.uid !== chatToDelete.uid);
-        setRecentChats(newChats);
-        localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(newChats));
+        const chatPartner = chatToDelete;
+        setChatToDelete(null); // Close the dialog
 
-        if (chattingWith?.uid === chatToDelete.uid) {
-            setChattingWith(null);
-        }
-        
         toast({
-            title: "Chat Deleted",
-            description: `Your chat history with ${chatToDelete.displayName} has been cleared.`
+            title: "Deleting Chat...",
+            description: `Removing your conversation with ${chatPartner.displayName}.`
         });
-        setChatToDelete(null);
 
         try {
-            await deleteConversationForCurrentUser(user.uid, chatToDelete.uid);
+            await deleteConversationForCurrentUser(user.uid, chatPartner.uid);
+            
+            // The onSnapshot listener will automatically update the UI.
+            // We just need to ensure the local cache is also cleared.
+            const updatedLocalChats = recentChats.filter(c => c.uid !== chatPartner.uid);
+            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(updatedLocalChats));
+            
+            if (chattingWith?.uid === chatPartner.uid) {
+                setChattingWith(null);
+            }
+
+            toast({
+                title: "Chat Deleted",
+                description: `Your chat history with ${chatPartner.displayName} has been cleared.`
+            });
+
         } catch (err) {
-            setRecentChats(originalChats);
-            localStorage.setItem(RECENT_CHATS_LOCAL_KEY, JSON.stringify(originalChats));
             toast({ title: "Error", description: "Failed to delete chat history from the cloud.", variant: "destructive"});
         }
     };
@@ -265,7 +271,7 @@ const ChatListView = () => {
                           animate={{ rotate: isFabMenuOpen ? 45 : 0 }}
                           transition={{ duration: 0.2 }}
                       >
-                          <Plus className="h-7 w-7" />
+                          <X className="h-7 w-7" />
                       </motion.div>
                   </Button>
               </div>
