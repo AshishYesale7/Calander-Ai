@@ -1,57 +1,283 @@
-# Calendar.ai: Feature & Update Catalog (July 21, 2024)
+---
 
-This document provides a comprehensive overview of all new features, enhancements, and bug fixes implemented in the Calendar.ai application.
+# 🧾 **Technical Changelog – **
+
+> **Scope:** Covers all major updates since the implementation of Picture-in-Picture (PiP) mode — focusing on stability, UX, real-time features, account management, and offline reliability.
 
 ---
 
-## 1. New User Onboarding Flow
+## 🧭 **1. Multi-Step Onboarding Flow**
 
-A guided, multi-step process was implemented to improve the experience for new users and ensure their profiles are set up correctly from the very beginning.
+### Overview
 
--   **Functionality:** Upon first sign-in, new users are now presented with a mandatory modal that walks them through profile creation and permission requests.
--   **Step 1 (Profile Setup):** Users set their display name, choose a unique `@username` (with real-time availability validation), and select a pre-designed 3D avatar. This step also includes a crucial check requiring users who sign up with only a phone number to link a Google account, ensuring access to all app features.
--   **Step 2 (Permissions):** The flow politely requests browser permissions for Notifications, Camera/Microphone, and Location to enable key features upfront.
--   **Step 3 (Confirmation):** A final welcome screen confirms the setup is complete and informs the user that their 30-day free trial has started.
--   **Backend Integration:** The `AuthContext` was updated to track an `onboardingCompleted` flag from the user's profile. The main app layout uses this flag to conditionally render the onboarding modal, ensuring it only appears for new users.
+Introduced a **guided onboarding modal** for new users to streamline profile setup and permissions, ensuring consistent setup before entering the app.
 
----
+### Key Features
 
-## 2. Real-time Communication Suite
+* **Step 1 – Profile Setup**
 
-The app's real-time features were significantly expanded from basic text chat to a full communication suite, including audio/video calls and a complete call history.
+  * Added input for display name and unique `@username` with **real-time validation** to prevent duplicates.
+  * Integrated **3D avatar selection gallery** (male/female variants) for quick profile setup.
+  * Enforced **Google account linking** for users registering via phone number only — ensuring complete account access.
 
--   **Voice Calling:**
-    -   **UI/UX:** A new, compact UI for audio calls appears as an overlay, allowing users to navigate the app while on a call. It features the user's avatar with a sound-wave visualization, mute controls, and an end-call button.
-    -   **Backend:** The existing WebRTC and Firestore signaling backend was extended to support an `'audio'` call type.
+* **Step 2 – Permissions**
 
--   **Unified Chat & Call History:**
-    -   **UI/UX:** Call records (missed, incoming, outgoing) are now displayed directly within the `ChatPanel` message stream, interspersed chronologically with text messages. A new "Calls" tab was added to the chat sidebar to view a dedicated call log.
-    -   **Backend:** `chatService.ts` was updated to fetch both chat messages and call documents from Firestore. The `ChatPanel` now merges and sorts these two data streams to create the unified history.
+  * Added sequential requests for browser permissions:
 
--   **Chat UI Enhancements:**
-    -   **Message Timestamps & Date Separators:** Each chat bubble now includes a timestamp, and date separators are automatically added between messages sent on different days.
-    -   **"Tailed" Message Bubbles & Optimized Avatars:** The UI was refined to group consecutive messages from the same user, showing the sender's avatar and a message "tail" only on the last message in a block.
+    * Notifications (push alerts)
+    * Camera & Microphone (for video/voice calls)
+    * Location (for contextual features)
+  * Optimized UX to request these politely and sequentially.
 
--   **Contextual Menus & Message Deletion:**
-    -   **Functionality:** Users can now right-click a message to "Copy" it. For messages they've sent, a "Delete" option is available.
-    -   **Delete for Everyone:** When deleting a message, users can now choose to delete it just for themselves or for everyone, in which case the message is replaced with "This message was deleted."
+* **Step 3 – Confirmation**
 
----
+  * Displays a personalized welcome message confirming setup.
+  * Starts a **30-day free trial** period for new accounts.
 
-## 3. User Profile & Account Management
+### Backend & Integration
 
--   **User Avatar Customization:** A "Customize Avatar" feature was implemented, allowing users to select from a gallery of pre-designed 3D avatars as their profile picture, providing a quick setup option without requiring a photo upload.
--   **Account Deletion & Anonymization:**
-    -   **Functionality:** A "Delete My Account" feature was added to the settings panel.
-    -   **Process:** This initiates a "soft delete" by anonymizing personal data and disabling the Firebase Auth user, providing a 30-day grace period. During this time, a user can sign back in to "reclaim" their account. After 30 days, a backend process is planned to permanently erase all user content.
+* Updated `AuthContext` and user schema to include:
+
+  ```ts
+  onboardingCompleted: boolean
+  ```
+* Modified main layout to conditionally render the onboarding modal based on this flag.
+* Persisted user progress in Firestore to prevent repeat onboarding sessions.
 
 ---
 
-## 4. Offline Mode & Stability Improvements
+## 💬 **2. Real-Time Communication Suite**
 
-This was a major area of focus where several critical bugs related to the offline experience were resolved.
+### 2.1 Voice Calling (Audio)
 
--   **UI Enhancement:** A small, animated "Reconnecting..." indicator bar now appears at the top of the screen when the internet connection is lost, providing clear and non-intrusive feedback.
--   **Bug Fixes:**
-    -   **Toast Suppression:** We eliminated incorrect and confusing "Sync Error" popups by making the app's data-fetching logic intelligently detect network failures and handle them silently.
-    -   **Offline Page Loading:** The long-standing issue of the browser's default error page appearing on refresh was definitively fixed. We created a static `public/offline.html` page and rewrote the service worker (`public/sw.js`) to reliably serve this page for any failed page navigation.
+#### UI/UX
+
+* Introduced **compact floating call overlay**:
+
+  * Displays user avatar + **sound-wave visualization** (reactive to voice input).
+  * Includes mute/unmute toggle, end call, and minimal controls.
+  * Remains accessible while navigating across app sections.
+
+#### Backend
+
+* Extended existing **WebRTC signaling + Firestore backend**:
+
+  * Added `callType: 'audio'` parameter in call documents.
+  * Configured peer connections to request **microphone only** (no video tracks).
+  * Implemented bandwidth optimization for audio-only mode.
+
+#### Notifications
+
+* Implemented **incoming/outgoing call notifications** via Firestore listeners.
+* Distinct tones and pop-ups for call acceptance/decline events.
+
+---
+
+### 2.2 Call Logs
+
+#### UI
+
+* Added dedicated **"Calls" tab** in sidebar navigation.
+* Displays full history of:
+
+  * Incoming, outgoing, and missed audio/video calls.
+* Each entry shows:
+
+  * Avatar, name, call type (audio/video), call status, and timestamp.
+
+#### Backend
+
+* Firestore `calls` collection enhancements:
+
+  * Added `participantIds: string[]` for multi-user querying.
+  * Persisted `duration` field, computed upon call termination.
+* New `fetchUserCalls()` method in `chatService.ts` to efficiently query all related calls.
+
+---
+
+### 2.3 Call State & Reliability Fixes
+
+* **Persistent State:**
+
+  * Implemented `sessionStorage` to store `activeCallId`, enabling seamless recovery after reload.
+* **Session Cleanup:**
+
+  * Added `window.beforeunload` listener to safely end calls and update status.
+* **Timeout Handling:**
+
+  * Introduced 15-second timeout for unanswered outgoing calls to auto-cancel and notify caller.
+* **Ghost Ringing Fix:**
+
+  * Resolved issue where inactive calls remained “ringing” in Firestore.
+
+---
+
+## 💭 **3. Chat UI Enhancements & Unified History**
+
+### 3.1 Integrated Message & Call Timeline
+
+* Redesigned ChatPanel to display **messages and call logs** in a single chronological stream.
+* Implemented new `CallLogItem` component rendering:
+
+  * Iconography for call type (`PhoneIncoming`, `PhoneOutgoing`, `PhoneMissed`).
+  * Duration & timestamp display inline.
+* Merged Firestore queries for `messages` and `calls` → unified sort by timestamp for contextual continuity.
+
+---
+
+### 3.2 Visual & UX Refinements
+
+* **Timestamps:**
+
+  * Added precise timestamps (e.g., “10:42 PM”) to each message bubble.
+* **Date Separators:**
+
+  * Auto-inserted labeled dividers (e.g., “September 14, 2025”) for day transitions.
+* **Message Bubble Styling:**
+
+  * “Tailed” design — only last message in block has rounded tail; prior ones remain squared for cohesion.
+* **Optimized Avatar Display:**
+
+  * Displayed sender avatar only on final message in user block to minimize visual clutter.
+
+---
+
+### 3.3 Message Interactions
+
+* Added **context menu** (right-click / long-press) for per-message actions:
+
+  * `Copy Message`
+  * `Delete Message`
+* Implemented **“Delete for Everyone”**:
+
+  * When deleting your own message:
+
+    * Option to delete locally or globally.
+    * Replaced message with `"This message was deleted"` placeholder in both chat views.
+* All actions fully synced across Firestore listeners in real time.
+
+---
+
+## 👤 **4. Account Management & User Data Control**
+
+### 4.1 Avatar Customization
+
+* Added **3D avatar selection modal**:
+
+  * Gallery of pre-rendered avatars for male/female profiles.
+  * Simplifies setup and maintains privacy.
+* Backend updates in `userService.ts`:
+
+  * Saves selected avatar URL to user document.
+  * Deletes old avatar from Firebase Storage to prevent orphaned files.
+
+---
+
+### 4.2 Account Deletion Workflow
+
+#### Functionality
+
+* Introduced **“Delete My Account”** under Settings.
+
+#### Process
+
+1. **Soft Delete:**
+
+   * Anonymizes sensitive fields (`displayName`, `bio`, etc.).
+   * Updates status → `PENDING_DELETION`.
+   * Disables Firebase Auth user credentials.
+2. **Grace Period:**
+
+   * 30-day recovery window before permanent deletion.
+3. **Reclamation:**
+
+   * Added `reclaimUserAccount()` to restore anonymized data if user reauthenticates within grace period.
+4. **Permanent Deletion (Future):**
+
+   * Planned Cloud Function will periodically purge user data from all sub-collections after 30 days.
+
+---
+
+## 🌐 **5. Offline Experience & Service Worker Overhaul**
+
+### 5.1 Offline Indicator UI
+
+* Implemented **animated “Reconnecting…” banner**:
+
+  * Appears at top center on connection loss.
+  * Automatically fades out when connectivity is restored.
+  * Compact design (slightly offset to left, refined through multiple iterations).
+
+---
+
+### 5.2 Offline Error Handling Improvements
+
+* **Problem:** Verbose “Sync Error” & “Offline Mode” popups appeared even during normal disconnections.
+* **Solution:**
+
+  * Updated error logic in:
+
+    * `ApiKeyContext.tsx`
+    * Dashboard & data-fetching modules.
+  * Filtered network errors (`TypeError: Failed to fetch`) to handle silently without triggering toast popups.
+
+---
+
+### 5.3 Custom Offline Page Implementation
+
+#### Problem
+
+* Browser displayed default “No Internet” error on reload when offline.
+
+#### Fix Journey
+
+* Created minimal, dependency-free `public/offline.html`.
+* Rewrote `public/sw.js`:
+
+  * Cached `offline.html` during `install` event.
+  * Used fallback pattern in `fetch` event:
+
+    ```js
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/offline.html'))
+    );
+    ```
+  * Ensures all navigation requests serve cached offline file during failures.
+* Result: Seamless offline navigation experience and improved PWA compliance.
+
+---
+
+## 🧱 **6. Architectural & Codebase Enhancements**
+
+* **Service Worker:** Fully rewritten with standardized cache strategy and versioning for reliability.
+* **Error Handling:** Unified network failure handling across contexts and hooks.
+* **Firestore Queries:** Modularized data fetching in `chatService.ts` for scalability.
+* **Session Management:** Added global beforeunload safety and persistent reconnect logic for real-time events.
+* **Code Cleanup:** Removed redundant SW logic and deprecated API calls.
+
+---
+
+## ⚡ **7. Overall Stability, UX & PWA Readiness**
+
+* Offline-first design fully achieved with service worker fallback.
+* Real-time reliability: calls and chats auto-recover after reloads or tab crashes.
+* Onboarding, account management, and identity tools provide enterprise-level UX polish.
+* Chat panel design now matches modern messaging app standards (WhatsApp/iMessage aesthetic).
+* Significantly reduced runtime errors, unnecessary alerts, and user confusion in offline/unstable network scenarios.
+
+---
+
+## ✅ **8. Summary of Key Impact**
+
+| Area                   | Before                                | After                                                |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------- |
+| **Offline Behavior**   | Browser error pages, redundant toasts | Custom offline page + silent handling                |
+| **Real-Time Calls**    | Video-only                            | Full audio/video support + logs                      |
+| **Chat UI**            | Basic text-only stream                | Unified chat + call timeline with contextual actions |
+| **Account Management** | Basic auth                            | Full deletion, reclamation, avatar customization     |
+| **Onboarding**         | Minimal setup                         | Guided multi-step profile & permission flow          |
+| **Resilience**         | Frequent state loss                   | Session persistence, reconnection logic              |
+| **User Experience**    | Fragmented                            | Smooth, modern, PWA-ready experience                 |
+
+---
+ 
