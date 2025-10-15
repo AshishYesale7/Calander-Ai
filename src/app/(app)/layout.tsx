@@ -879,7 +879,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2c28c8d875.mp3?filename=dial-up-modem-02.mp3" preload="auto" loop className="hidden" />
+      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/download/audio/2022/02/22/audio_d143a6c9d7.mp3" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
