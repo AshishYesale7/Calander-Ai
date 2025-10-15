@@ -481,7 +481,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const ringtoneAudioRef = useRef<HTMLAudioElement>(null);
+  const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
+  const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -649,20 +650,36 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     return () => clearInterval(colorInterval);
   }, []);
   
-  // Effect for playing ringtone on incoming call
+  // Effect for playing ringtones
   useEffect(() => {
-    if (incomingCall || incomingAudioCall) {
-        ringtoneAudioRef.current?.play().catch(e => console.warn("Ringtone playback failed:", e));
+    const isIncoming = !!(incomingCall || incomingAudioCall);
+    const isOutgoing = !!(outgoingCall || outgoingAudioCall);
+    
+    const playSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
+      audioRef.current?.play().catch(e => console.warn("Ringtone playback failed:", e));
+    };
+
+    const stopSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
+        audioRef.current?.pause();
+        if(audioRef.current) audioRef.current.currentTime = 0;
+    };
+
+    if (isIncoming) {
+        playSound(incomingRingtoneRef);
+        stopSound(outgoingRingtoneRef);
+    } else if (isOutgoing) {
+        playSound(outgoingRingtoneRef);
+        stopSound(incomingRingtoneRef);
     } else {
-        ringtoneAudioRef.current?.pause();
-        if(ringtoneAudioRef.current) ringtoneAudioRef.current.currentTime = 0;
+        stopSound(incomingRingtoneRef);
+        stopSound(outgoingRingtoneRef);
     }
-    // Cleanup function to pause on component unmount or state change
+
     return () => {
-        ringtoneAudioRef.current?.pause();
-        if(ringtoneAudioRef.current) ringtoneAudioRef.current.currentTime = 0;
+        stopSound(incomingRingtoneRef);
+        stopSound(outgoingRingtoneRef);
     }
-  }, [incomingCall, incomingAudioCall]);
+  }, [incomingCall, incomingAudioCall, outgoingCall, outgoingAudioCall]);
   
   useEffect(() => {
     if (remoteStream && remoteAudioRef.current) {
@@ -861,7 +878,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       
       {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
-      <audio ref={ringtoneAudioRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
+      <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
+      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2c28c8d875.mp3?filename=dial-up-modem-02.mp3" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
@@ -886,4 +904,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+    
+
     
