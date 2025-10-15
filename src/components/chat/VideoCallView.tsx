@@ -168,12 +168,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             dragMomentum={false}
             className={cn(
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
-              isPipMode ? "rounded-lg max-h-[12rem] max-w-[9rem] top-2 right-2" : "rounded-md max-h-[12rem] max-w-[9rem] top-4 right-4"
+              isPipMode ? "rounded-lg max-h-[10rem] max-w-[7.5rem] top-2 right-2" : "rounded-md max-h-[10rem] max-w-[7.5rem] top-4 right-4"
             )}
           >
             <video
               ref={localVideoRef}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               autoPlay
               muted
               playsInline

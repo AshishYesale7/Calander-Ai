@@ -102,7 +102,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
-    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
+    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('large');
     
     const [isMuted, setIsMuted] = useState(false);
 
@@ -428,19 +428,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       connectionStatus, remoteStream,
   } = useChat();
 
-  const activeCallId = useMemo(() => {
-    if (ongoingCall) return ongoingCall.id;
-    if (ongoingAudioCall) return ongoingAudioCall.id;
-    // During the outgoing phase, we get the ID from the `useChat` hook's state.
-    // This requires a bit of a workaround to get the session-stored ID.
-    if (outgoingCall || outgoingAudioCall) {
-        if (typeof window !== 'undefined') {
-            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
-        }
-    }
-    return null;
-  }, [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall]);
-  
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -466,6 +453,19 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
 
+  const activeCallId = useMemo(() => {
+    if (ongoingCall) return ongoingCall.id;
+    if (ongoingAudioCall) return ongoingAudioCall.id;
+    // During the outgoing phase, we need to get the ID from session storage
+    // as the `ongoingCall` state isn't set yet.
+    if (outgoingCall || outgoingAudioCall) {
+        if (typeof window !== 'undefined') {
+            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
+        }
+    }
+    return null;
+  }, [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall]);
+
   useEffect(() => {
     if (connectionStatus === 'disconnected') {
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -488,9 +488,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     if (isOutgoing && currentActiveCallId) {
         timeoutId = setTimeout(() => {
             if (db && currentActiveCallId) {
+                // Check the call status right before cancelling
                 getDoc(doc(db, 'calls', currentActiveCallId)).then(docSnap => {
-                    const callIsOngoing = ongoingCall || ongoingAudioCall;
-                    if (!callIsOngoing && docSnap.exists() && docSnap.data()?.status === 'ringing') {
+                    // Only decline if the call is *still* ringing.
+                    if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
                         toast({
                             title: "Call Not Answered",
                             description: "The other user did not pick up.",
@@ -503,12 +504,13 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         }, 15000); // 15 seconds
     }
 
+    // The cleanup function for this effect
     return () => {
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
     };
-  }, [outgoingCall, outgoingAudioCall, activeCallId, toast, ongoingCall, ongoingAudioCall]);
+  }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
 
 
   useEffect(() => {
@@ -798,7 +800,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             dragMomentum={false}
             animate={pipControls}
             className={cn(
-                "fixed bg-black z-[100] border border-white/20",
+                "fixed bg-black/50 backdrop-blur-xl z-[100] border border-white/20",
                 isPipMode 
                     ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
                     : "inset-0"
@@ -858,4 +860,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   )
 }
     
+
 
