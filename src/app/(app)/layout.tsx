@@ -332,12 +332,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [incomingCall, incomingAudioCall]);
 
     const declineCall = useCallback(() => {
-        if (incomingCall) {
-            updateCallStatus(incomingCall.id, 'declined');
+        const callToDecline = incomingCall || incomingAudioCall;
+        if (callToDecline) {
+            updateCallStatus(callToDecline.id, 'declined');
             setIncomingCall(null);
-        }
-        if (incomingAudioCall) {
-            updateCallStatus(incomingAudioCall.id, 'declined');
             setIncomingAudioCall(null);
         }
     }, [incomingCall, incomingAudioCall]);
@@ -428,6 +426,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       isPipMode, onTogglePipMode, pipControls, isResetting,
       pipSize, pipSizeMode, setPipSizeMode, isMuted,
       connectionStatus, remoteStream,
+      activeCallId,
   } = useChat();
   const { toast } = useToast();
   const router = useRouter();
@@ -471,20 +470,26 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     let timeoutId: NodeJS.Timeout | null = null;
     if (outgoingCall || outgoingAudioCall) {
       timeoutId = setTimeout(() => {
-        toast({
-          title: "Call Not Answered",
-          description: "The other user did not pick up.",
-          variant: "default"
-        });
-        endCall();
+        // Only trigger if the call is still outgoing (not answered)
+        if (activeCallId && !ongoingCall && !ongoingAudioCall) {
+            toast({
+              title: "Call Not Answered",
+              description: "The other user did not pick up.",
+              variant: "default"
+            });
+            // Use 'declined' to signify an unanswered call
+            updateCallStatus(activeCallId, 'declined');
+        }
       }, 15000); // 15 seconds
     }
+    
+    // Cleanup function to clear the timeout
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [outgoingCall, outgoingAudioCall, endCall, toast]);
+  }, [outgoingCall, outgoingAudioCall, activeCallId, ongoingCall, ongoingAudioCall, toast]);
 
 
   useEffect(() => {
@@ -833,3 +838,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
