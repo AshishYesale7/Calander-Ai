@@ -14,7 +14,9 @@ import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+import { useTimezone } from '@/hooks/use-timezone';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ChatIcon } from '../logo/ChatIcon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,6 +68,7 @@ const ChatListView = () => {
     const { user } = useAuth();
     const { chattingWith, setChattingWith } = useChat();
     const { toast } = useToast();
+    const { timezone } = useTimezone();
     const [recentChats, setRecentChats] = useState<RecentChatUser[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +124,18 @@ const ChatListView = () => {
         }
     };
 
+    const formatTimestamp = (timestamp?: Date) => {
+        if (!timestamp) return '';
+        const zonedTimestamp = toZonedTime(timestamp, timezone);
+        if (isToday(zonedTimestamp)) {
+            return format(zonedTimestamp, 'p');
+        }
+        if (isYesterday(zonedTimestamp)) {
+            return 'Yesterday';
+        }
+        return format(zonedTimestamp, 'dd-MM-yy');
+    };
+
 
     const fabMenuVariants = {
         open: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24, staggerChildren: 0.05 } },
@@ -160,7 +175,7 @@ const ChatListView = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center">
                                             <h3 className="font-semibold text-sm truncate">{chat.displayName}</h3>
-                                            {chat.timestamp && <p className="text-xs text-muted-foreground">{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</p>}
+                                            {chat.timestamp && <p className="text-xs text-muted-foreground">{formatTimestamp(chat.timestamp)}</p>}
                                         </div>
                                         <div className="flex justify-between items-start">
                                             <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
@@ -376,7 +391,7 @@ const CallLogView = () => {
                                 <h3 className="font-semibold text-sm truncate">{call.otherUser?.displayName}</h3>
                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     {getCallIcon(call)}
-                                    <span>{formatDistanceToNow(new Date(call.createdAt.seconds * 1000), { addSuffix: true })}</span>
+                                    <span>{format(new Date(call.createdAt.seconds * 1000), 'p')}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -432,6 +447,3 @@ export default function DesktopChatSidebar() {
     
 
     
-
-
-
