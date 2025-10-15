@@ -131,7 +131,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   return (
     <div className={cn("flex flex-col h-full bg-black text-white relative", isPipMode && "w-full h-full")}>
-      <div className="flex-1 bg-gray-900 flex items-center justify-center relative overflow-hidden">
+      <div className="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-contain" autoPlay playsInline />
         
         {/* Remote User Mute Indicators */}
@@ -168,7 +168,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             dragMomentum={false}
             className={cn(
               "absolute bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
-              isPipMode ? "w-24 h-32 top-2 right-2" : "h-48 w-36 top-4 right-4"
+              isPipMode ? "max-h-[12rem] max-w-[9rem] top-2 right-2" : "max-h-[12rem] max-w-[9rem] top-4 right-4"
             )}
           >
             <video
