@@ -427,7 +427,19 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       pipSize, pipSizeMode, setPipSizeMode, isMuted,
       connectionStatus, remoteStream,
   } = useChat();
-  const activeCallId = useMemo(() => ongoingCall?.id || ongoingAudioCall?.id || (outgoingCall || outgoingAudioCall ? activeCallId : null), [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall, activeCallId]);
+
+  const activeCallId = useMemo(() => {
+    if (ongoingCall) return ongoingCall.id;
+    if (ongoingAudioCall) return ongoingAudioCall.id;
+    // During the outgoing phase, we get the ID from the `useChat` hook's state.
+    // This requires a bit of a workaround to get the session-stored ID.
+    if (outgoingCall || outgoingAudioCall) {
+        if (typeof window !== 'undefined') {
+            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
+        }
+    }
+    return null;
+  }, [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall]);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -475,12 +487,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
     if (isOutgoing && currentActiveCallId) {
         timeoutId = setTimeout(() => {
-            // Re-fetch the call status from the database to be absolutely sure.
             if (db && currentActiveCallId) {
                 getDoc(doc(db, 'calls', currentActiveCallId)).then(docSnap => {
-                    // Only mark as declined if the status is still 'ringing'.
-                    // This prevents the timeout from firing if the call was answered just before the 15s mark.
-                    if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
+                    const callIsOngoing = ongoingCall || ongoingAudioCall;
+                    if (!callIsOngoing && docSnap.exists() && docSnap.data()?.status === 'ringing') {
                         toast({
                             title: "Call Not Answered",
                             description: "The other user did not pick up.",
@@ -493,15 +503,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         }, 15000); // 15 seconds
     }
 
-    // Cleanup function: This is CRITICAL. It runs when the dependencies change.
-    // When `ongoingCall` or `ongoingAudioCall` get a value, this component re-renders,
-    // and this cleanup function from the *previous* render is executed, clearing the timeout.
     return () => {
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
     };
-  }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
+  }, [outgoingCall, outgoingAudioCall, activeCallId, toast, ongoingCall, ongoingAudioCall]);
 
 
   useEffect(() => {
@@ -850,6 +857,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-
     
+
