@@ -494,34 +494,35 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
     const isOutgoing = outgoingCall || outgoingAudioCall;
-    const currentActiveCallId = activeCallId;
 
-    if (isOutgoing && currentActiveCallId) {
+    if (isOutgoing && activeCallId) {
+        // Capture the activeCallId at the time the effect runs
+        const callIdForTimeout = activeCallId;
+        
         timeoutId = setTimeout(() => {
-            if (db && currentActiveCallId) {
-                // Check the call status right before cancelling
-                getDoc(doc(db, 'calls', currentActiveCallId)).then(docSnap => {
-                    // Only decline if the call is *still* ringing.
+            // Use the captured callIdForTimeout
+            if (db && callIdForTimeout) {
+                getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
+                    // Only decline if the call is *still* ringing when the timer fires.
                     if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
                         toast({
                             title: "Call Not Answered",
                             description: "The other user did not pick up.",
                             variant: "default"
                         });
-                        updateCallStatus(currentActiveCallId, 'declined');
+                        updateCallStatus(callIdForTimeout, 'declined');
                     }
                 });
             }
         }, 15000); // 15 seconds
     }
 
-    // The cleanup function for this effect
     return () => {
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
     };
-  }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
+}, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
 
 
   useEffect(() => {
@@ -870,6 +871,4 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-    
-
     
