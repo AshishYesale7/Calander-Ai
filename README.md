@@ -1,4 +1,6 @@
 
+[![wakatime](https://wakatime.com/badge/github/AshishYesale7/Calander-Ai.svg)](https://wakatime.com/badge/github/AshishYesale7/Calander-Ai)
+
 [![wakatime](https://wakatime.com/badge/github/AshishYesale7/Calendar.ai.svg)](https://wakatime.com/badge/github/AshishYesale7/Calendar.ai)
 
 # Calendar.ai: Your AI-Powered Career Calendar
