@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Video } from 'lucide-react';
@@ -15,24 +14,6 @@ interface IncomingCallNotificationProps {
 }
 
 export default function IncomingCallNotification({ call, onAccept, onDecline }: IncomingCallNotificationProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.loop = true;
-      audioRef.current.play().catch(error => {
-        console.warn("Audio playback failed:", error);
-      });
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, []);
-
   return (
     <motion.div
       drag
@@ -59,8 +40,6 @@ export default function IncomingCallNotification({ call, onAccept, onDecline }: 
           <Phone className="h-6 w-6" />
         </Button>
       </div>
-      {/* Audio element for the ringtone */}
-      <audio ref={audioRef} src="/assets/ringtone.mp3" preload="auto"></audio>
     </motion.div>
   );
 }

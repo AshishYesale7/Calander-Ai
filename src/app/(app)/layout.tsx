@@ -481,6 +481,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const ringtoneAudioRef = useRef<HTMLAudioElement>(null);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -647,6 +648,21 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
     return () => clearInterval(colorInterval);
   }, []);
+  
+  // Effect for playing ringtone on incoming call
+  useEffect(() => {
+    if (incomingCall || incomingAudioCall) {
+        ringtoneAudioRef.current?.play().catch(e => console.warn("Ringtone playback failed:", e));
+    } else {
+        ringtoneAudioRef.current?.pause();
+        if(ringtoneAudioRef.current) ringtoneAudioRef.current.currentTime = 0;
+    }
+    // Cleanup function to pause on component unmount or state change
+    return () => {
+        ringtoneAudioRef.current?.pause();
+        if(ringtoneAudioRef.current) ringtoneAudioRef.current.currentTime = 0;
+    }
+  }, [incomingCall, incomingAudioCall]);
   
   useEffect(() => {
     if (remoteStream && remoteAudioRef.current) {
@@ -842,8 +858,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             />
           </motion.div>
       )}
-
+      
+      {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+      <audio ref={ringtoneAudioRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
