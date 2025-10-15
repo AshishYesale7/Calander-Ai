@@ -269,7 +269,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     if (!currentUser || !otherUser) return;
     try {
         await deleteMessage(currentUser.uid, otherUser.uid, messageId, mode);
-        toast({ title: "Message Deleted" });
     } catch (error) {
         toast({ title: "Error", description: "Could not delete message.", variant: "destructive" });
     }

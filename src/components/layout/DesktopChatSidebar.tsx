@@ -105,7 +105,6 @@ const ChatListView = () => {
         if (!chatToDelete || !user) return;
 
         const chatPartnerId = chatToDelete.uid;
-        const chatPartnerName = chatToDelete.displayName;
         setChatToDelete(null); // Close dialog
 
         try {
@@ -113,11 +112,6 @@ const ChatListView = () => {
             
             const messageCacheKey = `chatMessages_${user.uid}_${chatPartnerId}`;
             localStorage.removeItem(messageCacheKey);
-            
-            toast({
-                title: "Chat History Cleared",
-                description: `Your conversation with ${chatPartnerName} has been cleared.`
-            });
 
         } catch (err) {
             toast({ title: "Error", description: "Failed to clear chat history.", variant: "destructive"});
@@ -329,7 +323,6 @@ const CallLogView = () => {
         // No optimistic update here to prevent freezes. Let the listener handle it.
         try {
             await deleteCalls(user.uid, idsToDelete);
-            toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
             setSelectedIds(new Set());
         } catch (error) {
             toast({ title: "Error", description: "Failed to delete call logs.", variant: "destructive" });

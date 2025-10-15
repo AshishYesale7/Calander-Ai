@@ -116,10 +116,6 @@ const ChatListView = () => {
             if (chattingWith?.uid === chatPartnerId) {
                 setChattingWith(null);
             }
-            toast({
-                title: "Chat History Cleared",
-                description: `Your conversation with ${chatPartnerName} has been cleared.`
-            });
         } catch (err) {
             toast({ title: "Error", description: "Failed to clear chat history.", variant: "destructive"});
         }
@@ -332,7 +328,6 @@ const CallLogView = () => {
         // No optimistic update here to prevent freezes. Let the listener handle it.
         try {
             await deleteCalls(user.uid, idsToDelete);
-            toast({ title: "Deleted", description: `${idsToDelete.length} call(s) removed from history.` });
             setSelectedIds(new Set());
         } catch (error) {
             toast({ title: "Error", description: "Failed to delete call logs.", variant: "destructive" });
