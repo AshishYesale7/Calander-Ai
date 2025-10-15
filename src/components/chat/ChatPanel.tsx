@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeToMessages, loadMessagesFromLocal } from '@/services/chatService';
+import { subscribeToMessages, loadMessagesFromLocal, subscribeToCallHistory } from '@/services/chatService';
 import { sendMessage, deleteMessage } from '@/actions/chatActions';
 import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -246,10 +246,21 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
         setMessages(newMessages);
     });
+    
+    // Now also subscribe to call history
+    const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
+      // Filter calls to only include ones with the other user
+      const relevantCalls = allCalls.filter(
+        c => c.callerId === otherUser.uid || c.receiverId === otherUser.uid
+      );
+      setCalls(relevantCalls);
+    });
+
     const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
 
     return () => {
       unsubMessages();
+      unsubCalls();
       unsubTyping();
     };
   }, [currentUser, otherUser]);
