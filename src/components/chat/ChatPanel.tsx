@@ -421,7 +421,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
             onFocus={() => setIsChatInputFocused(true)}
             onBlur={() => setIsChatInputFocused(false)}
             placeholder="Message..."
-            className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12"
+            className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12 focus-visible:ring-offset-0"
             autoComplete="off"
           />
            <div className="flex items-center gap-1">
