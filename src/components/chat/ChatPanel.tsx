@@ -405,5 +405,3 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     </>
   );
 }
-
-    
