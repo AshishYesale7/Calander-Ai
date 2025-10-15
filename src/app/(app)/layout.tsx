@@ -384,8 +384,21 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [localStream]);
 
     const pipSize = useMemo(() => {
-        return pipSizeMode === 'large' ? { maxWidth: 320, maxHeight: 240 } : { maxWidth: 256, maxHeight: 192 };
-    }, [pipSizeMode]);
+        const baseWidth = pipSizeMode === 'large' ? 320 : 256;
+        const baseHeight = pipSizeMode === 'large' ? 240 : 192;
+        if (remoteStream && remoteStream.getVideoTracks().length > 0) {
+            const settings = remoteStream.getVideoTracks()[0].getSettings();
+            if (settings.width && settings.height) {
+                const aspectRatio = settings.width / settings.height;
+                if (aspectRatio > 1) { // Landscape
+                    return { width: baseWidth, height: baseWidth / aspectRatio };
+                } else { // Portrait
+                    return { width: baseHeight * aspectRatio, height: baseHeight };
+                }
+            }
+        }
+        return { width: baseWidth, height: baseHeight }; // Fallback
+    }, [pipSizeMode, remoteStream]);
 
     const contextValue = {
         onInitiateCall,
@@ -803,7 +816,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                     ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
                     : "inset-0"
             )}
-            style={isPipMode ? { maxWidth: pipSize.maxWidth, maxHeight: pipSize.maxHeight } : {}}
+            style={isPipMode ? { maxWidth: pipSize.width, maxHeight: pipSize.height } : {}}
         >
             <VideoCallView 
                 call={ongoingCall!} 
