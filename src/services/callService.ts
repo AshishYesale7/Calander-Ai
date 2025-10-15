@@ -149,7 +149,7 @@ export async function deleteCalls(userId: string, callIds: string[]): Promise<vo
 export async function updateCallParticipantStatus(callId: string, userId: string, updates: { audioMuted?: boolean; videoMuted?: boolean }): Promise<void> {
   const callDocRef = getSharedCallDocRef(callId);
   const docSnap = await callDocRef.get();
-  if (!docSnap.exists()) return;
+  if (!docSnap.exists) return;
   const callData = docSnap.data();
   const isCaller = callData?.callerId === userId;
   
