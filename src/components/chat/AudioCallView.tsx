@@ -122,7 +122,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
                 </div>
             ) : (
                 <p className={cn(
-                  "text-sm text-green-400 transition-opacity duration-500",
+                  "text-sm text-green-400 transition-opacity duration-500 font-mono",
                   callDuration > 0 ? 'opacity-100' : 'opacity-0'
                 )}>
                   {formatDuration(callDuration)}

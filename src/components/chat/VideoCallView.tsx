@@ -32,6 +32,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [callData, setCallData] = useState<CallDataType>(call);
+  const [callDuration, setCallDuration] = useState(0);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -39,6 +40,15 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
   useEffect(() => {
     setCallData(call);
   }, [call]);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected') {
+      const timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [connectionStatus]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -124,6 +134,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         console.error("Error flipping camera:", error);
     }
 };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
   
   const isCurrentUserCaller = user?.uid === call.callerId;
   const otherUserMutedAudio = isCurrentUserCaller ? callData.receiverMutedAudio : callData.callerMutedAudio;
@@ -154,6 +170,12 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             {pipSizeMode === 'medium' ? <Maximize className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
           </Button>
         )}
+        
+        {connectionStatus === 'connected' && callDuration > 0 && (
+          <div className="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-full text-sm font-mono animate-in fade-in duration-300">
+            {formatDuration(callDuration)}
+          </div>
+        )}
 
         {connectionStatus === 'disconnected' && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
@@ -170,7 +192,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
               isPipMode
                 ? "rounded-md max-h-[7rem] max-w-[5.25rem] top-2 right-2"
-                : "rounded-lg max-h-[16rem] max-w-[12rem] top-4 right-4"
+                : "rounded-lg max-h-[14rem] max-w-[10.5rem] top-4 right-4"
             )}
           >
             <video
