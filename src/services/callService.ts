@@ -55,7 +55,7 @@ export async function createCall(callData: {
   const historyData = {
     ...callData,
     createdAt: Timestamp.now(),
-    timestamp: Timestamp.now(),
+    timestamp: Timestamp.now(), // Use timestamp for sorting recent chats/calls
   };
 
   // Add to caller's history
@@ -85,6 +85,9 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   const callDocSnap = await sharedCallDocRef.get();
   if (!callDocSnap.exists) {
     console.warn(`Signaling document ${callId} not found for status update, likely already cleaned up.`);
+    // Even if signaling doc is gone, try to update history
+    const userHistoryRef = getUserCallHistoryCollection(callId.split('_')[0]).doc(callId); // Fallback attempt
+    await userHistoryRef.set({ status }, { merge: true }).catch(() => {});
     return;
   }
   const callData = callDocSnap.data() as CallData;
@@ -95,7 +98,7 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
 
   const updateData: { status: CallStatus, endedAt?: Timestamp, duration?: number } = { status };
   
-  if (status === 'ended') {
+  if (status === 'ended' && callData.createdAt) {
       const now = Timestamp.now();
       const createTime = callData.createdAt instanceof Timestamp ? callData.createdAt : new Timestamp(callData.createdAt.seconds, callData.createdAt.nanoseconds);
       const duration = now.seconds - createTime.seconds;
@@ -116,12 +119,17 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
     const cleanupBatch = adminDb.batch();
     const callerCandidatesRef = sharedCallDocRef.collection('callerCandidates');
     const receiverCandidatesRef = sharedCallDocRef.collection('receiverCandidates');
+    
+    // Asynchronously get documents and add delete operations to the batch
     const callerCandidatesSnap = await callerCandidatesRef.get();
     callerCandidatesSnap.forEach(doc => cleanupBatch.delete(doc.ref));
+    
     const receiverCandidatesSnap = await receiverCandidatesRef.get();
     receiverCandidatesSnap.forEach(doc => cleanupBatch.delete(doc.ref));
+    
     await cleanupBatch.commit();
 
+    // Finally, delete the main temporary signaling document
     await sharedCallDocRef.delete().catch(err => console.error(`Failed to delete signaling doc ${callId}:`, err));
   }
 }
@@ -149,7 +157,7 @@ export async function deleteCalls(userId: string, callIds: string[]): Promise<vo
 export async function updateCallParticipantStatus(callId: string, userId: string, updates: { audioMuted?: boolean; videoMuted?: boolean }): Promise<void> {
   const callDocRef = getSharedCallDocRef(callId);
   const docSnap = await callDocRef.get();
-  if (!docSnap.exists) return;
+  if (!docSnap.exists) return; // Use the property here
   const callData = docSnap.data();
   const isCaller = callData?.callerId === userId;
   
