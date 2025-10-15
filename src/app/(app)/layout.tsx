@@ -102,7 +102,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
-    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('large');
+    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
     
     const [isMuted, setIsMuted] = useState(false);
 
@@ -290,7 +290,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-            if (!docSnap.exists || ['declined', 'ended'].includes(docSnap.data()?.status)) {
+            if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
                 endCall(activeCallId);
                 return;
             }
@@ -798,7 +798,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             dragMomentum={false}
             animate={pipControls}
             className={cn(
-                "fixed bg-black/50 backdrop-blur-sm z-[100] border border-white/20",
+                "fixed bg-black/50 backdrop-blur-md z-[100] border border-white/20",
                 isPipMode 
                     ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
                     : "inset-0"

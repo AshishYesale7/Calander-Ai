@@ -131,7 +131,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   return (
     <div className={cn("flex flex-col h-full text-white relative", isPipMode && "w-full h-full")}>
-      <div className="flex-1 bg-black/50 backdrop-blur-[2px] flex items-center justify-center relative overflow-hidden">
+      <div className="flex-1 bg-black/50 backdrop-blur-md flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-contain" autoPlay playsInline />
         
         {/* Remote User Mute Indicators */}
