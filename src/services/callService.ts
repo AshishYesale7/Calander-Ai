@@ -24,6 +24,7 @@ const getUserCallHistoryCollection = (userId: string) => {
  * Creates a call.
  * 1. Creates a temporary shared document in the top-level 'calls' collection for WebRTC signaling.
  * 2. Creates a permanent, separate copy of the call record in each participant's 'calls' subcollection.
+ * 3. Updates the 'lastMessage' field in the recent chats list for both users to reflect the call.
  */
 export async function createCall(callData: {
   callerId: string;
@@ -70,6 +71,19 @@ export async function createCall(callData: {
   const receiverHistoryRef = getUserCallHistoryCollection(callData.receiverId).doc(callId);
   batch.set(receiverHistoryRef, { ...historyData, otherUser: { uid: callerProfile.uid, displayName: callerProfile.displayName, photoURL: callerProfile.photoURL } });
   
+  // 3. Update the recent chats list for both users
+  const lastMessageText = `📞 ${callData.callType === 'video' ? 'Video call' : 'Audio call'}`;
+  const recentChatUpdate = {
+    lastMessage: lastMessageText,
+    timestamp: Timestamp.now(),
+  };
+
+  const recentChatSenderRef = adminDb.collection('users').doc(callData.callerId).collection('chats').doc(callData.receiverId);
+  batch.set(recentChatSenderRef, recentChatUpdate, { merge: true });
+
+  const recentChatReceiverRef = adminDb.collection('users').doc(callData.receiverId).collection('chats').doc(callData.callerId);
+  batch.set(recentChatReceiverRef, recentChatUpdate, { merge: true });
+
   batch.set(sharedCallDocRef, sharedCallData);
 
   await batch.commit();
