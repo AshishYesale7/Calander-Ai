@@ -1,4 +1,3 @@
-
 'use client';
 
 import './globals.css';
@@ -100,6 +99,36 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
       }
     };
   }, [isMounted]);
+
+  // Effect to register the Firebase messaging service worker
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      const firebaseConfig = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      };
+      
+      // Ensure all firebase config values are present before registering
+      if (Object.values(firebaseConfig).every(Boolean)) {
+        const queryParams = new URLSearchParams(firebaseConfig as Record<string, string>).toString();
+        const swUrl = `/firebase-messaging-sw.js?${queryParams}`;
+
+        navigator.serviceWorker.register(swUrl)
+          .then(registration => {
+            console.log('Firebase service worker registered with scope:', registration.scope);
+          })
+          .catch(err => {
+            console.error('Service worker registration failed:', err);
+          });
+      } else {
+        console.warn("Firebase configuration is incomplete. Service worker not registered.");
+      }
+    }
+  }, []);
 
   return <>{children}</>;
 }
