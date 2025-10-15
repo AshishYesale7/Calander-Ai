@@ -391,7 +391,7 @@ const CallLogView = () => {
                                 <h3 className="font-semibold text-sm truncate">{call.otherUser?.displayName}</h3>
                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     {getCallIcon(call)}
-                                    <span>{format(new Date(call.createdAt.seconds * 1000), 'p')}</span>
+                                    <span>{format(call.createdAt, 'p')}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -447,4 +447,5 @@ export default function DesktopChatSidebar() {
     
 
     
+
 
