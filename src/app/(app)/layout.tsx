@@ -80,6 +80,7 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
 
 function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
     const { user } = useAuth();
+    const { toast } = useToast();
     
     // State for video calls
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
@@ -102,7 +103,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
-    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('large');
+    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
     
     const [isMuted, setIsMuted] = useState(false);
 
@@ -165,6 +166,36 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [activeCallId, endCall]);
+
+    // This is the timeout for unanswered calls.
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        const isOutgoing = outgoingCall || outgoingAudioCall;
+
+        if (isOutgoing && activeCallId) {
+            const callIdForTimeout = activeCallId; // Capture the call ID when the effect runs
+            timeoutId = setTimeout(() => {
+                if (db) {
+                    getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
+                        if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
+                            toast({
+                                title: "Call Not Answered",
+                                description: "The other user did not pick up.",
+                                variant: "default"
+                            });
+                            updateCallStatus(callIdForTimeout, 'declined');
+                        }
+                    });
+                }
+            }, 10000); // 10 seconds
+        }
+
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
     
     // This effect initializes and cleans up the WebRTC connection for an ongoing call
     useEffect(() => {
@@ -490,36 +521,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     return () => { if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current) };
   }, [connectionStatus, endCall, toast]);
   
-  // This is the timeout for unanswered calls.
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    const isOutgoing = outgoingCall || outgoingAudioCall;
-    const callIdForTimeout = activeCallId;
-
-    if (isOutgoing && callIdForTimeout) {
-      timeoutId = setTimeout(() => {
-        if (db) {
-          getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
-            if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
-              toast({
-                title: "Call Not Answered",
-                description: "The other user did not pick up.",
-                variant: "default"
-              });
-              updateCallStatus(callIdForTimeout, 'declined');
-            }
-          });
-        }
-      }, 15000); // 15 seconds
-    }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
-
 
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
