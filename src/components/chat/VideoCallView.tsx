@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -130,7 +131,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
 
   return (
     <div className={cn("flex flex-col h-full text-white relative", isPipMode && "w-full h-full")}>
-      <div className="flex-1 bg-black/50 backdrop-blur-sm flex items-center justify-center relative overflow-hidden">
+      <div className="flex-1 bg-black/50 backdrop-blur-[2px] flex items-center justify-center relative overflow-hidden">
         <video ref={remoteVideoRef} className="w-full h-full object-contain" autoPlay playsInline />
         
         {/* Remote User Mute Indicators */}
@@ -169,7 +170,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
               isPipMode
                 ? "rounded-lg max-h-[5rem] max-w-[3.75rem] top-2 right-2"
-                : "rounded-md max-h-[12rem] max-w-[9rem] top-4 right-4"
+                : "rounded-md max-h-[14rem] max-w-[10.5rem] top-4 right-4"
             )}
           >
             <video
