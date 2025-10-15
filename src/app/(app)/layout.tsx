@@ -290,7 +290,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         const callDocRef = doc(db, 'calls', activeCallId);
         const unsubscribe = onSnapshot(callDocRef, async (docSnap) => {
-            if (!docSnap.exists() || ['declined', 'ended'].includes(docSnap.data()?.status)) {
+            if (!docSnap.exists || ['declined', 'ended'].includes(docSnap.data()?.status)) {
                 endCall(activeCallId);
                 return;
             }
@@ -384,7 +384,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [localStream]);
 
     const pipSize = useMemo(() => {
-        return pipSizeMode === 'large' ? { width: 320, height: 240 } : { width: 256, height: 192 };
+        return pipSizeMode === 'large' ? { maxWidth: 320, maxHeight: 240 } : { maxWidth: 256, maxHeight: 192 };
     }, [pipSizeMode]);
 
     const contextValue = {
@@ -456,8 +456,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const activeCallId = useMemo(() => {
     if (ongoingCall) return ongoingCall.id;
     if (ongoingAudioCall) return ongoingAudioCall.id;
-    // During the outgoing phase, we need to get the ID from session storage
-    // as the `ongoingCall` state isn't set yet.
     if (outgoingCall || outgoingAudioCall) {
         if (typeof window !== 'undefined') {
             return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
@@ -800,12 +798,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             dragMomentum={false}
             animate={pipControls}
             className={cn(
-                "fixed bg-black/50 backdrop-blur-xl z-[100] border border-white/20",
+                "fixed bg-black/50 backdrop-blur-sm z-[100] border border-white/20",
                 isPipMode 
                     ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
                     : "inset-0"
             )}
-            style={isPipMode ? { width: pipSize.width, height: pipSize.height } : {}}
+            style={isPipMode ? { maxWidth: pipSize.maxWidth, maxHeight: pipSize.maxHeight } : {}}
         >
             <VideoCallView 
                 call={ongoingCall!} 
@@ -860,5 +858,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   )
 }
     
-
-
