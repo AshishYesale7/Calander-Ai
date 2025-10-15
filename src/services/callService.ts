@@ -105,6 +105,10 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   
   batch.update(callerHistoryRef, updateData);
   batch.update(receiverHistoryRef, updateData);
+
+  // Also update the main signaling document so listeners can react
+  batch.update(sharedCallDocRef, { status });
+  
   await batch.commit();
 
   if (status === 'ended' || status === 'declined') {
