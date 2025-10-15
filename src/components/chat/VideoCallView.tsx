@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -170,7 +169,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
               isPipMode
                 ? "rounded-lg max-h-[5rem] max-w-[3.75rem] top-2 right-2"
-                : "rounded-md max-h-[10rem] max-w-[7.5rem] top-4 right-4"
+                : "rounded-md max-h-[12rem] max-w-[9rem] top-4 right-4"
             )}
           >
             <video
