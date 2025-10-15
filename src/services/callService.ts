@@ -108,6 +108,16 @@ export async function updateCallStatus(callId: string, status: CallStatus): Prom
   await batch.commit();
 
   if (status === 'ended' || status === 'declined') {
+    // Cleanup signaling collections first, then the main doc.
+    const cleanupBatch = adminDb.batch();
+    const callerCandidatesRef = sharedCallDocRef.collection('callerCandidates');
+    const receiverCandidatesRef = sharedCallDocRef.collection('receiverCandidates');
+    const callerCandidatesSnap = await callerCandidatesRef.get();
+    callerCandidatesSnap.forEach(doc => cleanupBatch.delete(doc.ref));
+    const receiverCandidatesSnap = await receiverCandidatesRef.get();
+    receiverCandidatesSnap.forEach(doc => cleanupBatch.delete(doc.ref));
+    await cleanupBatch.commit();
+
     await sharedCallDocRef.delete().catch(err => console.error(`Failed to delete signaling doc ${callId}:`, err));
   }
 }
@@ -135,7 +145,7 @@ export async function deleteCalls(userId: string, callIds: string[]): Promise<vo
 export async function updateCallParticipantStatus(callId: string, userId: string, updates: { audioMuted?: boolean; videoMuted?: boolean }): Promise<void> {
   const callDocRef = getSharedCallDocRef(callId);
   const docSnap = await callDocRef.get();
-  if (!docSnap.exists) return;
+  if (!docSnap.exists()) return;
   const callData = docSnap.data();
   const isCaller = callData?.callerId === userId;
   
