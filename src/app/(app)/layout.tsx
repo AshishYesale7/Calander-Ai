@@ -102,7 +102,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
-    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
+    const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('large');
     
     const [isMuted, setIsMuted] = useState(false);
 
@@ -140,10 +140,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream, remoteStream]);
     
-    const endCall = useCallback((callIdToUpdate?: string) => {
+    const endCall = useCallback((callIdToUpdate?: string, status: 'ended' | 'declined' = 'ended') => {
         const id = callIdToUpdate || activeCallId;
         if (id && typeof id === 'string') {
-            updateCallStatus(id, 'ended');
+            updateCallStatus(id, status);
         } else {
             console.warn("endCall invoked without a valid callId. Cleaning up local state only.");
         }
@@ -494,35 +494,31 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
     const isOutgoing = outgoingCall || outgoingAudioCall;
+    const callIdForTimeout = activeCallId;
 
-    if (isOutgoing && activeCallId) {
-        // Capture the activeCallId at the time the effect runs
-        const callIdForTimeout = activeCallId;
-        
-        timeoutId = setTimeout(() => {
-            // Use the captured callIdForTimeout
-            if (db && callIdForTimeout) {
-                getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
-                    // Only decline if the call is *still* ringing when the timer fires.
-                    if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
-                        toast({
-                            title: "Call Not Answered",
-                            description: "The other user did not pick up.",
-                            variant: "default"
-                        });
-                        updateCallStatus(callIdForTimeout, 'declined');
-                    }
-                });
+    if (isOutgoing && callIdForTimeout) {
+      timeoutId = setTimeout(() => {
+        if (db) {
+          getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
+            if (docSnap.exists() && docSnap.data()?.status === 'ringing') {
+              toast({
+                title: "Call Not Answered",
+                description: "The other user did not pick up.",
+                variant: "default"
+              });
+              updateCallStatus(callIdForTimeout, 'declined');
             }
-        }, 15000); // 15 seconds
+          });
+        }
+      }, 15000); // 15 seconds
     }
 
     return () => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-}, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
+  }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
 
 
   useEffect(() => {
@@ -802,9 +798,9 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       </AnimatePresence>
       
       {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
-      {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => updateCallStatus(activeCallId, 'declined')} />)}
+      {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
       {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
-      {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => updateCallStatus(activeCallId, 'declined')} />}
+      {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
       
       {isVideoCallActive && (
         <motion.div
