@@ -12,7 +12,7 @@ import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2 } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, CheckCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -29,6 +29,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import CallLogItem from './CallLogItem';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 interface ChatPanelProps {
@@ -42,31 +43,79 @@ const MessageItem = ({
   msg,
   isMe,
   isLastInBlock,
+  isSelected,
+  isInSelectionMode,
+  onStartSelection,
+  onToggleSelection,
   onDelete,
 }: {
   msg: ChatMessage;
   isMe: boolean;
   isLastInBlock: boolean;
+  isSelected: boolean;
+  isInSelectionMode: boolean;
+  onStartSelection: (messageId: string) => void;
+  onToggleSelection: (messageId: string) => void;
   onDelete: (messageId: string, mode: 'me' | 'everyone') => void;
 }) => {
   const { toast } = useToast();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(msg.text);
-    toast({ title: 'Copied to clipboard' });
+    if (msg.text) {
+      navigator.clipboard.writeText(msg.text);
+      toast({ title: 'Copied to clipboard' });
+    }
+  };
+
+  const handlePointerDown = () => {
+    // Start a timer. If held for 500ms, start selection mode.
+    longPressTimer.current = setTimeout(() => {
+        onStartSelection(msg.id);
+        longPressTimer.current = null; // Clear the timer
+    }, 500);
+  };
+  
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        // If the timer was cleared before it fired, it's a click.
+        if (isInSelectionMode) {
+            onToggleSelection(msg.id);
+        }
+    }
+  };
+
+  const handlePointerLeave = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
   };
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}>
+        <div
+            className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerLeave}
+        >
+          {isInSelectionMode && (
+            <div className="flex items-center justify-center h-full">
+              <div className={cn("h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all", isSelected ? "bg-blue-500 border-blue-400" : "border-gray-500")}>
+                {isSelected && <Check className="h-4 w-4 text-white" />}
+              </div>
+            </div>
+          )}
           <div
             className={cn(
-              'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1',
+              'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1 rounded-2xl transition-colors duration-200',
               isMe ? 'bg-blue-500 text-white' : 'bg-[#262626] text-white',
-              isMe
-                ? isLastInBlock ? 'rounded-t-2xl rounded-bl-2xl rounded-br-lg' : 'rounded-2xl'
-                : isLastInBlock ? 'rounded-t-2xl rounded-br-2xl rounded-bl-lg' : 'rounded-2xl'
+              isLastInBlock && (isMe ? 'rounded-br-lg' : 'rounded-bl-lg'),
+              isSelected && 'bg-blue-700/80'
             )}
           >
             {msg.isDeleted ? (
@@ -80,7 +129,7 @@ const MessageItem = ({
           </div>
         </div>
       </ContextMenuTrigger>
-      {!msg.isDeleted && (
+      {!msg.isDeleted && !isInSelectionMode && (
         <ContextMenuContent className="w-48">
           <ContextMenuItem onClick={handleCopy}>
             <Copy className="mr-2 h-4 w-4" />
@@ -147,6 +196,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // New state for multi-select
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const isInSelectionMode = selectedMessages.size > 0;
+
   const chatItems = useMemo(() => {
     return [...messages, ...calls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
   }, [messages, calls]);
@@ -159,6 +212,38 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const isAnyCallOutgoing = !!outgoingCall || !!outgoingAudioCall;
 
   const isCallButtonDisabled = isAnyCallOutgoing || (isAnyCallActive && !isCallActiveWithThisUser);
+
+  const handleStartSelection = (messageId: string) => {
+    setSelectedMessages(new Set([messageId]));
+  };
+
+  const handleToggleSelection = (messageId: string) => {
+    setSelectedMessages(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(messageId)) {
+            newSet.delete(messageId);
+        } else {
+            newSet.add(messageId);
+        }
+        return newSet;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!currentUser || !otherUser || selectedMessages.size === 0) return;
+    
+    // We only support "Delete for Me" for bulk actions
+    const deletePromises = Array.from(selectedMessages).map(id => deleteMessage(currentUser.uid, otherUser.uid, id, 'me'));
+    
+    try {
+      await Promise.all(deletePromises);
+      toast({ title: `${selectedMessages.size} message(s) deleted.` });
+    } catch (error) {
+      toast({ title: "Error", description: "Could not delete all selected messages.", variant: "destructive" });
+    } finally {
+      setSelectedMessages(new Set()); // Exit selection mode
+    }
+  };
 
 
   const handleInitiateVideoCall = async () => {
@@ -211,9 +296,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
         setMessages(newMessages);
     });
     
-    // Now also subscribe to call history
     const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
-      // Filter calls to only include ones with the other user
       const relevantCalls = allCalls.filter(
         c => c.callerId === otherUser.uid || c.receiverId === otherUser.uid
       );
@@ -240,12 +323,11 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
 
     const messageToSend = inputMessage;
     setInputMessage('');
-    playSendMessageSound(); // Play sound immediately for optimistic UI
+    playSendMessageSound();
 
     sendMessage(currentUser.uid, otherUser.uid, messageToSend)
       .catch(error => {
         console.error("Failed to send message:", error);
-        // Revert input field on error
         setInputMessage(messageToSend);
         toast({
           title: "Message Failed",
@@ -267,7 +349,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     
     typingTimeoutRef.current = setTimeout(() => {
       updateTypingStatus(currentUser.uid, otherUser.uid, false);
-    }, 1000); // Stop typing after 1 second of inactivity
+    }, 1000);
   };
 
 
@@ -288,36 +370,67 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     <>
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
       {/* Header */}
-      <header className={cn(
-        "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-black"
-      )}>
-        <div className="flex items-center gap-3">
-           <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
-              <ArrowLeft className="h-5 w-5" />
-           </Button>
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
-            <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
-            <p className="text-xs text-gray-400">@{otherUser.username}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 text-white">
-            <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
-                <Phone className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
-              <div className="relative">
-                <Video className="h-5 w-5" />
-                {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
-              </div>
-            </Button>
-            <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
-        </div>
-      </header>
+      <AnimatePresence initial={false}>
+      {isInSelectionMode ? (
+        <motion.header
+          key="selection-header"
+          initial={{ y: -56, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -56, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className={cn(
+            "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-blue-900/50"
+          )}>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
+                <X className="h-5 w-5 text-white" />
+              </Button>
+              <span className="font-semibold text-white">{selectedMessages.size} selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleBulkDelete}>
+                <Trash2 className="h-5 w-5 text-white" />
+              </Button>
+            </div>
+        </motion.header>
+      ) : (
+        <motion.header
+            key="default-header"
+            initial={{ y: 0, opacity: 1 }}
+            exit={{ y: -56, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className={cn(
+            "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-black"
+            )}>
+                <div className="flex items-center gap-3">
+                   <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
+                      <ArrowLeft className="h-5 w-5" />
+                   </Button>
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
+                    <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
+                    <p className="text-xs text-gray-400">@{otherUser.username}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-white">
+                    <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
+                        <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
+                      <div className="relative">
+                        <Video className="h-5 w-5" />
+                        {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
+                      </div>
+                    </Button>
+                    <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
+                </div>
+        </motion.header>
+      )}
+      </AnimatePresence>
 
       {/* Message Area */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
@@ -346,7 +459,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                       }
                       
                       const msg = item as ChatMessage;
-                      if (!msg.senderId) return null; // Defensive check
+                      if (!msg.senderId) return null;
                       
                       const isMe = msg.senderId === currentUser?.uid;
                       const nextItem = items[index + 1];
@@ -358,6 +471,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                             msg={msg}
                             isMe={isMe}
                             isLastInBlock={isLastInBlock}
+                            isSelected={selectedMessages.has(msg.id)}
+                            isInSelectionMode={isInSelectionMode}
+                            onStartSelection={handleStartSelection}
+                            onToggleSelection={handleToggleSelection}
                             onDelete={handleDelete}
                         />
                       )
