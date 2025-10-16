@@ -189,7 +189,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                         }
                     });
                 }
-            }, 10000); // 10 seconds
+            }, 15000); // 15 seconds
         }
 
         return () => {
@@ -301,20 +301,46 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
 
     useEffect(() => {
         if (!user || !db) return;
+    
         const q = query(collection(db, 'calls'), where("receiverId", "==", user.uid), where("status", "==", "ringing"));
+    
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const callDoc = snapshot.docs[0];
-                const callData = { id: callDoc.id, ...callDoc.data() } as CallData;
-                if (!activeCallId) { 
-                    if (callData.callType === 'video') setIncomingCall(callData);
-                    else setIncomingAudioCall(callData);
-                }
-            } else {
+            if (snapshot.empty) {
                 setIncomingCall(null);
                 setIncomingAudioCall(null);
+                return;
             }
+    
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const callData = { id: change.doc.id, ...change.doc.data() } as CallData;
+    
+                    if (!activeCallId) { 
+                        if (callData.callType === 'video') setIncomingCall(callData);
+                        else setIncomingAudioCall(callData);
+    
+                        // Set a timeout to automatically decline the call if not answered
+                        const timeoutId = setTimeout(() => {
+                            // Before declining, double-check the call status in Firestore
+                            const callDocRef = doc(db, 'calls', callData.id);
+                            getDoc(callDocRef).then(docSnap => {
+                                if (docSnap.exists() && docSnap.data().status === 'ringing') {
+                                    updateCallStatus(callData.id, 'declined');
+                                }
+                            });
+                        }, 15000); // 15-second timeout for ghost calls
+    
+                        // You might want to store this timeoutId to clear it if the user accepts/declines manually
+                    }
+                } else if (change.type === 'removed') {
+                    // Handle if the call document is removed (e.g., call is declined)
+                    const callId = change.doc.id;
+                    setIncomingCall(prev => (prev && prev.id === callId ? null : prev));
+                    setIncomingAudioCall(prev => (prev && prev.id === callId ? null : prev));
+                }
+            });
         });
+    
         return () => unsubscribe();
     }, [user, activeCallId]);
     
@@ -669,8 +695,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     };
 
     const stopSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
-        audioRef.current?.pause();
-        if(audioRef.current) audioRef.current.currentTime = 0;
+        if(audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
     };
 
     if (isIncoming) {
@@ -919,3 +947,4 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     
 
     
+

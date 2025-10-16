@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { adminDb } from '@/lib/firebase-admin';
@@ -40,9 +41,11 @@ export async function createCall(callData: {
   const sharedCallDocRef = getSharedCallDocRef(adminDb.collection('calls').doc().id);
   const callId = sharedCallDocRef.id;
   
+  const now = Timestamp.now();
   const sharedCallData = { 
       ...callData,
-      createdAt: Timestamp.now(),
+      createdAt: now,
+      ringingAt: now, // Add a timestamp for when ringing starts
       participantIds: [callData.callerId, callData.receiverId], 
   };
   
@@ -61,8 +64,8 @@ export async function createCall(callData: {
   const historyData = {
     ...callData,
     id: callId,
-    createdAt: Timestamp.now(),
-    timestamp: Timestamp.now(), 
+    createdAt: now,
+    timestamp: now,
   };
 
   const callerHistoryRef = getUserCallHistoryCollection(callData.callerId).doc(callId);
@@ -75,7 +78,7 @@ export async function createCall(callData: {
   const lastMessageText = `📞 ${callData.callType === 'video' ? 'Video call' : 'Audio call'}`;
   const recentChatUpdate = {
     lastMessage: lastMessageText,
-    timestamp: Timestamp.now(),
+    timestamp: now,
   };
 
   const recentChatSenderRef = adminDb.collection('users').doc(callData.callerId).collection('chats').doc(callData.receiverId);

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { LucideIcon } from 'lucide-react';
@@ -253,6 +254,7 @@ export interface CallData {
   status: CallStatus;
   callType: CallType; 
   createdAt: any;
+  ringingAt?: any; // Add ringingAt timestamp
   endedAt?: any;
   duration?: number; // in seconds
   offer?: RTCSessionDescriptionInit;
