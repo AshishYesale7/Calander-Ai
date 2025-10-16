@@ -12,7 +12,7 @@ import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, CheckCircle, Check } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, CheckCircle, Check, Circle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -98,14 +98,14 @@ const MessageItem = ({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-            className={cn('flex items-end gap-2', isMe ? 'justify-end' : 'justify-start')}
+            className={cn('flex items-center gap-2 group', isMe ? 'justify-end' : 'justify-start')}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerLeave}
         >
           {isInSelectionMode && (
-            <div className="flex items-center justify-center h-full">
-              <div className={cn("h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all", isSelected ? "bg-blue-500 border-blue-400" : "border-gray-500")}>
+            <div className="flex items-center justify-center h-full transition-opacity duration-200 opacity-100">
+              <div className={cn("h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all", isSelected ? "bg-blue-500 border-blue-400" : "border-gray-500 bg-gray-800/50")}>
                 {isSelected && <Check className="h-4 w-4 text-white" />}
               </div>
             </div>
@@ -134,6 +134,10 @@ const MessageItem = ({
           <ContextMenuItem onClick={handleCopy}>
             <Copy className="mr-2 h-4 w-4" />
             Copy
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => onStartSelection(msg.id)}>
+            <Circle className="mr-2 h-4 w-4" />
+            Select
           </ContextMenuItem>
           {isMe ? (
             <>
