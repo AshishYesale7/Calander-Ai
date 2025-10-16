@@ -47,7 +47,6 @@ const MessageItem = ({
   isInSelectionMode,
   onStartSelection,
   onToggleSelection,
-  onDelete,
 }: {
   msg: ChatMessage;
   isMe: boolean;
@@ -56,7 +55,6 @@ const MessageItem = ({
   isInSelectionMode: boolean;
   onStartSelection: (messageId: string) => void;
   onToggleSelection: (messageId: string) => void;
-  onDelete: (messageId: string, mode: 'me' | 'everyone') => void;
 }) => {
   const { toast } = useToast();
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -140,41 +138,15 @@ const MessageItem = ({
             <Circle className="mr-2 h-4 w-4" />
             Select
           </ContextMenuItem>
-          {isMe ? (
-            <>
-              <ContextMenuSeparator />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <ContextMenuItem className="text-red-500" onSelect={(e) => e.preventDefault()}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </ContextMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
-                    <AlertDialogHeader className="text-center">
-                        <AlertDialogTitle className="text-lg">Delete Message?</AlertDialogTitle>
-                    </AlertDialogHeader>
-                    <div className="flex flex-col gap-2 mt-2">
-                        <AlertDialogAction onClick={() => onDelete(msg.id, 'everyone')} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
-                            Delete for Everyone
-                        </AlertDialogAction>
-                        <AlertDialogAction onClick={() => onDelete(msg.id, 'me')} className="w-full justify-center">
-                            Delete for Me
-                        </AlertDialogAction>
-                        <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
-                    </div>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          ) : (
-            <>
-              <ContextMenuSeparator />
-              <ContextMenuItem className="text-red-500" onClick={() => onDelete(msg.id, 'me')}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete for Me
-              </ContextMenuItem>
-            </>
-          )}
+          <ContextMenuSeparator />
+          <ContextMenuItem className="text-red-500" onSelect={(e) => {
+              e.preventDefault();
+              // This is a placeholder for a more complex delete dialog
+              console.log("Delete action triggered");
+          }}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </ContextMenuItem>
         </ContextMenuContent>
       )}
     </ContextMenu>
@@ -204,6 +176,18 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   // New state for multi-select
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const isInSelectionMode = selectedMessages.size > 0;
+  
+  // New state to manage the delete dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const canDeleteForEveryone = useMemo(() => {
+    if (selectedMessages.size === 0) return false;
+    return Array.from(selectedMessages).every(id => {
+      const msg = messages.find(m => m.id === id);
+      return msg?.senderId === currentUser?.uid;
+    });
+  }, [selectedMessages, messages, currentUser]);
+
 
   const chatItems = useMemo(() => {
     return [...messages, ...calls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
@@ -234,11 +218,11 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     });
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = async (mode: 'me' | 'everyone') => {
     if (!currentUser || !otherUser || selectedMessages.size === 0) return;
     
     // We only support "Delete for Me" for bulk actions
-    const deletePromises = Array.from(selectedMessages).map(id => deleteMessage(currentUser.uid, otherUser.uid, id, 'me'));
+    const deletePromises = Array.from(selectedMessages).map(id => deleteMessage(currentUser.uid, otherUser.uid, id, mode));
     
     try {
       await Promise.all(deletePromises);
@@ -362,15 +346,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setChattingWith(null);
   };
 
-  const handleDelete = async (messageId: string, mode: 'me' | 'everyone') => {
-    if (!currentUser || !otherUser) return;
-    try {
-        await deleteMessage(currentUser.uid, otherUser.uid, messageId, mode);
-    } catch (error) {
-        toast({ title: "Error", description: "Could not delete message.", variant: "destructive" });
-    }
-  };
-  
   return (
     <>
     <div className="flex flex-col h-full bg-black border-l border-gray-800">
@@ -384,7 +359,8 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
           exit={{ y: -56, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className={cn(
-            "flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-800 h-14 z-10 sticky top-0 bg-blue-900/50"
+            "flex-shrink-0 flex items-center justify-between p-3 h-14 z-10 sticky top-0",
+            "bg-blue-900/50 backdrop-blur-md border-b border-blue-500/30"
           )}>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
@@ -393,9 +369,29 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
               <span className="font-semibold text-white">{selectedMessages.size} selected</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={handleBulkDelete}>
-                <Trash2 className="h-5 w-5 text-white" />
-              </Button>
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Trash2 className="h-5 w-5 text-white" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
+                        <AlertDialogHeader className="text-center">
+                            <AlertDialogTitle className="text-lg">Delete Message(s)?</AlertDialogTitle>
+                        </AlertDialogHeader>
+                        <div className="flex flex-col gap-2 mt-2">
+                            {canDeleteForEveryone && (
+                                <AlertDialogAction onClick={() => { handleBulkDelete('everyone'); setIsDeleteDialogOpen(false); }} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
+                                    Delete for Everyone
+                                </AlertDialogAction>
+                            )}
+                            <AlertDialogAction onClick={() => { handleBulkDelete('me'); setIsDeleteDialogOpen(false); }} className="w-full justify-center">
+                                Delete for Me ({selectedMessages.size})
+                            </AlertDialogAction>
+                            <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
+                        </div>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </motion.header>
       ) : (
@@ -480,7 +476,6 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
                             isInSelectionMode={isInSelectionMode}
                             onStartSelection={handleStartSelection}
                             onToggleSelection={handleToggleSelection}
-                            onDelete={handleDelete}
                         />
                       )
                     })}
