@@ -21,7 +21,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup, PhoneAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -83,12 +83,19 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   // New state for re-authentication flow
   const [actionToConfirm, setActionToConfirm] = useState<'delete' | 'format' | null>(null);
   const [isReauthenticating, setIsReauthenticating] = useState(false);
+  const [reauthStep, setReauthStep] = useState<'prompt' | 'otp' | 'verifying'>('prompt');
+  const [reauthPhone, setReauthPhone] = useState<string | undefined>('');
+  const [reauthOtp, setReauthOtp] = useState('');
+  
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
+  
+  const primaryProvider = user?.providerData[0]?.providerId;
 
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -102,6 +109,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (testIntervalRef.current) clearInterval(testIntervalRef.current);
+      const verifier = window.recaptchaVerifierSettings;
+      if (verifier) verifier.clear();
     };
   }, []);
 
@@ -142,6 +151,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
        setIsReauthenticating(false);
        setIsDeleteConfirmOpen(false);
        setIsFormatConfirmOpen(false);
+       setReauthStep('prompt');
+       setReauthOtp('');
 
     } else {
         setApiKeyInput(currentApiKey || '');
@@ -159,51 +170,37 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
             });
             checkNotionStatus(user.uid);
+            setReauthPhone(user.phoneNumber || '');
         }
     }
   }, [currentApiKey, isOpen, toast, user]);
+  
+  const setupRecaptcha = useCallback((containerRef: React.RefObject<HTMLDivElement>) => {
+    if (!auth || !containerRef.current) return null;
+    // Clear any previous verifier
+    const existingVerifier = (window as any)[`recaptchaVerifier_${containerRef.current.id}`];
+    if (existingVerifier) {
+      existingVerifier.clear();
+    }
+    const verifier = new RecaptchaVerifier(auth, containerRef.current, {
+      'size': 'invisible',
+      'callback': () => console.log('reCAPTCHA verified'),
+    });
+    (window as any)[`recaptchaVerifier_${containerRef.current.id}`] = verifier;
+    return verifier;
+  }, [auth]);
 
   useEffect(() => {
-    if (!isLinkingPhone || !recaptchaContainerRef.current) {
-      if(window.recaptchaVerifierSettings) {
-        window.recaptchaVerifierSettings.clear();
-        window.recaptchaVerifierSettings = undefined;
-        const container = recaptchaContainerRef.current;
-        if (container) container.innerHTML = '';
-      }
-      return;
+    if (!isLinkingPhone || !recaptchaContainerRef.current) return;
+    setupRecaptcha(recaptchaContainerRef);
+  }, [isLinkingPhone, setupRecaptcha]);
+  
+  useEffect(() => {
+    if (actionToConfirm && primaryProvider === 'phone' && reauthStep === 'prompt' && reauthRecaptchaContainerRef.current) {
+      setupRecaptcha(reauthRecaptchaContainerRef);
     }
-    
-    if (window.recaptchaVerifierSettings) return;
+  }, [actionToConfirm, primaryProvider, reauthStep, setupRecaptcha]);
 
-    if (!auth) {
-        toast({ title: 'Authentication Error', description: 'Firebase not initialized.', variant: 'destructive' });
-        return;
-    }
-    
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-        'size': 'invisible',
-        'callback': () => console.log('reCAPTCHA for settings verified'),
-        'expired-callback': () => {
-            toast({ title: 'reCAPTCHA Expired', description: 'Please try again.', variant: 'destructive' });
-            if(window.recaptchaVerifierSettings) {
-              window.recaptchaVerifierSettings.clear();
-              window.recaptchaVerifierSettings = undefined;
-            }
-            setLinkingPhoneState('input'); 
-        },
-    });
-    window.recaptchaVerifierSettings = verifier;
-    verifier.render().catch((e) => {
-        console.error("reCAPTCHA settings render error:", e);
-        if(window.recaptchaVerifierSettings) {
-          window.recaptchaVerifierSettings.clear();
-          window.recaptchaVerifierSettings = undefined;
-        }
-        setIsLinkingPhone(false);
-    });
-
-  }, [isLinkingPhone, auth, toast]);
 
   const handleApiKeySave = () => {
     const trimmedKey = apiKeyInput.trim();
@@ -318,7 +315,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   const handleSendLinkOtp = async () => {
       if (!user || !auth.currentUser) { return; }
-      const verifier = window.recaptchaVerifierSettings;
+      const verifier = (window as any)[`recaptchaVerifier_${recaptchaContainerRef.current?.id}`];
       const fullPhoneNumber = typeof phoneForLinking === 'string' ? phoneForLinking : '';
       
       if (!verifier) {
@@ -375,33 +372,36 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
-  const reauthenticateAndExecute = async (action: 'delete' | 'format') => {
+  const executeConfirmedAction = async () => {
+      if (!auth.currentUser) return;
+      
+      if (actionToConfirm === 'delete') {
+          await anonymizeUserAccount(auth.currentUser.uid);
+          toast({ title: 'Account Deletion Initiated', description: 'Your account is scheduled for deletion in 30 days.' });
+          await auth.signOut();
+          localStorage.clear();
+          window.location.href = '/'; 
+      } else if (actionToConfirm === 'format') {
+          setIsFormatting(true);
+          await formatUserData(auth.currentUser.uid);
+          Object.keys(localStorage).forEach(key => key.startsWith('futureSight') && localStorage.removeItem(key));
+          toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
+          setTimeout(() => window.location.reload(), 2000);
+      }
+      onOpenChange(false);
+  }
+
+  const reauthenticateAndExecute = async () => {
     if (!auth.currentUser) {
         toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
         return;
     }
-    
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-
     setIsReauthenticating(true);
     try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
         await reauthenticateWithPopup(auth.currentUser, provider);
-        
-        if (action === 'delete') {
-            await anonymizeUserAccount(auth.currentUser.uid);
-            toast({ title: 'Account Deletion Initiated', description: 'Your account has been scheduled for permanent deletion in 30 days.' });
-            await auth.signOut();
-            localStorage.clear();
-            window.location.href = '/'; 
-        } else if (action === 'format') {
-            setIsFormatting(true);
-            await formatUserData(auth.currentUser.uid);
-            Object.keys(localStorage).forEach(key => key.startsWith('futureSight') && localStorage.removeItem(key));
-            toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
-            setTimeout(() => window.location.reload(), 2000);
-        }
-        onOpenChange(false);
+        await executeConfirmedAction();
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
             toast({ title: "Cancelled", description: "You cancelled the confirmation process.", variant: 'default' });
@@ -411,8 +411,45 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         }
     } finally {
         setIsReauthenticating(false);
-        setIsFormatting(false);
         setActionToConfirm(null);
+    }
+  };
+  
+  const handleSendReauthOtp = async () => {
+    const verifier = (window as any)[`recaptchaVerifier_${reauthRecaptchaContainerRef.current?.id}`];
+    if (!verifier || !reauthPhone || !isValidPhoneNumber(reauthPhone)) {
+        toast({ title: 'Invalid Phone Number', variant: 'destructive'});
+        return;
+    }
+    setIsReauthenticating(true);
+    try {
+        const confirmationResult = await signInWithPhoneNumber(auth, reauthPhone, verifier);
+        window.confirmationResultSettings = confirmationResult;
+        setReauthStep('otp');
+    } catch (error: any) {
+        toast({ title: 'Error', description: 'Failed to send OTP for verification.', variant: 'destructive' });
+    } finally {
+        setIsReauthenticating(false);
+    }
+  };
+
+  const handleVerifyReauthOtp = async () => {
+    const confirmationResult = window.confirmationResultSettings;
+    if (!confirmationResult || !reauthOtp || reauthOtp.length !== 6) {
+        toast({ title: 'Invalid OTP', variant: 'destructive' });
+        return;
+    }
+    setIsReauthenticating(true);
+    try {
+        const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, reauthOtp);
+        if (auth.currentUser) {
+          await reauthenticateWithCredential(auth.currentUser, credential);
+          await executeConfirmedAction();
+        }
+    } catch (error: any) {
+        toast({ title: 'OTP Verification Failed', description: 'The code was incorrect. Please try again.', variant: 'destructive' });
+    } finally {
+        setIsReauthenticating(false);
     }
   };
   
@@ -854,16 +891,47 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                         For your security, please sign in again to confirm this action.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => reauthenticateAndExecute(actionToConfirm!)} disabled={isReauthenticating}>
-                        {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : null}
-                        Continue with Google
-                    </AlertDialogAction>
-                </AlertDialogFooter>
+                {primaryProvider === 'google.com' ? (
+                     <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={reauthenticateAndExecute} disabled={isReauthenticating}>
+                            {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : null}
+                            Continue with Google
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                ) : primaryProvider === 'phone' ? (
+                     <div className="space-y-4">
+                        {reauthStep === 'prompt' && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">An OTP will be sent to your registered phone number.</p>
+                                <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Send Verification Code
+                                </Button>
+                                <div id="reauth-recaptcha" ref={reauthRecaptchaContainerRef}></div>
+                            </div>
+                        )}
+                        {reauthStep === 'otp' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="reauth-otp">Enter OTP</Label>
+                                    <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
+                                </div>
+                                <Button onClick={handleVerifyReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Verify and Continue
+                                </Button>
+                            </div>
+                        )}
+                         <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
+                    </div>
+                ) : (
+                    <p className="text-sm text-destructive">Unsupported authentication provider for this action.</p>
+                )}
             </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
     </Dialog>
   );
 }
+```
