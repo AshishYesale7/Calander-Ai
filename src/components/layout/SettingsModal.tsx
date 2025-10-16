@@ -21,7 +21,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -87,6 +87,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
+  
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
@@ -104,8 +108,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
       }
     };
   }, []);
@@ -282,23 +287,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
   
   const setupRecaptcha = useCallback((containerId: string) => {
-    if (!auth) return null;
+    if (!auth || !document) return null;
     const container = document.getElementById(containerId);
     if (!container) {
       console.error(`reCAPTCHA container with id "${containerId}" not found.`);
       return null;
     }
-    // Use a unique verifier for each container to prevent conflicts
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
+    if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
     }
     const verifier = new RecaptchaVerifier(auth, container, {
         'size': 'invisible',
         'callback': () => console.log('reCAPTCHA verified')
     });
-    window.recaptchaVerifier = verifier;
+    recaptchaVerifierRef.current = verifier;
     return verifier;
-  }, []);
+  }, [auth]);
 
   const handleSendLinkOtp = async () => {
     if (!auth.currentUser) return;
@@ -398,15 +402,15 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     if (!auth || !user?.phoneNumber) return;
     setIsReauthenticating(true);
     try {
-        const verifier = setupRecaptcha('reauth-recaptcha-container');
-        if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
-        const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
-        window.confirmationResult = confirmationResult;
-        setReauthStep('otp');
+      const verifier = setupRecaptcha('reauth-recaptcha-container');
+      if (!verifier) throw new Error("Could not initialize reCAPTCHA for re-authentication.");
+      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
+      window.confirmationResult = confirmationResult;
+      setReauthStep('otp');
     } catch (error: any) {
-        toast({ title: 'Error', description: error.message || 'Failed to send OTP for verification.', variant: 'destructive' });
+      toast({ title: 'Error', description: error.message || 'Failed to send OTP for verification.', variant: 'destructive' });
     } finally {
-        setIsReauthenticating(false);
+      setIsReauthenticating(false);
     }
   };
 
@@ -841,7 +845,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                             
                             {isGoogleConnected && (
                                 <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
-                                {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
+                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
                                 Continue with Google
                                 </Button>
                             )}
@@ -887,3 +891,4 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 }
 
     
+
