@@ -94,8 +94,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -183,10 +181,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       return null;
     }
     
+    // Ensure existing verifier is cleared to prevent Firebase errors
     const existingVerifier = (window as any)[`recaptchaVerifier_${containerId}`];
     if (existingVerifier) {
       existingVerifier.clear();
     }
+
     const verifier = new RecaptchaVerifier(auth, container, {
       'size': 'invisible',
       'callback': () => console.log('reCAPTCHA verified'),
@@ -195,15 +195,17 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     return verifier;
   }, []);
 
+  // UseEffect for phone linking reCAPTCHA
   useEffect(() => {
     if (isOpen && isLinkingPhone && linkingPhoneState === 'input') {
-        const verifier = setupRecaptcha('recaptcha-container-settings');
-        if (verifier) {
-            (window as any).recaptchaVerifierSettings = verifier;
-        }
+      const verifier = setupRecaptcha('recaptcha-container-settings');
+      if (verifier) {
+          (window as any).recaptchaVerifierSettings = verifier;
+      }
     }
   }, [isOpen, isLinkingPhone, linkingPhoneState, setupRecaptcha]);
   
+  // UseEffect for re-authentication reCAPTCHA
   useEffect(() => {
     if (isOpen && actionToConfirm && !isGoogleConnected && reauthStep === 'prompt') {
       const verifier = setupRecaptcha('reauth-recaptcha-container');
@@ -451,13 +453,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         toast({ title: 'Invalid OTP', variant: 'destructive' });
         return;
     }
+    if (!auth.currentUser) return;
+    
     setIsReauthenticating(true);
     try {
         const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, reauthOtp);
-        if (auth.currentUser) {
-          await reauthenticateWithCredential(auth.currentUser, credential);
-          await executeConfirmedAction();
-        }
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await executeConfirmedAction();
     } catch (error: any) {
         toast({ title: 'OTP Verification Failed', description: 'The code was incorrect. Please try again.', variant: 'destructive' });
     } finally {
@@ -746,7 +748,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                         {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
                                         Send OTP
                                     </Button>
-                                    <div id="recaptcha-container-settings" ref={recaptchaContainerRef}></div>
+                                    <div id="recaptcha-container-settings"></div>
                                 </div>
                             )}
                             {(linkingPhoneState === 'otp-sent' || linkingPhoneState === 'loading') && (
@@ -949,7 +951,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-    
-
-    
