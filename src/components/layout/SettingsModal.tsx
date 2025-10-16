@@ -382,15 +382,15 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' }); // Ensure account selection
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     setIsReauthenticating(true);
     try {
         await reauthenticateWithPopup(auth.currentUser, provider);
-        // If re-authentication is successful, proceed with the action
+        
         if (action === 'delete') {
             await anonymizeUserAccount(auth.currentUser.uid);
-            toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
+            toast({ title: 'Account Deletion Initiated', description: 'Your account has been scheduled for permanent deletion in 30 days.' });
             await auth.signOut();
             localStorage.clear();
             window.location.href = '/'; 
@@ -403,8 +403,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         }
         onOpenChange(false);
     } catch (error: any) {
-        console.error("Re-authentication failed:", error);
-        toast({ title: 'Authentication Failed', description: 'Could not confirm your identity. Please try again.', variant: 'destructive' });
+        if (error.code === 'auth/popup-closed-by-user') {
+            toast({ title: "Cancelled", description: "You cancelled the confirmation process.", variant: 'default' });
+        } else {
+            console.error("Re-authentication failed:", error);
+            toast({ title: 'Authentication Failed', description: 'Could not confirm your identity. Please try again.', variant: 'destructive' });
+        }
     } finally {
         setIsReauthenticating(false);
         setIsFormatting(false);
