@@ -86,6 +86,7 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
 };
 
 export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const usernamesToSave: { [key: string]: string | undefined | null } = {};
@@ -102,6 +103,7 @@ export const saveCodingUsernames = async (userId: string, usernames: CodingUsern
 };
 
 export const getCodingUsernames = async (userId: string): Promise<CodingUsernames | null> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -117,6 +119,7 @@ export const getCodingUsernames = async (userId: string): Promise<CodingUsername
 
 
 export const saveUserGeminiApiKey = async (userId: string, apiKey: string | null): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { geminiApiKey: apiKey }, { merge: true });
@@ -127,6 +130,7 @@ export const saveUserGeminiApiKey = async (userId: string, apiKey: string | null
 };
 
 export const getUserGeminiApiKey = async (userId: string): Promise<string | null> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -141,6 +145,7 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
 };
 
 export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
@@ -195,6 +200,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
 
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -405,6 +411,7 @@ export const saveUserFCMToken = async (userId: string, token: string): Promise<v
 };
 
 export const saveInstalledPlugins = async (userId: string, pluginNames: string[]): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { installedPlugins: pluginNames }, { merge: true });
@@ -415,6 +422,7 @@ export const saveInstalledPlugins = async (userId: string, pluginNames: string[]
 };
 
 export const getInstalledPlugins = async (userId: string): Promise<string[] | null> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -432,6 +440,7 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
 };
 
 export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { preferences }, { merge: true });
@@ -442,6 +451,7 @@ export const saveUserPreferences = async (userId: string, preferences: Partial<U
 };
 
 export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
+    if (!db) throw new Error("Firestore is not initialized.");
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -456,6 +466,9 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
 };
 
 export async function anonymizeUserAccount(userId: string): Promise<void> {
+    if (!adminDb) {
+      throw new Error("Admin Firestore not initialized.");
+    }
     const userDocRef = doc(adminDb, 'users', userId);
     const privateDataRef = doc(collection(userDocRef, '_private'), 'profile');
     const deletionDate = addDays(new Date(), 30);
