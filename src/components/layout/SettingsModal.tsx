@@ -1,5 +1,4 @@
 
-      
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -22,7 +21,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup, PhoneAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -46,8 +45,8 @@ import { saveAs } from 'file-saver';
 
 declare global {
   interface Window {
-    recaptchaVerifierSettings?: RecaptchaVerifier;
-    confirmationResultSettings?: ConfirmationResult;
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: any;
   }
 }
 
@@ -81,7 +80,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFormatting, setIsFormatting] = useState(false);
   
-  // New state for re-authentication flow
   const [actionToConfirm, setActionToConfirm] = useState<'delete' | 'format' | null>(null);
   const [isReauthenticating, setIsReauthenticating] = useState(false);
   const [reauthStep, setReauthStep] = useState<'prompt' | 'otp' | 'verifying'>('prompt');
@@ -89,9 +87,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
-
-  // New ref for the re-auth recaptcha instance
-  const reauthRecaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
@@ -144,7 +139,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
        setPhoneForLinking(undefined);
        setOtpForLinking('');
        setIsSendingTest(false);
-       // Reset re-auth state
        setActionToConfirm(null);
        setIsReauthenticating(false);
        setIsDeleteConfirmOpen(false);
@@ -284,30 +278,43 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
 
+  const setupRecaptcha = (containerId: string) => {
+    if (!auth) return null;
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
+      return null;
+    }
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+    }
+    const verifier = new RecaptchaVerifier(auth, container, {
+        'size': 'invisible',
+        'callback': () => console.log('reCAPTCHA verified')
+    });
+    window.recaptchaVerifier = verifier;
+    return verifier;
+  };
+  
   const handleSendLinkOtp = async () => {
-      if (!auth.currentUser) { return; }
-      
-      const fullPhoneNumber = typeof phoneForLinking === 'string' ? phoneForLinking : '';
-      
-      if (!fullPhoneNumber || !isValidPhoneNumber(fullPhoneNumber)) {
-        toast({ title: 'Invalid Phone Number', description: "Please enter a valid phone number.", variant: 'destructive'});
-        return;
-      }
-      setLinkingPhoneState('loading');
-      try {
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-settings', {
-          'size': 'invisible',
-          'callback': () => {},
-        });
-        const confirmationResult = await linkWithPhoneNumber(auth.currentUser, fullPhoneNumber, verifier);
-        window.confirmationResultSettings = confirmationResult;
-        setLinkingPhoneState('otp-sent');
-        toast({ title: 'OTP Sent', description: 'Please check your phone for the verification code.'});
-      } catch (error: any) {
-        console.error("Phone link error:", error);
-        toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
-        setLinkingPhoneState('input');
-      }
+    if (!auth.currentUser) return;
+    if (!phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
+      toast({ title: 'Invalid Phone Number', description: 'Please enter a valid phone number.', variant: 'destructive' });
+      return;
+    }
+    setLinkingPhoneState('loading');
+    try {
+      const verifier = setupRecaptcha('recaptcha-container-settings');
+      if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
+      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
+      window.confirmationResult = confirmationResult;
+      setLinkingPhoneState('otp-sent');
+      toast({ title: 'OTP Sent', description: 'Check your phone for the verification code.' });
+    } catch (error: any) {
+      console.error("Phone link error:", error);
+      toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
+      setLinkingPhoneState('input');
+    }
   };
 
   const handleVerifyLinkOtp = async () => {
@@ -315,7 +322,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         toast({ title: 'Invalid OTP', description: 'Please enter the 6-digit OTP.', variant: 'destructive' });
         return;
     }
-    const confirmationResult = window.confirmationResultSettings;
+    const confirmationResult = window.confirmationResult;
     if (!confirmationResult) {
         toast({ title: 'Error', description: 'Verification expired. Please try again.', variant: 'destructive'});
         setLinkingPhoneState('input');
@@ -331,7 +338,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         if (error.code === 'auth/credential-already-in-use' || error.code === 'auth/account-exists-with-different-credential') {
             toast({
                 title: 'Account Exists With This Credential',
-                description: "This phone number is already linked to another account. Please use the sign-in method associated with that account.",
+                description: "This phone number is already linked to another account.",
                 variant: 'destructive',
                 duration: 9000
             });
@@ -363,10 +370,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   }
 
   const reauthenticateAndExecute = async () => {
-    if (!auth.currentUser) {
-        toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
-        return;
-    }
+    if (!auth.currentUser) return;
     setIsReauthenticating(true);
     try {
         const provider = new GoogleAuthProvider();
@@ -378,48 +382,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             toast({ title: "Cancelled", description: "You cancelled the confirmation process.", variant: 'default' });
         } else {
             console.error("Re-authentication failed:", error);
-            toast({ title: 'Authentication Failed', description: 'Could not confirm your identity. Please try again.', variant: 'destructive' });
+            toast({ title: 'Authentication Failed', description: 'Could not confirm your identity.', variant: 'destructive' });
         }
     } finally {
         setIsReauthenticating(false);
         setActionToConfirm(null);
     }
   };
-  
-  const setupRecaptcha = useCallback((containerId: string) => {
-    if (!auth) return null;
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
-      return null;
-    }
-    // Clear previous instance if it exists on the window to avoid conflicts
-    if (reauthRecaptchaVerifier.current) {
-        reauthRecaptchaVerifier.current.clear();
-    }
-    const verifier = new RecaptchaVerifier(auth, container, {
-        'size': 'invisible',
-        'callback': () => console.log('reCAPTCHA verified')
-    });
-    reauthRecaptchaVerifier.current = verifier;
-    return verifier;
-  }, [auth]);
-
 
   const handleSendReauthOtp = async () => {
-    if (!auth || !user?.phoneNumber || !isValidPhoneNumber(user.phoneNumber)) {
-        toast({ title: 'Invalid Phone Number', variant: 'destructive' });
-        return;
-    }
+    if (!auth || !user?.phoneNumber) return;
     setIsReauthenticating(true);
     try {
         const verifier = setupRecaptcha('reauth-recaptcha-container');
-        if (!verifier) {
-            throw new Error("Could not create reCAPTCHA verifier.");
-        }
-        
+        if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
         const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
-        window.confirmationResultSettings = confirmationResult;
+        window.confirmationResult = confirmationResult;
         setReauthStep('otp');
     } catch (error: any) {
         toast({ title: 'Error', description: 'Failed to send OTP for verification.', variant: 'destructive' });
@@ -428,14 +406,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
-
   const handleVerifyReauthOtp = async () => {
-    const confirmationResult = window.confirmationResultSettings;
-    if (!confirmationResult || !reauthOtp || reauthOtp.length !== 6) {
-        toast({ title: 'Invalid OTP', variant: 'destructive' });
-        return;
-    }
-    if (!auth.currentUser) return;
+    const confirmationResult = window.confirmationResult;
+    if (!confirmationResult || !reauthOtp || reauthOtp.length !== 6 || !auth.currentUser) return;
     
     setIsReauthenticating(true);
     try {
@@ -443,7 +416,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         await reauthenticateWithCredential(auth.currentUser, credential);
         await executeConfirmedAction();
     } catch (error: any) {
-        toast({ title: 'OTP Verification Failed', description: 'The code was incorrect. Please try again.', variant: 'destructive' });
+        toast({ title: 'OTP Verification Failed', description: 'The code was incorrect.', variant: 'destructive' });
     } finally {
         setIsReauthenticating(false);
     }
@@ -459,73 +432,47 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     setActionToConfirm('format');
   };
 
-
   const handleRequestNotificationPermission = async () => {
     if (!messaging || !user) {
-      toast({ title: 'Error', description: 'Push notifications are not supported on this browser or you are not signed in.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Push notifications not supported or not signed in.', variant: 'destructive' });
       return;
     }
     try {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
-
       if (permission === 'granted') {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-        if (!vapidKey) {
-            console.error("VAPID key is missing.");
-            toast({ title: 'Configuration Error', description: 'Push notification setup is incomplete on the server.', variant: 'destructive' });
-            return;
-        }
+        if (!vapidKey) throw new Error("VAPID key is missing.");
         const fcmToken = await getToken(messaging, { vapidKey });
         if (fcmToken) {
             await saveUserFCMToken(user.uid, fcmToken);
-            toast({ title: 'Success', description: 'Push notifications have been enabled!' });
-        } else {
-            throw new Error("Could not retrieve notification token.");
-        }
+            toast({ title: 'Success', description: 'Push notifications enabled!' });
+        } else { throw new Error("Could not retrieve token."); }
       } else {
-        toast({ title: 'Notifications Denied', description: 'You can enable notifications from your browser settings later.', variant: 'destructive' });
+        toast({ title: 'Notifications Denied', variant: 'default' });
       }
     } catch (error) {
-      console.error('Error getting notification permission or token:', error);
       toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
     }
   };
 
   const handleSendTestNotification = async () => {
-    if (!user) {
-      toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
-      return;
-    }
-
+    if (!user) return;
     if (isSendingTest) {
-      if (testIntervalRef.current) {
-        clearInterval(testIntervalRef.current);
-        testIntervalRef.current = null;
-      }
+      if (testIntervalRef.current) clearInterval(testIntervalRef.current);
       setIsSendingTest(false);
-      toast({ title: 'Test Stopped', description: 'Stopped sending test notifications.' });
+      toast({ title: 'Test Stopped' });
     } else {
       setIsSendingTest(true);
-      toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds. Switch tabs to see them.' });
-      await createNotification({
-        userId: user.uid,
-        type: 'system_alert',
-        message: `Test Notification - ${new Date().toLocaleTimeString()}`,
-        link: '/dashboard'
-      });
+      toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds.' });
+      await createNotification({ userId: user.uid, type: 'system_alert', message: `Test - ${new Date().toLocaleTimeString()}`, link: '/dashboard' });
       testIntervalRef.current = setInterval(async () => {
         if (!user) {
             if (testIntervalRef.current) clearInterval(testIntervalRef.current);
             setIsSendingTest(false);
             return;
         }
-        await createNotification({
-            userId: user.uid,
-            type: 'system_alert',
-            message: `Test Notification - ${new Date().toLocaleTimeString()}`,
-            link: '/dashboard'
-        });
+        await createNotification({ userId: user.uid, type: 'system_alert', message: `Test - ${new Date().toLocaleTimeString()}`, link: '/dashboard' });
       }, 5000);
     }
   };
@@ -533,46 +480,41 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const handleExportData = async () => {
     if (!user) return;
     setIsExporting(true);
-    toast({ title: 'Exporting...', description: 'Gathering your data. This may take a moment.' });
+    toast({ title: 'Exporting...', description: 'Gathering your data.' });
     try {
         const data = await exportUserData(user.uid);
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
         saveAs(blob, `futuresight-backup-${new Date().toISOString().split('T')[0]}.json`);
-        toast({ title: 'Export Complete', description: 'Your data has been downloaded.' });
+        toast({ title: 'Export Complete' });
     } catch (error) {
-        console.error("Export error:", error);
-        toast({ title: 'Export Failed', description: 'Could not export your data.', variant: 'destructive' });
+        toast({ title: 'Export Failed', variant: 'destructive' });
     } finally {
         setIsExporting(false);
     }
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
-
     setIsImporting(true);
-    toast({ title: 'Importing...', description: 'Reading and parsing your data file.' });
-
+    toast({ title: 'Importing...', description: 'Parsing your data file.' });
     const reader = new FileReader();
     reader.onload = async (e) => {
         const content = e.target?.result as string;
         if (!content) {
-            toast({ title: 'Error', description: 'Could not read file content.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'Could not read file.', variant: 'destructive' });
             setIsImporting(false);
             return;
         }
         try {
             const dataToImport = JSON.parse(content);
             await importUserData(user.uid, dataToImport);
-            toast({ title: 'Import Successful', description: 'Your data has been imported. The app will now reload.' });
+            toast({ title: 'Import Successful', description: 'Data imported. Reloading...' });
             setTimeout(() => window.location.reload(), 2000);
         } catch (error: any) {
-            toast({ title: 'Import Failed', description: `Invalid file or data format. ${error.message}`, variant: 'destructive' });
+            toast({ title: 'Import Failed', description: `Invalid file format. ${error.message}`, variant: 'destructive' });
         } finally {
             setIsImporting(false);
             if (event.target) event.target.value = '';
@@ -645,7 +587,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 {isGoogleConnected === null ? (
                     <div className="flex items-center space-x-2 h-10">
                         <LoadingSpinner size="sm" />
-                        <span className="text-sm text-muted-foreground">Checking connection status...</span>
+                        <span className="text-sm text-muted-foreground">Checking status...</span>
                     </div>
                 ) : isGoogleConnected ? (
                     <div className="flex items-center justify-between h-10">
@@ -659,7 +601,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 ) : (
                     <Button onClick={handleConnectGoogle} variant="outline" className="w-full" disabled={isPolling}>
                         {isPolling ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
-                        {isPolling ? 'Waiting for connection...' : 'Connect with Google'}
+                        {isPolling ? 'Waiting...' : 'Connect with Google'}
                     </Button>
                 )}
             </div>
@@ -676,7 +618,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 {isNotionConnected === null ? (
                     <div className="flex items-center space-x-2 h-10">
                         <LoadingSpinner size="sm" />
-                        <span className="text-sm text-muted-foreground">Checking connection status...</span>
+                        <span className="text-sm text-muted-foreground">Checking status...</span>
                     </div>
                 ) : isNotionConnected ? (
                     <div className="flex items-center justify-between h-10">
@@ -769,7 +711,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <KeyRound className="mr-2 h-4 w-4" /> Custom API Key
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                    Optionally provide your own Google Gemini API key. Your key is saved securely to your account. If empty, a shared key is used.
+                    Optionally provide your own Google Gemini API key. Your key is saved securely to your account.
                 </p>
                 <div className="space-y-2">
                     <Label htmlFor="geminiApiKey" className="text-sm font-medium">Your Gemini API Key</Label>
@@ -833,7 +775,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <AlertDialogHeader>
                       <AlertDialogTitle>Format all account data?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete all your goals, skills, custom events, and other content. Your account and subscription will NOT be deleted. This action cannot be undone.
+                        This will permanently delete all your goals, skills, custom events, and other content. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -858,7 +800,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete your account and all associated data. You cannot undo this action.
+                        This will permanently delete your account and all associated data. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -878,7 +820,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
         
-        {/* Re-authentication Dialog */}
         <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => !open && setActionToConfirm(null)}>
             <AlertDialogContent className="frosted-glass">
                 <AlertDialogHeader>
@@ -888,23 +829,29 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-4">
-                    {hasGoogleProvider && (
-                        <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating && reauthStep !== 'otp'} className="w-full">
-                          {isReauthenticating && reauthStep !== 'otp' ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
-                          Continue with Google
-                        </Button>
-                    )}
-                    {hasPhoneProvider && reauthStep === 'prompt' && (
+                    {reauthStep === 'prompt' && (
                         <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground text-center">An OTP will be sent to your registered phone number ({user?.phoneNumber}).</p>
-                          <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
-                            {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                            Send Verification Code
-                          </Button>
+                            {!hasGoogleProvider && !hasPhoneProvider && (
+                                <p className="text-sm text-destructive">No verifiable sign-in methods found. Please link a Google account or phone number.</p>
+                            )}
+                            {hasGoogleProvider && (
+                                <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
+                                {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
+                                Continue with Google
+                                </Button>
+                            )}
+                            {hasGoogleProvider && hasPhoneProvider && <Separator />}
+                            {hasPhoneProvider && (
+                                <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                Send Verification Code
+                                </Button>
+                            )}
                         </div>
                     )}
                     {reauthStep === 'otp' && (
                         <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground text-center">An OTP has been sent to your registered phone number ({user?.phoneNumber}).</p>
                             <div className="space-y-2">
                                 <Label htmlFor="reauth-otp">Enter OTP</Label>
                                 <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
@@ -914,9 +861,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                 Verify and Continue
                             </Button>
                         </div>
-                    )}
-                    {(!hasGoogleProvider && !hasPhoneProvider) && (
-                      <p className="text-sm text-destructive">No verifiable sign-in methods found.</p>
                     )}
                 </div>
                  <AlertDialogFooter>
