@@ -118,6 +118,8 @@ export default function SignInForm() {
     provider.addScope('https://www.googleapis.com/auth/calendar.events');
     provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
     provider.addScope('https://www.googleapis.com/auth/tasks');
+    // Force account selection every time.
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
         if (!auth) throw new Error("Firebase Auth is not initialized.");
