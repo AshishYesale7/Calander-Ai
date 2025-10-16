@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -12,7 +11,7 @@ import Header from '@/components/layout/Header'; // For mobile header
 import { TodaysPlanModal } from '@/components/timeline/TodaysPlanModal';
 import { Preloader } from '@/components/ui/Preloader';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-import { Command, MessageSquare } from 'lucide-react';
+import { Command, MessageSquare, CheckCircle } from 'lucide-react';
 import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
@@ -30,7 +29,7 @@ import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
-import { saveUserFCMToken } from '@/services/userService';
+import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { ChatProvider, useChat } from '@/context/ChatContext';
@@ -51,6 +50,9 @@ import OutgoingAudioCall from '@/components/chat/OutgoingAudioCall';
 import AudioCallView from '@/components/chat/AudioCallView';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
 import PermissionRequestModal from '@/components/chat/PermissionRequestModal';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -619,6 +621,73 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     );
 }
 
+function ReclamationModal() {
+    const { user, refreshUser } = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed' | 'canceled'>('prompt');
+
+    useEffect(() => {
+        if (reclaimState === 'confirmed') {
+            const timer = setTimeout(() => {
+                refreshUser(); // This will re-fetch user data and remove the deletionStatus flag
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [reclaimState, refreshUser]);
+
+    const handleReclaim = async () => {
+        if (!user) return;
+        try {
+            await reclaimUserAccount(user.uid);
+            setReclaimState('confirmed');
+        } catch (error: any) {
+            toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
+        }
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            router.push('/');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    return (
+        <AlertDialog open={true}>
+            <AlertDialogContent className="frosted-glass">
+                <AnimatePresence mode="wait">
+                    {reclaimState === 'prompt' && (
+                        <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This account is scheduled for deletion. You can reclaim your account and all its data now, or cancel to proceed with deletion.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel onClick={handleSignOut}>Cancel Deletion</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReclaim}>Reclaim My Account</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </motion.div>
+                    )}
+                    {reclaimState === 'confirmed' && (
+                        <motion.div key="confirmed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center p-4">
+                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                            <AlertDialogTitle>Welcome Back!</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Your account has been restored. Reloading your dashboard...
+                            </AlertDialogDescription>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   const { 
@@ -656,6 +725,8 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   
   const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   const isChatPanelVisible = !!chattingWith;
+  const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
+
 
   const activeCallId = useMemo(() => {
     if (ongoingCall) return ongoingCall.id;
@@ -689,12 +760,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
+    if (loading) return;
+
+    if (!user) {
         router.push('/auth/signin');
-      } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
+    } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
         router.push('/subscription');
-      }
     }
   }, [user, loading, isSubscribed, router, pathname]);
   
@@ -854,7 +925,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
 
   return (
-    <div className={cn('relative z-0 flex h-screen w-full overflow-hidden')}>
+    <>
+    {isPendingDeletion && <ReclamationModal />}
+    <div className={cn(
+        'relative z-0 flex h-screen w-full overflow-hidden',
+        isPendingDeletion && 'pointer-events-none blur-sm'
+    )}>
       <OfflineIndicator />
       <div className={cn(isMobileChatFocus ? 'hidden' : 'contents')}>
         <SidebarNav {...modalProps} />
@@ -1008,6 +1084,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
       <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
     </div>
+    </>
   );
 }
 

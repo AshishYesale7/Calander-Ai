@@ -1,7 +1,7 @@
 
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, linkWithPopup, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, fetchSignInMethodsForEmail } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -21,22 +21,13 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, Smartphone, Mail, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Smartphone, Mail } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { getUserProfile, reclaimUserAccount } from '@/services/userService';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/alert-dialog';
 
 
 const formSchema = z.object({
@@ -46,7 +37,6 @@ const formSchema = z.object({
 
 declare global {
   interface Window {
-    // This is now only used to hold the confirmation result, not the verifier.
     confirmationResult?: ConfirmationResult;
   }
 }
@@ -61,7 +51,6 @@ export default function SignInForm() {
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
-  const [isLinking, setIsLinking] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -120,7 +109,6 @@ export default function SignInForm() {
     try {
         if (!auth) throw new Error("Firebase Auth is not initialized.");
         await signInWithPopup(auth, provider);
-        // The main layout will handle redirection and reclamation checks.
         toast({ title: 'Success!', description: 'Signed in with Google successfully.' });
         router.push('/dashboard');
 
@@ -164,18 +152,10 @@ export default function SignInForm() {
         }
       });
       
-      let confirmationResult: ConfirmationResult;
-      if (auth.currentUser) {
-          setIsLinking(true);
-          confirmationResult = await linkWithPhoneNumber(auth.currentUser, fullPhoneNumber, verifier);
-          toast({ title: 'OTP Sent', description: 'Check your phone to link your number.' });
-      } else {
-          setIsLinking(false);
-          confirmationResult = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
-          toast({ title: 'OTP Sent', description: 'Please check your phone for the verification code.' });
-      }
+      const confirmationResult = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
       window.confirmationResult = confirmationResult;
       setShowOtpInput(true);
+      toast({ title: 'OTP Sent', description: 'Please check your phone for the verification code.' });
 
     } catch (error: any) {
       if (error.code === 'auth/billing-not-enabled') {
@@ -212,13 +192,7 @@ export default function SignInForm() {
           throw new Error("No confirmation result found. Please send OTP again.");
       }
       await window.confirmationResult.confirm(otp);
-      
-      if (isLinking) {
-         toast({ title: 'Success', description: 'Phone number linked successfully.' });
-      } else {
-         toast({ title: 'Success', description: 'Signed in successfully.' });
-      }
-
+      toast({ title: 'Success', description: 'Signed in successfully.' });
       router.push('/dashboard');
     } catch (error: any) {
        if (error.code === 'auth/invalid-verification-code') {
@@ -394,5 +368,3 @@ export default function SignInForm() {
     </>
   );
 }
-
-    

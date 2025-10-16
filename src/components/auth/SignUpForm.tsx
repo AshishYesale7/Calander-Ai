@@ -21,22 +21,14 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, Smartphone, Mail, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Smartphone, Mail } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { createUserProfile, getUserProfile, reclaimUserAccount } from '@/services/userService';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/alert-dialog';
+import { createUserProfile } from '@/services/userService';
 
 
 const formSchema = z.object({
@@ -406,5 +398,3 @@ export default function SignUpForm() {
     </>
   );
 }
-
-    
