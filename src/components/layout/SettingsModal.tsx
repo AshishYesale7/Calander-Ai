@@ -365,26 +365,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   const handleDeleteAccount = async () => {
     if (!user) {
-        toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
-        return;
+      toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
+      return;
     }
-    
     try {
-        await anonymizeUserAccount(user.uid);
-        toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
-        // The user's auth account is disabled, so we should sign them out on the client.
-        await auth.signOut();
-        // Clear all local storage to prevent stale data for next user
-        localStorage.clear();
-        // Force a full redirect to the sign-in page to reset all app state
-        window.location.href = '/auth/signin';
+      await anonymizeUserAccount(user.uid);
+      toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
+      await auth.signOut();
+      localStorage.clear();
+      window.location.href = '/'; // Redirect to landing page
     } catch (error: any) {
-        console.error("Account deletion error:", error);
-        toast({
-            title: 'Error',
-            description: 'Failed to delete account. Please try again.',
-            variant: 'destructive',
-        });
+      console.error("Account deletion error:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete account. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
