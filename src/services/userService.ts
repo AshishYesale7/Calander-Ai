@@ -24,6 +24,9 @@ const getUserDocRef = (userId: string) => {
 };
 
 export const createUserProfile = async (user: User): Promise<UserProfile> => {
+    if (!db) {
+        throw new Error("Firestore is not initialized.");
+    }
     const userDocRef = getUserDocRef(user.uid);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -469,18 +472,17 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     if (!adminDb) {
       throw new Error("Admin Firestore not initialized.");
     }
-    const userDocRef = doc(adminDb, 'users', userId);
-    const privateDataRef = doc(collection(userDocRef, '_private'), 'profile');
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const privateDataRef = userDocRef.collection('_private').doc('profile');
     const deletionDate = addDays(new Date(), 30);
 
-    const docSnap = await getDoc(userDocRef);
-    if (!docSnap.exists()) {
+    const docSnap = await userDocRef.get();
+    if (!docSnap.exists) {
         throw new Error("User profile not found to anonymize.");
     }
-    const currentData = docSnap.data();
+    const currentData = docSnap.data()!;
 
-    // Store original info for potential recovery, but NOT the username
-    await setDoc(privateDataRef, {
+    await privateDataRef.set({
         originalDisplayName: currentData.displayName,
     });
 
@@ -491,14 +493,13 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
         bio: 'This account is pending deletion.',
         socials: {},
         statusEmoji: null,
-        searchableIndex: [], // Clear searchable index
+        searchableIndex: [],
         geminiApiKey: null,
-        // The username is intentionally NOT changed.
         deletionStatus: 'PENDING_DELETION',
         deletionScheduledAt: Timestamp.fromDate(deletionDate),
     };
 
-    await updateDoc(userDocRef, anonymizedData);
+    await userDocRef.update(anonymizedData);
 
     try {
         const { getAuth } = await import('firebase-admin/auth');
@@ -510,38 +511,36 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
 
 export async function reclaimUserAccount(userId: string): Promise<void> {
     if (!adminDb) throw new Error("Admin Firestore not initialized.");
-    const userDocRef = doc(adminDb, 'users', userId);
-    const privateDataRef = doc(collection(userDocRef, '_private'), 'profile');
+    
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const privateDataRef = userDocRef.collection('_private').doc('profile');
 
-    const privateDocSnap = await getDoc(privateDataRef);
-    if (!privateDocSnap.exists()) {
+    const privateDocSnap = await privateDataRef.get();
+    if (!privateDocSnap.exists) {
         throw new Error("Cannot reclaim account: Private recovery data not found.");
     }
-    const originalData = privateDocSnap.data();
+    const originalData = privateDocSnap.data()!;
     
-    // Fetch the current (anonymized) data to get the preserved username
-    const userDocSnap = await getDoc(userDocRef);
-    if (!userDocSnap.exists()) {
+    const userDocSnap = await userDocRef.get();
+    if (!userDocSnap.exists) {
         throw new Error("User document does not exist for reclamation.");
     }
-    const currentUserData = userDocSnap.data();
+    const currentUserData = userDocSnap.data()!;
 
     const restoredData: any = {
         displayName: originalData.originalDisplayName,
         deletionStatus: 'reclaimed',
-        deletionScheduledAt: deleteField(),
+        deletionScheduledAt: adminDb.FieldValue.delete(),
     };
     
-    // Re-create the searchable index
     const indexSet = new Set<string>();
     if (originalData.originalDisplayName) indexSet.add(originalData.originalDisplayName.toLowerCase());
-    if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase()); // Use the preserved username
+    if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase());
     restoredData.searchableIndex = Array.from(indexSet);
 
-    await updateDoc(userDocRef, restoredData);
+    await userDocRef.update(restoredData);
 
-    // Delete the private recovery data
-    await deleteDoc(privateDataRef);
+    await privateDataRef.delete();
 
     try {
         const { getAuth } = await import('firebase-admin/auth');
@@ -563,39 +562,44 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         'timelineEvents', 'trackedKeywords', 'followers', 'following', '_private'
     ];
 
-    // 1. Delete all documents in subcollections
     for (const collectionName of collectionsToClear) {
-        const collectionRef = collection(adminDb, 'users', userId, collectionName);
-        const snapshot = await getDocs(collectionRef);
+        const collectionRef = adminDb.collection('users').doc(userId).collection(collectionName);
+        const snapshot = await collectionRef.get();
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
-
-    // 2. Delete the separate streak document
-    const streakDocRef = doc(adminDb, 'streaks', userId);
+    
+    const chatsCollectionRef = adminDb.collection('users').doc(userId).collection('chats');
+    const chatsSnapshot = await chatsCollectionRef.get();
+    for (const chatDoc of chatsSnapshot.docs) {
+        const messagesCollectionRef = chatDoc.ref.collection('messages');
+        const messagesSnapshot = await messagesCollectionRef.get();
+        messagesSnapshot.docs.forEach(msgDoc => batch.delete(msgDoc.ref));
+        batch.delete(chatDoc.ref);
+    }
+    
+    const streakDocRef = adminDb.collection('streaks').doc(userId);
     batch.delete(streakDocRef);
 
-    // 3. Update the main user document to its final anonymized state
-    const userDocRef = doc(adminDb, 'users', userId);
+    const userDocRef = adminDb.collection('users').doc(userId);
     batch.update(userDocRef, {
         displayName: 'Deleted User',
-        // USERNAME AND EMAIL ARE PRESERVED
         photoURL: null,
         coverPhotoURL: null,
         bio: 'This account has been permanently deleted.',
-        socials: deleteField(),
-        statusEmoji: deleteField(),
-        countryCode: deleteField(),
-        searchableIndex: deleteField(),
-        geminiApiKey: deleteField(),
-        installedPlugins: deleteField(),
-        preferences: deleteField(),
-        codingUsernames: deleteField(),
+        socials: adminDb.FieldValue.delete(),
+        statusEmoji: adminDb.FieldValue.delete(),
+        countryCode: adminDb.FieldValue.delete(),
+        searchableIndex: adminDb.FieldValue.delete(),
+        geminiApiKey: adminDb.FieldValue.delete(),
+        installedPlugins: adminDb.FieldValue.delete(),
+        preferences: adminDb.FieldValue.delete(),
+        codingUsernames: adminDb.FieldValue.delete(),
         followersCount: 0,
         followingCount: 0,
-        onboardingCompleted: deleteField(),
-        subscription: deleteField(), 
+        onboardingCompleted: adminDb.FieldValue.delete(),
+        subscription: adminDb.FieldValue.delete(), 
         deletionStatus: 'DELETED',
-        deletionScheduledAt: deleteField(),
+        deletionScheduledAt: adminDb.FieldValue.delete(),
     });
 
     await batch.commit();
