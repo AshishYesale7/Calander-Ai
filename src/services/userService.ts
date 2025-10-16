@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -287,6 +288,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 followingCount: data.followingCount || 0,
                 onboardingCompleted: data.onboardingCompleted ?? false,
                 deletionStatus: data.deletionStatus, // Include deletion status
+                deletionScheduledAt: data.deletionScheduledAt, // Include scheduled time
             } as UserProfile;
         }
         return null;
@@ -506,7 +508,7 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
       throw new Error("Admin Firestore not initialized.");
     }
     const userDocRef = adminDb.collection('users').doc(userId);
-    const privateDataRef = userDocRef.collection('_private').doc('profile');
+    const privateDataRef = userDocRef.collection('_private').doc('profileBackup');
     const deletionDate = addDays(new Date(), 30);
 
     const docSnap = await userDocRef.get();
@@ -515,10 +517,17 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     }
     const currentData = docSnap.data()!;
 
-    // Save original data to a private subcollection for potential restoration
-    await privateDataRef.set({
-        originalDisplayName: currentData.displayName,
-    });
+    // Backup original data to a private subcollection
+    const backupData = {
+        originalDisplayName: currentData.displayName || null,
+        originalPhotoURL: currentData.photoURL || null,
+        originalCoverPhotoURL: currentData.coverPhotoURL || null,
+        originalBio: currentData.bio || null,
+        originalSocials: currentData.socials || null,
+        originalStatusEmoji: currentData.statusEmoji || null,
+        originalCountryCode: currentData.countryCode || null,
+    };
+    await privateDataRef.set(backupData);
 
     const anonymizedData = {
         displayName: 'Deleted User',
@@ -528,7 +537,6 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
         socials: {},
         statusEmoji: null,
         searchableIndex: [],
-        geminiApiKey: null,
         deletionStatus: 'PENDING_DELETION',
         deletionScheduledAt: Timestamp.fromDate(deletionDate),
     };
@@ -540,29 +548,35 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     if (!adminDb) throw new Error("Admin Firestore not initialized.");
     
     const userDocRef = adminDb.collection('users').doc(userId);
-    const privateDataRef = userDocRef.collection('_private').doc('profile');
+    const privateDataRef = userDocRef.collection('_private').doc('profileBackup');
 
-    const privateDocSnap = await privateDataRef.get();
-    if (!privateDocSnap.exists) {
+    const backupDocSnap = await privateDataRef.get();
+    if (!backupDocSnap.exists) {
         throw new Error("Cannot reclaim account: Private recovery data not found.");
     }
-    const originalData = privateDocSnap.data()!;
+    const backupData = backupDocSnap.data()!;
     
     const userDocSnap = await userDocRef.get();
-    if (!userDocSnap.exists) {
+    if (!userDocSnap.exists()) {
         throw new Error("User document does not exist for reclamation.");
     }
     const currentUserData = userDocSnap.data()!;
 
     const restoredData: any = {
-        displayName: originalData.originalDisplayName,
+        displayName: backupData.originalDisplayName,
+        photoURL: backupData.originalPhotoURL,
+        coverPhotoURL: backupData.originalCoverPhotoURL,
+        bio: backupData.originalBio,
+        socials: backupData.originalSocials,
+        statusEmoji: backupData.originalStatusEmoji,
+        countryCode: backupData.originalCountryCode,
         deletionStatus: adminFieldValue.delete(),
         deletionScheduledAt: adminFieldValue.delete(),
     };
     
     // Rebuild the search index
     const indexSet = new Set<string>();
-    if (originalData.originalDisplayName) indexSet.add(originalData.originalDisplayName.toLowerCase());
+    if (backupData.originalDisplayName) indexSet.add(backupData.originalDisplayName.toLowerCase());
     if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase());
     restoredData.searchableIndex = Array.from(indexSet);
 
@@ -577,7 +591,6 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
 
     const batch = adminDb.batch();
 
-    // List all user-specific subcollections that need to be wiped
     const collectionsToClear = [
         'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
         'fcmTokens', 'notifications', 'resources', 'skills', 
@@ -590,7 +603,6 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
     
-    // Handle nested 'chats' collection separately
     const chatsCollectionRef = adminDb.collection('users').doc(userId).collection('chats');
     const chatsSnapshot = await chatsCollectionRef.get();
     for (const chatDoc of chatsSnapshot.docs) {
@@ -600,32 +612,27 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         batch.delete(chatDoc.ref);
     }
     
-    // Delete the separate streak document
     const streakDocRef = adminDb.collection('streaks').doc(userId);
     batch.delete(streakDocRef);
 
-    // Update the main user document to its final "deleted" state
+    // Get the current user data to preserve uid, email, and username
     const userDocRef = adminDb.collection('users').doc(userId);
-    batch.update(userDocRef, {
-        displayName: 'Deleted User',
-        photoURL: null,
-        coverPhotoURL: null,
-        bio: 'This account has been permanently deleted.',
-        socials: adminFieldValue.delete(),
-        statusEmoji: adminFieldValue.delete(),
-        countryCode: adminFieldValue.delete(),
-        searchableIndex: adminFieldValue.delete(),
-        geminiApiKey: adminFieldValue.delete(),
-        installedPlugins: adminFieldValue.delete(),
-        preferences: adminFieldValue.delete(),
-        codingUsernames: adminFieldValue.delete(),
-        followersCount: 0,
-        followingCount: 0,
-        onboardingCompleted: adminFieldValue.delete(),
-        subscription: adminFieldValue.delete(), 
-        deletionStatus: 'DELETED',
-        deletionScheduledAt: adminFieldValue.delete(),
-    });
+    const userDocSnap = await userDocRef.get();
+    const userData = userDocSnap.data();
+
+    // Create a new object with only the fields to keep
+    const finalUserData = {
+      uid: userId, // This is not a field, but for clarity
+      email: userData?.email || null,
+      username: userData?.username || `user_${userId.substring(0, 10)}`,
+      deletionStatus: 'DELETED',
+    };
+
+    // Overwrite the entire document with only the preserved fields
+    batch.set(userDocRef, finalUserData);
 
     await batch.commit();
 }
+
+
+    
