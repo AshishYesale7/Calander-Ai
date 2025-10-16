@@ -272,8 +272,8 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                     console.error(`Failed to lazy-migrate profile for user ${userId}:`, err);
                 });
             }
-
-            return {
+            
+            const profile: UserProfile = {
                 uid: userId,
                 displayName: data.displayName,
                 username: username,
@@ -287,9 +287,17 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 followersCount: data.followersCount || 0,
                 followingCount: data.followingCount || 0,
                 onboardingCompleted: data.onboardingCompleted ?? false,
-                deletionStatus: data.deletionStatus, // Include deletion status
-                deletionScheduledAt: data.deletionScheduledAt, // Include scheduled time
-            } as UserProfile;
+                deletionStatus: data.deletionStatus,
+            };
+
+            if (data.deletionScheduledAt instanceof Timestamp) {
+                profile.deletionScheduledAt = data.deletionScheduledAt.toDate().toISOString();
+            } else if (data.deletionScheduledAt) {
+                // It might already be a string if fetched and cached
+                profile.deletionScheduledAt = data.deletionScheduledAt;
+            }
+
+            return profile;
         }
         return null;
     } catch (error) {
