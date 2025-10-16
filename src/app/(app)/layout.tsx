@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -50,6 +49,7 @@ import IncomingAudioCall from '@/components/chat/IncomingAudioCall';
 import OutgoingAudioCall from '@/components/chat/OutgoingAudioCall';
 import AudioCallView from '@/components/chat/AudioCallView';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
+import PermissionRequestModal from '@/components/chat/PermissionRequestModal';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -106,6 +106,13 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [outgoingAudioCall, setOutgoingAudioCall] = useState<PublicUserProfile | null>(null);
     const [ongoingAudioCall, setOngoingAudioCall] = useState<CallData | null>(null);
     const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
+    
+    const [permissionRequest, setPermissionRequest] = useState<{
+      callType: CallType;
+      onGrant: () => void;
+      onDeny: () => void;
+    } | null>(null);
+
 
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
@@ -395,17 +402,24 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         return () => unsubscribe();
     }, [activeCallId, user?.uid, ongoingCall, ongoingAudioCall, endCall]);
 
-
-    const acceptCall = useCallback(async () => {
+    const acceptCall = useCallback(() => {
         const callToAccept = incomingCall || incomingAudioCall;
-        if (callToAccept) {
-            setAndStoreActiveCallId(callToAccept.id); 
+        if (!callToAccept) return;
+    
+        const acceptAction = async () => {
+            setAndStoreActiveCallId(callToAccept.id);
             await updateCallStatus(callToAccept.id, 'answered');
             setIncomingCall(null);
             setIncomingAudioCall(null);
-        }
+        };
+    
+        setPermissionRequest({
+            callType: callToAccept.callType,
+            onGrant: acceptAction,
+            onDeny: () => declineCall() // Decline the call if permission is denied
+        });
     }, [incomingCall, incomingAudioCall]);
-
+    
     const declineCall = useCallback(() => {
         const callToDecline = incomingCall || incomingAudioCall;
         if (callToDecline) {
@@ -548,6 +562,14 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             <AppContent onFinishOnboarding={onFinishOnboarding}>
                 {children}
             </AppContent>
+            {permissionRequest && (
+                <PermissionRequestModal
+                    callType={permissionRequest.callType}
+                    onGrant={permissionRequest.onGrant}
+                    onDeny={permissionRequest.onDeny}
+                    onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
+                />
+            )}
             {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
@@ -973,6 +995,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     
 
     
+
 
 
 

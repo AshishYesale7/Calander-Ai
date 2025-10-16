@@ -21,6 +21,18 @@ const getUserCallHistoryCollection = (userId: string) => {
   return adminDb.collection('users').doc(userId).collection('calls');
 };
 
+export async function checkAndRequestPermissions(callType: CallType): Promise<boolean> {
+    const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (error) {
+        console.error("Permission denied for media devices:", error);
+        return false;
+    }
+}
+
 /**
  * Creates a call.
  * 1. Creates a temporary shared document in the top-level 'calls' collection for WebRTC signaling.
@@ -223,3 +235,4 @@ export async function addReceiverCandidate(callId: string, candidate: RTCIceCand
     const candidatesCollection = getSharedCallDocRef(callId).collection('receiverCandidates');
     await candidatesCollection.add(candidate);
 }
+
