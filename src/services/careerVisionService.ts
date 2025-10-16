@@ -24,6 +24,9 @@ const fromFirestore = (docData: any): CareerVisionHistoryItem => {
 };
 
 export const getCareerVisionHistory = async (userId: string): Promise<CareerVisionHistoryItem[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const visionsCollection = getVisionsCollection(userId);
   const q = query(visionsCollection, orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
@@ -31,6 +34,9 @@ export const getCareerVisionHistory = async (userId: string): Promise<CareerVisi
 };
 
 export const saveCareerVision = async (userId: string, prompt: string, plan: GenerateCareerVisionOutput): Promise<CareerVisionHistoryItem> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const visionsCollection = getVisionsCollection(userId);
   
   const dataToSave = {
@@ -48,6 +54,9 @@ export const saveCareerVision = async (userId: string, prompt: string, plan: Gen
 };
 
 export const deleteCareerVision = async (userId: string, visionId: string): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const visionsCollection = getVisionsCollection(userId);
   const visionDocRef = doc(visionsCollection, visionId);
   await deleteDoc(visionDocRef);

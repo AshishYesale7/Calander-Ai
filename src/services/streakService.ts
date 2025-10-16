@@ -16,6 +16,9 @@ const getStreakDocRef = (userId: string) => {
 };
 
 export const getStreakData = async (userId: string): Promise<StreakData> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const streakDocRef = getStreakDocRef(userId);
   try {
     const docSnap = await getDoc(streakDocRef);
@@ -58,6 +61,9 @@ export const getStreakData = async (userId: string): Promise<StreakData> => {
 };
 
 export const updateStreakData = async (userId: string, data: Partial<StreakData>): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const streakDocRef = getStreakDocRef(userId);
   
   const dataToSave: { [key: string]: any } = { ...data };
@@ -80,6 +86,10 @@ export const updateStreakData = async (userId: string, data: Partial<StreakData>
  */
 export const addTimeToTotal = async (userId: string, timeToAdd: number): Promise<void> => {
     if (!userId || timeToAdd <= 0) return;
+    if (!db) {
+        console.error("Firestore not initialized, cannot add time.");
+        return;
+    }
     
     const streakDocRef = getStreakDocRef(userId);
     

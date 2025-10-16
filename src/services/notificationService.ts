@@ -51,6 +51,9 @@ export const createNotification = async (
     console.error("Cannot create notification without a valid userId.");
     return;
   }
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
 
   const notificationsCollection = getNotificationsCollection(userId);
   try {
@@ -87,6 +90,9 @@ export const createNotification = async (
 };
 
 export const getNotifications = async (userId: string, count: number = 20): Promise<AppNotification[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const notificationsCollection = getNotificationsCollection(userId);
   const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(count));
 

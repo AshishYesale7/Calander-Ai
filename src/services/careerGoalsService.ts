@@ -26,12 +26,18 @@ const fromFirestore = (doc: any): CareerGoal => {
 };
 
 export const getCareerGoals = async (userId: string): Promise<CareerGoal[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const goalsCollection = getGoalsCollection(userId);
   const snapshot = await getDocs(goalsCollection);
   return snapshot.docs.map(fromFirestore);
 };
 
 export const saveCareerGoal = async (userId: string, goal: Omit<CareerGoal, 'deadline'> & { deadline?: string | null }): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const goalsCollection = getGoalsCollection(userId);
   const goalDocRef = doc(goalsCollection, goal.id);
   
@@ -45,6 +51,9 @@ export const saveCareerGoal = async (userId: string, goal: Omit<CareerGoal, 'dea
 };
 
 export const deleteCareerGoal = async (userId: string, goalId: string): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const goalsCollection = getGoalsCollection(userId);
   const goalDocRef = doc(goalsCollection, goalId);
   await deleteDoc(goalDocRef);

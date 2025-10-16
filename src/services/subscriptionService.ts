@@ -70,4 +70,3 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
         return newTrialSubscription;
     }
 };
-

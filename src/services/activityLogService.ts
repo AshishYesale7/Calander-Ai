@@ -20,6 +20,10 @@ export const logUserActivity = async (
   type: ActivityLog['type'],
   details: ActivityLog['details']
 ): Promise<void> => {
+  if (!db) {
+    console.error("Firestore is not initialized. Skipping activity log.");
+    return;
+  }
   const activityLogCollection = getActivityLogCollection(userId);
   try {
     await addDoc(activityLogCollection, {
@@ -49,6 +53,9 @@ const fromFirestore = (doc: any): ActivityLog => {
  * Retrieves user activity logs within a specified date range.
  */
 export const getUserActivity = async (userId: string, startDate: Date, endDate: Date): Promise<ActivityLog[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const activityLogCollection = getActivityLogCollection(userId);
   const q = query(
     activityLogCollection,

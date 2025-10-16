@@ -25,6 +25,9 @@ const fromFirestore = (doc: any): ResourceLink => {
 };
 
 export const getBookmarkedResources = async (userId: string): Promise<ResourceLink[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const resourcesCollection = getResourcesCollection(userId);
   const snapshot = await getDocs(resourcesCollection);
   // Filter out any accidentally saved AI recommendations from firestore
@@ -32,6 +35,9 @@ export const getBookmarkedResources = async (userId: string): Promise<ResourceLi
 };
 
 export const saveBookmarkedResource = async (userId: string, resource: ResourceLink): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   // Ensure we don't save AI recommended resources
   if (resource.isAiRecommended) {
       return;
@@ -42,6 +48,9 @@ export const saveBookmarkedResource = async (userId: string, resource: ResourceL
 };
 
 export const deleteBookmarkedResource = async (userId: string, resourceId: string): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const resourcesCollection = getResourcesCollection(userId);
   const resourceDocRef = doc(resourcesCollection, resourceId);
   await deleteDoc(resourceDocRef);

@@ -6,6 +6,9 @@ import type { Skill } from '@/types';
 import { collection, getDocs, doc, setDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 
 const getSkillsCollection = (userId: string) => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   return collection(db, 'users', userId, 'skills');
 };
 
@@ -22,12 +25,18 @@ const fromFirestore = (doc: any): Skill => {
 };
 
 export const getSkills = async (userId: string): Promise<Skill[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const skillsCollection = getSkillsCollection(userId);
   const snapshot = await getDocs(skillsCollection);
   return snapshot.docs.map(fromFirestore);
 };
 
 export const saveSkill = async (userId: string, skill: Omit<Skill, 'lastUpdated'> & { lastUpdated: string }): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const skillsCollection = getSkillsCollection(userId);
   const skillDocRef = doc(skillsCollection, skill.id);
   const dataToSave = {
@@ -38,6 +47,9 @@ export const saveSkill = async (userId: string, skill: Omit<Skill, 'lastUpdated'
 };
 
 export const deleteSkill = async (userId: string, skillId: string): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const skillsCollection = getSkillsCollection(userId);
   const skillDocRef = doc(skillsCollection, skillId);
   await deleteDoc(skillDocRef);

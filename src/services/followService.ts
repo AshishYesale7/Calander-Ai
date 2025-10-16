@@ -18,8 +18,14 @@ import { createNotification } from './notificationService';
 
 
 // Helper to get collection references
-const getFollowersCollection = (userId: string) => collection(db, 'users', userId, 'followers');
-const getFollowingCollection = (userId: string) => collection(db, 'users', userId, 'following');
+const getFollowersCollection = (userId: string) => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    return collection(db, 'users', userId, 'followers');
+}
+const getFollowingCollection = (userId: string) => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    return collection(db, 'users', userId, 'following');
+}
 
 // Follow a user
 export async function followUser(currentUserId: string, targetUserId: string) {
@@ -92,6 +98,7 @@ export async function unfollowUser(currentUserId: string, targetUserId: string) 
 
 // Get a list of followers for a user
 export async function getFollowers(userId: string) {
+  if (!db) throw new Error("Firestore is not initialized.");
   const followersSnapshot = await getDocs(getFollowersCollection(userId));
   const userPromises = followersSnapshot.docs.map(doc => getUserProfile(doc.id));
   const users = await Promise.all(userPromises);
@@ -100,10 +107,9 @@ export async function getFollowers(userId: string) {
 
 // Get a list of users someone is following
 export async function getFollowing(userId: string) {
+  if (!db) throw new Error("Firestore is not initialized.");
   const followingSnapshot = await getDocs(getFollowingCollection(userId));
   const userPromises = followingSnapshot.docs.map(doc => getUserProfile(doc.id));
   const users = await Promise.all(userPromises);
   return users.filter(u => u).map(u => ({ id: u!.uid, displayName: u!.displayName, photoURL: u!.photoURL, username: u!.username }));
 };
-
-    

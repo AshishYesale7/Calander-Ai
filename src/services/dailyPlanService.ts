@@ -20,6 +20,9 @@ const getDailyPlanDocRef = (userId: string, dateStr: string) => {
  * @param plan The daily plan object to save.
  */
 export const saveDailyPlan = async (userId: string, dateStr: string, plan: DailyPlan): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const planDocRef = getDailyPlanDocRef(userId, dateStr);
   try {
     await setDoc(planDocRef, plan);
@@ -36,6 +39,9 @@ export const saveDailyPlan = async (userId: string, dateStr: string, plan: Daily
  * @returns The saved DailyPlan object or null if it doesn't exist.
  */
 export const getDailyPlan = async (userId: string, dateStr: string): Promise<DailyPlan | null> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const planDocRef = getDailyPlanDocRef(userId, dateStr);
   try {
     const docSnap = await getDoc(planDocRef);

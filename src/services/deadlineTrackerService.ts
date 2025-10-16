@@ -24,6 +24,9 @@ const fromFirestore = (docData: any): TrackedKeyword => {
 };
 
 export const getTrackedKeywords = async (userId: string): Promise<TrackedKeyword[]> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const collectionRef = getTrackedKeywordsCollection(userId);
   const q = query(collectionRef, orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
@@ -31,6 +34,9 @@ export const getTrackedKeywords = async (userId: string): Promise<TrackedKeyword
 };
 
 export const saveTrackedKeyword = async (userId: string, keyword: string, deadlines: DeadlineItem[], summary?: string): Promise<TrackedKeyword> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const collectionRef = getTrackedKeywordsCollection(userId);
   
   const dataToSave: {
@@ -57,6 +63,9 @@ export const saveTrackedKeyword = async (userId: string, keyword: string, deadli
 };
 
 export const deleteTrackedKeyword = async (userId: string, id: string): Promise<void> => {
+  if (!db) {
+    throw new Error("Firestore is not initialized.");
+  }
   const collectionRef = getTrackedKeywordsCollection(userId);
   const docRef = doc(collectionRef, id);
   await deleteDoc(docRef);
