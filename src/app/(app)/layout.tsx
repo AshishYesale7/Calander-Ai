@@ -79,19 +79,6 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-const checkAndRequestPermissions = async (callType: CallType): Promise<boolean> => {
-    const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        // We got permission. We don't need to use the stream here, so we can stop it immediately.
-        stream.getTracks().forEach(track => track.stop());
-        return true;
-    } catch (error) {
-        console.error("Permission denied for media devices:", error);
-        return false;
-    }
-};
-
 
 function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
     const { user } = useAuth();
@@ -138,6 +125,22 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
       }
       return null;
     });
+
+    const checkAndRequestPermissions = async (callType: CallType): Promise<boolean> => {
+        if (typeof window === 'undefined' || !navigator.mediaDevices) {
+            return false;
+        }
+        const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            // We got permission. We don't need to use the stream here yet, so we can stop it.
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (error) {
+            console.error("Permission denied for media devices:", error);
+            return false;
+        }
+    };
     
     const setAndStoreActiveCallId = (callId: string | null) => {
         setActiveCallId(callId);
@@ -407,18 +410,24 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         if (!callToAccept) return;
     
         const acceptAction = async () => {
-            setAndStoreActiveCallId(callToAccept.id);
-            await updateCallStatus(callToAccept.id, 'answered');
-            setIncomingCall(null);
-            setIncomingAudioCall(null);
+            const hasPermission = await checkAndRequestPermissions(callToAccept.callType);
+            if (hasPermission) {
+                setAndStoreActiveCallId(callToAccept.id);
+                await updateCallStatus(callToAccept.id, 'answered');
+                setIncomingCall(null);
+                setIncomingAudioCall(null);
+            } else {
+                toast({ title: "Permission Denied", description: "Camera and microphone access is required to accept the call.", variant: "destructive" });
+                declineCall(); // Automatically decline if permission is denied.
+            }
         };
     
         setPermissionRequest({
             callType: callToAccept.callType,
             onGrant: acceptAction,
-            onDeny: () => declineCall() // Decline the call if permission is denied
+            onDeny: () => declineCall()
         });
-    }, [incomingCall, incomingAudioCall]);
+    }, [incomingCall, incomingAudioCall, toast]);
     
     const declineCall = useCallback(() => {
         const callToDecline = incomingCall || incomingAudioCall;
@@ -992,10 +1001,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-    
-
-    
-
-
-
-

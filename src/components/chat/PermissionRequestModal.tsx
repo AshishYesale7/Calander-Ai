@@ -12,7 +12,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Video, Mic } from 'lucide-react';
 import type { CallType } from '@/types';
-import { checkAndRequestPermissions } from '@/services/callService';
 
 interface PermissionRequestModalProps {
   callType: CallType;
@@ -28,13 +27,9 @@ export default function PermissionRequestModal({
   onOpenChange,
 }: PermissionRequestModalProps) {
 
-  const handleGrant = async () => {
-    const hasPermission = await checkAndRequestPermissions(callType);
-    if (hasPermission) {
-      onGrant();
-    } else {
-      onDeny();
-    }
+  // The modal is now simpler. It just calls the functions passed to it.
+  const handleGrant = () => {
+    onGrant();
     onOpenChange(false);
   };
 
@@ -67,4 +62,3 @@ export default function PermissionRequestModal({
     </Dialog>
   );
 }
-

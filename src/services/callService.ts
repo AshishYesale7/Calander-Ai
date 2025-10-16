@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { adminDb } from '@/lib/firebase-admin';
@@ -20,18 +19,6 @@ const getUserCallHistoryCollection = (userId: string) => {
   if (!adminDb) throw new Error("Firestore Admin is not initialized.");
   return adminDb.collection('users').doc(userId).collection('calls');
 };
-
-export async function checkAndRequestPermissions(callType: CallType): Promise<boolean> {
-    const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        stream.getTracks().forEach(track => track.stop());
-        return true;
-    } catch (error) {
-        console.error("Permission denied for media devices:", error);
-        return false;
-    }
-}
 
 /**
  * Creates a call.
@@ -235,4 +222,3 @@ export async function addReceiverCandidate(callId: string, candidate: RTCIceCand
     const candidatesCollection = getSharedCallDocRef(callId).collection('receiverCandidates');
     await candidatesCollection.add(candidate);
 }
-
