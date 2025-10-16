@@ -299,7 +299,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col transition-[right] z-50", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        className={cn("fixed inset-y-0 left-0 flex flex-col transition-[right] z-20", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
         style={{ top: '4rem', right: `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
