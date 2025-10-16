@@ -360,7 +360,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className={cn(
             "flex-shrink-0 flex items-center justify-between p-3 h-14 z-10 sticky top-0",
-            "bg-blue-900/50 backdrop-blur-md border-b border-blue-500/30"
+            "bg-accent/10 backdrop-blur-md border-b border-accent/30 text-white"
           )}>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
@@ -534,3 +534,5 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     </>
   );
 }
+
+    
