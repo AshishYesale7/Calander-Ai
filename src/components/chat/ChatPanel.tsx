@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -137,7 +138,8 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
   const { 
       setChattingWith, outgoingCall, ongoingCall, 
       setIsChatInputFocused, isChatInputFocused, 
-      outgoingAudioCall, ongoingAudioCall, onInitiateCall 
+      outgoingAudioCall, ongoingAudioCall, onInitiateCall,
+      playSendMessageSound,
   } = useChat();
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -240,6 +242,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     setInputMessage('');
     try {
       await sendMessage(currentUser.uid, otherUser.uid, messageToSend);
+      playSendMessageSound(); // Play the sound on successful send
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       updateTypingStatus(currentUser.uid, otherUser.uid, false);
     } catch (error) {

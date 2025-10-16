@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { ReactNode, Dispatch, SetStateAction, RefObject } from 'react';
@@ -53,6 +54,9 @@ interface ChatContextType {
   otherUserInCall: PublicUserProfile | null;
   connectionStatus: RTCPeerConnectionState;
   peerConnectionRef: RefObject<RTCPeerConnection>; // Expose the ref
+
+  // New function for message sound
+  playSendMessageSound: () => void;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);

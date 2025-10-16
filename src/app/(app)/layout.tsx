@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -106,6 +107,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
     
     const [isMuted, setIsMuted] = useState(false);
+    const messageSentSoundRef = useRef<HTMLAudioElement>(null);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -414,6 +416,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream]);
 
+    const playSendMessageSound = useCallback(() => {
+        messageSentSoundRef.current?.play().catch(e => console.warn("Could not play message sound:", e));
+    }, []);
+
     const pipSize = useMemo(() => {
         const baseWidth = pipSizeMode === 'large' ? 320 : 256;
         const baseHeight = pipSizeMode === 'large' ? 240 : 192;
@@ -449,6 +455,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         isMuted, onToggleMute,
         connectionStatus,
         peerConnectionRef,
+        playSendMessageSound,
     };
     
     return (
@@ -456,6 +463,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             <AppContent onFinishOnboarding={onFinishOnboarding}>
                 {children}
             </AppContent>
+            {/* The audio element is placed here */}
+            <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
         </ChatProvider>
     );
 }
@@ -879,7 +888,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/download/audio/2022/02/22/audio_d143a6c9d7.mp3" preload="auto" loop className="hidden" />
+      <audio ref={outgoingRingtoneRef} src="https://codeskulptor-assets.commondatastorage.googleapis.com/assets_misc/telephonerigging.ogg" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
