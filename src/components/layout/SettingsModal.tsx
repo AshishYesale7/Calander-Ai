@@ -207,13 +207,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   // UseEffect for re-authentication reCAPTCHA
   useEffect(() => {
-    if (isOpen && actionToConfirm && !isGoogleConnected && reauthStep === 'prompt') {
+    if (isOpen && actionToConfirm && primaryProvider === 'phone' && reauthStep === 'prompt') {
       const verifier = setupRecaptcha('reauth-recaptcha-container');
       if(verifier) {
           (window as any).recaptchaVerifierReauth = verifier;
       }
     }
-  }, [isOpen, actionToConfirm, isGoogleConnected, reauthStep, setupRecaptcha]);
+  }, [isOpen, actionToConfirm, primaryProvider, reauthStep, setupRecaptcha]);
 
 
   const handleApiKeySave = () => {
