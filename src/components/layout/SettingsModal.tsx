@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -89,11 +90,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
-  
-  const primaryProvider = user?.providerData[0]?.providerId;
 
+  const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
+  const hasPhoneProvider = !!user?.phoneNumber;
 
-  const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const router = useRouter();
 
   useEffect(() => {
@@ -107,10 +107,54 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-      const verifier = window.recaptchaVerifierSettings;
-      if (verifier) verifier.clear();
     };
   }, []);
+  
+  const clearRecaptcha = (containerId: string) => {
+    const verifier = (window as any)[`recaptchaVerifier_${containerId}`];
+    if (verifier) {
+      verifier.clear();
+    }
+    const container = document.getElementById(containerId);
+    if(container) {
+        container.innerHTML = '';
+    }
+  };
+
+  const setupRecaptcha = useCallback((containerId: string): RecaptchaVerifier | null => {
+    if (!auth) return null;
+    
+    // Always clear the container first
+    clearRecaptcha(containerId);
+    
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
+      return null;
+    }
+    
+    const verifier = new RecaptchaVerifier(auth, container, {
+      'size': 'invisible',
+      'callback': () => console.log(`reCAPTCHA verified for ${containerId}`),
+    });
+
+    (window as any)[`recaptchaVerifier_${containerId}`] = verifier;
+    return verifier;
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && isLinkingPhone && linkingPhoneState === 'input') {
+      setupRecaptcha('recaptcha-container-settings');
+    }
+     if (isOpen && actionToConfirm && hasPhoneProvider && reauthStep === 'prompt') {
+      setupRecaptcha('reauth-recaptcha-container');
+    }
+    
+    return () => {
+        clearRecaptcha('recaptcha-container-settings');
+        clearRecaptcha('reauth-recaptcha-container');
+    }
+  }, [isOpen, isLinkingPhone, linkingPhoneState, setupRecaptcha, actionToConfirm, hasPhoneProvider, reauthStep]);
 
   const checkNotionStatus = async (userId: string) => {
     if (!userId) return;
@@ -173,48 +217,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   }, [currentApiKey, isOpen, toast, user]);
   
-  const setupRecaptcha = useCallback((containerId: string) => {
-    if (!auth) return null;
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
-      return null;
-    }
-    
-    // Ensure existing verifier is cleared to prevent Firebase errors
-    const existingVerifier = (window as any)[`recaptchaVerifier_${containerId}`];
-    if (existingVerifier) {
-      existingVerifier.clear();
-    }
-
-    const verifier = new RecaptchaVerifier(auth, container, {
-      'size': 'invisible',
-      'callback': () => console.log('reCAPTCHA verified'),
-    });
-    (window as any)[`recaptchaVerifier_${containerId}`] = verifier;
-    return verifier;
-  }, []);
-
-  // UseEffect for phone linking reCAPTCHA
-  useEffect(() => {
-    if (isOpen && isLinkingPhone && linkingPhoneState === 'input') {
-      const verifier = setupRecaptcha('recaptcha-container-settings');
-      if (verifier) {
-          (window as any).recaptchaVerifierSettings = verifier;
-      }
-    }
-  }, [isOpen, isLinkingPhone, linkingPhoneState, setupRecaptcha]);
-  
-  // UseEffect for re-authentication reCAPTCHA
-  useEffect(() => {
-    if (isOpen && actionToConfirm && primaryProvider === 'phone' && reauthStep === 'prompt') {
-      const verifier = setupRecaptcha('reauth-recaptcha-container');
-      if(verifier) {
-          (window as any).recaptchaVerifierReauth = verifier;
-      }
-    }
-  }, [isOpen, actionToConfirm, primaryProvider, reauthStep, setupRecaptcha]);
-
 
   const handleApiKeySave = () => {
     const trimmedKey = apiKeyInput.trim();
@@ -248,7 +250,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google' })).toString('base64');
     const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
 
-    if (isGoogleProviderLinked) {
+    if (hasGoogleProvider) {
         toast({ title: 'Opening Google...', description: 'Please authorize access in the new tab.' });
         window.open(authUrl, '_blank', 'width=500,height=600');
         return;
@@ -329,7 +331,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   const handleSendLinkOtp = async () => {
       if (!auth.currentUser) { return; }
-      const verifier = (window as any).recaptchaVerifierSettings;
+      const verifier = (window as any).recaptchaVerifier_recaptcha-container-settings;
       const fullPhoneNumber = typeof phoneForLinking === 'string' ? phoneForLinking : '';
       
       if (!verifier) {
@@ -430,7 +432,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
   
   const handleSendReauthOtp = async () => {
-    const verifier = (window as any).recaptchaVerifierReauth;
+    const verifier = (window as any).recaptchaVerifier_reauth-recaptcha-container;
     if (!verifier || !reauthPhone || !isValidPhoneNumber(reauthPhone)) {
         toast({ title: 'Invalid Phone Number', variant: 'destructive'});
         return;
@@ -902,22 +904,21 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 <AlertDialogHeader>
                     <AlertDialogTitle>Please Confirm Your Identity</AlertDialogTitle>
                     <AlertDialogDescription>
-                        For your security, please sign in again to confirm this action.
+                        For your security, please verify your identity to confirm this action.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                {isGoogleConnected ? (
-                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={reauthenticateAndExecute} disabled={isReauthenticating}>
-                            {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
-                            Continue with Google
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                ) : user?.phoneNumber ? (
-                     <div className="space-y-4">
+                <div className="space-y-4">
+                  {(hasGoogleProvider) && (
+                     <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
+                        {isReauthenticating && reauthStep !== 'otp' ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
+                        Continue with Google
+                    </Button>
+                  )}
+                  {hasPhoneProvider && (
+                      <div className="space-y-4">
                         {reauthStep === 'prompt' && (
                             <div className="space-y-4">
-                                <p className="text-sm text-muted-foreground">An OTP will be sent to your registered phone number ({user.phoneNumber}).</p>
+                                <p className="text-sm text-muted-foreground">An OTP will be sent to your registered phone number ({user?.phoneNumber}).</p>
                                 <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
                                     {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
                                     Send Verification Code
@@ -937,17 +938,23 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                 </Button>
                             </div>
                         )}
-                         <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
                     </div>
-                ) : (
-                   <div className="text-sm text-destructive p-4 bg-destructive/10 rounded-md">
-                     <p>Cannot perform this action. Your account is not linked to Google and has no phone number for verification.</p>
-                     <p className="mt-2">Please link an authentication method first.</p>
-                   </div>
-                )}
+                  )}
+                  {(!hasGoogleProvider && !hasPhoneProvider) && (
+                      <div className="text-sm text-destructive p-4 bg-destructive/10 rounded-md">
+                        <p>Cannot perform this action. Your account has no verifiable sign-in methods.</p>
+                        <p className="mt-2">Please link Google or a phone number first.</p>
+                      </div>
+                  )}
+                </div>
+                 <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
+                </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
