@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -292,7 +291,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 
             if (data.deletionScheduledAt) {
                 // ALWAYS convert to ISO string if it exists.
-                profile.deletionScheduledAt = data.deletionScheduledAt.toDate().toISOString();
+                profile.deletionScheduledAt = (data.deletionScheduledAt as Timestamp).toDate().toISOString();
             }
 
             return profile;
@@ -563,7 +562,7 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     const backupData = backupDocSnap.data()!;
     
     const userDocSnap = await userDocRef.get();
-    if (!userDocSnap.exists()) {
+    if (!userDocSnap.exists) { // Corrected: use .exists property
         throw new Error("User document does not exist for reclamation.");
     }
     const currentUserData = userDocSnap.data()!;
@@ -641,4 +640,5 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
 }
 
 
+    
     
