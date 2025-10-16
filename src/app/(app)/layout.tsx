@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -85,45 +84,34 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-
-function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+// NEW WRAPPER COMPONENT TO PROVIDE THE CHAT CONTEXT
+function ChatProviderWrapper({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const { toast } = useToast();
     
-    // State for video calls
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
-
-    // State for audio calls
     const [outgoingAudioCall, setOutgoingAudioCall] = useState<PublicUserProfile | null>(null);
     const [ongoingAudioCall, setOngoingAudioCall] = useState<CallData | null>(null);
     const [incomingAudioCall, setIncomingAudioCall] = useState<CallData | null>(null);
-    
-    const [permissionRequest, setPermissionRequest] = useState<{
-      callType: CallType;
-      onGrant: () => void;
-      onDeny: () => void;
-    } | null>(null);
-
-
+    const [permissionRequest, setPermissionRequest] = useState<{ callType: CallType; onGrant: () => void; onDeny: () => void; } | null>(null);
     const [otherUserInCall, setOtherUserInCall] = useState<PublicUserProfile | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<RTCPeerConnectionState>('new');
-    
-    // WebRTC State
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-
     const [isPipMode, setIsPipMode] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const pipControls = useAnimation();
     const [pipSizeMode, setPipSizeMode] = useState<'medium' | 'large'>('medium');
-    
     const [isMuted, setIsMuted] = useState(false);
     const messageSentSoundRef = useRef<HTMLAudioElement>(null);
     const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
     const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
+    const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
+    const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+    const [isChatInputFocused, setIsChatInputFocused] = useState(false);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -138,9 +126,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
         const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
         try {
-            // Attempt to get the stream. This will trigger the browser permission prompt if necessary.
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            // Immediately stop the tracks to release the camera/mic, as we will request it again when the call connects.
             stream.getTracks().forEach(track => track.stop());
             return { granted: true };
         } catch (error: any) {
@@ -218,13 +204,12 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     }, [activeCallId, endCall, incomingCall, incomingAudioCall, declineCall]);
 
 
-    // This is the timeout for unanswered calls.
     useEffect(() => {
         let timeoutId: NodeJS.Timeout | null = null;
         const isOutgoing = outgoingCall || outgoingAudioCall;
 
         if (isOutgoing && activeCallId) {
-            const callIdForTimeout = activeCallId; // Capture the call ID when the effect runs
+            const callIdForTimeout = activeCallId;
             timeoutId = setTimeout(() => {
                 if (db) {
                     getDoc(doc(db, 'calls', callIdForTimeout)).then(docSnap => {
@@ -238,7 +223,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                         }
                     });
                 }
-            }, 15000); // 15 seconds
+            }, 15000);
         }
 
         return () => {
@@ -248,7 +233,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         };
     }, [outgoingCall, outgoingAudioCall, activeCallId, toast]);
     
-    // This effect initializes and cleans up the WebRTC connection for an ongoing call
     useEffect(() => {
         if (!user || !db || (!ongoingCall && !ongoingAudioCall)) {
             return;
@@ -289,7 +273,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 });
             };
 
-            // Setup ICE candidate listeners
             pc.onicecandidate = event => {
                 if (event.candidate) {
                     if (isCaller) addCallerCandidate(call.id, event.candidate.toJSON());
@@ -368,21 +351,16 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                         if (callData.callType === 'video') setIncomingCall(callData);
                         else setIncomingAudioCall(callData);
     
-                        // Set a timeout to automatically decline the call if not answered
                         const timeoutId = setTimeout(() => {
-                            // Before declining, double-check the call status in Firestore
                             const callDocRef = doc(db, 'calls', callData.id);
                             getDoc(callDocRef).then(docSnap => {
                                 if (docSnap.exists() && docSnap.data().status === 'ringing') {
                                     updateCallStatus(callData.id, 'declined');
                                 }
                             });
-                        }, 15000); // 15-second timeout for ghost calls
-    
-                        // You might want to store this timeoutId to clear it if the user accepts/declines manually
+                        }, 15000);
                     }
                 } else if (change.type === 'removed') {
-                    // Handle if the call document is removed (e.g., call is declined)
                     const callId = change.doc.id;
                     setIncomingCall(prev => (prev && prev.id === callId ? null : prev));
                     setIncomingAudioCall(prev => (prev && prev.id === callId ? null : prev));
@@ -532,7 +510,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         messageSentSoundRef.current?.play().catch(e => console.warn("Could not play message sound:", e));
     }, []);
     
-    // Effect for playing ringtones
     useEffect(() => {
         const isIncoming = !!(incomingCall || incomingAudioCall);
         const isOutgoing = !!(outgoingCall || outgoingAudioCall);
@@ -579,30 +556,30 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                 }
             }
         }
-        return { width: baseWidth, height: baseHeight }; // Fallback
+        return { width: baseWidth, height: baseHeight };
     }, [pipSizeMode, remoteStream]);
     
-    // New state and calculation for chat sidebar width
     const [chatSidebarWidth, setChatSidebarWidth] = useState(0);
-    const { chattingWith, isChatSidebarOpen } = useChat();
     const isChatPanelVisible = !!chattingWith;
 
     useEffect(() => {
         const remToPx = (rem: number) => rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
         
         if (isChatSidebarOpen && isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(18 + 22)); // 18rem + 22rem
+            setChatSidebarWidth(remToPx(18 + 22));
         } else if (isChatSidebarOpen && !isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(18)); // 18rem
+            setChatSidebarWidth(remToPx(18));
         } else if (!isChatSidebarOpen && isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(5 + 22)); // 5rem (20 * 0.25) + 22rem
+            setChatSidebarWidth(remToPx(5 + 22));
         } else {
-            setChatSidebarWidth(remToPx(5)); // 5rem (20 * 0.25)
+            setChatSidebarWidth(remToPx(5));
         }
     }, [isChatSidebarOpen, isChatPanelVisible]);
 
-
     const contextValue = {
+        chattingWith, setChattingWith,
+        isChatSidebarOpen, setIsChatSidebarOpen,
+        isChatInputFocused, setIsChatInputFocused,
         onInitiateCall,
         outgoingCall, setOutgoingCall,
         ongoingCall, setOngoingCall,
@@ -621,14 +598,12 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         connectionStatus,
         peerConnectionRef,
         playSendMessageSound,
-        chatSidebarWidth, // Pass the width down
+        chatSidebarWidth,
     };
     
     return (
         <ChatProvider value={contextValue}>
-            <AppContent onFinishOnboarding={onFinishOnboarding}>
-                {children}
-            </AppContent>
+            {children}
             {permissionRequest && (
                 <PermissionRequestModal
                     callType={permissionRequest.callType}
@@ -637,7 +612,6 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
                     onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
                 />
             )}
-            {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
             <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
@@ -1020,17 +994,15 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         </aside>
       </div>
 
-      {/* Mobile Chat View */}
       {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
           <div className={cn(
             "fixed inset-0 z-50 flex h-full w-full flex-col",
             isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
           )}>
-              {/* Sidebar part */}
               <div className={cn(
                 "h-full transition-all duration-300",
                 chattingWith ? "w-[25%]" : "w-full",
-                isMobileChatFocus && chattingWith && "hidden" // Hide sidebar when typing in chat
+                isMobileChatFocus && chattingWith && "hidden"
               )}>
                   {chattingWith ? (
                     <ChatSidebar onToggleCollapse={() => {}} />
@@ -1038,7 +1010,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                     <MobileChatSidebar />
                   )}
               </div>
-              {/* Chat panel part */}
               {chattingWith && (
                   <div className="h-full w-[75%] flex-1 flex flex-col absolute top-0 right-0">
                       <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
@@ -1121,7 +1092,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           </motion.div>
       )}
       
-      {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
@@ -1138,13 +1108,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { setOnboardingCompleted } = useAuth();
   return (
     <SidebarProvider>
-      <PluginProvider>
-        <StreakProvider>
-            <AppContentWrapper onFinishOnboarding={() => setOnboardingCompleted(true)}>
-              {children}
-            </AppContentWrapper>
-        </StreakProvider>
-      </PluginProvider>
+        <PluginProvider>
+            <StreakProvider>
+                <ChatProviderWrapper>
+                    <AppContent onFinishOnboarding={() => setOnboardingCompleted(true)}>
+                        {children}
+                    </AppContent>
+                </ChatProviderWrapper>
+            </StreakProvider>
+        </PluginProvider>
     </SidebarProvider>
   )
 }
+
+    
