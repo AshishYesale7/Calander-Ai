@@ -22,7 +22,7 @@ export default function IncomingAudioCall({ call, onAccept, onDecline }: Incomin
     >
       <div className="flex items-center gap-4">
         <Avatar className="h-14 w-14 border-2 border-green-500">
-          <AvatarImage src={call.callerPhotoURL || ''} alt={call.callerName} />
+          <AvatarImage src={call.callerPhotoURL || undefined} alt={call.callerName} />
           <AvatarFallback>{call.callerName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div>

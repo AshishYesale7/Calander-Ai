@@ -99,4 +99,3 @@ export default function CustomizeAvatarModal({ isOpen, onOpenChange, onSave }: C
     </Dialog>
   );
 }
-

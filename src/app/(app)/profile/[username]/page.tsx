@@ -79,7 +79,7 @@ const ProfileHeader = ({ profile, children, isEditing, onEditToggle, onSave, onC
                 <div className="flex justify-between items-end -mt-16">
                     <div className="relative group">
                         <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                            <AvatarImage src={isDeleted ? '' : profile.photoURL || ''} alt={profile.displayName} />
+                            <AvatarImage src={isDeleted ? undefined : profile.photoURL || undefined} alt={profile.displayName} />
                             <AvatarFallback className="text-4xl">
                                 {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
                             </AvatarFallback>
@@ -180,7 +180,7 @@ const FollowListPopover = ({ triggerText, fetchFunction, profileId }: { triggerT
                         {users.map(u => (
                             <Link href={`/profile/${u.username}`} key={u.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={u.photoURL || ''} alt={u.displayName}/>
+                                    <AvatarImage src={u.photoURL || undefined} alt={u.displayName}/>
                                     <AvatarFallback>{u.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-sm font-medium truncate">{u.displayName}</span>
@@ -688,4 +688,3 @@ export default function UserProfilePage() {
       </>
     )
 }
-

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -213,7 +214,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                                             {avatarOptions.map((avatar) => (
                                                 <div key={avatar.id} className="flex flex-col items-center gap-2">
                                                     <button type="button" onClick={() => field.onChange(avatar.url)} className={cn("rounded-full border-4 p-1 transition-all", field.value === avatar.url ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                                                        <Avatar className="h-20 w-20"><AvatarImage src={avatar.url}/><AvatarFallback><User/></AvatarFallback></Avatar>
+                                                        <Avatar className="h-20 w-20"><AvatarImage src={avatar.url} alt="avatar" /><AvatarFallback><User/></AvatarFallback></Avatar>
                                                     </button>
                                                 </div>
                                             ))}

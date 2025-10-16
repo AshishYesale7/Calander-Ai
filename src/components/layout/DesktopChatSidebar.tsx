@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -163,7 +164,7 @@ const ChatListView = () => {
                                     onClick={() => handleUserClick(chat)}
                                 >
                                     <Avatar className="h-12 w-12">
-                                        <AvatarImage src={chat.photoURL || ''} alt={chat.displayName} />
+                                        <AvatarImage src={chat.photoURL || undefined} alt={chat.displayName} />
                                         <AvatarFallback>{chat.displayName.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
@@ -377,7 +378,7 @@ const CallLogView = () => {
                                 onCheckedChange={() => handleToggleSelection(call.id)}
                             />
                              <Avatar className="h-12 w-12">
-                                <AvatarImage src={call.otherUser?.photoURL || ''} alt={call.otherUser?.displayName} />
+                                <AvatarImage src={call.otherUser?.photoURL || undefined} alt={call.otherUser?.displayName} />
                                 <AvatarFallback>{call.otherUser?.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                              <div className="flex-1 min-w-0">

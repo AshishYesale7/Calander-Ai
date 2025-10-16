@@ -22,7 +22,7 @@ export default function OutgoingAudioCall({ user, onCancel }: OutgoingAudioCallP
     >
       <div className="flex items-center gap-4">
         <Avatar className="h-14 w-14 border-2 border-blue-500">
-          <AvatarImage src={user.photoURL || ''} alt={user.displayName} />
+          <AvatarImage src={user.photoURL || undefined} alt={user.displayName} />
           <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div>

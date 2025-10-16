@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { FC } from 'react';
@@ -152,7 +153,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onOpenChange }) => {
             <div className="flex justify-between items-end -mt-12">
                  <div className="relative">
                     <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+                        <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
                         <AvatarFallback className="text-3xl">
                             {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>

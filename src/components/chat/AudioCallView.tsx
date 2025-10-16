@@ -108,7 +108,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
         <canvas ref={canvasRef} width="200" height="200" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
         
         <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg relative z-10">
-          <AvatarImage src={otherUser.photoURL || ''} alt={otherUser.displayName} />
+          <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
           <AvatarFallback className="text-3xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
 

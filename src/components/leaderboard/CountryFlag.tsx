@@ -23,6 +23,7 @@ const CountryFlag = ({ countryCode, className }: CountryFlagProps) => {
             alt={`${countryCode} flag`}
             width={20}
             height={20}
+            unoptimized
             className="object-cover"
         />
     </div>
