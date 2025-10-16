@@ -1,7 +1,7 @@
 
 'use client';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, GoogleAuthProvider, reauthenticateWithPopup } from 'firebase/auth';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
@@ -10,6 +10,7 @@ import { AlertCircle } from 'lucide-react';
 import { getUserSubscription } from '@/services/subscriptionService';
 import { getUserProfile, createUserProfile } from '@/services/userService';
 import type { UserSubscription, UserProfile } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 // The user object in the context will now be the combination of Auth user and Firestore profile
 type AppUser = User & UserProfile;
@@ -35,6 +36,7 @@ interface AuthContextType {
   knownUsers: KnownUser[];
   addKnownUser: (user: User) => void;
   removeKnownUser: (uid: string) => void;
+  switchUser: (email: string) => Promise<void>; // New function for switching
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,6 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [dataLoading, setDataLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [knownUsers, setKnownUsers] = useState<KnownUser[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -91,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setKnownUsers(prev => {
       const existingUser = prev.find(u => u.uid === userToAdd.uid);
       const newUserList = existingUser
-        ? prev.map(u => u.uid === userToAdd.uid ? { ...u, displayName: userToAdd.displayName, photoURL: userToAdd.photoURL } : u)
+        ? prev.map(u => u.uid === userToAdd.uid ? { ...u, displayName: userToAdd.displayName, photoURL: userToAdd.photoURL, email: userToAdd.email } : u)
         : [...prev, { uid: userToAdd.uid, email: userToAdd.email, displayName: userToAdd.displayName, photoURL: userToAdd.photoURL }];
         
       localStorage.setItem(KNOWN_USERS_STORAGE_KEY, JSON.stringify(newUserList));
@@ -181,6 +184,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     return () => unsubscribe();
   }, [fetchFullUserProfile]);
+
+  const switchUser = async (email: string) => {
+    if (!user) {
+      toast({ title: "Error", description: "You must be signed in to switch accounts.", variant: "destructive" });
+      return;
+    }
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ login_hint: email });
+
+    try {
+      // Re-authenticate with the selected account. This will handle the sign-in flow.
+      await reauthenticateWithPopup(user, provider);
+      // The onAuthStateChanged listener will automatically handle updating the user context
+      // and reloading the app state. We just need to give it a moment to complete.
+      toast({ title: "Switching Accounts...", description: `Successfully signed in as ${email}.` });
+      // Reloading the page is a robust way to ensure all context and data is fresh for the new user.
+      window.location.href = '/dashboard';
+    } catch (error: any) {
+      console.error("Account switch error:", error);
+       // If the user cancels the popup, it's not a "real" error we need to bother them with.
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      toast({ title: "Switch Failed", description: error.message || "Could not switch accounts.", variant: "destructive" });
+    }
+  };
   
   if (!mounted) {
     return (
@@ -205,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser, knownUsers, addKnownUser, removeKnownUser }}>
+    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser, knownUsers, addKnownUser, removeKnownUser, switchUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -218,3 +247,5 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+    

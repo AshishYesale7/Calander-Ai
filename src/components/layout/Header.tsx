@@ -119,7 +119,7 @@ export default function Header({
   handleToggleFullScreen,
   isFullScreen,
 }: HeaderProps) {
-  const { user, subscription, isSubscribed, knownUsers, removeKnownUser } = useAuth();
+  const { user, subscription, isSubscribed, knownUsers, removeKnownUser, switchUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -158,8 +158,7 @@ export default function Header({
     try {
       await signOut(auth);
       if (switchToEmail) {
-          const query = new URLSearchParams({ email: switchToEmail }).toString();
-          router.push(`/auth/signin?${query}`);
+          switchUser(switchToEmail);
       } else {
           router.push('/auth/signin');
       }
@@ -169,11 +168,13 @@ export default function Header({
   };
   
   const handleAddAccount = () => {
-    handleSignOut();
+    router.push('/auth/signin');
   };
   
   const handleSwitchAccount = (email: string | null) => {
-    handleSignOut(email);
+    if (email) {
+      switchUser(email);
+    }
   };
 
 
@@ -513,7 +514,7 @@ export default function Header({
                   <span>Terms & Policies</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleSignOut()}>
+                <DropdownMenuItem onSelect={() => handleSignOut(null)}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -524,3 +525,5 @@ export default function Header({
     </>
   );
 }
+
+    
