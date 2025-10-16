@@ -221,19 +221,9 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                                        {form.formState.errors.avatarUrl && <p className="text-xs text-destructive text-center mt-2">{form.formState.errors.avatarUrl.message}</p>}
                                    </div>
                                 )}/>
-                                 {isPhoneUser && !isGoogleLinked && (
-                                     <div className="pt-2 text-center">
-                                         <Label className="text-destructive font-bold">Action Required</Label>
-                                         <p className="text-xs text-muted-foreground mb-2">To use all features, please connect your Google account.</p>
-                                         <Button type="button" onClick={handleGoogleConnect} variant="outline" className="w-full">
-                                            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>
-                                            Connect with Google
-                                        </Button>
-                                     </div>
-                                 )}
                             </div>
                             <DialogFooter className="p-6 pt-2">
-                                <Button type="submit" className="w-full" disabled={isSaving || !isGoogleLinked}>
+                                <Button type="submit" className="w-full" disabled={isSaving}>
                                     {isSaving ? <LoadingSpinner size="sm"/> : 'Continue'}
                                 </Button>
                             </DialogFooter>
@@ -248,6 +238,16 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                           <DialogDescription>Grant permissions for a better experience. You can change these later.</DialogDescription>
                        </DialogHeader>
                        <div className="p-6 pt-0 space-y-4">
+                           {isPhoneUser && !isGoogleLinked && (
+                               <div className="p-3 border border-amber-500/50 rounded-lg text-center bg-amber-900/20">
+                                   <p className="text-sm text-amber-200 font-semibold mb-2">Connect Google Account</p>
+                                   <p className="text-xs text-amber-300/80 mb-3">To sync with Google Calendar, Tasks, and Gmail, connect your Google account.</p>
+                                   <Button type="button" onClick={handleGoogleConnect} variant="outline" className="w-full">
+                                      <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>
+                                      Connect with Google
+                                  </Button>
+                               </div>
+                           )}
                            <div className="p-3 border rounded-lg flex items-center justify-between">
                                <div><h4 className="font-semibold text-sm">Notifications</h4><p className="text-xs text-muted-foreground">Get reminders for events.</p></div>
                                <Button size="sm" variant="outline" onClick={() => requestPermission('notifications')}><Bell className="h-4 w-4 mr-2"/>Enable</Button>
