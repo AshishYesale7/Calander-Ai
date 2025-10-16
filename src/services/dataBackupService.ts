@@ -178,20 +178,33 @@ export async function formatUserData(userId: string): Promise<void> {
         'skills',
         'timelineEvents',
         'trackedKeywords',
+        'calls', // Added calls
     ];
 
-    // 1. Delete all documents in subcollections
+    // 1. Delete all documents in simple subcollections
     for (const collectionName of collectionsToClear) {
         const collectionRef = collection(db, 'users', userId, collectionName);
         const snapshot = await getDocs(collectionRef);
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
+    
+    // 2. Handle nested 'chats' collection separately
+    const chatsCollectionRef = collection(db, 'users', userId, 'chats');
+    const chatsSnapshot = await getDocs(chatsCollectionRef);
+    for (const chatDoc of chatsSnapshot.docs) {
+        // Delete messages subcollection within each chat
+        const messagesCollectionRef = collection(chatDoc.ref, 'messages');
+        const messagesSnapshot = await getDocs(messagesCollectionRef);
+        messagesSnapshot.docs.forEach(msgDoc => batch.delete(msgDoc.ref));
+        // Finally, delete the chat document itself
+        batch.delete(chatDoc.ref);
+    }
 
-    // 2. Delete the separate streak document
+    // 3. Delete the separate streak document
     const streakDocRef = doc(db, 'streaks', userId);
     batch.delete(streakDocRef);
 
-    // 3. Reset fields on the main user document
+    // 4. Reset fields on the main user document
     const userDocRef = doc(db, 'users', userId);
     batch.update(userDocRef, {
         bio: '',
@@ -205,6 +218,7 @@ export async function formatUserData(userId: string): Promise<void> {
         installedPlugins: [],
         'preferences.routine': [],
         codingUsernames: {},
+        deletionStatus: null,
     });
 
     await batch.commit();
