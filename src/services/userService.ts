@@ -4,7 +4,8 @@
 
 import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebase-admin';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField, query, where, getDocs, limit, orderBy, writeBatch, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField as clientDeleteField, query, where, getDocs, limit, orderBy, writeBatch } from 'firebase/firestore';
+import { Timestamp, FieldValue as adminFieldValue } from 'firebase-admin/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
 import type { User } from 'firebase/auth';
 import { deleteImageByUrl } from './storageService';
@@ -562,8 +563,8 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
 
     const restoredData: any = {
         displayName: originalData.originalDisplayName,
-        deletionStatus: adminDb.FieldValue.delete(),
-        deletionScheduledAt: adminDb.FieldValue.delete(),
+        deletionStatus: adminFieldValue.delete(),
+        deletionScheduledAt: adminFieldValue.delete(),
     };
     
     const indexSet = new Set<string>();
@@ -592,7 +593,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
     const collectionsToClear = [
         'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
         'fcmTokens', 'notifications', 'resources', 'skills', 
-        'timelineEvents', 'trackedKeywords', 'followers', 'following', '_private'
+        'timelineEvents', 'trackedKeywords', 'followers', 'following', '_private', 'calls'
     ];
 
     for (const collectionName of collectionsToClear) {
@@ -620,22 +621,23 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         photoURL: null,
         coverPhotoURL: null,
         bio: 'This account has been permanently deleted.',
-        socials: adminDb.FieldValue.delete(),
-        statusEmoji: adminDb.FieldValue.delete(),
-        countryCode: adminDb.FieldValue.delete(),
-        searchableIndex: adminDb.FieldValue.delete(),
-        geminiApiKey: adminDb.FieldValue.delete(),
-        installedPlugins: adminDb.FieldValue.delete(),
-        preferences: adminDb.FieldValue.delete(),
-        codingUsernames: adminDb.FieldValue.delete(),
+        socials: adminFieldValue.delete(),
+        statusEmoji: adminFieldValue.delete(),
+        countryCode: adminFieldValue.delete(),
+        searchableIndex: adminFieldValue.delete(),
+        geminiApiKey: adminFieldValue.delete(),
+        installedPlugins: adminFieldValue.delete(),
+        preferences: adminFieldValue.delete(),
+        codingUsernames: adminFieldValue.delete(),
         followersCount: 0,
         followingCount: 0,
-        onboardingCompleted: adminDb.FieldValue.delete(),
-        subscription: adminDb.FieldValue.delete(), 
+        onboardingCompleted: adminFieldValue.delete(),
+        subscription: adminFieldValue.delete(), 
         deletionStatus: 'DELETED',
-        deletionScheduledAt: adminDb.FieldValue.delete(),
+        deletionScheduledAt: adminFieldValue.delete(),
     });
 
     await batch.commit();
 }
+
 
