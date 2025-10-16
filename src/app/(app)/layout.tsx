@@ -126,20 +126,22 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
       }
       return null;
     });
-
-    const checkAndRequestPermissions = async (callType: CallType): Promise<boolean> => {
+    
+    const checkAndRequestPermissions = async (callType: CallType): Promise<{ granted: boolean; error?: string }> => {
         if (typeof window === 'undefined' || !navigator.mediaDevices) {
-            return false;
+            return { granted: false, error: 'Media devices not supported.' };
         }
         const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
         try {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            // We got permission. We don't need to use the stream here yet, so we can stop it.
             stream.getTracks().forEach(track => track.stop());
-            return true;
-        } catch (error) {
-            console.error("Permission denied for media devices:", error);
-            return false;
+            return { granted: true };
+        } catch (error: any) {
+            console.error("Permission error:", error.name, error.message);
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                return { granted: false, error: 'denied' };
+            }
+            return { granted: false, error: error.message || 'An unknown error occurred.' };
         }
     };
     
@@ -424,15 +426,24 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         if (!callToAccept) return;
     
         const acceptAction = async () => {
-            const hasPermission = await checkAndRequestPermissions(callToAccept.callType);
-            if (hasPermission) {
+            const { granted, error } = await checkAndRequestPermissions(callToAccept.callType);
+            if (granted) {
                 setAndStoreActiveCallId(callToAccept.id);
                 await updateCallStatus(callToAccept.id, 'answered');
                 setIncomingCall(null);
                 setIncomingAudioCall(null);
             } else {
-                toast({ title: "Permission Denied", description: "Camera and microphone access is required to accept the call.", variant: "destructive" });
-                declineCall(); // Automatically decline if permission is denied.
+                if (error === 'denied') {
+                    // Re-open the modal in the 'denied' state if permission was explicitly blocked.
+                    setPermissionRequest({
+                        callType: callToAccept.callType,
+                        onGrant: acceptAction, // Let them try again
+                        onDeny: () => declineCall()
+                    });
+                } else {
+                    toast({ title: "Permission Required", description: "Camera and microphone access is required to accept the call.", variant: "destructive" });
+                    declineCall(); // Automatically decline if there was an error
+                }
             }
         };
     
@@ -466,21 +477,27 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             setAndStoreActiveCallId(callId);
         };
     
-        const hasPermission = await checkAndRequestPermissions(callType);
-        if (hasPermission) {
+        const { granted, error } = await checkAndRequestPermissions(callType);
+        if (granted) {
             proceedWithCall();
         } else {
-            // If permission is not already granted, show the modal.
+            // If permission is not granted, show the modal.
             setPermissionRequest({
                 callType: callType,
                 onGrant: async () => {
-                    // This will re-trigger the browser prompt if needed.
-                    const granted = await checkAndRequestPermissions(callType);
-                    if (granted) {
+                    const { granted: grantedAfterPrompt, error: errorAfterPrompt } = await checkAndRequestPermissions(callType);
+                    if (grantedAfterPrompt) {
                         proceedWithCall();
+                    } else if (errorAfterPrompt === 'denied') {
+                        // If they deny it again, re-open the modal in the denied state.
+                        setPermissionRequest({
+                            callType: callType,
+                            onGrant: () => { /* Let them try again */ },
+                            onDeny: () => { /* User cancelled */ }
+                        });
                     } else {
                         toast({
-                            title: "Permission Denied",
+                            title: "Permission Required",
                             description: `You need to grant permission to make a ${callType} call.`,
                             variant: "destructive"
                         });
@@ -605,7 +622,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_335a11e030.mp3" preload="auto" loop className="hidden" />
+            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2025/04/29/audio_2a52b7d68b.mp3" preload="auto" loop className="hidden" />
         </ChatProvider>
     );
 }
