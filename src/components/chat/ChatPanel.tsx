@@ -12,7 +12,7 @@ import { listenForTyping, updateTypingStatus } from '@/services/typingService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, CheckCircle } from 'lucide-react';
+import { X, Phone, Video, Info, Smile, Mic, Image as ImageIcon, Send, ArrowLeft, PhoneMissed, PhoneIncoming, PhoneOutgoing, Copy, Trash2, CheckCircle, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
