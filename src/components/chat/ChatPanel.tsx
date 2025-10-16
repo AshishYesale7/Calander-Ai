@@ -113,9 +113,10 @@ const MessageItem = ({
           <div
             className={cn(
               'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1 rounded-2xl transition-colors duration-200',
-              isMe ? 'bg-blue-500 text-white' : 'bg-[#262626] text-white',
-              isLastInBlock && (isMe ? 'rounded-br-lg' : 'rounded-bl-lg'),
-              isSelected && 'bg-blue-700/80'
+              isSelected 
+                ? 'frosted-glass bg-accent/20 border border-accent/30'
+                : (isMe ? 'bg-blue-500 text-white' : 'bg-[#262626] text-white'),
+              isLastInBlock && (isMe ? 'rounded-br-lg' : 'rounded-bl-lg')
             )}
           >
             {msg.isDeleted ? (
@@ -123,7 +124,7 @@ const MessageItem = ({
             ) : (
               <span>{msg.text}</span>
             )}
-            <span className={cn('text-white/70 self-end mt-1 text-[10px]', isMe ? 'text-right' : 'text-right')}>
+            <span className={cn('self-end mt-1 text-[10px]', isMe ? 'text-white/70' : 'text-white/70')}>
               {format(msg.timestamp, 'p')}
             </span>
           </div>
