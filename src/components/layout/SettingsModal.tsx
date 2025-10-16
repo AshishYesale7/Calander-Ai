@@ -22,7 +22,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup, PhoneAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup, PhoneAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -85,11 +85,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [actionToConfirm, setActionToConfirm] = useState<'delete' | 'format' | null>(null);
   const [isReauthenticating, setIsReauthenticating] = useState(false);
   const [reauthStep, setReauthStep] = useState<'prompt' | 'otp' | 'verifying'>('prompt');
-  const [reauthPhone, setReauthPhone] = useState<string | undefined>('');
   const [reauthOtp, setReauthOtp] = useState('');
   
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
+
+  // New ref for the re-auth recaptcha instance
+  const reauthRecaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
@@ -166,7 +168,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
             });
             checkNotionStatus(user.uid);
-            setReauthPhone(user.phoneNumber || '');
         }
     }
   }, [currentApiKey, isOpen, toast, user]);
@@ -385,17 +386,39 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
   
+  const setupRecaptcha = useCallback((containerId: string) => {
+    if (!auth) return null;
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
+      return null;
+    }
+    // Clear previous instance if it exists on the window to avoid conflicts
+    if (reauthRecaptchaVerifier.current) {
+        reauthRecaptchaVerifier.current.clear();
+    }
+    const verifier = new RecaptchaVerifier(auth, container, {
+        'size': 'invisible',
+        'callback': () => console.log('reCAPTCHA verified')
+    });
+    reauthRecaptchaVerifier.current = verifier;
+    return verifier;
+  }, [auth]);
+
+
   const handleSendReauthOtp = async () => {
-    if (!auth || !reauthPhone || !isValidPhoneNumber(reauthPhone)) {
-        toast({ title: 'Invalid Phone Number', variant: 'destructive'});
+    if (!auth || !user?.phoneNumber || !isValidPhoneNumber(user.phoneNumber)) {
+        toast({ title: 'Invalid Phone Number', variant: 'destructive' });
         return;
     }
     setIsReauthenticating(true);
     try {
-        const verifier = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', {
-            'size': 'invisible', 'callback': () => {}
-        });
-        const confirmationResult = await signInWithPhoneNumber(auth, reauthPhone, verifier);
+        const verifier = setupRecaptcha('reauth-recaptcha-container');
+        if (!verifier) {
+            throw new Error("Could not create reCAPTCHA verifier.");
+        }
+        
+        const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
         window.confirmationResultSettings = confirmationResult;
         setReauthStep('otp');
     } catch (error: any) {
@@ -404,6 +427,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setIsReauthenticating(false);
     }
   };
+
 
   const handleVerifyReauthOtp = async () => {
     const confirmationResult = window.confirmationResultSettings;
@@ -864,15 +888,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-4">
-                  {reauthStep === 'prompt' && (
-                    <>
-                      {hasGoogleProvider && (
-                        <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
+                    {hasGoogleProvider && (
+                        <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating && reauthStep !== 'otp'} className="w-full">
                           {isReauthenticating && reauthStep !== 'otp' ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
                           Continue with Google
                         </Button>
-                      )}
-                      {hasPhoneProvider && (
+                    )}
+                    {hasPhoneProvider && reauthStep === 'prompt' && (
                         <div className="space-y-4">
                           <p className="text-sm text-muted-foreground text-center">An OTP will be sent to your registered phone number ({user?.phoneNumber}).</p>
                           <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
@@ -880,29 +902,27 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                             Send Verification Code
                           </Button>
                         </div>
-                      )}
-                      {(!hasGoogleProvider && !hasPhoneProvider) && (
-                        <p className="text-sm text-destructive">No verifiable sign-in methods found.</p>
-                      )}
-                    </>
-                  )}
-                  {reauthStep === 'otp' && (
-                      <div className="space-y-4">
-                          <div className="space-y-2">
-                              <Label htmlFor="reauth-otp">Enter OTP</Label>
-                              <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
-                          </div>
-                          <Button onClick={handleVerifyReauthOtp} className="w-full" disabled={isReauthenticating}>
-                              {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                              Verify and Continue
-                          </Button>
-                      </div>
-                  )}
-                  <div id="reauth-recaptcha-container"></div>
+                    )}
+                    {reauthStep === 'otp' && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="reauth-otp">Enter OTP</Label>
+                                <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
+                            </div>
+                            <Button onClick={handleVerifyReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                Verify and Continue
+                            </Button>
+                        </div>
+                    )}
+                    {(!hasGoogleProvider && !hasPhoneProvider) && (
+                      <p className="text-sm text-destructive">No verifiable sign-in methods found.</p>
+                    )}
                 </div>
                  <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => { setActionToConfirm(null); setReauthStep('prompt'); }}>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
+                <div id="reauth-recaptcha-container"></div>
             </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
