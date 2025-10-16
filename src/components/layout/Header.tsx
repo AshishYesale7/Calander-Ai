@@ -167,8 +167,13 @@ export default function Header({
     }
   };
   
-  const handleAddAccount = () => {
-    router.push('/auth/signin');
+  const handleAddAccount = async () => {
+    try {
+      await signOut(auth);
+      router.push('/auth/signin');
+    } catch (error) {
+      console.error('Error signing out for Add Account:', error);
+    }
   };
   
   const handleSwitchAccount = (email: string | null) => {
@@ -525,5 +530,3 @@ export default function Header({
     </>
   );
 }
-
-    
