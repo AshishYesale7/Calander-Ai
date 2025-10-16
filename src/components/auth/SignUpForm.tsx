@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, Smartphone, Mail } from 'lucide-react';
+import { Eye, EyeOff, Smartphone, Mail, CheckCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 import 'react-phone-number-input/style.css';
@@ -31,8 +31,6 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { createUserProfile, getUserProfile, reclaimUserAccount } from '@/services/userService';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -67,7 +65,10 @@ export default function SignUpForm() {
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
+
+  const [reclamationState, setReclamationState] = useState<'prompt' | 'confirmed' | 'cancelled' | null>(null);
   const [pendingReclamationUser, setPendingReclamationUser] = useState<{ uid: string; email: string } | null>(null);
+
 
   const { user, loading: authLoading } = useAuth();
 
@@ -123,7 +124,6 @@ export default function SignUpForm() {
     provider.addScope('https://www.googleapis.com/auth/calendar.events');
     provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
     provider.addScope('https://www.googleapis.com/auth/tasks');
-    // Force account selection every time.
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
@@ -131,15 +131,15 @@ export default function SignUpForm() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // After successful sign-in, check if this account is pending deletion
       const profile = await getUserProfile(user.uid);
       
       if (profile?.deletionStatus === 'PENDING_DELETION') {
         setPendingReclamationUser({ uid: user.uid, email: user.email || ''});
+        setReclamationState('prompt');
       } else {
         await createUserProfile(user); // Creates profile if it doesn't exist
         toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
-        router.push('/dashboard'); // Go to dashboard directly
+        router.push('/dashboard');
       }
 
     } catch (error: any) {
@@ -171,15 +171,31 @@ export default function SignUpForm() {
     setLoading(true);
     try {
       await reclaimUserAccount(pendingReclamationUser.uid);
-      toast({ title: 'Account Reclaimed!', description: 'Welcome back! Your account has been restored.' });
-      window.location.reload();
+      setReclamationState('confirmed');
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to reclaim account. Please contact support.', variant: 'destructive' });
+      setReclamationState(null);
+      setPendingReclamationUser(null);
     } finally {
       setLoading(false);
-      setPendingReclamationUser(null);
     }
   };
+
+  const handleCancelReclamation = async () => {
+    if (auth) await auth.signOut();
+    setReclamationState(null);
+    setPendingReclamationUser(null);
+    router.push('/');
+  };
+
+  useEffect(() => {
+    if (reclamationState === 'confirmed') {
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [reclamationState, router]);
 
   const handleSendOtp = async () => {
     if (!auth) {
@@ -431,20 +447,33 @@ export default function SignUpForm() {
         </p>
       </CardContent>
     </Card>
-      <AlertDialog open={!!pendingReclamationUser} onOpenChange={(open) => !open && setPendingReclamationUser(null)}>
+      <AlertDialog open={!!pendingReclamationUser}>
         <AlertDialogContent className="frosted-glass">
-            <AlertDialogHeader>
-                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    An account with {pendingReclamationUser?.email} was recently deleted. You have 30 days to reclaim it before the data is permanently erased.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setPendingReclamationUser(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReclaimAccount} disabled={loading}>
-                    {loading ? <LoadingSpinner size="sm" /> : 'Yes, Reclaim My Account'}
-                </AlertDialogAction>
-            </AlertDialogFooter>
+            {reclamationState === 'prompt' && (
+                <>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            An account with {pendingReclamationUser?.email} was recently deleted. You have 30 days to reclaim it before the data is permanently erased.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <Button variant="outline" onClick={handleCancelReclamation}>Cancel & Sign Out</Button>
+                        <Button onClick={handleReclaimAccount} disabled={loading}>
+                            {loading ? <LoadingSpinner size="sm" /> : 'Yes, Reclaim My Account'}
+                        </Button>
+                    </AlertDialogFooter>
+                </>
+            )}
+            {reclamationState === 'confirmed' && (
+                 <div className="flex flex-col items-center justify-center p-4 text-center">
+                    <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                    <AlertDialogTitle className="mb-2">Welcome Back!</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your account has been successfully restored. Redirecting you to the dashboard...
+                    </AlertDialogDescription>
+                </div>
+            )}
         </AlertDialogContent>
       </AlertDialog>
     </>
