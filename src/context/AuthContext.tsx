@@ -59,41 +59,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true); // Only tracks Firebase Auth state
+  const [dataLoading, setDataLoading] = useState(true); // Tracks profile/sub data
   const [mounted, setMounted] = useState(false);
 
   const isSubscribed = !!subscription && 
     (subscription.status === 'active' || subscription.status === 'trial') && 
     (subscription.endDate && new Date(subscription.endDate) > new Date());
 
-  const fetchFullUserProfile = useCallback(async (firebaseUser: User) => {
-    const [profile, userSub] = await Promise.all([
-      getUserProfile(firebaseUser.uid),
-      getUserSubscription(firebaseUser.uid)
-    ]);
-    
-    // Ensure profile exists, create if not
-    const userProfile = profile || await createUserProfile(firebaseUser);
+  const fetchFullUserProfile = useCallback(async (firebaseUser: User | null) => {
+    if (!firebaseUser) {
+      setUser(null);
+      setSubscription(null);
+      setOnboardingCompleted(true); // Reset to default
+      setDataLoading(false);
+      return;
+    }
 
-    setUser({ ...firebaseUser, ...userProfile });
-    setSubscription(userSub);
-    setOnboardingCompleted(userProfile.onboardingCompleted ?? false);
+    setDataLoading(true);
+    try {
+      const [profile, userSub] = await Promise.all([
+        getUserProfile(firebaseUser.uid),
+        getUserSubscription(firebaseUser.uid)
+      ]);
+
+      const userProfile = profile || await createUserProfile(firebaseUser);
+
+      setUser({ ...firebaseUser, ...userProfile });
+      setSubscription(userSub);
+      setOnboardingCompleted(userProfile.onboardingCompleted ?? false);
+    } catch (error) {
+      console.error("Failed to fetch full user profile:", error);
+      // In case of error, sign out to prevent inconsistent state
+      if (auth) {
+        auth.signOut();
+      }
+    } finally {
+      setDataLoading(false);
+    }
   }, []);
 
   const refreshUser = useCallback(async () => {
     if (auth.currentUser) {
       await auth.currentUser.reload();
-      const refreshedUser = auth.currentUser;
-      if (refreshedUser) {
-        await fetchFullUserProfile(refreshedUser);
-      }
+      await fetchFullUserProfile(auth.currentUser);
     }
   }, [fetchFullUserProfile]);
 
   const refreshSubscription = useCallback(async () => {
     if (user) {
-      setSubscriptionLoading(true);
+      setDataLoading(true);
       try {
         const userSub = await getUserSubscription(user.uid);
         setSubscription(userSub);
@@ -101,38 +116,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to fetch user subscription:", error);
         setSubscription(null);
       } finally {
-        setSubscriptionLoading(false);
+        setDataLoading(false);
       }
     }
   }, [user]);
 
-  // Effect 1: Handle Firebase auth state changes
+  // Effect 1: Handle Firebase auth state changes ONLY
   useEffect(() => {
     setMounted(true);
     if (!auth) {
       setAuthLoading(false);
-      setSubscriptionLoading(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setAuthLoading(true);
-        setSubscriptionLoading(true);
-        await fetchFullUserProfile(currentUser);
-        setAuthLoading(false);
-        setSubscriptionLoading(false);
-      } else {
-        setUser(null);
-        setSubscription(null);
-        setOnboardingCompleted(true);
-        setAuthLoading(false);
-        setSubscriptionLoading(false);
-      }
+      // This listener now ONLY sets the basic user object or null
+      // It no longer fetches profile data, preventing race conditions
+      await fetchFullUserProfile(currentUser);
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, [fetchFullUserProfile]);
-
-
+  
   if (!mounted) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#15161f' }}>
@@ -144,10 +148,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   if (!isFirebaseConfigured) {
     return <MissingConfiguration />;
   }
+  
+  const loading = authLoading || dataLoading;
 
-  const loading = authLoading || subscriptionLoading;
-
-  if (loading && !user) { // Show preloader longer on initial load without a user
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#15161f' }}>
         <Preloader />
