@@ -533,19 +533,12 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     };
     await privateDataRef.set(backupData);
 
-    const anonymizedData = {
-        displayName: 'Deleted User',
-        photoURL: null,
-        coverPhotoURL: null,
-        bio: 'This account is pending deletion.',
-        socials: {},
-        statusEmoji: null,
-        searchableIndex: [],
+    // Update the main document to set the deletion status and scheduled date.
+    // We no longer clear the data at this stage.
+    await userDocRef.update({
         deletionStatus: 'PENDING_DELETION',
         deletionScheduledAt: Timestamp.fromDate(deletionDate),
-    };
-
-    await userDocRef.update(anonymizedData);
+    });
 }
 
 export async function reclaimUserAccount(userId: string): Promise<void> {
@@ -556,7 +549,13 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
 
     const backupDocSnap = await privateDataRef.get();
     if (!backupDocSnap.exists) {
-        throw new Error("Cannot reclaim account: Private recovery data not found.");
+        // If there's no backup, it's safe to just remove the deletion flags.
+        // This handles edge cases where the backup might have failed.
+        await userDocRef.update({
+            deletionStatus: adminFieldValue.delete(),
+            deletionScheduledAt: adminFieldValue.delete(),
+        });
+        return;
     }
     const backupData = backupDocSnap.data()!;
     
@@ -601,11 +600,10 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
             console.warn(`User ${userId} not found in Auth, proceeding with Firestore cleanup.`);
         } else {
             console.error(`Failed to disable user ${userId} in Firebase Auth:`, error);
-            // We can choose to continue or to stop. Continuing is better for data cleanup.
         }
     }
 
-    const batch = adminDb.batch();
+    const batch = writeBatch(db);
 
     // Step 2: Delete all subcollections
     const collectionsToClear = [
@@ -615,41 +613,54 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
     ];
 
     for (const collectionName of collectionsToClear) {
-        const collectionRef = adminDb.collection('users').doc(userId).collection(collectionName);
-        const snapshot = await collectionRef.get();
+        const collectionRef = collection(db, 'users', userId, collectionName);
+        const snapshot = await getDocs(collectionRef);
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
     
-    // Step 3: Handle nested 'chats' collection separately
-    const chatsCollectionRef = adminDb.collection('users').doc(userId).collection('chats');
-    const chatsSnapshot = await chatsCollectionRef.get();
+    const chatsCollectionRef = collection(db, 'users', userId, 'chats');
+    const chatsSnapshot = await getDocs(chatsCollectionRef);
     for (const chatDoc of chatsSnapshot.docs) {
-        const messagesCollectionRef = chatDoc.ref.collection('messages');
-        const messagesSnapshot = await messagesCollectionRef.get();
+        const messagesCollectionRef = collection(chatDoc.ref, 'messages');
+        const messagesSnapshot = await getDocs(messagesCollectionRef);
         messagesSnapshot.docs.forEach(msgDoc => batch.delete(msgDoc.ref));
         batch.delete(chatDoc.ref);
     }
     
-    // Step 4: Delete the separate streak document
-    const streakDocRef = adminDb.collection('streaks').doc(userId);
+    const streakDocRef = doc(db, 'streaks', userId);
     batch.delete(streakDocRef);
 
-    // Step 5: Overwrite the main user document, preserving only essential fields
-    const userDocRef = adminDb.collection('users').doc(userId);
-    const userDocSnap = await userDocRef.get();
+    // Step 3: Overwrite the main user document
+    const userDocRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userDocRef);
     
-    if (userDocSnap.exists) {
+    if (userDocSnap.exists()) {
         const userData = userDocSnap.data()!;
         const finalUserData = {
-            email: userData.email || null, // Keep email
-            username: userData.username || `user_${userId.substring(0, 10)}`, // Keep username
-            deletionStatus: 'DELETED', // Mark as deleted
+            email: userData.email || null,
+            username: userData.username || `user_${userId.substring(0, 10)}`,
+            uid: userId, // Ensure uid is preserved if it was a field
+            deletionStatus: 'DELETED',
         };
-        // Use `set` to overwrite the document completely with only the preserved fields
-        batch.set(userDocRef, finalUserData);
+        // Use `set` to overwrite, ensuring no other fields remain.
+        await setDoc(userDocRef, finalUserData);
     }
     
+    // We do not commit the batch here, as the setDoc overwrites the document.
+    // And subcollection deletions need a separate commit. Let's do it in stages.
     await batch.commit();
+
+    // Final overwrite after subcollections are deleted
+    if (userDocSnap.exists()) {
+        const userData = userDocSnap.data()!;
+        const finalUserData = {
+            email: userData.email || null,
+            username: userData.username || `user_${userId.substring(0, 10)}`,
+            uid: userId,
+            deletionStatus: 'DELETED',
+        };
+        await setDoc(userDocRef, finalUserData);
+    }
 }
 
 
