@@ -21,7 +21,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPopup, RecaptchaVerifier, linkWithPhoneNumber, type ConfirmationResult, deleteUser, reauthenticateWithPopup } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -38,7 +38,7 @@ import {
 import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
-import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
+import { saveUserFCMToken, anonymizeUserAccount, permanentlyDeleteUserData } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 
@@ -79,6 +79,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFormatting, setIsFormatting] = useState(false);
+  
+  // New state for re-authentication flow
+  const [actionToConfirm, setActionToConfirm] = useState<'delete' | 'format' | null>(null);
+  const [isReauthenticating, setIsReauthenticating] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
+
 
   const isGoogleProviderLinked = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
@@ -130,6 +137,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
        setPhoneForLinking(undefined);
        setOtpForLinking('');
        setIsSendingTest(false);
+       // Reset re-auth state
+       setActionToConfirm(null);
+       setIsReauthenticating(false);
+       setIsDeleteConfirmOpen(false);
+       setIsFormatConfirmOpen(false);
+
     } else {
         setApiKeyInput(currentApiKey || '');
         if (user) {
@@ -300,7 +313,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
   const handleDisconnectNotion = async () => {
     if (!user) return;
-    // Logic to disconnect Notion will go here
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
 
@@ -363,26 +375,54 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const reauthenticateAndExecute = async (action: 'delete' | 'format') => {
     if (!user) {
-      toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
-      return;
+        toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
+        return;
     }
+    
+    // For simplicity, we'll use Google popup for re-authentication.
+    // A production app would handle different providers (e.g., ask for password).
+    const provider = new GoogleAuthProvider();
+
+    setIsReauthenticating(true);
     try {
-      await anonymizeUserAccount(user.uid);
-      toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
-      await auth.signOut();
-      localStorage.clear();
-      window.location.href = '/'; // Redirect to landing page
+        await reauthenticateWithPopup(user, provider);
+        // If re-authentication is successful, proceed with the action
+        if (action === 'delete') {
+            await anonymizeUserAccount(user.uid);
+            toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
+            await auth.signOut();
+            localStorage.clear();
+            window.location.href = '/'; 
+        } else if (action === 'format') {
+            setIsFormatting(true);
+            await formatUserData(user.uid);
+            Object.keys(localStorage).forEach(key => key.startsWith('futureSight') && localStorage.removeItem(key));
+            toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
+            setTimeout(() => window.location.reload(), 2000);
+        }
+        onOpenChange(false);
     } catch (error: any) {
-      console.error("Account deletion error:", error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete account. Please try again.',
-        variant: 'destructive',
-      });
+        console.error("Re-authentication failed:", error);
+        toast({ title: 'Authentication Failed', description: 'Could not confirm your identity. Please try again.', variant: 'destructive' });
+    } finally {
+        setIsReauthenticating(false);
+        setIsFormatting(false);
+        setActionToConfirm(null);
     }
   };
+  
+  const handleDeleteAccount = () => {
+    setIsDeleteConfirmOpen(false);
+    setActionToConfirm('delete');
+  };
+
+  const handleFormatData = () => {
+    setIsFormatConfirmOpen(false);
+    setActionToConfirm('format');
+  };
+
 
   const handleRequestNotificationPermission = async () => {
     if (!messaging || !user) {
@@ -503,31 +543,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         }
     };
     reader.readAsText(file);
-  };
-
-  const handleFormatData = async () => {
-    if (!user) return;
-    setIsFormatting(true);
-    toast({ title: 'Formatting...', description: 'Clearing your account data. This may take a moment.' });
-    try {
-        await formatUserData(user.uid);
-        
-        if (typeof window !== 'undefined') {
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('futureSight')) {
-                    localStorage.removeItem(key);
-                }
-            });
-        }
-        
-        toast({ title: 'Format Complete', description: 'Your account data has been cleared. The app will now reload.' });
-        setTimeout(() => window.location.reload(), 2000);
-
-    } catch (error: any) {
-        setIsFormatting(false);
-        console.error("Format error:", error);
-        toast({ title: 'Format Failed', description: 'Could not format your data. Please try again.', variant: 'destructive' });
-    }
   };
 
   return (
@@ -771,11 +786,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 <Label className="font-semibold text-base flex items-center text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" /> Danger Zone
                 </Label>
-                 <AlertDialog>
+                 <AlertDialog open={isFormatConfirmOpen} onOpenChange={setIsFormatConfirmOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full" disabled={isFormatting}>
-                       {isFormatting ? <LoadingSpinner size="sm" className="mr-2" /> : <Eraser className="mr-2 h-4 w-4" />}
-                       {isFormatting ? 'Formatting...' : 'Format All Data'}
+                    <Button variant="destructive" className="w-full">
+                       <Eraser className="mr-2 h-4 w-4" />
+                       Format All Data
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="frosted-glass">
@@ -796,7 +811,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <AlertDialog>
+                <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -826,6 +841,25 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         <DialogFooter>
            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
+        
+        {/* Re-authentication Dialog */}
+        <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => !open && setActionToConfirm(null)}>
+            <AlertDialogContent className="frosted-glass">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Please Confirm Your Identity</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        For your security, please sign in again to confirm this action.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setActionToConfirm(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => reauthenticateAndExecute(actionToConfirm!)} disabled={isReauthenticating}>
+                        {isReauthenticating ? <LoadingSpinner size="sm" className="mr-2"/> : null}
+                        Continue with Google
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
