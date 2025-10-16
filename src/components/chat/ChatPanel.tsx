@@ -233,22 +233,29 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
     scrollToBottom('smooth');
   }, [chatItems]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!currentUser?.uid || !otherUser?.uid || !inputMessage.trim()) {
       return;
     }
 
     const messageToSend = inputMessage;
     setInputMessage('');
-    try {
-      await sendMessage(currentUser.uid, otherUser.uid, messageToSend);
-      playSendMessageSound(); // Play the sound on successful send
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      updateTypingStatus(currentUser.uid, otherUser.uid, false);
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      setInputMessage(messageToSend);
-    }
+    playSendMessageSound(); // Play sound immediately for optimistic UI
+
+    sendMessage(currentUser.uid, otherUser.uid, messageToSend)
+      .catch(error => {
+        console.error("Failed to send message:", error);
+        // Revert input field on error
+        setInputMessage(messageToSend);
+        toast({
+          title: "Message Failed",
+          description: "Could not send your message. Please try again.",
+          variant: "destructive"
+        });
+      });
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    updateTypingStatus(currentUser.uid, otherUser.uid, false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -361,7 +368,10 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
       </ScrollArea>
 
       {/* Input Form */}
-      <footer className="flex-shrink-0 p-3 bg-black">
+      <footer className={cn(
+        "flex-shrink-0 p-3 bg-black",
+        isMobile && "fixed bottom-0 left-0 right-0"
+      )}>
         {isOtherUserTyping && (
           <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
             <Avatar className="h-6 w-6">

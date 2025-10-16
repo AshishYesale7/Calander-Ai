@@ -789,7 +789,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
       {/* Mobile Chat View */}
       {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
-          <div className="fixed inset-0 z-50 flex h-full w-full">
+          <div className={cn(
+            "fixed inset-0 z-50 flex h-full w-full flex-col",
+            isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
+          )}>
               {/* Sidebar part */}
               <div className={cn(
                 "h-full transition-all duration-300",
@@ -804,7 +807,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               </div>
               {/* Chat panel part */}
               {chattingWith && (
-                  <div className="h-full w-[75%] flex-1 flex flex-col">
+                  <div className="h-full w-[75%] flex-1 flex flex-col absolute top-0 right-0">
                       <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
                   </div>
               )}
