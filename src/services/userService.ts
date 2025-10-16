@@ -534,13 +534,6 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     };
 
     await userDocRef.update(anonymizedData);
-
-    try {
-        const { getAuth } = await import('firebase-admin/auth');
-        await getAuth().updateUser(userId, { disabled: true });
-    } catch (error) {
-        console.error(`Failed to disable auth user ${userId}:`, error);
-    }
 }
 
 export async function reclaimUserAccount(userId: string): Promise<void> {
@@ -575,14 +568,6 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     await userDocRef.update(restoredData);
 
     await privateDataRef.delete();
-
-    try {
-        const { getAuth } = await import('firebase-admin/auth');
-        await getAuth().updateUser(userId, { disabled: false });
-    } catch (error) {
-        console.error(`Failed to re-enable auth user ${userId}:`, error);
-        throw new Error("Failed to re-enable account.");
-    }
 }
     
 export async function permanentlyDeleteUserData(userId: string): Promise<void> {
