@@ -79,6 +79,20 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
+const checkAndRequestPermissions = async (callType: CallType): Promise<boolean> => {
+    const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        // We got permission. We don't need to use the stream here, so we can stop it immediately.
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (error) {
+        console.error("Permission denied for media devices:", error);
+        return false;
+    }
+};
+
+
 function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -108,6 +122,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const [isMuted, setIsMuted] = useState(false);
     const messageSentSoundRef = useRef<HTMLAudioElement>(null);
+    const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
+    const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -401,6 +417,16 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
         if (!user) return;
+
+        const hasPermission = await checkAndRequestPermissions(callType);
+        if (!hasPermission) {
+            toast({
+                title: "Permission Required",
+                description: "Camera and microphone access is needed to start a call.",
+                variant: "destructive",
+            });
+            return;
+        }
         
         if (callType === 'video') {
             setOutgoingCall(receiver);
@@ -419,7 +445,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         
         setAndStoreActiveCallId(callId);
         
-    }, [user]);
+    }, [user, toast]);
     
     const onTogglePipMode = useCallback(() => {
         if (isPipMode) {
@@ -445,6 +471,39 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     const playSendMessageSound = useCallback(() => {
         messageSentSoundRef.current?.play().catch(e => console.warn("Could not play message sound:", e));
     }, []);
+    
+    // Effect for playing ringtones
+    useEffect(() => {
+        const isIncoming = !!(incomingCall || incomingAudioCall);
+        const isOutgoing = !!(outgoingCall || outgoingAudioCall);
+        
+        const playSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
+        audioRef.current?.play().catch(e => console.warn("Ringtone playback failed:", e));
+        };
+
+        const stopSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
+            if(audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+        };
+
+        if (isIncoming) {
+            playSound(incomingRingtoneRef);
+            stopSound(outgoingRingtoneRef);
+        } else if (isOutgoing) {
+            playSound(outgoingRingtoneRef);
+            stopSound(incomingRingtoneRef);
+        } else {
+            stopSound(incomingRingtoneRef);
+            stopSound(outgoingRingtoneRef);
+        }
+
+        return () => {
+            stopSound(incomingRingtoneRef);
+            stopSound(outgoingRingtoneRef);
+        }
+    }, [incomingCall, incomingAudioCall, outgoingCall, outgoingAudioCall]);
 
     const pipSize = useMemo(() => {
         const baseWidth = pipSizeMode === 'large' ? 320 : 256;
@@ -489,8 +548,10 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             <AppContent onFinishOnboarding={onFinishOnboarding}>
                 {children}
             </AppContent>
-            {/* The audio element is placed here */}
+            {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
+            <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
+            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/23/audio_82c6c06a46.mp3" preload="auto" loop className="hidden" />
         </ChatProvider>
     );
 }
@@ -516,8 +577,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const bottomNavRef = useRef<HTMLDivElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
-  const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
+
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -685,38 +745,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     return () => clearInterval(colorInterval);
   }, []);
   
-  // Effect for playing ringtones
-  useEffect(() => {
-    const isIncoming = !!(incomingCall || incomingAudioCall);
-    const isOutgoing = !!(outgoingCall || outgoingAudioCall);
-    
-    const playSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
-      audioRef.current?.play().catch(e => console.warn("Ringtone playback failed:", e));
-    };
-
-    const stopSound = (audioRef: React.RefObject<HTMLAudioElement>) => {
-        if(audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    };
-
-    if (isIncoming) {
-        playSound(incomingRingtoneRef);
-        stopSound(outgoingRingtoneRef);
-    } else if (isOutgoing) {
-        playSound(outgoingRingtoneRef);
-        stopSound(incomingRingtoneRef);
-    } else {
-        stopSound(incomingRingtoneRef);
-        stopSound(outgoingRingtoneRef);
-    }
-
-    return () => {
-        stopSound(incomingRingtoneRef);
-        stopSound(outgoingRingtoneRef);
-    }
-  }, [incomingCall, incomingAudioCall, outgoingCall, outgoingAudioCall]);
   
   useEffect(() => {
     if (remoteStream && remoteAudioRef.current) {
@@ -918,8 +946,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       
       {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
-      <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/23/audio_82c6c06a46.mp3" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
@@ -947,5 +973,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     
 
     
+
 
 

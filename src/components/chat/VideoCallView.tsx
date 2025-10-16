@@ -24,12 +24,23 @@ interface VideoCallViewProps {
   onTogglePipSizeMode: () => void;
 }
 
+const checkAndRequestCameraPermission = async (): Promise<boolean> => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (error) {
+        console.error("Camera permission denied:", error);
+        return false;
+    }
+};
+
 export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, onTogglePipMode, pipSizeMode, onTogglePipSizeMode }: VideoCallViewProps) {
   const { user } = useAuth();
   const { localStream, remoteStream, isMuted, onToggleMute, connectionStatus, peerConnectionRef } = useChat();
 
   const [isCameraOff, setIsCameraOff] = useState(false);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(true);
+  const [hasPermission, setHasPermission] = useState<boolean>(true);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [callData, setCallData] = useState<CallDataType>(call);
@@ -76,17 +87,28 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
     checkCameras();
   }, []);
 
-  const handleToggleCamera = () => {
+  const handleToggleCamera = async () => {
     if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        const isOff = !videoTrack.enabled;
-        setIsCameraOff(isOff);
-        if (user) {
-          updateCallParticipantStatus(call.id, user.uid, { videoMuted: isOff });
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            const isCurrentlyEnabled = videoTrack.enabled;
+            // If turning the camera ON, check for permissions first.
+            if (!isCurrentlyEnabled) {
+                const permission = await checkAndRequestCameraPermission();
+                if (!permission) {
+                    setHasPermission(false);
+                    return; // Don't proceed if permission is denied
+                }
+                setHasPermission(true);
+            }
+            
+            videoTrack.enabled = !isCurrentlyEnabled;
+            const isOff = !videoTrack.enabled;
+            setIsCameraOff(isOff);
+            if (user) {
+                updateCallParticipantStatus(call.id, user.uid, { videoMuted: isOff });
+            }
         }
-      }
     }
   };
   
