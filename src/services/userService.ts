@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, auth as adminAuth } from '@/lib/firebase-admin';
 import { doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteField as clientDeleteField, query, where, getDocs, limit, orderBy, writeBatch } from 'firebase/firestore';
 import { Timestamp, FieldValue as adminFieldValue } from 'firebase-admin/firestore';
 import type { UserPreferences, SocialLinks, UserProfile } from '@/types';
@@ -290,7 +290,6 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
             };
 
             if (data.deletionScheduledAt) {
-                // ALWAYS convert to ISO string if it exists.
                 profile.deletionScheduledAt = (data.deletionScheduledAt as Timestamp).toDate().toISOString();
             }
 
@@ -562,7 +561,7 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     const backupData = backupDocSnap.data()!;
     
     const userDocSnap = await userDocRef.get();
-    if (!userDocSnap.exists) { // Corrected: use .exists property
+    if (!userDocSnap.exists) {
         throw new Error("User document does not exist for reclamation.");
     }
     const currentUserData = userDocSnap.data()!;
@@ -592,10 +591,23 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
 }
     
 export async function permanentlyDeleteUserData(userId: string): Promise<void> {
-    if (!adminDb) throw new Error("Admin Firestore not initialized.");
+    if (!adminDb || !adminAuth) throw new Error("Admin SDK not initialized.");
+
+    // Step 1: Disable the user in Firebase Auth
+    try {
+        await adminAuth.updateUser(userId, { disabled: true });
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found') {
+            console.warn(`User ${userId} not found in Auth, proceeding with Firestore cleanup.`);
+        } else {
+            console.error(`Failed to disable user ${userId} in Firebase Auth:`, error);
+            // We can choose to continue or to stop. Continuing is better for data cleanup.
+        }
+    }
 
     const batch = adminDb.batch();
 
+    // Step 2: Delete all subcollections
     const collectionsToClear = [
         'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
         'fcmTokens', 'notifications', 'resources', 'skills', 
@@ -608,6 +620,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
     
+    // Step 3: Handle nested 'chats' collection separately
     const chatsCollectionRef = adminDb.collection('users').doc(userId).collection('chats');
     const chatsSnapshot = await chatsCollectionRef.get();
     for (const chatDoc of chatsSnapshot.docs) {
@@ -617,25 +630,25 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         batch.delete(chatDoc.ref);
     }
     
+    // Step 4: Delete the separate streak document
     const streakDocRef = adminDb.collection('streaks').doc(userId);
     batch.delete(streakDocRef);
 
-    // Get the current user data to preserve uid, email, and username
+    // Step 5: Overwrite the main user document, preserving only essential fields
     const userDocRef = adminDb.collection('users').doc(userId);
     const userDocSnap = await userDocRef.get();
-    const userData = userDocSnap.data();
-
-    // Create a new object with only the fields to keep
-    const finalUserData = {
-      uid: userId, // This is not a field, but for clarity
-      email: userData?.email || null,
-      username: userData?.username || `user_${userId.substring(0, 10)}`,
-      deletionStatus: 'DELETED',
-    };
-
-    // Overwrite the entire document with only the preserved fields
-    batch.set(userDocRef, finalUserData);
-
+    
+    if (userDocSnap.exists) {
+        const userData = userDocSnap.data()!;
+        const finalUserData = {
+            email: userData.email || null, // Keep email
+            username: userData.username || `user_${userId.substring(0, 10)}`, // Keep username
+            deletionStatus: 'DELETED', // Mark as deleted
+        };
+        // Use `set` to overwrite the document completely with only the preserved fields
+        batch.set(userDocRef, finalUserData);
+    }
+    
     await batch.commit();
 }
 
