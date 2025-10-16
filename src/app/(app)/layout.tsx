@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -169,6 +170,15 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
     }, [localStream, remoteStream]);
     
+    const declineCall = useCallback(() => {
+        const callToDecline = incomingCall || incomingAudioCall;
+        if (callToDecline) {
+            updateCallStatus(callToDecline.id, 'declined');
+            setIncomingCall(null);
+            setIncomingAudioCall(null);
+        }
+    }, [incomingCall, incomingAudioCall]);
+    
     const endCall = useCallback((callIdToUpdate?: string, status: 'ended' | 'declined' = 'ended') => {
         const id = callIdToUpdate || activeCallId;
         if (id && typeof id === 'string') {
@@ -190,10 +200,14 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             if (activeCallId) {
                 endCall(activeCallId);
             }
+            if (incomingCall || incomingAudioCall) {
+                declineCall();
+            }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [activeCallId, endCall]);
+    }, [activeCallId, endCall, incomingCall, incomingAudioCall, declineCall]);
+
 
     // This is the timeout for unanswered calls.
     useEffect(() => {
@@ -427,16 +441,8 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             onGrant: acceptAction,
             onDeny: () => declineCall()
         });
-    }, [incomingCall, incomingAudioCall, toast]);
+    }, [incomingCall, incomingAudioCall, toast, declineCall]);
     
-    const declineCall = useCallback(() => {
-        const callToDecline = incomingCall || incomingAudioCall;
-        if (callToDecline) {
-            updateCallStatus(callToDecline.id, 'declined');
-            setIncomingCall(null);
-            setIncomingAudioCall(null);
-        }
-    }, [incomingCall, incomingAudioCall]);
     
     const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
         if (!user) return;
@@ -599,7 +605,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2025/04/29/audio_2a52b7d68b.mp3" preload="auto" loop className="hidden" />
+            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_335a11e030.mp3" preload="auto" loop className="hidden" />
         </ChatProvider>
     );
 }
