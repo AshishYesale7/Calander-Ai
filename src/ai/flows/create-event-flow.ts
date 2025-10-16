@@ -14,7 +14,7 @@ import { z } from 'genkit';
 // Input schema for the component call
 const CreateEventInputSchema = z.object({
   prompt: z.string().describe("The user's natural language request for creating an event."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
   timezone: z.string().optional().describe("The IANA timezone name for the user, e.g., 'America/New_York'. This is crucial for correct date interpretation."),
 });
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;

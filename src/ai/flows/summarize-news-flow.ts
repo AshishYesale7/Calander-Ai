@@ -18,7 +18,7 @@ const SummarizeNewsPayloadSchema = z.object({
 
 // Full input schema including optional API key
 const SummarizeNewsInputSchema = SummarizeNewsPayloadSchema.extend({
-    apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type SummarizeNewsInput = z.infer<typeof SummarizeNewsInputSchema>;
 

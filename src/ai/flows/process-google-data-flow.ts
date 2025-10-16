@@ -41,7 +41,7 @@ const ProcessGoogleDataPayloadSchema = z.object({
 });
 
 const ProcessGoogleDataInputSchema = ProcessGoogleDataPayloadSchema.extend({
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type ProcessGoogleDataInput = z.infer<typeof ProcessGoogleDataInputSchema>;
 

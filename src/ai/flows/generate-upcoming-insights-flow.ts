@@ -19,7 +19,7 @@ import type { CareerGoal, TimelineEvent, RawGoogleTask } from '@/types';
 // Input Schema: Just requires the user ID.
 const GenerateUpcomingInsightsInputSchema = z.object({
   userId: z.string().describe("The user's unique ID to fetch their data."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type GenerateUpcomingInsightsInput = z.infer<typeof GenerateUpcomingInsightsInputSchema>;
 

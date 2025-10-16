@@ -14,7 +14,7 @@ import { z } from 'genkit';
 
 const TrackDeadlinesInputSchema = z.object({
   keyword: z.string().describe("The topic, exam name, or opportunity the user wants to track."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type TrackDeadlinesInput = z.infer<typeof TrackDeadlinesInputSchema>;
 

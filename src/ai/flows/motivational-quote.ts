@@ -19,7 +19,7 @@ const GenerateMotivationalQuotePayloadSchema = z.object({
 
 // The full input schema for the flow, including the optional API key.
 const GenerateMotivationalQuoteInputSchema = GenerateMotivationalQuotePayloadSchema.extend({
-    apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type GenerateMotivationalQuoteInput = z.infer<typeof GenerateMotivationalQuoteInputSchema>;
 

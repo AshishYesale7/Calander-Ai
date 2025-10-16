@@ -25,7 +25,7 @@ const GenerateDailyPlanPayloadSchema = z.object({
 
 // Full input schema including optional API key
 const GenerateDailyPlanInputSchema = GenerateDailyPlanPayloadSchema.extend({
-    apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type GenerateDailyPlanInput = z.infer<typeof GenerateDailyPlanInputSchema>;
 

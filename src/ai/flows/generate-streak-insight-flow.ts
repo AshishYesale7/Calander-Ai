@@ -15,7 +15,7 @@ const GenerateStreakInsightInputSchema = z.object({
   longestStreak: z.number().describe("The user's longest-ever daily streak."),
   rank: z.number().optional().describe("The user's current rank on the leaderboard. Can be null if not ranked."),
   totalUsers: z.number().describe("The total number of users on the leaderboard."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key. Not used in this flow directly but kept for potential future use and schema consistency."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key. Not used in this flow directly but kept for potential future use and schema consistency."),
 });
 export type GenerateStreakInsightInput = z.infer<typeof GenerateStreakInsightInputSchema>;
 

@@ -29,7 +29,7 @@ const ConversationalEventInputSchema = z.object({
     role: z.enum(['user', 'model', 'tool']),
     content: z.string(),
   })).describe("The history of the conversation so far."),
-  apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
   timezone: z.string().optional().describe("The IANA timezone name for the user, e.g., 'America/New_York'."),
 });
 export type ConversationalEventInput = z.infer<typeof ConversationalEventInputSchema>;

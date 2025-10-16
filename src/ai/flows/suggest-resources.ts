@@ -21,7 +21,7 @@ const SuggestResourcesPayloadSchema = z.object({
 
 // Full input schema including optional API key
 const SuggestResourcesInputSchema = SuggestResourcesPayloadSchema.extend({
-    apiKey: z.string().optional().describe("Optional user-provided Gemini API key."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type SuggestResourcesInput = z.infer<typeof SuggestResourcesInputSchema>;
 

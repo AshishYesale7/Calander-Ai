@@ -15,7 +15,7 @@ const FetchCodingStatsInputSchema = z.object({
     codeforces: z.string().optional().describe("Codeforces username"),
     leetcode: z.string().optional().describe("LeetCode username"),
     codechef: z.string().optional().describe("Codechef username"),
-    apiKey: z.string().optional().describe("Optional user-provided Gemini API key. No longer used but kept for schema consistency."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key. No longer used but kept for schema consistency."),
 });
 export type FetchCodingStatsInput = z.infer<typeof FetchCodingStatsInputSchema>;
 
