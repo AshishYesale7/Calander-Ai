@@ -290,11 +290,9 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 deletionStatus: data.deletionStatus,
             };
 
-            if (data.deletionScheduledAt instanceof Timestamp) {
+            if (data.deletionScheduledAt) {
+                // ALWAYS convert to ISO string if it exists.
                 profile.deletionScheduledAt = data.deletionScheduledAt.toDate().toISOString();
-            } else if (data.deletionScheduledAt) {
-                // It might already be a string if fetched and cached
-                profile.deletionScheduledAt = data.deletionScheduledAt;
             }
 
             return profile;
