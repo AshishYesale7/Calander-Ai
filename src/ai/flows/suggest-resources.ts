@@ -82,17 +82,24 @@ const suggestResourcesFlow = ai.defineFlow({
     const skillsText = skills.map(s => s.name).join(', ');
     const eventsText = timelineEvents.map(e => `${e.title} on ${format(e.date, 'PPP')}`).join('; ');
 
-    const { output } = await suggestResourcesPrompt({
-        goalsText: goalsText.length > 0 ? goalsText : 'No career goals specified.',
-        skillsText: skillsText.length > 0 ? skillsText : 'No skills specified.',
-        eventsText: eventsText.length > 0 ? eventsText : 'No upcoming events.',
-    });
+    try {
+        const { output } = await suggestResourcesPrompt({
+            goalsText: goalsText.length > 0 ? goalsText : 'No career goals specified.',
+            skillsText: skillsText.length > 0 ? skillsText : 'No skills specified.',
+            eventsText: eventsText.length > 0 ? eventsText : 'No upcoming events.',
+        });
 
-    if (!output) {
-      return { suggestedResources: [] };
+        if (!output) {
+          return { suggestedResources: [] };
+        }
+        
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model for suggestions is temporarily overloaded. Please try again shortly.");
+        }
+        throw e;
     }
-    
-    return output;
 });
 
 export async function suggestResources(input: SuggestResourcesInput): Promise<SuggestResourcesOutput> {

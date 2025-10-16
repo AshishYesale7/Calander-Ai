@@ -175,20 +175,29 @@ const generateDailyPlanFlow = ai.defineFlow({
       ? timelineEvents.map(e => `- Event: "${e.title}" on ${format(e.date, 'PPP')}.`).join('\n')
       : 'No upcoming events on the timeline.';
     
-    const { output } = await dailyPlanPrompt({
-        currentDateStr,
-        sleepScheduleText,
-        fixedScheduleText,
-        careerGoalsText,
-        skillsText,
-        timelineEventsText
-    });
+    try {
+        const { output } = await dailyPlanPrompt({
+            currentDateStr,
+            sleepScheduleText,
+            fixedScheduleText,
+            careerGoalsText,
+            skillsText,
+            timelineEventsText
+        });
 
-    if (!output) {
-      throw new Error("The AI model did not return a valid daily plan.");
+        if (!output) {
+          throw new Error("The AI model did not return a valid daily plan.");
+        }
+        
+        return output;
+    } catch (e: any) {
+        // Check for specific 503 error and throw a more user-friendly message
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model is temporarily overloaded. Please try again in a few moments.");
+        }
+        // Re-throw other errors
+        throw e;
     }
-    
-    return output;
 });
 
 

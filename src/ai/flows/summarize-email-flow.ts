@@ -48,13 +48,20 @@ const summarizeEmailFlow = ai.defineFlow({
     inputSchema: SummarizeEmailInputSchema,
     outputSchema: SummarizeEmailOutputSchema,
 }, async (input) => {
-    const { output } = await summarizeEmailPrompt(input);
+    try {
+        const { output } = await summarizeEmailPrompt(input);
 
-    if (!output) {
-        throw new Error("The AI model did not return a valid summary.");
+        if (!output) {
+            throw new Error("The AI model did not return a valid summary.");
+        }
+        
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model is temporarily overloaded. Please try again shortly.");
+        }
+        throw e;
     }
-    
-    return output;
 });
 
 export async function summarizeEmail(input: SummarizeEmailInput): Promise<SummarizeEmailOutput> {

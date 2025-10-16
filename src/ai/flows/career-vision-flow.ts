@@ -84,13 +84,20 @@ const generateCareerVisionFlow = ai.defineFlow({
     inputSchema: GenerateCareerVisionInputSchema,
     outputSchema: GenerateCareerVisionOutputSchema,
 }, async (input) => {
-    const { output } = await careerVisionPrompt({ aspirations: input.aspirations });
-    
-    if (!output) {
-      throw new Error("The AI model did not return a valid vision statement.");
+    try {
+        const { output } = await careerVisionPrompt({ aspirations: input.aspirations });
+        
+        if (!output) {
+          throw new Error("The AI model did not return a valid vision statement.");
+        }
+        
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model is temporarily overloaded. Please try again in a few moments.");
+        }
+        throw e;
     }
-    
-    return output;
 });
 
 export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {

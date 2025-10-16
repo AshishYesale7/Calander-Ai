@@ -79,16 +79,23 @@ const trackDeadlinesFlow = ai.defineFlow({
     inputSchema: TrackDeadlinesInputSchema,
     outputSchema: TrackDeadlinesOutputSchema,
 }, async (input) => {
-    const { output } = await trackDeadlinesPrompt({
-        keyword: input.keyword,
-        currentDate: new Date().toISOString(),
-    });
+    try {
+        const { output } = await trackDeadlinesPrompt({
+            keyword: input.keyword,
+            currentDate: new Date().toISOString(),
+        });
 
-    if (!output) {
-      return { deadlines: [] };
+        if (!output) {
+          return { deadlines: [] };
+        }
+        
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model for tracking deadlines is temporarily overloaded. Please try again shortly.");
+        }
+        throw e;
     }
-    
-    return output;
 });
 
 export async function trackDeadlines(input: TrackDeadlinesInput): Promise<TrackDeadlinesOutput> {

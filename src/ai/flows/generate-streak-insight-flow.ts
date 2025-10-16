@@ -86,9 +86,9 @@ const generateStreakInsightFlow = ai.defineFlow(
             throw new Error("AI did not return a valid insight.");
         }
         return output;
-    } catch (error) {
+    } catch (error: any) {
         console.warn("AI insight generation failed, using fallback. Error:", error);
-        // Return a random mock insight on any error
+        // On ANY error (including 503), return a random mock insight. This is a non-critical feature.
         const randomIndex = Math.floor(Math.random() * mockInsights.length);
         return { insight: mockInsights[randomIndex] };
     }

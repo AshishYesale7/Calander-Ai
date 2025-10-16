@@ -90,16 +90,25 @@ const createConversationalEventFlow = ai.defineFlow({
 }, async (input) => {
     const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
     
-    const { output } = await conversationalEventPrompt({
-        chatHistoryString: historyString,
-        currentDate: new Date().toISOString(),
-        timezone: input.timezone || 'UTC',
-    });
+    try {
+        const { output } = await conversationalEventPrompt({
+            chatHistoryString: historyString,
+            currentDate: new Date().toISOString(),
+            timezone: input.timezone || 'UTC',
+        });
 
-    if (!output) {
-      throw new Error("The AI model did not return a valid response.");
+        if (!output) {
+          throw new Error("The AI model did not return a valid response.");
+        }
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            return {
+                response: "I'm sorry, my scheduling assistant is currently unavailable as the service is overloaded. Please try again in a moment.",
+            };
+        }
+        throw e;
     }
-    return output;
 });
 
 // The main exported function that the UI will call

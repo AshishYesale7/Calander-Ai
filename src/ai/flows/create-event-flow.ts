@@ -80,16 +80,23 @@ const createEventFromPromptFlow = ai.defineFlow({
     inputSchema: CreateEventInputSchema,
     outputSchema: CreateEventOutputSchema,
 }, async (input) => {
-    const { output } = await createEventPrompt({
-        prompt: input.prompt,
-        timezone: input.timezone || 'UTC',
-        currentDate: new Date().toISOString(),
-    });
+    try {
+        const { output } = await createEventPrompt({
+            prompt: input.prompt,
+            timezone: input.timezone || 'UTC',
+            currentDate: new Date().toISOString(),
+        });
 
-    if (!output) {
-      throw new Error("The AI model did not return a valid event structure.");
+        if (!output) {
+          throw new Error("The AI model did not return a valid event structure.");
+        }
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model is temporarily overloaded. Please try again in a few moments.");
+        }
+        throw e;
     }
-    return output;
 });
 
 // Exported function that the UI will call

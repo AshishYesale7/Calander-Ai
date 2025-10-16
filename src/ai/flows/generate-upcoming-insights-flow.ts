@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for generating smart, prioritized insights about the upcoming week.
@@ -118,19 +119,26 @@ const generateUpcomingInsightsFlow = ai.defineFlow({
         ? upcomingEvents.map(e => `- "${e.title}" on ${format(e.date, 'PPP')}, Type: ${e.type}`).join('\n')
         : 'No upcoming events.';
         
-    // 4. Call the AI prompt
-    const { output } = await upcomingInsightsPrompt({
-        currentDate: now.toISOString(),
-        upcomingEventsText,
-        upcomingTasksText,
-        careerGoalsText,
-    });
+    try {
+        // 4. Call the AI prompt
+        const { output } = await upcomingInsightsPrompt({
+            currentDate: now.toISOString(),
+            upcomingEventsText,
+            upcomingTasksText,
+            careerGoalsText,
+        });
 
-    if (!output) {
-      throw new Error("The AI model did not return valid insights.");
+        if (!output) {
+          throw new Error("The AI model did not return valid insights.");
+        }
+        
+        return output;
+    } catch (e: any) {
+        if (e.message && e.message.includes('503')) {
+            throw new Error("The AI model for insights is temporarily overloaded. Please try again shortly.");
+        }
+        throw e;
     }
-    
-    return output;
 });
 
 
