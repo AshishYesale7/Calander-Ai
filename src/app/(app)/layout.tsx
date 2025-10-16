@@ -55,6 +55,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { differenceInDays } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -628,13 +629,10 @@ function ReclamationModal() {
     const { toast } = useToast();
     const router = useRouter();
     const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
+    const [isReclaiming, setIsReclaiming] = useState(false);
     
     const deletionDate = useMemo(() => {
         if (user?.deletionScheduledAt) {
-            // Firestore timestamps can be serialized in different ways, so handle both cases.
-            if (typeof user.deletionScheduledAt === 'object' && 'seconds' in user.deletionScheduledAt) {
-                return new Date((user.deletionScheduledAt as any).seconds * 1000);
-            }
             return new Date(user.deletionScheduledAt);
         }
         return null;
@@ -657,11 +655,14 @@ function ReclamationModal() {
 
     const handleReclaim = async () => {
         if (!user) return;
+        setIsReclaiming(true);
         try {
             await reclaimUserAccount(user.uid);
             setReclaimState('confirmed');
         } catch (error: any) {
             toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
+        } finally {
+            setIsReclaiming(false);
         }
     };
 
@@ -689,8 +690,11 @@ function ReclamationModal() {
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel onClick={handleCancel}>Cancel Deletion</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleReclaim}>Reclaim My Account</AlertDialogAction>
+                                <AlertDialogCancel onClick={handleCancel}>Cancel & Sign Out</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReclaim} disabled={isReclaiming}>
+                                    {isReclaiming && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Reclaim My Account
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </motion.div>
                     )}
