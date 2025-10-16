@@ -188,7 +188,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     });
     (window as any)[`recaptchaVerifier_${containerRef.current.id}`] = verifier;
     return verifier;
-  }, [auth]);
+  }, []);
 
   useEffect(() => {
     if (!isLinkingPhone || !recaptchaContainerRef.current) return;
@@ -934,4 +934,5 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-```
+
+    
