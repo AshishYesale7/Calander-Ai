@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -53,6 +54,7 @@ import PermissionRequestModal from '@/components/chat/PermissionRequestModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { differenceInDays } from 'date-fns';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -625,12 +627,29 @@ function ReclamationModal() {
     const { user, refreshUser } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
-    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed' | 'canceled'>('prompt');
+    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
+    
+    const deletionDate = useMemo(() => {
+        if (user?.deletionScheduledAt) {
+            // Firestore timestamps can be serialized in different ways, so handle both cases.
+            if (typeof user.deletionScheduledAt === 'object' && 'seconds' in user.deletionScheduledAt) {
+                return new Date((user.deletionScheduledAt as any).seconds * 1000);
+            }
+            return new Date(user.deletionScheduledAt);
+        }
+        return null;
+    }, [user?.deletionScheduledAt]);
+    
+    const daysRemaining = useMemo(() => {
+        if (!deletionDate) return 0;
+        const remaining = differenceInDays(deletionDate, new Date());
+        return Math.max(0, remaining);
+    }, [deletionDate]);
 
     useEffect(() => {
         if (reclaimState === 'confirmed') {
-            const timer = setTimeout(() => {
-                refreshUser(); // This will re-fetch user data and remove the deletionStatus flag
+            const timer = setTimeout(async () => {
+                await refreshUser();
             }, 2000);
             return () => clearTimeout(timer);
         }
@@ -646,7 +665,7 @@ function ReclamationModal() {
         }
     };
 
-    const handleSignOut = async () => {
+    const handleCancel = async () => {
         try {
             await signOut(auth);
             router.push('/');
@@ -656,19 +675,21 @@ function ReclamationModal() {
     };
 
     return (
-        <AlertDialog open={true}>
-            <AlertDialogContent className="frosted-glass">
+        <AlertDialog open={true} onOpenChange={() => {}}>
+            <AlertDialogContent className="frosted-glass" hideCloseButton={true}>
                 <AnimatePresence mode="wait">
                     {reclaimState === 'prompt' && (
                         <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This account is scheduled for deletion. You can reclaim your account and all its data now, or cancel to proceed with deletion.
+                                    This account is scheduled for permanent deletion in{' '}
+                                    <span className="font-bold text-destructive">{daysRemaining} day{daysRemaining !== 1 && 's'}</span>.
+                                    You can reclaim your account now, or cancel to proceed with deletion.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel onClick={handleSignOut}>Cancel Deletion</AlertDialogCancel>
+                                <AlertDialogCancel onClick={handleCancel}>Cancel Deletion</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleReclaim}>Reclaim My Account</AlertDialogAction>
                             </AlertDialogFooter>
                         </motion.div>
@@ -763,9 +784,9 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     if (loading) return;
 
     if (!user) {
-        router.push('/auth/signin');
+      router.push('/auth/signin');
     } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
-        router.push('/subscription');
+      router.push('/subscription');
     }
   }, [user, loading, isSubscribed, router, pathname]);
   
