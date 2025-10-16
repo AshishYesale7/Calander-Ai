@@ -14,10 +14,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Video, Mic, AlertTriangle } from 'lucide-react';
 import type { CallType } from '@/types';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface PermissionRequestModalProps {
   callType: CallType;
-  onGrant: () => Promise<{ granted: boolean; error?: string }>;
+  onGrant: () => void;
   onDeny: () => void;
   onOpenChange: (open: boolean) => void;
 }
@@ -33,18 +34,11 @@ export default function PermissionRequestModal({
 
   const handleGrant = async () => {
     setIsAttempting(true);
-    const { granted, error } = await onGrant();
-    if (granted) {
-      onOpenChange(false);
-    } else {
-      if (error === 'denied') {
-        setPermissionState('denied');
-      } else {
-        // Handle other errors if necessary, for now just close.
-        onOpenChange(false);
-      }
-    }
-    setIsAttempting(false);
+    // The onGrant function now handles the permission check itself.
+    // It will close the modal on success or update the state on denial.
+    onGrant();
+    // We don't immediately set isAttempting to false, as the parent component will
+    // either close the modal or change its state.
   };
 
   const handleDeny = () => {
@@ -63,7 +57,7 @@ export default function PermissionRequestModal({
                 Permissions Required
               </DialogTitle>
               <DialogDescription>
-                To start this {callType} call, please grant access to your camera and microphone in the browser prompt.
+                To start this {callType} call, please grant access to your {callType === 'video' ? 'camera and microphone' : 'microphone'} in the browser prompt.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -71,6 +65,7 @@ export default function PermissionRequestModal({
                 Cancel
               </Button>
               <Button onClick={handleGrant} disabled={isAttempting}>
+                {isAttempting ? <LoadingSpinner size="sm" className="mr-2"/> : null}
                 {isAttempting ? 'Waiting...' : 'Grant Permission'}
               </Button>
             </DialogFooter>
@@ -83,7 +78,7 @@ export default function PermissionRequestModal({
                 Permissions Blocked
               </DialogTitle>
               <DialogDescription>
-                You have previously blocked access to your camera/microphone. To continue, you need to manually enable them in your browser's site settings.
+                You have previously blocked access to your {callType === 'video' ? 'camera/microphone' : 'microphone'}. To continue, you need to manually enable them in your browser's site settings.
               </DialogDescription>
             </DialogHeader>
             <div className="text-sm text-muted-foreground p-2 bg-background/50 rounded-md">
