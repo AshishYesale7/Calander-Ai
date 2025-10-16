@@ -91,7 +91,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
-
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
 
@@ -286,24 +285,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
   
-  const setupRecaptcha = useCallback((containerId: string) => {
-    if (!auth || !document) return null;
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
-      return null;
-    }
-    if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-    }
-    const verifier = new RecaptchaVerifier(auth, container, {
-        'size': 'invisible',
-        'callback': () => console.log('reCAPTCHA verified')
-    });
-    recaptchaVerifierRef.current = verifier;
-    return verifier;
-  }, [auth]);
-
   const handleSendLinkOtp = async () => {
     if (!auth.currentUser) return;
     if (!phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
@@ -312,8 +293,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     setLinkingPhoneState('loading');
     try {
-      const verifier = setupRecaptcha('recaptcha-container-settings');
-      if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-settings', {
+        'size': 'invisible', 'callback': () => console.log('reCAPTCHA verified')
+      });
       const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
       window.confirmationResult = confirmationResult;
       setLinkingPhoneState('otp-sent');
@@ -402,8 +384,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     if (!auth || !user?.phoneNumber) return;
     setIsReauthenticating(true);
     try {
-      const verifier = setupRecaptcha('reauth-recaptcha-container');
-      if (!verifier) throw new Error("Could not initialize reCAPTCHA for re-authentication.");
+      const verifier = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => console.log('reCAPTCHA verified for re-auth')
+      });
       const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
       window.confirmationResult = confirmationResult;
       setReauthStep('otp');
@@ -530,7 +514,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     };
     reader.readAsText(file);
   };
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg frosted-glass">
@@ -839,18 +823,18 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 <div className="space-y-4">
                     {reauthStep === 'prompt' && (
                         <div className="space-y-4">
-                            {!isGoogleConnected && !hasPhoneProvider && (
+                            {!hasGoogleProvider && !hasPhoneProvider && (
                                 <p className="text-sm text-destructive">No verifiable sign-in methods found. Please link a Google account or phone number.</p>
                             )}
                             
-                            {isGoogleConnected && (
+                            {hasGoogleProvider && (
                                 <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
                                 Continue with Google
                                 </Button>
                             )}
                             
-                            {isGoogleConnected && hasPhoneProvider && (
+                            {hasGoogleProvider && hasPhoneProvider && (
                                  <div className="relative my-2">
                                     <div className="absolute inset-0 flex items-center"> <span className="w-full border-t" /> </div>
                                     <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
@@ -889,6 +873,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-    
-
