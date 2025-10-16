@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -89,7 +90,10 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
 };
 
 export const saveCodingUsernames = async (userId: string, usernames: CodingUsernames): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not save coding usernames.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const usernamesToSave: { [key: string]: string | undefined | null } = {};
@@ -106,7 +110,10 @@ export const saveCodingUsernames = async (userId: string, usernames: CodingUsern
 };
 
 export const getCodingUsernames = async (userId: string): Promise<CodingUsernames | null> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve coding usernames.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -122,7 +129,10 @@ export const getCodingUsernames = async (userId: string): Promise<CodingUsername
 
 
 export const saveUserGeminiApiKey = async (userId: string, apiKey: string | null): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not save API key to your account.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { geminiApiKey: apiKey }, { merge: true });
@@ -133,7 +143,10 @@ export const saveUserGeminiApiKey = async (userId: string, apiKey: string | null
 };
 
 export const getUserGeminiApiKey = async (userId: string): Promise<string | null> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve API key from your account.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -148,7 +161,10 @@ export const getUserGeminiApiKey = async (userId: string): Promise<string | null
 };
 
 export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not update user profile.");
+    };
     const userDocRef = getUserDocRef(userId);
     const dataToUpdate: { [key: string]: any } = {};
 
@@ -203,7 +219,10 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
 
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve user profile.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -294,8 +313,9 @@ export type PublicUserProfile = {
 
 export const getUserByUsername = async (username: string): Promise<PublicUserProfile | null> => {
     if (!db) {
-        throw new Error("Firestore is not initialized.");
-    }
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve user profile.");
+    };
     const usersCollection = collection(db, 'users');
     const q = query(usersCollection, where("username", "==", username), limit(1));
 
@@ -401,8 +421,9 @@ export const searchUsers = async (searchQuery: string): Promise<SearchedUser[]> 
 
 export const saveUserFCMToken = async (userId: string, token: string): Promise<void> => {
     if (!db) {
-        throw new Error("Firestore is not initialized.");
-    }
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not save notification token.");
+    };
     const tokensCollectionRef = collection(db, 'users', userId, 'fcmTokens');
     const tokenDocRef = doc(tokensCollectionRef, token);
     try {
@@ -414,7 +435,10 @@ export const saveUserFCMToken = async (userId: string, token: string): Promise<v
 };
 
 export const saveInstalledPlugins = async (userId: string, pluginNames: string[]): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not save your installed plugins.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { installedPlugins: pluginNames }, { merge: true });
@@ -425,7 +449,10 @@ export const saveInstalledPlugins = async (userId: string, pluginNames: string[]
 };
 
 export const getInstalledPlugins = async (userId: string): Promise<string[] | null> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve your installed plugins.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -443,7 +470,10 @@ export const getInstalledPlugins = async (userId: string): Promise<string[] | nu
 };
 
 export const saveUserPreferences = async (userId: string, preferences: Partial<UserPreferences>): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not save your preferences.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         await setDoc(userDocRef, { preferences }, { merge: true });
@@ -454,7 +484,10 @@ export const saveUserPreferences = async (userId: string, preferences: Partial<U
 };
 
 export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
-    if (!db) throw new Error("Firestore is not initialized.");
+    if (!db) {
+        console.error("Firestore is not initialized.");
+        throw new Error("Could not retrieve your preferences.");
+    };
     const userDocRef = getUserDocRef(userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -529,7 +562,7 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
 
     const restoredData: any = {
         displayName: originalData.originalDisplayName,
-        deletionStatus: 'reclaimed',
+        deletionStatus: adminDb.FieldValue.delete(),
         deletionScheduledAt: adminDb.FieldValue.delete(),
     };
     
@@ -581,6 +614,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
     batch.delete(streakDocRef);
 
     const userDocRef = adminDb.collection('users').doc(userId);
+    // Keep username and email, but wipe everything else.
     batch.update(userDocRef, {
         displayName: 'Deleted User',
         photoURL: null,
@@ -604,3 +638,4 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
 
     await batch.commit();
 }
+

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -23,8 +24,8 @@ interface CustomizeAvatarModalProps {
   onSave: (newAvatarUrl: string) => void;
 }
 
-const MALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?size=626&ext=jpg&ga=GA1.1.2082379227.1717027200&semt=sph';
-const FEMALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?size=626&ext=jpg';
+const MALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?w=740';
+const FEMALE_AVATAR_URL = 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?w=740';
 
 
 export default function CustomizeAvatarModal({ isOpen, onOpenChange, onSave }: CustomizeAvatarModalProps) {
@@ -35,6 +36,7 @@ export default function CustomizeAvatarModal({ isOpen, onOpenChange, onSave }: C
     if (!selectedGender) return;
     setIsSaving(true);
     const avatarUrl = selectedGender === 'male' ? MALE_AVATAR_URL : FEMALE_AVATAR_URL;
+    // The onSave function is now async, so we await it
     await onSave(avatarUrl);
     setIsSaving(false);
   };
@@ -97,3 +99,4 @@ export default function CustomizeAvatarModal({ isOpen, onOpenChange, onSave }: C
     </Dialog>
   );
 }
+

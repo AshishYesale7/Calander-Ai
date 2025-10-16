@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -279,7 +280,7 @@ export default function UserProfilePage() {
     }, [username, fetchProfile]);
     
     useEffect(() => {
-        if (!profile?.uid || !currentUser?.uid || !db || isDeleted) return;
+        if (!db || !profile?.uid || !currentUser?.uid || isDeleted) return;
         
         const listenForFollowChanges = (
             profileUserId: string,
@@ -687,3 +688,4 @@ export default function UserProfilePage() {
       </>
     )
 }
+
