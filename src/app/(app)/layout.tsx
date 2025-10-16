@@ -440,34 +440,51 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
     
     const onInitiateCall = useCallback(async (receiver: PublicUserProfile, callType: CallType) => {
         if (!user) return;
-
-        const hasPermission = await checkAndRequestPermissions(callType);
-        if (!hasPermission) {
-            toast({
-                title: "Permission Required",
-                description: "Camera and microphone access is needed to start a call.",
-                variant: "destructive",
+    
+        const proceedWithCall = async () => {
+            if (callType === 'video') {
+                setOutgoingCall(receiver);
+            } else {
+                setOutgoingAudioCall(receiver);
+            }
+    
+            const callId = await createCall({
+                callerId: user.uid,
+                callerName: user.displayName || 'Anonymous',
+                callerPhotoURL: user.photoURL,
+                receiverId: receiver.uid,
+                status: 'ringing',
+                callType,
             });
-            return;
-        }
-        
-        if (callType === 'video') {
-            setOutgoingCall(receiver);
+            
+            setAndStoreActiveCallId(callId);
+        };
+    
+        const hasPermission = await checkAndRequestPermissions(callType);
+        if (hasPermission) {
+            proceedWithCall();
         } else {
-            setOutgoingAudioCall(receiver);
+            // If permission is not already granted, show the modal.
+            setPermissionRequest({
+                callType: callType,
+                onGrant: async () => {
+                    // This will re-trigger the browser prompt if needed.
+                    const granted = await checkAndRequestPermissions(callType);
+                    if (granted) {
+                        proceedWithCall();
+                    } else {
+                        toast({
+                            title: "Permission Denied",
+                            description: `You need to grant permission to make a ${callType} call.`,
+                            variant: "destructive"
+                        });
+                    }
+                },
+                onDeny: () => {
+                    // User clicked cancel in our modal.
+                }
+            });
         }
-
-        const callId = await createCall({
-            callerId: user.uid,
-            callerName: user.displayName || 'Anonymous',
-            callerPhotoURL: user.photoURL,
-            receiverId: receiver.uid,
-            status: 'ringing',
-            callType,
-        });
-        
-        setAndStoreActiveCallId(callId);
-        
     }, [user, toast]);
     
     const onTogglePipMode = useCallback(() => {
@@ -582,7 +599,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
             {/* The audio elements are placed here */}
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/23/audio_82c6c06a46.mp3" preload="auto" loop className="hidden" />
+            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2025/04/29/audio_2a52b7d68b.mp3" preload="auto" loop className="hidden" />
         </ChatProvider>
     );
 }
