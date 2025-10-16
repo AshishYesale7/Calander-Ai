@@ -1,7 +1,7 @@
 
 'use client';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
@@ -14,6 +14,14 @@ import type { UserSubscription, UserProfile } from '@/types';
 // The user object in the context will now be the combination of Auth user and Firestore profile
 type AppUser = User & UserProfile;
 
+// New type for the simplified user info we store for the switcher
+interface KnownUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
+
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
@@ -23,11 +31,17 @@ interface AuthContextType {
   setOnboardingCompleted: (completed: boolean) => void;
   refreshSubscription: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  // New properties for account switching
+  knownUsers: KnownUser[];
+  addKnownUser: (user: User) => void;
+  removeKnownUser: (uid: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const isFirebaseConfigured = !!auth;
+
+const KNOWN_USERS_STORAGE_KEY = 'future-sight-known-users';
 
 const MissingConfiguration = () => (
   <div className="flex items-center justify-center min-h-screen bg-background text-foreground p-8">
@@ -59,9 +73,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true); // Only tracks Firebase Auth state
-  const [dataLoading, setDataLoading] = useState(true); // Tracks profile/sub data
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [knownUsers, setKnownUsers] = useState<KnownUser[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUsers = localStorage.getItem(KNOWN_USERS_STORAGE_KEY);
+      if (storedUsers) {
+        setKnownUsers(JSON.parse(storedUsers));
+      }
+    }
+  }, []);
+
+  const addKnownUser = (userToAdd: User) => {
+    setKnownUsers(prev => {
+      const existingUser = prev.find(u => u.uid === userToAdd.uid);
+      const newUserList = existingUser
+        ? prev.map(u => u.uid === userToAdd.uid ? { ...u, displayName: userToAdd.displayName, photoURL: userToAdd.photoURL } : u)
+        : [...prev, { uid: userToAdd.uid, email: userToAdd.email, displayName: userToAdd.displayName, photoURL: userToAdd.photoURL }];
+        
+      localStorage.setItem(KNOWN_USERS_STORAGE_KEY, JSON.stringify(newUserList));
+      return newUserList;
+    });
+  };
+  
+  const removeKnownUser = (uid: string) => {
+    setKnownUsers(prev => {
+        const newUserList = prev.filter(u => u.uid !== uid);
+        localStorage.setItem(KNOWN_USERS_STORAGE_KEY, JSON.stringify(newUserList));
+        return newUserList;
+    });
+  };
 
   const isSubscribed = !!subscription && 
     (subscription.status === 'active' || subscription.status === 'trial') && 
@@ -71,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseUser) {
       setUser(null);
       setSubscription(null);
-      setOnboardingCompleted(true); // Reset to default
+      setOnboardingCompleted(true);
       setDataLoading(false);
       return;
     }
@@ -85,14 +129,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const userProfile = profile || await createUserProfile(firebaseUser);
 
-      setUser({ ...firebaseUser, ...userProfile });
+      const fullUser = { ...firebaseUser, ...userProfile };
+      setUser(fullUser);
       setSubscription(userSub);
       setOnboardingCompleted(userProfile.onboardingCompleted ?? false);
+
+      // Add user to known users list upon successful full profile fetch
+      addKnownUser(firebaseUser);
+
     } catch (error) {
       console.error("Failed to fetch full user profile:", error);
-      // In case of error, sign out to prevent inconsistent state
       if (auth) {
-        auth.signOut();
+        await signOut(auth);
       }
     } finally {
       setDataLoading(false);
@@ -121,7 +169,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
-  // Effect 1: Handle Firebase auth state changes ONLY
   useEffect(() => {
     setMounted(true);
     if (!auth) {
@@ -129,8 +176,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      // This listener now ONLY sets the basic user object or null
-      // It no longer fetches profile data, preventing race conditions
       await fetchFullUserProfile(currentUser);
       setAuthLoading(false);
     });
@@ -160,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser, knownUsers, addKnownUser, removeKnownUser }}>
       {children}
     </AuthContext.Provider>
   );

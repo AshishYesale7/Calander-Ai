@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, fetchSignInMethodsForEmail } from 'firebase/auth';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -43,6 +43,7 @@ declare global {
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -53,20 +54,28 @@ export default function SignInForm() {
   const [showOtpInput, setShowOtpInput] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
+  
+  const prefilledEmail = searchParams.get('email');
 
   useEffect(() => {
     if (!authLoading && user) {
         router.push('/dashboard');
     }
   }, [user, authLoading, router]);
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      email: prefilledEmail || '',
       password: '',
     },
   });
+
+  useEffect(() => {
+    if (prefilledEmail) {
+        form.setValue('email', prefilledEmail);
+    }
+  }, [prefilledEmail, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);

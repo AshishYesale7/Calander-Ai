@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, UserPlus, Users, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -17,6 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo, useState, useEffect, useRef } from 'react';
@@ -118,7 +119,7 @@ export default function Header({
   handleToggleFullScreen,
   isFullScreen,
 }: HeaderProps) {
-  const { user, subscription, isSubscribed } = useAuth();
+  const { user, subscription, isSubscribed, knownUsers, removeKnownUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -153,15 +154,29 @@ export default function Header({
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }, [subscription]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (switchToEmail?: string | null) => {
     try {
       await signOut(auth);
-      router.push('/auth/signin');
+      if (switchToEmail) {
+          const query = new URLSearchParams({ email: switchToEmail }).toString();
+          router.push(`/auth/signin?${query}`);
+      } else {
+          router.push('/auth/signin');
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
   
+  const handleAddAccount = () => {
+    handleSignOut();
+  };
+  
+  const handleSwitchAccount = (email: string | null) => {
+    handleSignOut(email);
+  };
+
+
   const handleMouseEnter = (popover: 'streak' | 'extensions' | 'widget') => {
     if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
@@ -431,14 +446,50 @@ export default function Header({
                   <span className="sr-only">User menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 frosted-glass">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64 frosted-glass">
+                <DropdownMenuLabel className="flex items-start gap-3">
+                   <Avatar className="h-10 w-10">
+                    <AvatarImage src={user?.photoURL || undefined} />
+                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                   </Avatar>
+                   <div className="min-w-0">
+                       <p className="font-semibold truncate">{user?.displayName}</p>
+                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                   </div>
+                </DropdownMenuLabel>
+
                 <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={() => setIsCustomizeModalOpen(true)}>
+                
+                <DropdownMenuGroup>
+                    {knownUsers.filter(u => u.uid !== user?.uid).map(knownUser => (
+                        <DropdownMenuItem key={knownUser.uid} onSelect={() => handleSwitchAccount(knownUser.email)}>
+                            <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={knownUser.photoURL || undefined} />
+                                <AvatarFallback>{knownUser.displayName?.charAt(0) || '?'}</AvatarFallback>
+                            </Avatar>
+                            <span className="truncate flex-1">{knownUser.displayName || knownUser.email}</span>
+                            <LogIn className="h-4 w-4 ml-auto text-muted-foreground" />
+                        </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem onSelect={handleAddAccount}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <span>Add Account</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => {
+                        if(user) removeKnownUser(user.uid);
+                        handleSignOut();
+                    }}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign out of all accounts</span>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsCustomizeModalOpen(true)}>
                   <Palette className="mr-2 h-4 w-4" />
                   <span>Customize Theme</span>
                 </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => setIsTimezoneModalOpen(true)}>
+                <DropdownMenuItem onClick={() => setIsTimezoneModalOpen(true)}>
                   <Clock className="mr-2 h-4 w-4" />
                   <span>Date & Time Settings</span>
                 </DropdownMenuItem>
@@ -462,7 +513,7 @@ export default function Header({
                   <span>Terms & Policies</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={() => handleSignOut()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
