@@ -371,11 +371,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     
     try {
         await anonymizeUserAccount(user.uid);
-        toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
+        toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
         // The user's auth account is disabled, so we should sign them out on the client.
         await auth.signOut();
-        router.push('/auth/signin');
-        onOpenChange(false);
+        // Clear all local storage to prevent stale data for next user
+        localStorage.clear();
+        // Force a full redirect to the sign-in page to reset all app state
+        window.location.href = '/auth/signin';
     } catch (error: any) {
         console.error("Account deletion error:", error);
         toast({
