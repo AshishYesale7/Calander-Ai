@@ -17,6 +17,7 @@ import PlannerWeeklyView from './PlannerWeeklyView';
 import PlannerMonthView from './PlannerMonthView';
 import { GripVertical } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useChat } from '@/context/ChatContext';
 
 export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
 export type PlannerViewMode = 'day' | 'week' | 'month';
@@ -42,6 +43,7 @@ interface MaximizedPlannerViewProps {
 export default function MaximizedPlannerView({ initialDate, allEvents, onMinimize, onEditEvent, onDeleteEvent }: MaximizedPlannerViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { chatSidebarWidth } = useChat();
 
   const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -296,7 +298,10 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   };
 
   return (
-     <div className={cn("fixed inset-0 top-16 z-30 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}>
+     <div 
+        className={cn("fixed inset-y-0 left-0 flex flex-col transition-[right]", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        style={{ top: '4rem', right: `${chatSidebarWidth}px` }} // Adjust right position based on chat sidebar
+     >
         <PlannerHeader 
           activeView={plannerViewMode} 
           date={currentDisplayDate} 

@@ -581,6 +581,26 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         }
         return { width: baseWidth, height: baseHeight }; // Fallback
     }, [pipSizeMode, remoteStream]);
+    
+    // New state and calculation for chat sidebar width
+    const [chatSidebarWidth, setChatSidebarWidth] = useState(0);
+    const { chattingWith, isChatSidebarOpen } = useChat();
+    const isChatPanelVisible = !!chattingWith;
+
+    useEffect(() => {
+        const remToPx = (rem: number) => rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        
+        if (isChatSidebarOpen && isChatPanelVisible) {
+            setChatSidebarWidth(remToPx(18 + 22)); // 18rem + 22rem
+        } else if (isChatSidebarOpen && !isChatPanelVisible) {
+            setChatSidebarWidth(remToPx(18)); // 18rem
+        } else if (!isChatSidebarOpen && isChatPanelVisible) {
+            setChatSidebarWidth(remToPx(5 + 22)); // 5rem (20 * 0.25) + 22rem
+        } else {
+            setChatSidebarWidth(remToPx(5)); // 5rem (20 * 0.25)
+        }
+    }, [isChatSidebarOpen, isChatPanelVisible]);
+
 
     const contextValue = {
         onInitiateCall,
@@ -601,6 +621,7 @@ function AppContentWrapper({ children, onFinishOnboarding }: { children: ReactNo
         connectionStatus,
         peerConnectionRef,
         playSendMessageSound,
+        chatSidebarWidth, // Pass the width down
     };
     
     return (

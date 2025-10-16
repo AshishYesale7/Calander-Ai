@@ -57,6 +57,9 @@ interface ChatContextType {
 
   // New function for message sound
   playSendMessageSound: () => void;
+
+  // New property for chat sidebar width
+  chatSidebarWidth: number;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
