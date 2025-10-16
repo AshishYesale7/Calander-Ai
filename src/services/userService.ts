@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -516,6 +515,7 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
     }
     const currentData = docSnap.data()!;
 
+    // Save original data to a private subcollection for potential restoration
     await privateDataRef.set({
         originalDisplayName: currentData.displayName,
     });
@@ -560,6 +560,7 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
         deletionScheduledAt: adminFieldValue.delete(),
     };
     
+    // Rebuild the search index
     const indexSet = new Set<string>();
     if (originalData.originalDisplayName) indexSet.add(originalData.originalDisplayName.toLowerCase());
     if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase());
@@ -567,6 +568,7 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
 
     await userDocRef.update(restoredData);
 
+    // Clean up the private recovery data
     await privateDataRef.delete();
 }
     
@@ -575,6 +577,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
 
     const batch = adminDb.batch();
 
+    // List all user-specific subcollections that need to be wiped
     const collectionsToClear = [
         'activityLogs', 'careerGoals', 'careerVisions', 'dailyPlans',
         'fcmTokens', 'notifications', 'resources', 'skills', 
@@ -587,6 +590,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
     }
     
+    // Handle nested 'chats' collection separately
     const chatsCollectionRef = adminDb.collection('users').doc(userId).collection('chats');
     const chatsSnapshot = await chatsCollectionRef.get();
     for (const chatDoc of chatsSnapshot.docs) {
@@ -596,11 +600,12 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         batch.delete(chatDoc.ref);
     }
     
+    // Delete the separate streak document
     const streakDocRef = adminDb.collection('streaks').doc(userId);
     batch.delete(streakDocRef);
 
+    // Update the main user document to its final "deleted" state
     const userDocRef = adminDb.collection('users').doc(userId);
-    // Keep username and email, but wipe everything else.
     batch.update(userDocRef, {
         displayName: 'Deleted User',
         photoURL: null,
@@ -624,5 +629,3 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
 
     await batch.commit();
 }
-
-
