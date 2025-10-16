@@ -1,7 +1,7 @@
 
 'use client';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signOut, GoogleAuthProvider, reauthenticateWithPopup } from 'firebase/auth';
+import { onAuthStateChanged, signOut, GoogleAuthProvider, reauthenticateWithPopup, signInWithPopup } from 'firebase/auth';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (auth.currentUser) {
+    if (auth && auth.currentUser) {
       await auth.currentUser.reload();
       await fetchFullUserProfile(auth.currentUser);
     }
@@ -186,28 +186,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchFullUserProfile]);
 
   const switchUser = async (email: string) => {
-    if (!user) {
-      toast({ title: "Error", description: "You must be signed in to switch accounts.", variant: "destructive" });
-      return;
+    if (!auth) {
+        toast({ title: "Error", description: "Authentication service is not available.", variant: "destructive" });
+        return;
     }
+    
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ login_hint: email });
+    provider.setCustomParameters({ login_hint: email, prompt: 'select_account' });
 
     try {
-      // Re-authenticate with the selected account. This will handle the sign-in flow.
-      await reauthenticateWithPopup(user, provider);
-      // The onAuthStateChanged listener will automatically handle updating the user context
-      // and reloading the app state. We just need to give it a moment to complete.
-      toast({ title: "Switching Accounts...", description: `Successfully signed in as ${email}.` });
-      // Reloading the page is a robust way to ensure all context and data is fresh for the new user.
+      // Use signInWithPopup to allow Google's account chooser to handle the switch.
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will automatically handle the user state update.
+      // We just reload the page to ensure a clean state for the new user.
+      toast({ title: "Switched Account", description: `Successfully signed in as ${email}.` });
       window.location.href = '/dashboard';
     } catch (error: any) {
       console.error("Account switch error:", error);
-       // If the user cancels the popup, it's not a "real" error we need to bother them with.
+      // Handle common errors gracefully
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        return;
+        toast({ title: "Switch Cancelled", description: "You closed the sign-in window.", variant: "default" });
+      } else {
+        toast({ title: "Switch Failed", description: error.message || "Could not switch accounts.", variant: "destructive" });
       }
-      toast({ title: "Switch Failed", description: error.message || "Could not switch accounts.", variant: "destructive" });
     }
   };
   
@@ -247,5 +248,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
-    
