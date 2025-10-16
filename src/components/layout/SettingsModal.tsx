@@ -376,28 +376,27 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
 
   const reauthenticateAndExecute = async (action: 'delete' | 'format') => {
-    if (!user) {
+    if (!auth.currentUser) {
         toast({ title: 'Error', description: 'No user is currently logged in.', variant: 'destructive' });
         return;
     }
     
-    // For simplicity, we'll use Google popup for re-authentication.
-    // A production app would handle different providers (e.g., ask for password).
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' }); // Ensure account selection
 
     setIsReauthenticating(true);
     try {
-        await reauthenticateWithPopup(user, provider);
+        await reauthenticateWithPopup(auth.currentUser, provider);
         // If re-authentication is successful, proceed with the action
         if (action === 'delete') {
-            await anonymizeUserAccount(user.uid);
+            await anonymizeUserAccount(auth.currentUser.uid);
             toast({ title: 'Account Deleted', description: 'Your account has been scheduled for permanent deletion.' });
             await auth.signOut();
             localStorage.clear();
             window.location.href = '/'; 
         } else if (action === 'format') {
             setIsFormatting(true);
-            await formatUserData(user.uid);
+            await formatUserData(auth.currentUser.uid);
             Object.keys(localStorage).forEach(key => key.startsWith('futureSight') && localStorage.removeItem(key));
             toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
             setTimeout(() => window.location.reload(), 2000);
