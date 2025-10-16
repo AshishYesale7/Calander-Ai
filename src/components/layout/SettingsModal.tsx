@@ -103,43 +103,60 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   }, [isOpen]);
 
-
-  useEffect(() => {
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-      if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
-      }
-    };
-  }, []);
+  const checkGoogleStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+        const res = await fetch('/api/auth/google/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid }),
+        });
+        const data = await res.json();
+        setIsGoogleConnected(data.isConnected);
+    } catch (error) {
+        setIsGoogleConnected(false);
+        toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
+    }
+  }, [user, toast]);
   
-  const checkNotionStatus = async (userId: string) => {
-    if (!userId) return;
+  const checkNotionStatus = useCallback(async () => {
+    if (!user) return;
     try {
       const res = await fetch('/api/auth/notion/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: user.uid }),
       });
       const data = await res.json();
       setIsNotionConnected(data.isConnected);
     } catch (error) {
       setIsNotionConnected(false);
     }
-  };
+  }, [user]);
 
+  useEffect(() => {
+    const handleAuthSuccess = (event: MessageEvent) => {
+      if (event.data === 'auth-success-google') {
+          checkGoogleStatus();
+      }
+      if (event.data === 'auth-success-notion') {
+          checkNotionStatus();
+      }
+    };
+    window.addEventListener('message', handleAuthSuccess);
+    return () => {
+      window.removeEventListener('message', handleAuthSuccess);
+    };
+  }, [checkGoogleStatus, checkNotionStatus]);
 
   useEffect(() => {
     if (!isOpen) {
-       if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-       }
-       if (testIntervalRef.current) {
-            clearInterval(testIntervalRef.current);
-            testIntervalRef.current = null;
+       // Cleanup logic when modal closes
+       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+       if (testIntervalRef.current) clearInterval(testIntervalRef.current);
+       if (recaptchaVerifierRef.current) {
+         recaptchaVerifierRef.current.clear();
+         recaptchaVerifierRef.current = null;
        }
        setIsPolling(false);
        setIsLinkingPhone(false);
@@ -158,21 +175,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setApiKeyInput(currentApiKey || '');
         if (user) {
             setIsGoogleConnected(null); 
-            fetch('/api/auth/google/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid }),
-            })
-            .then(res => res.json())
-            .then(data => setIsGoogleConnected(data.isConnected))
-            .catch(() => {
-                setIsGoogleConnected(false);
-                toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
-            });
-            checkNotionStatus(user.uid);
+            checkGoogleStatus();
+            checkNotionStatus();
         }
     }
-  }, [currentApiKey, isOpen, toast, user]);
+  }, [currentApiKey, isOpen, user, checkGoogleStatus, checkNotionStatus]);
   
 
   const handleApiKeySave = () => {
@@ -186,18 +193,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     });
   };
   
-  useEffect(() => {
-    const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success-google' || event.data === 'auth-success-notion') {
-        window.location.reload();
-      }
-    };
-    window.addEventListener('message', handleAuthSuccess);
-    return () => {
-      window.removeEventListener('message', handleAuthSuccess);
-    };
-  }, []);
-
   const handleConnectGoogle = async () => {
     if (!user) {
         toast({ title: 'Error', description: 'You must be logged in to connect a Google account.', variant: 'destructive' });
@@ -206,47 +201,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google' })).toString('base64');
     const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
-
-    if (hasGoogleProvider) {
-        toast({ title: 'Opening Google...', description: 'Please authorize access in the new tab.' });
-        window.open(authUrl, '_blank', 'width=500,height=600');
-        return;
-    }
-
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.events');
-    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
-    provider.addScope('https://www.googleapis.com/auth/tasks');
-
-    try {
-        await linkWithPopup(user, provider);
-        await refreshUser(); 
-        
-        toast({ title: 'Account Linked!', description: 'Now granting permissions in the new tab.' });
-        window.open(authUrl, '_blank', 'width=500,height=600');
-
-    } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-            console.log("Google link popup closed by user.");
-        } else if (error.code === 'auth/credential-already-in-use') {
-            toast({
-                title: 'Google Account In Use',
-                description: "This Google account is already linked to another user. Please sign out and sign in with Google to merge accounts.",
-                variant: 'destructive',
-                duration: 12000,
-            });
-        } else if (error.code === 'auth/provider-already-linked') {
-             toast({ title: 'Re-authorizing...', description: 'Your account is already linked. Redirecting to grant permissions.' });
-             window.open(authUrl, '_blank', 'width=500,height=600');
-        } else {
-            console.error("Google link error:", error);
-            toast({
-                title: 'Connection Failed',
-                description: error.message || 'An unknown error occurred while connecting your Google account.',
-                variant: 'destructive',
-            });
-        }
-    }
+    window.open(authUrl, '_blank', 'width=500,height=600');
   };
 
   const handleDisconnectGoogle = async () => {
@@ -261,7 +216,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
              body: JSON.stringify({ userId: user.uid }),
         });
         if (response.ok) {
-            setIsGoogleConnected(false);
+            await checkGoogleStatus(); // Re-check status after successful disconnect
             toast({ title: 'Success', description: 'Disconnected from Google account.' });
         } else {
             throw new Error('Failed to disconnect');
@@ -286,17 +241,34 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
   
+  const setupRecaptcha = useCallback((containerId: string): RecaptchaVerifier | null => {
+    if (!auth) return null;
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
+      return null;
+    }
+    // Use a ref to manage the instance to avoid re-creation
+    if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+    }
+    const verifier = new RecaptchaVerifier(auth, container, {
+        'size': 'invisible',
+        'callback': () => console.log('reCAPTCHA verified')
+    });
+    recaptchaVerifierRef.current = verifier;
+    return verifier;
+  }, [auth]);
+
   const handleSendLinkOtp = async () => {
-    if (!auth.currentUser) return;
-    if (!phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
+    if (!auth.currentUser || !phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
       toast({ title: 'Invalid Phone Number', description: 'Please enter a valid phone number.', variant: 'destructive' });
       return;
     }
     setLinkingPhoneState('loading');
     try {
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-settings', {
-        'size': 'invisible', 'callback': () => console.log('reCAPTCHA verified')
-      });
+      const verifier = setupRecaptcha('recaptcha-container-settings');
+      if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
       const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
       window.confirmationResult = confirmationResult;
       setLinkingPhoneState('otp-sent');
@@ -380,15 +352,13 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setActionToConfirm(null);
     }
   };
-
+  
   const handleSendReauthOtp = async () => {
     if (!auth || !user?.phoneNumber) return;
     setIsReauthenticating(true);
     try {
-      const verifier = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => console.log('reCAPTCHA verified for re-auth')
-      });
+      const verifier = setupRecaptcha('reauth-recaptcha-container');
+      if (!verifier) throw new Error("Could not set up OTP verifier.");
       const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
       window.confirmationResult = confirmationResult;
       setReauthStep('otp');
@@ -665,7 +635,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                         {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
                                         Send OTP
                                     </Button>
-                                    <div id="recaptcha-container-settings"></div>
+                                    <div id="recaptcha-container-settings" ref={recaptchaContainerRef}></div>
                                 </div>
                             )}
                             {(linkingPhoneState === 'otp-sent' || linkingPhoneState === 'loading') && (
@@ -824,7 +794,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 <div className="space-y-4">
                     {reauthStep === 'prompt' && (
                         <div className="space-y-4">
-                            {hasGoogleProvider && (
+                            {isGoogleConnected && (
                                 <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2"/>}
                                 <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>
@@ -832,7 +802,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                 </Button>
                             )}
                             
-                            {hasGoogleProvider && hasPhoneProvider && (
+                            {isGoogleConnected && hasPhoneProvider && (
                                  <div className="relative my-2">
                                     <div className="absolute inset-0 flex items-center"> <span className="w-full border-t" /> </div>
                                     <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
@@ -840,21 +810,29 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                             )}
 
                             {hasPhoneProvider && (
-                                <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                <Button onClick={() => setReauthStep('otp')} className="w-full" disabled={isReauthenticating}>
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                                Send Verification Code to Phone
+                                Verify with Phone Number
                                 </Button>
                             )}
-
-                            {!hasGoogleProvider && !hasPhoneProvider && (
+                            
+                             {!isGoogleConnected && !hasPhoneProvider && (
                                 <p className="text-sm text-destructive text-center">No verifiable sign-in method found. Please link a Google account or phone number to proceed.</p>
                             )}
                         </div>
                     )}
                     {reauthStep === 'otp' && (
                         <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground text-center">An OTP has been sent to your registered phone number ({user?.phoneNumber}).</p>
-                            <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground text-center">An OTP will be sent to your registered phone number ({user?.phoneNumber}).</p>
+                            <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                Send Verification Code
+                            </Button>
+                        </div>
+                    )}
+                    {reauthStep === 'verifying' && (
+                        <div className="space-y-4">
+                             <div className="space-y-2">
                                 <Label htmlFor="reauth-otp">Enter OTP</Label>
                                 <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
                             </div>
@@ -868,11 +846,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                  <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => { setActionToConfirm(null); setReauthStep('prompt'); }}>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
-                <div id="reauth-recaptcha-container"></div>
+                <div id="reauth-recaptcha-container" ref={reauthRecaptchaContainerRef}></div>
             </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
     </Dialog>
   );
 }
-
