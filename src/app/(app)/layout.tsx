@@ -724,7 +724,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     }
   }, [remoteStream]);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Preloader />
@@ -919,7 +919,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       {/* Centralized audio elements */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-      <audio ref={outgoingRingtoneRef} src="https://codeskulptor-assets.commondatastorage.googleapis.com/assets_misc/telephonerigging.ogg" preload="auto" loop className="hidden" />
+      <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/23/audio_82c6c06a46.mp3" preload="auto" loop className="hidden" />
 
       <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
       <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
@@ -947,4 +947,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     
 
     
+
 
