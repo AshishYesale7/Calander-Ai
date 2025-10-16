@@ -693,6 +693,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       if (!user) {
         router.push('/auth/signin');
       } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
+        router.push('/subscription');
       }
     }
   }, [user, loading, isSubscribed, router, pathname]);
@@ -843,15 +844,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     }
   };
   
-  if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
-      router.push('/subscription');
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-          <Preloader />
-        </div>
-      );
-  }
-
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
     setIsTimezoneModalOpen, handleToggleFullScreen, isFullScreen,
