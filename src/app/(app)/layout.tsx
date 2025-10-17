@@ -162,11 +162,17 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     
     const endCall = useCallback((callIdToUpdate?: string, status: 'ended' | 'declined' = 'ended') => {
         const id = callIdToUpdate || activeCallId;
+    
+        // Always try to update the remote status, even if cleaning up locally.
         if (id && typeof id === 'string') {
-            updateCallStatus(id, status);
+            updateCallStatus(id, status).catch(err => {
+                console.warn(`Failed to send final call status update for call ${id}:`, err);
+            });
         } else {
             console.warn("endCall invoked without a valid callId. Cleaning up local state only.");
         }
+    
+        // Immediately clean up all local state to end the call for the current user.
         setOngoingCall(null);
         setOutgoingCall(null);
         setOngoingAudioCall(null);
