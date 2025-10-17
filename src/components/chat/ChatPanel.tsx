@@ -367,7 +367,7 @@ export const ChatPanelFooter = () => {
     };
 
     return (
-        <footer className="flex-shrink-0 p-3 bg-black">
+        <footer className="flex-shrink-0 p-3 bg-transparent">
             <form onSubmit={e => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 bg-[#262626] rounded-full px-2">
                 <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
                 <Input value={inputMessage} onChange={handleInputChange} onFocus={() => setIsChatInputFocused(true)} onBlur={() => setIsChatInputFocused(false)} placeholder="Message..." className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12 focus-visible:ring-offset-0" autoComplete="off" />
