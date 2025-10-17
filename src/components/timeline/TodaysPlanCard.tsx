@@ -237,7 +237,12 @@ export default function TodaysPlanCard() {
                            <CardDescription className="mt-1 truncate">
                               {isRoutineSetupNeeded
                               ? 'Set your weekly routine to get started'
-                              : `Your personalized schedule for ${format(displayDate, 'MMMM d, yyyy')}.`}
+                              : (
+                                <>
+                                  <span className="hidden md:inline">Your personalized schedule for </span>
+                                  <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
+                                </>
+                              )}
                           </CardDescription>
                         </div>
                     </div>
