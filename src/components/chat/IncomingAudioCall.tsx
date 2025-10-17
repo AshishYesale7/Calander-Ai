@@ -18,7 +18,7 @@ export default function IncomingAudioCall({ call, onAccept, onDecline }: Incomin
     <motion.div
       drag
       dragMomentum={false}
-      className="fixed bottom-5 right-5 z-[200] p-4 rounded-lg shadow-2xl bg-gray-900/80 backdrop-blur-md border border-gray-700 text-white animate-in slide-in-from-bottom-10 fade-in duration-300 cursor-grab active:cursor-grabbing"
+      className="fixed top-5 left-1/2 -translate-x-1/2 z-[200] p-4 rounded-lg shadow-2xl bg-gray-900/80 backdrop-blur-md border border-gray-700 text-white animate-in slide-in-from-top-10 fade-in duration-300 cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center gap-4">
         <Avatar className="h-14 w-14 border-2 border-green-500">
