@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -208,9 +207,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
        
         {localStream && (
-          <motion.div
-            drag
-            dragMomentum={false}
+          <div
             className={cn(
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
               isPipMode
@@ -238,11 +235,26 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
                 Camera is off
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </div>
 
-      {!isPipMode && (
+      {isPipMode ? (
+        <div className="flex-shrink-0 bg-black/50 backdrop-blur-md p-1 flex justify-around items-center">
+            <Button onClick={handleToggleMute} variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white">
+                {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+            <Button onClick={handleToggleCamera} variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white">
+                 {isCameraOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white" onClick={onTogglePipMode}>
+                <PictureInPicture2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-400 hover:bg-red-400/20" onClick={onEndCall}>
+                <PhoneOff className="h-4 w-4" />
+            </Button>
+        </div>
+      ) : (
           <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300")}>
             <Button onClick={handleToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14")}>
               {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
