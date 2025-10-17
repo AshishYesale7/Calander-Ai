@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import type { ReactNode, Dispatch, SetStateAction, RefObject } from 'react';
-import { createContext, useContext, useState, useMemo } from 'react';
+import { createContext, useContext } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { CallData, CallType } from '@/types';
 
@@ -64,22 +63,15 @@ interface ChatContextType {
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider = ({ children, value }: { children: ReactNode, value: Omit<ChatContextType, 'chattingWith' | 'isChatSidebarOpen' | 'isChatInputFocused' | 'setChattingWith' | 'setIsChatSidebarOpen' | 'setIsChatInputFocused'> }) => {
-  const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
-  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
-  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-
+// This is now a simple provider wrapper and does not manage state itself.
+export const ChatProvider = ({ children, value }: { children: ReactNode, value: ChatContextType }) => {
   return (
-    <ChatContext.Provider value={{ 
-        ...value,
-        chattingWith, setChattingWith, 
-        isChatSidebarOpen, setIsChatSidebarOpen,
-        isChatInputFocused, setIsChatInputFocused,
-    }}>
+    <ChatContext.Provider value={value}>
       {children}
     </ChatContext.Provider>
   );
 };
+
 
 export const useChat = (): ChatContextType => {
   const context = useContext(ChatContext);

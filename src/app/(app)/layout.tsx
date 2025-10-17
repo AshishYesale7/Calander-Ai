@@ -28,11 +28,11 @@ import NotificationPermissionModal from '@/components/layout/NotificationPermiss
 import { useStreakTracker } from '@/hooks/useStreakTracker';
 import { PluginProvider } from '@/context/PluginContext';
 import { StreakProvider } from '@/context/StreakContext';
-import { ChatSidebar } from '@/components/layout/ChatSidebar';
+import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
-import { ChatContext } from '@/context/ChatContext';
+import { ChatContext, ChatProvider } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -43,7 +43,6 @@ import OutgoingCallNotification from '@/components/chat/OutgoingCallNotification
 import VideoCallView from '@/components/chat/VideoCallView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
-import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import IncomingAudioCall from '@/components/chat/IncomingAudioCall';
 import OutgoingAudioCall from '@/components/chat/OutgoingAudioCall';
@@ -86,9 +85,134 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-function ChatProviderWrapper({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
+function ChatProviderWrapper({ children, value }: { children: ReactNode; value: any }) {
+    return (
+        <ChatContext.Provider value={value}>
+            {children}
+        </ChatContext.Provider>
+    );
+}
+
+function ReclamationModal() {
+    const { user, refreshUser } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
+    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
+    const [isReclaiming, setIsReclaiming] = useState(false);
+    
+    const deletionDate = useMemo(() => {
+        if (user?.deletionScheduledAt) {
+            return new Date(user.deletionScheduledAt);
+        }
+        return null;
+    }, [user?.deletionScheduledAt]);
+    
+    const daysRemaining = useMemo(() => {
+        if (!deletionDate) return 0;
+        const remaining = differenceInDays(deletionDate, new Date());
+        return Math.max(0, remaining);
+    }, [deletionDate]);
+
+    useEffect(() => {
+        if (reclaimState === 'confirmed') {
+            const timer = setTimeout(async () => {
+                await refreshUser();
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [reclaimState, refreshUser]);
+
+    const handleReclaim = async () => {
+        if (!user) return;
+        setIsReclaiming(true);
+        try {
+            await reclaimUserAccount(user.uid);
+            setReclaimState('confirmed');
+        } catch (error: any) {
+            toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
+        } finally {
+            setIsReclaiming(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        try {
+            await signOut(auth);
+            router.push('/');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    return (
+        <AlertDialog open={true} onOpenChange={() => {}}>
+            <AlertDialogContent className="frosted-glass" hideCloseButton={true}>
+                <AnimatePresence mode="wait">
+                    {reclaimState === 'prompt' && (
+                        <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This account is scheduled for permanent deletion in{' '}
+                                    <span className="font-bold text-destructive">{daysRemaining} day{daysRemaining !== 1 && 's'}</span>.
+                                    You can reclaim your account now, or cancel to proceed with deletion.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel onClick={handleCancel}>Cancel & Sign Out</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReclaim} disabled={isReclaiming}>
+                                    {isReclaiming && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Reclaim My Account
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </motion.div>
+                    )}
+                    {reclaimState === 'confirmed' && (
+                        <motion.div key="confirmed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center p-4">
+                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                            <AlertDialogTitle>Welcome Back!</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Your account has been restored. Reloading your dashboard...
+                            </AlertDialogDescription>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+  const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
+  
+    const { toast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+    const isMobile = useIsMobile();
+    useStreakTracker();
+    
+    const mainScrollRef = useRef<HTMLDivElement>(null);
+    const bottomNavRef = useRef<HTMLDivElement>(null);
+    const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+    const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+    
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+    const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    
+    const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
+    
+    const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
+    const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+    const [isChatInputFocused, setIsChatInputFocused] = useState(false);
     
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
@@ -117,7 +241,9 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
       }
       return null;
     });
-    
+
+    const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
+
     const checkAndRequestPermissions = async (callType: CallType): Promise<{ granted: boolean; error?: string }> => {
         if (typeof window === 'undefined' || !navigator.mediaDevices) {
             return { granted: false, error: 'Media devices not supported.' };
@@ -557,17 +683,12 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
         return { width: baseWidth, height: baseHeight };
     }, [pipSizeMode, remoteStream]);
     
-    // This state is now managed inside the AppLayout component
-    // const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
-    // const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
-    // const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-    
     const [chatSidebarWidth, setChatSidebarWidth] = useState(0);
 
     const contextValue = {
-        // chattingWith, setChattingWith,
-        // isChatSidebarOpen, setIsChatSidebarOpen,
-        // isChatInputFocused, setIsChatInputFocused,
+        chattingWith, setChattingWith, 
+        isChatSidebarOpen, setIsChatSidebarOpen,
+        isChatInputFocused, setIsChatInputFocused,
         onInitiateCall,
         outgoingCall, setOutgoingCall,
         ongoingCall, setOngoingCall,
@@ -589,154 +710,9 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
         chatSidebarWidth,
     };
     
-    return (
-        <ChatContext.Provider value={contextValue as any}>
-            {children}
-            {permissionRequest && (
-                <PermissionRequestModal
-                    callType={permissionRequest.callType}
-                    onGrant={permissionRequest.onGrant}
-                    onDeny={permissionRequest.onDeny}
-                    onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
-                />
-            )}
-            <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
-            <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
-        </ChatContext.Provider>
-    );
-}
+    const isChatPanelVisible = !!chattingWith;
 
-function ReclamationModal() {
-    const { user, refreshUser } = useAuth();
-    const { toast } = useToast();
-    const router = useRouter();
-    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
-    const [isReclaiming, setIsReclaiming] = useState(false);
-    
-    const deletionDate = useMemo(() => {
-        if (user?.deletionScheduledAt) {
-            return new Date(user.deletionScheduledAt);
-        }
-        return null;
-    }, [user?.deletionScheduledAt]);
-    
-    const daysRemaining = useMemo(() => {
-        if (!deletionDate) return 0;
-        const remaining = differenceInDays(deletionDate, new Date());
-        return Math.max(0, remaining);
-    }, [deletionDate]);
-
-    useEffect(() => {
-        if (reclaimState === 'confirmed') {
-            const timer = setTimeout(async () => {
-                await refreshUser();
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [reclaimState, refreshUser]);
-
-    const handleReclaim = async () => {
-        if (!user) return;
-        setIsReclaiming(true);
-        try {
-            await reclaimUserAccount(user.uid);
-            setReclaimState('confirmed');
-        } catch (error: any) {
-            toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
-        } finally {
-            setIsReclaiming(false);
-        }
-    };
-
-    const handleCancel = async () => {
-        try {
-            await signOut(auth);
-            router.push('/');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
-
-    return (
-        <AlertDialog open={true} onOpenChange={() => {}}>
-            <AlertDialogContent className="frosted-glass" hideCloseButton={true}>
-                <AnimatePresence mode="wait">
-                    {reclaimState === 'prompt' && (
-                        <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This account is scheduled for permanent deletion in{' '}
-                                    <span className="font-bold text-destructive">{daysRemaining} day{daysRemaining !== 1 && 's'}</span>.
-                                    You can reclaim your account now, or cancel to proceed with deletion.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel onClick={handleCancel}>Cancel & Sign Out</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleReclaim} disabled={isReclaiming}>
-                                    {isReclaiming && <LoadingSpinner size="sm" className="mr-2" />}
-                                    Reclaim My Account
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </motion.div>
-                    )}
-                    {reclaimState === 'confirmed' && (
-                        <motion.div key="confirmed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center p-4">
-                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <AlertDialogTitle>Welcome Back!</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Your account has been restored. Reloading your dashboard...
-                            </AlertDialogDescription>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </AlertDialogContent>
-        </AlertDialog>
-    );
-}
-
-function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-  const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  const { 
-      chattingWith, setChattingWith, isChatSidebarOpen, setIsChatSidebarOpen, isChatInputFocused, setIsChatInputFocused,
-      outgoingCall, ongoingCall, outgoingAudioCall, ongoingAudioCall,
-      incomingCall, incomingAudioCall, acceptCall, declineCall, 
-      otherUserInCall, endCall, 
-      isPipMode, onTogglePipMode, pipControls, isResetting,
-      pipSize, pipSizeMode, setPipSizeMode, isMuted,
-      connectionStatus, remoteStream,
-  } = useChat();
-
-  const { toast } = useToast();
-  const router = useRouter();
-  const pathname = usePathname();
-  const isMobile = useIsMobile();
-  useStreakTracker();
-  
-  const mainScrollRef = useRef<HTMLDivElement>(null);
-  const bottomNavRef = useRef<HTMLDivElement>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
-
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-  const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  
-  const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
-  const isChatPanelVisible = !!chattingWith;
-  const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
-
-
-  const activeCallId = useMemo(() => {
+  const activeCallIdMemo = useMemo(() => {
     if (ongoingCall) return ongoingCall.id;
     if (ongoingAudioCall) return ongoingAudioCall.id;
     if (outgoingCall || outgoingAudioCall) {
@@ -933,206 +909,213 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
 
   return (
-    <>
-    {isPendingDeletion && <ReclamationModal />}
-    <div className={cn(
-        'relative z-0 flex h-screen w-full overflow-hidden',
-        isPendingDeletion && 'pointer-events-none blur-sm'
-    )}>
-      <OfflineIndicator />
-      <div className={cn('contents', isMobileChatFocus && 'hidden')}>
-        <SidebarNav {...modalProps} />
-      </div>
-      
+    <ChatProviderWrapper value={contextValue}>
+      {isPendingDeletion && <ReclamationModal />}
       <div className={cn(
-        "flex flex-1 min-w-0",
-        !isMobile && sidebarState === 'expanded' && "md:ml-64",
-        !isMobile && sidebarState === 'collapsed' && "md:ml-12",
+          'relative z-0 flex h-screen w-full overflow-hidden',
+          isPendingDeletion && 'pointer-events-none blur-sm'
       )}>
-        <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <Header {...modalProps} />
-          <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
-            {children}
-          </main>
+        <OfflineIndicator />
+        <div className={cn('contents', isMobileChatFocus && 'hidden')}>
+          <SidebarNav {...modalProps} />
         </div>
         
-        <aside className={cn(
-            "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
-            "hidden md:flex",
-            (ongoingCall || ongoingAudioCall) && !isPipMode && "hidden",
-            isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
-            isChatSidebarOpen && isChatPanelVisible && "w-[calc(18rem+22rem)]",
-            !isChatSidebarOpen && isChatPanelVisible && "w-[calc(5rem+22rem)]",
-            !isChatSidebarOpen && !isChatPanelVisible && "w-20"
+        <div className={cn(
+          "flex flex-1 min-w-0",
+          !isMobile && sidebarState === 'expanded' && "md:ml-64",
+          !isMobile && sidebarState === 'collapsed' && "md:ml-12",
         )}>
-           <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
-              {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />)}
-           </div>
-            {isChatSidebarOpen ? (
-                <div className="w-[18rem] h-full">
-                  <DesktopChatSidebar />
-                </div>
-              ) : (
-                <div className="w-20 h-full">
-                    <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
-                </div>
-              )
-            }
-        </aside>
-      </div>
-
-      {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
-          <div className={cn(
-            "fixed inset-0 z-50 flex h-full w-full flex-row",
-            isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
-          )}>
-              <div className={cn(
-                "h-full transition-all duration-300",
-                chattingWith && isChatInputFocused ? "w-0 hidden" : (chattingWith ? "w-[25%]" : "w-full")
-              )}>
-                  {chattingWith ? (
-                    <MobileMiniChatSidebar />
-                  ) : (
-                    <MobileChatSidebar />
-                  )}
-              </div>
-              {chattingWith && (
-                  <div className={cn(
-                    "h-full flex-1 flex flex-col absolute top-0 right-0 transition-all duration-300",
-                     isChatInputFocused ? "w-full" : "w-[75%]"
-                  )}>
-                      <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
-                  </div>
-              )}
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            <Header {...modalProps} />
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
+              {children}
+            </main>
           </div>
-      )}
-
-
-      <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
-      <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
-      
-      {isFullScreen && !isMobile && (
-        <AnimatePresence>
-            <motion.div
-                key="desktop-fullscreen-nav"
-                initial={{ y: "120%" }}
-                animate={{ y: "0%" }}
-                exit={{ y: "120%" }}
-                transition={{ type: "tween", ease: "easeInOut", duration: 0.4 }}
-                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
-            >
-                <div ref={bottomNavRef} className="bottom-nav-glow open">
-                    <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
-                    <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
-                    <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
-                    <div className="inner">
-                        <Button onClick={() => setIsCommandPaletteOpen(true)} variant="ghost" className="text-muted-foreground hover:text-foreground">
-                            <Command className="h-5 w-5 mr-2" /> Open Command Palette
-                        </Button>
-                    </div>
-                </div>
-            </motion.div>
-        </AnimatePresence>
-      )}
-      
-      <AnimatePresence>
-        {isBottomNavVisible && isMobile && !isChatInputFocused && !isFullScreen && (
-          <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
-            transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-            className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
-          >
-            <div ref={bottomNavRef} className="bottom-nav-glow open">
-                <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
-                <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
-                <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
-                <div className="inner">
-                  <div className="flex items-center justify-around w-full">
-                    <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open command palette">
-                      <Command className="h-5 w-5" /><span className="text-xs">Search</span>
-                    </button>
-                    <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open chat">
-                      <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
-                    </button>
-                  </div>
-                </div>
+          
+          <aside className={cn(
+              "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
+              "hidden md:flex",
+              (ongoingCall || ongoingAudioCall) && !isPipMode && "hidden",
+              isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
+              isChatSidebarOpen && isChatPanelVisible && "w-[calc(18rem+22rem)]",
+              !isChatSidebarOpen && isChatPanelVisible && "w-[calc(5rem+22rem)]",
+              !isChatSidebarOpen && !isChatPanelVisible && "w-20"
+          )}>
+            <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
+                {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />)}
             </div>
+              {isChatSidebarOpen ? (
+                  <div className="w-[18rem] h-full">
+                    <DesktopChatSidebar />
+                  </div>
+                ) : (
+                  <div className="w-20 h-full">
+                      {/* You had an import issue here. Let's fix this in the file. */}
+                  </div>
+                )
+              }
+          </aside>
+        </div>
+
+        {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
+            <div className={cn(
+              "fixed inset-0 z-50 flex h-full w-full flex-row",
+              isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
+            )}>
+                <div className={cn(
+                  "h-full transition-all duration-300",
+                  chattingWith && isChatInputFocused ? "w-0 hidden" : (chattingWith ? "w-[25%]" : "w-full")
+                )}>
+                    {chattingWith ? (
+                      <MobileMiniChatSidebar />
+                    ) : (
+                      <MobileChatSidebar />
+                    )}
+                </div>
+                {chattingWith && (
+                    <div className={cn(
+                      "h-full flex-1 flex flex-col absolute top-0 right-0 transition-all duration-300",
+                      isChatInputFocused ? "w-full" : "w-[75%]"
+                    )}>
+                        <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+                    </div>
+                )}
+            </div>
+        )}
+
+
+        <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
+        <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
+        
+        {isFullScreen && !isMobile && (
+          <AnimatePresence>
+              <motion.div
+                  key="desktop-fullscreen-nav"
+                  initial={{ y: "120%" }}
+                  animate={{ y: "0%" }}
+                  exit={{ y: "120%" }}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.4 }}
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
+              >
+                  <div ref={bottomNavRef} className="bottom-nav-glow open">
+                      <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
+                      <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
+                      <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
+                      <div className="inner">
+                          <Button onClick={() => setIsCommandPaletteOpen(true)} variant="ghost" className="text-muted-foreground hover:text-foreground">
+                              <Command className="h-5 w-5 mr-2" /> Open Command Palette
+                          </Button>
+                      </div>
+                  </div>
+              </motion.div>
+          </AnimatePresence>
+        )}
+        
+        <AnimatePresence>
+          {isBottomNavVisible && isMobile && !isChatInputFocused && !isFullScreen && (
+            <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
+              transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+              className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
+            >
+              <div ref={bottomNavRef} className="bottom-nav-glow open">
+                  <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
+                  <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
+                  <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
+                  <div className="inner">
+                    <div className="flex items-center justify-around w-full">
+                      <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open command palette">
+                        <Command className="h-5 w-5" /><span className="text-xs">Search</span>
+                      </button>
+                      <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open chat">
+                        <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
+                      </button>
+                    </div>
+                  </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {permissionRequest && (
+            <PermissionRequestModal
+                callType={permissionRequest.callType}
+                onGrant={permissionRequest.onGrant}
+                onDeny={permissionRequest.onDeny}
+                onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
+            />
+        )}
+        
+        {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
+        {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
+        {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
+        {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
+        
+        {isVideoCallActive && (
+          <motion.div
+              drag={isPipMode && !isResetting}
+              dragMomentum={false}
+              animate={pipControls}
+              className={cn(
+                  "fixed bg-black/50 backdrop-blur-md z-[100] border border-white/20",
+                  isPipMode 
+                      ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
+                      : "inset-0"
+              )}
+              style={isPipMode ? { maxWidth: pipSize.width, maxHeight: pipSize.height } : {}}
+          >
+              <VideoCallView 
+                  call={ongoingCall!} 
+                  otherUser={otherUserInCall!} 
+                  onEndCall={() => endCall(ongoingCall?.id)}
+                  isPipMode={isPipMode}
+                  onTogglePipMode={onTogglePipMode}
+                  pipSizeMode={pipSizeMode}
+                  onTogglePipSizeMode={() => setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium')}
+              />
           </motion.div>
         )}
-      </AnimatePresence>
-      
-      {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
-      {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
-      {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
-      {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
-      
-      {isVideoCallActive && (
-        <motion.div
-            drag={isPipMode && !isResetting}
-            dragMomentum={false}
-            animate={pipControls}
-            className={cn(
-                "fixed bg-black/50 backdrop-blur-md z-[100] border border-white/20",
-                isPipMode 
-                    ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
-                    : "inset-0"
-            )}
-            style={isPipMode ? { maxWidth: pipSize.width, maxHeight: pipSize.height } : {}}
-        >
-            <VideoCallView 
-                call={ongoingCall!} 
-                otherUser={otherUserInCall!} 
-                onEndCall={() => endCall(ongoingCall?.id)}
-                isPipMode={isPipMode}
-                onTogglePipMode={onTogglePipMode}
-                pipSizeMode={pipSizeMode}
-                onTogglePipSizeMode={() => setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium')}
-            />
-        </motion.div>
-      )}
 
-      {isAudioCallActive && (
-          <motion.div
-            drag
-            dragMomentum={false}
-            className="fixed bottom-5 right-5 z-[200] cursor-grab active:cursor-grabbing"
-          >
-            <AudioCallView
-                call={ongoingAudioCall!}
-                otherUser={otherUserInCall!}
-                onEndCall={() => endCall(ongoingAudioCall?.id)}
-                connectionStatus={connectionStatus}
-            />
-          </motion.div>
-      )}
-      
-      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+        {isAudioCallActive && (
+            <motion.div
+              drag
+              dragMomentum={false}
+              className="fixed bottom-5 right-5 z-[200] cursor-grab active:cursor-grabbing"
+            >
+              <AudioCallView
+                  call={ongoingAudioCall!}
+                  otherUser={otherUserInCall!}
+                  onEndCall={() => endCall(ongoingAudioCall?.id)}
+                  connectionStatus={connectionStatus}
+              />
+            </motion.div>
+        )}
+        
+        <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+        <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
+        <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
+        <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
 
-      <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
-      <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
-      <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
-      <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
-      <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
-    </div>
-    </>
+
+        <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
+        <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
+        <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
+        <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
+        <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
+      </div>
+    </ChatProviderWrapper>
   );
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { setOnboardingCompleted } = useAuth();
-  // State from ChatProvider is moved here
-  const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
-  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
-  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
   
   return (
     <SidebarProvider>
         <PluginProvider>
             <StreakProvider>
-                <ChatProviderWrapper>
-                    <AppContent onFinishOnboarding={() => setOnboardingCompleted(true)}>
-                        {children}
-                    </AppContent>
-                </ChatProviderWrapper>
+                <AppContent onFinishOnboarding={() => setOnboardingCompleted(true)}>
+                    {children}
+                </AppContent>
             </StreakProvider>
         </PluginProvider>
     </SidebarProvider>
