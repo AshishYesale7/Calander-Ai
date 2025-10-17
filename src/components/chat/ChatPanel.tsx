@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { PublicUserProfile } from '@/services/userService';
 import type { ChatMessage, CallData } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -153,385 +153,311 @@ const MessageItem = ({
   );
 };
 
-
-export default function ChatPanel({ user: otherUser, onClose, isMobileView = false }: ChatPanelProps) {
-  const { user: currentUser } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [calls, setCalls] = useState<CallData[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { 
+export function ChatPanelHeader({ user: otherUser, onClose }: { user: PublicUserProfile, onClose: () => void }) {
+    const { 
       setChattingWith, outgoingCall, ongoingCall, 
-      setIsChatInputFocused, isChatInputFocused, 
-      outgoingAudioCall, ongoingAudioCall, onInitiateCall,
-      playSendMessageSound,
-  } = useChat();
-  const { toast } = useToast();
-
-  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // New state for multi-select
-  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
-  const isInSelectionMode = selectedMessages.size > 0;
-  
-  // New state to manage the delete dialog
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const canDeleteForEveryone = useMemo(() => {
-    if (selectedMessages.size === 0) return false;
-    return Array.from(selectedMessages).every(id => {
-      const msg = messages.find(m => m.id === id);
-      return msg?.senderId === currentUser?.uid;
-    });
-  }, [selectedMessages, messages, currentUser]);
-
-
-  const chatItems = useMemo(() => {
-    return [...messages, ...calls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-  }, [messages, calls]);
-
-  const isCallingThisUser = outgoingCall?.uid === otherUser.uid || outgoingAudioCall?.uid === otherUser.uid;
-  const isCallActiveWithThisUser = (ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid)) || 
-                                   (ongoingAudioCall && [ongoingAudioCall.callerId, ongoingAudioCall.receiverId].includes(otherUser.uid));
-  
-  const isAnyCallActive = !!ongoingCall || !!ongoingAudioCall;
-  const isAnyCallOutgoing = !!outgoingCall || !!outgoingAudioCall;
-
-  const isCallButtonDisabled = isAnyCallOutgoing || (isAnyCallActive && !isCallActiveWithThisUser);
-
-  const handleStartSelection = (messageId: string) => {
-    setSelectedMessages(new Set([messageId]));
-  };
-
-  const handleToggleSelection = (messageId: string) => {
-    setSelectedMessages(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(messageId)) {
-            newSet.delete(messageId);
-        } else {
-            newSet.add(messageId);
-        }
-        return newSet;
-    });
-  };
-
-  const handleBulkDelete = async (mode: 'me' | 'everyone') => {
-    if (!currentUser || !otherUser || selectedMessages.size === 0) return;
+      outgoingAudioCall, ongoingAudioCall, onInitiateCall
+    } = useChat();
     
-    // We only support "Delete for Me" for bulk actions
-    const deletePromises = Array.from(selectedMessages).map(id => deleteMessage(currentUser.uid, otherUser.uid, id, mode));
+    const isCallingThisUser = outgoingCall?.uid === otherUser.uid || outgoingAudioCall?.uid === otherUser.uid;
+    const isCallActiveWithThisUser = (ongoingCall && [ongoingCall.callerId, ongoingCall.receiverId].includes(otherUser.uid)) || 
+                                     (ongoingAudioCall && [ongoingAudioCall.callerId, ongoingAudioCall.receiverId].includes(otherUser.uid));
     
-    try {
-      await Promise.all(deletePromises);
-      toast({ title: `${selectedMessages.size} message(s) deleted.` });
-    } catch (error) {
-      toast({ title: "Error", description: "Could not delete all selected messages.", variant: "destructive" });
-    } finally {
-      setSelectedMessages(new Set()); // Exit selection mode
-    }
-  };
+    const isAnyCallActive = !!ongoingCall || !!ongoingAudioCall;
+    const isAnyCallOutgoing = !!outgoingCall || !!outgoingAudioCall;
 
+    const isCallButtonDisabled = isAnyCallOutgoing || (isAnyCallActive && !isCallActiveWithThisUser);
 
-  const handleInitiateVideoCall = async () => {
-    if (!currentUser || !otherUser) return;
-    onInitiateCall(otherUser, 'video');
-  };
-
-  const handleInitiateAudioCall = async () => {
-    if (!currentUser || !otherUser) return;
-    onInitiateCall(otherUser, 'audio');
-  };
-
-
-  const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
-    if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        setTimeout(() => {
-          viewport.scrollTo({ top: viewport.scrollHeight, behavior });
-        }, 50);
-      }
-    }
-  };
-  
-  const groupedChatItems = useMemo(() => {
-    return chatItems.reduce((acc, item, index) => {
-        if (!item || !item.timestamp) return acc;
-        const dateKey = format(item.timestamp, 'yyyy-MM-dd');
-        if (!acc[dateKey]) {
-            acc[dateKey] = [];
-        }
-        acc[dateKey].push(item);
-        return acc;
-    }, {} as Record<string, MergedChatItem[]>);
-  }, [chatItems]);
-
-
-  useEffect(() => {
-    if (!currentUser || !otherUser) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setMessages(loadMessagesFromLocal(currentUser.uid, otherUser.uid));
-    setIsLoading(false);
-    scrollToBottom('auto');
-
-    const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, (newMessages) => {
-        setMessages(newMessages);
-    });
-    
-    const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
-      const relevantCalls = allCalls.filter(
-        c => c.callerId === otherUser.uid || c.receiverId === otherUser.uid
-      );
-      setCalls(relevantCalls);
-    });
-
-    const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
-
-    return () => {
-      unsubMessages();
-      unsubCalls();
-      unsubTyping();
+    const handleBackToChatList = () => {
+        setChattingWith(null);
     };
-  }, [currentUser, otherUser]);
-  
-  useEffect(() => {
-    scrollToBottom('smooth');
-  }, [chatItems]);
 
-  const handleSend = () => {
-    if (!currentUser?.uid || !otherUser?.uid || !inputMessage.trim()) {
-      return;
-    }
+    const handleInitiateVideoCall = async () => onInitiateCall(otherUser, 'video');
+    const handleInitiateAudioCall = async () => onInitiateCall(otherUser, 'audio');
 
-    const messageToSend = inputMessage;
-    setInputMessage('');
-    playSendMessageSound();
-
-    sendMessage(currentUser.uid, otherUser.uid, messageToSend)
-      .catch(error => {
-        console.error("Failed to send message:", error);
-        setInputMessage(messageToSend);
-        toast({
-          title: "Message Failed",
-          description: "Could not send your message. Please try again.",
-          variant: "destructive"
-        });
-      });
-
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    updateTypingStatus(currentUser.uid, otherUser.uid, false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputMessage(e.target.value);
-    if (!currentUser || !otherUser) return;
-
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    updateTypingStatus(currentUser.uid, otherUser.uid, true);
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      updateTypingStatus(currentUser.uid, otherUser.uid, false);
-    }, 1000);
-  };
-
-
-  const handleBackToChatList = () => {
-    setChattingWith(null);
-  };
-
-  return (
-    <>
-    <div className="flex flex-col h-full bg-black border-l border-gray-800">
-      {/* Header - Only render if not mobile */}
-      {!isMobileView && (
-        <AnimatePresence initial={false}>
-        {isInSelectionMode ? (
-          <motion.header
-            key="selection-header"
-            initial={{ y: -56, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -56, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className={cn(
-              "flex-shrink-0 flex items-center justify-between p-3 h-14 z-10 sticky top-0",
-              "bg-accent/10 backdrop-blur-md border-b border-accent/30 text-white"
-            )}>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
-                  <X className="h-5 w-5 text-white" />
+    return (
+        <header className={cn(
+            "sticky top-0 z-10 flex-shrink-0 flex items-center justify-between p-3 border-b h-14",
+            "bg-black/80 backdrop-blur-lg border-gray-800"
+        )}>
+            <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
+                    <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <span className="font-semibold text-white">{selectedMessages.size} selected</span>
-              </div>
-              <div className="flex items-center gap-2">
-                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                      <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                              <Trash2 className="h-5 w-5 text-white" />
-                          </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
-                          <AlertDialogHeader className="text-center">
-                              <AlertDialogTitle className="text-lg">Delete Message(s)?</AlertDialogTitle>
-                          </AlertDialogHeader>
-                          <div className="flex flex-col gap-2 mt-2">
-                              {canDeleteForEveryone && (
-                                  <AlertDialogAction onClick={() => { handleBulkDelete('everyone'); setIsDeleteDialogOpen(false); }} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
-                                      Delete for Everyone
-                                  </AlertDialogAction>
-                              )}
-                              <AlertDialogAction onClick={() => { handleBulkDelete('me'); setIsDeleteDialogOpen(false); }} className="w-full justify-center">
-                                  Delete for Me ({selectedMessages.size})
-                              </AlertDialogAction>
-                              <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
-                          </div>
-                      </AlertDialogContent>
-                  </AlertDialog>
-              </div>
-          </motion.header>
-        ) : (
-          <motion.header
-              key="default-header"
-              initial={{ y: 0, opacity: 1 }}
-              exit={{ y: -56, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className={cn(
-                  "sticky top-0 z-10 flex-shrink-0 flex items-center justify-between p-3 border-b h-14",
-                  "bg-black/80 backdrop-blur-lg border-gray-800"
-              )}
-          >
-                  <div className="flex items-center gap-3">
-                     <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
-                        <ArrowLeft className="h-5 w-5" />
-                     </Button>
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
-                      <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
-                      <p className="text-xs text-gray-400">@{otherUser.username}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-white">
-                      <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
-                          <Phone className="h-5 w-5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
-                        <div className="relative">
-                          <Video className="h-5 w-5" />
-                          {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
-                        </div>
-                      </Button>
-                      <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
-                      <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
-                  </div>
-          </motion.header>
-        )}
-        </AnimatePresence>
-      )}
-
-
-      {/* Message Area */}
-      <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
-        <div className="p-4 space-y-4 pb-20 md:pb-4">
-            <div className="flex flex-col items-center pt-8 pb-4">
-                <Avatar className="h-24 w-24">
+                <Avatar className="h-9 w-9">
                     <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
-                    <AvatarFallback className="text-4xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <h2 className="mt-4 text-xl font-bold text-white">{otherUser.displayName}</h2>
-                <p className="text-sm text-gray-400">@{otherUser.username}</p>
+                <div>
+                    <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
+                    <p className="text-xs text-gray-400">@{otherUser.username}</p>
+                </div>
             </div>
-            
-            {isLoading && (
-              <div className="flex justify-center items-center h-full py-10"><LoadingSpinner /></div>
-            )}
-            
-            {Object.entries(groupedChatItems).map(([date, items]) => (
-                <div key={date}>
-                    <div className="text-center text-xs text-gray-500 my-4">
-                        {format(new Date(date), 'MMMM d, yyyy')}
+            <div className="flex items-center gap-1 text-white">
+                <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
+                    <Phone className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
+                    <div className="relative">
+                        <Video className="h-5 w-5" />
+                        {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
                     </div>
-                    {items.map((item, index) => {
-                      if (item.type === 'call') {
-                        return <CallLogItem key={item.id} item={item} currentUser={currentUser} />
-                      }
-                      
-                      const msg = item as ChatMessage;
-                      if (!msg.senderId) return null;
-                      
-                      const isMe = msg.senderId === currentUser?.uid;
-                      const nextItem = items[index + 1];
-                      const isLastInBlock = !nextItem || nextItem.type === 'call' || (nextItem.type === 'message' && nextItem.senderId !== msg.senderId);
-
-                      return (
-                        <MessageItem
-                            key={msg.id}
-                            msg={msg}
-                            isMe={isMe}
-                            isLastInBlock={isLastInBlock}
-                            isSelected={selectedMessages.has(msg.id)}
-                            isInSelectionMode={isInSelectionMode}
-                            onStartSelection={handleStartSelection}
-                            onToggleSelection={handleToggleSelection}
-                        />
-                      )
-                    })}
-                </div>
-            ))}
-             {isOtherUserTyping && (
-                <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
-                    <Avatar className="h-6 w-6"><AvatarImage src={otherUser.photoURL || undefined} /><AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback></Avatar>
-                    <span className="italic">typing...</span>
-                </div>
-             )}
-        </div>
-      </ScrollArea>
-
-      {/* Input Form */}
-      <footer className={cn(
-        "flex-shrink-0 p-3 bg-black",
-        isMobileView && "fixed bottom-0 left-0 right-0"
-      )}>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="flex items-center gap-2 bg-[#262626] rounded-full px-2"
-        >
-          <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
-          <Input
-            value={inputMessage}
-            onChange={handleInputChange}
-            onFocus={() => setIsChatInputFocused(true)}
-            onBlur={() => setIsChatInputFocused(false)}
-            placeholder="Message..."
-            className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12 focus-visible:ring-offset-0"
-            autoComplete="off"
-          />
-           <div className="flex items-center gap-1">
-               {(isMobileView && inputMessage.trim() === '') || !isMobileView ? (
-                   <>
-                       <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
-                       <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
-                   </>
-               ) : null}
-               {inputMessage.trim() !== '' ? (
-                    <Button variant="ghost" size="icon" type="submit" className="text-accent hover:bg-transparent hover:text-accent/80">
-                        <Send className="h-6 w-6"/>
-                    </Button>
-               ) : null}
+                </Button>
+                <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={onClose} className="hidden md:inline-flex"><X className="h-5 w-5" /></Button>
             </div>
-        </form>
-      </footer>
-    </div>
-    </>
-  );
+        </header>
+    );
+}
+
+export function ChatPanelBody({ user: otherUser }: { user: PublicUserProfile }) {
+    const { user: currentUser } = useAuth();
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [calls, setCalls] = useState<CallData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+    const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+    const isInSelectionMode = selectedMessages.size > 0;
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const { toast } = useToast();
+
+    const canDeleteForEveryone = useMemo(() => {
+      if (selectedMessages.size === 0) return false;
+      return Array.from(selectedMessages).every(id => {
+        const msg = messages.find(m => m.id === id);
+        return msg?.senderId === currentUser?.uid;
+      });
+    }, [selectedMessages, messages, currentUser]);
+
+    const chatItems = useMemo(() => {
+      return [...messages, ...calls].sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+    }, [messages, calls]);
+
+    const scrollToBottom = useCallback((behavior: 'smooth' | 'auto' = 'auto') => {
+        if (scrollAreaRef.current) {
+          const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+          if (viewport) {
+            setTimeout(() => {
+              viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+            }, 50);
+          }
+        }
+    }, []);
+
+    useEffect(() => {
+      if (!currentUser || !otherUser) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setMessages(loadMessagesFromLocal(currentUser.uid, otherUser.uid));
+      setIsLoading(false);
+      scrollToBottom('auto');
+  
+      const unsubMessages = subscribeToMessages(currentUser.uid, otherUser.uid, setMessages);
+      const unsubCalls = subscribeToCallHistory(currentUser.uid, (allCalls) => {
+        setCalls(allCalls.filter(c => c.callerId === otherUser.uid || c.receiverId === otherUser.uid));
+      });
+      const unsubTyping = listenForTyping(currentUser.uid, otherUser.uid, setIsOtherUserTyping);
+  
+      return () => { unsubMessages(); unsubCalls(); unsubTyping(); };
+    }, [currentUser, otherUser]);
+  
+    useEffect(() => {
+      scrollToBottom('smooth');
+    }, [chatItems, scrollToBottom]);
+
+    const groupedChatItems = useMemo(() => {
+        return chatItems.reduce((acc, item) => {
+            if (!item || !item.timestamp) return acc;
+            const dateKey = format(item.timestamp, 'yyyy-MM-dd');
+            if (!acc[dateKey]) acc[dateKey] = [];
+            acc[dateKey].push(item);
+            return acc;
+        }, {} as Record<string, MergedChatItem[]>);
+    }, [chatItems]);
+
+    const handleStartSelection = (messageId: string) => setSelectedMessages(new Set([messageId]));
+    const handleToggleSelection = (messageId: string) => {
+        setSelectedMessages(prev => {
+            const newSet = new Set(prev);
+            newSet.has(messageId) ? newSet.delete(messageId) : newSet.add(messageId);
+            return newSet;
+        });
+    };
+
+    const handleBulkDelete = async (mode: 'me' | 'everyone') => {
+        if (!currentUser || !otherUser || selectedMessages.size === 0) return;
+        const deletePromises = Array.from(selectedMessages).map(id => deleteMessage(currentUser.uid, otherUser.uid, id, mode));
+        try {
+            await Promise.all(deletePromises);
+            toast({ title: `${selectedMessages.size} message(s) deleted.` });
+        } catch (error) {
+            toast({ title: "Error", description: "Could not delete all selected messages.", variant: "destructive" });
+        } finally {
+            setSelectedMessages(new Set());
+        }
+    };
+    
+    return (
+        <>
+        <AnimatePresence initial={false}>
+            {isInSelectionMode && (
+                <motion.header
+                    key="selection-header"
+                    initial={{ y: -56, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -56, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className={cn(
+                        "flex-shrink-0 flex items-center justify-between p-3 h-14 z-10 absolute top-0 left-0 right-0",
+                        "bg-accent/10 backdrop-blur-md border-b border-accent/30 text-white"
+                    )}
+                >
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
+                            <X className="h-5 w-5 text-white" />
+                        </Button>
+                        <span className="font-semibold text-white">{selectedMessages.size} selected</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-5 w-5 text-white" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
+                                <AlertDialogHeader className="text-center">
+                                    <AlertDialogTitle className="text-lg">Delete Message(s)?</AlertDialogTitle>
+                                </AlertDialogHeader>
+                                <div className="flex flex-col gap-2 mt-2">
+                                    {canDeleteForEveryone && (
+                                        <AlertDialogAction onClick={() => { handleBulkDelete('everyone'); setIsDeleteDialogOpen(false); }} className="w-full justify-center bg-destructive/80 hover:bg-destructive text-destructive-foreground">
+                                            Delete for Everyone
+                                        </AlertDialogAction>
+                                    )}
+                                    <AlertDialogAction onClick={() => { handleBulkDelete('me'); setIsDeleteDialogOpen(false); }} className="w-full justify-center">
+                                        Delete for Me ({selectedMessages.size})
+                                    </AlertDialogAction>
+                                    <AlertDialogCancel className="w-full mt-2">Cancel</AlertDialogCancel>
+                                </div>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </motion.header>
+            )}
+        </AnimatePresence>
+        <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
+            <div className="p-4 space-y-4">
+                <div className="flex flex-col items-center pt-8 pb-4">
+                    <Avatar className="h-24 w-24"><AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} /><AvatarFallback className="text-4xl">{otherUser.displayName.charAt(0)}</AvatarFallback></Avatar>
+                    <h2 className="mt-4 text-xl font-bold text-white">{otherUser.displayName}</h2>
+                    <p className="text-sm text-gray-400">@{otherUser.username}</p>
+                </div>
+                {isLoading && <div className="flex justify-center items-center h-full py-10"><LoadingSpinner /></div>}
+                {Object.entries(groupedChatItems).map(([date, items]) => (
+                    <div key={date}>
+                        <div className="text-center text-xs text-gray-500 my-4">{format(new Date(date), 'MMMM d, yyyy')}</div>
+                        {items.map((item, index) => {
+                            if (item.type === 'call') return <CallLogItem key={item.id} item={item} currentUser={currentUser} />;
+                            const msg = item as ChatMessage;
+                            if (!msg.senderId) return null;
+                            const isMe = msg.senderId === currentUser?.uid;
+                            const nextItem = items[index + 1];
+                            const isLastInBlock = !nextItem || nextItem.type === 'call' || (nextItem.type === 'message' && nextItem.senderId !== msg.senderId);
+                            return <MessageItem key={msg.id} msg={msg} isMe={isMe} isLastInBlock={isLastInBlock} isSelected={selectedMessages.has(msg.id)} isInSelectionMode={isInSelectionMode} onStartSelection={handleStartSelection} onToggleSelection={handleToggleSelection} />;
+                        })}
+                    </div>
+                ))}
+                {isOtherUserTyping && (
+                    <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
+                        <Avatar className="h-6 w-6"><AvatarImage src={otherUser.photoURL || undefined} /><AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback></Avatar>
+                        <span className="italic">typing...</span>
+                    </div>
+                )}
+            </div>
+        </ScrollArea>
+        </>
+    );
+}
+
+export function ChatPanelFooter() {
+    const { user: currentUser } = useAuth();
+    const { chattingWith: otherUser, setIsChatInputFocused, playSendMessageSound } = useChat();
+    const [inputMessage, setInputMessage] = useState('');
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const { toast } = useToast();
+    const isMobileView = useIsMobile();
+
+    const handleSend = () => {
+        if (!currentUser?.uid || !otherUser?.uid || !inputMessage.trim()) return;
+        const messageToSend = inputMessage;
+        setInputMessage('');
+        playSendMessageSound();
+        sendMessage(currentUser.uid, otherUser.uid, messageToSend).catch(error => {
+            console.error("Failed to send message:", error);
+            setInputMessage(messageToSend);
+            toast({ title: "Message Failed", description: "Could not send your message. Please try again.", variant: "destructive" });
+        });
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        updateTypingStatus(currentUser.uid, otherUser.uid, false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputMessage(e.target.value);
+        if (!currentUser || !otherUser) return;
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        updateTypingStatus(currentUser.uid, otherUser.uid, true);
+        typingTimeoutRef.current = setTimeout(() => {
+            updateTypingStatus(currentUser.uid, otherUser.uid, false);
+        }, 1000);
+    };
+
+    return (
+        <footer className="flex-shrink-0 p-3 bg-transparent">
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 bg-[#262626] rounded-full px-2">
+                <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
+                <Input value={inputMessage} onChange={handleInputChange} onFocus={() => setIsChatInputFocused(true)} onBlur={() => setIsChatInputFocused(false)} placeholder="Message..." className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12 focus-visible:ring-offset-0" autoComplete="off" />
+                <div className="flex items-center gap-1">
+                    {(isMobileView && inputMessage.trim() === '') || !isMobileView ? (
+                        <>
+                            <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
+                            <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
+                        </>
+                    ) : null}
+                    {inputMessage.trim() !== '' ? (
+                        <Button variant="ghost" size="icon" type="submit" className="text-accent hover:bg-transparent hover:text-accent/80"><Send className="h-6 w-6"/></Button>
+                    ) : null}
+                </div>
+            </form>
+        </footer>
+    );
+}
+
+
+export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
+    const isMobile = useIsMobile();
+    
+    // On Desktop, ChatPanel is the container for Header, Body, Footer
+    if (!isMobile) {
+        return (
+            <div className="flex flex-col h-full bg-black border-l border-gray-800">
+                <ChatPanelHeader user={otherUser} onClose={onClose} />
+                <ChatPanelBody user={otherUser} />
+                <ChatPanelFooter />
+            </div>
+        );
+    }
+    
+    // On Mobile, this component might not be directly used if the layout is controlled by AppLayout
+    // But we keep it for potential direct use or different layout structures.
+    return (
+        <div className="flex flex-col h-full bg-black">
+            <ChatPanelHeader user={otherUser} onClose={onClose} />
+            <ChatPanelBody user={otherUser} />
+            <ChatPanelFooter />
+        </div>
+    );
 }

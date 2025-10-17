@@ -1028,7 +1028,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                               <MobileMiniChatSidebar />
                           </div>
                           {/* Main Chat Body, now with padding to avoid footer */}
-                          <div className="flex-1 flex flex-col relative pb-16">
+                          <div className="flex-1 flex flex-col relative pb-20">
                               <ChatPanelBody user={chattingWith} />
                           </div>
                       </div>
@@ -1124,5 +1124,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
