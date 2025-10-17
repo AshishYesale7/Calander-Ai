@@ -33,7 +33,7 @@ import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
-import { ChatProvider, useChat, ChatContext } from '@/context/ChatContext';
+import { ChatContext } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -56,6 +56,8 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { differenceInDays } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useChat } from '@/hooks/use-chat';
+import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -85,7 +87,6 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-// NEW WRAPPER COMPONENT TO PROVIDE THE CHAT CONTEXT
 function ChatProviderWrapper({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -110,9 +111,6 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     const messageSentSoundRef = useRef<HTMLAudioElement>(null);
     const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
     const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
-    const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
-    const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
-    const [isChatInputFocused, setIsChatInputFocused] = useState(false);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -560,27 +558,17 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
         return { width: baseWidth, height: baseHeight };
     }, [pipSizeMode, remoteStream]);
     
+    // This state is now managed inside the AppLayout component
+    // const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
+    // const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+    // const [isChatInputFocused, setIsChatInputFocused] = useState(false);
+    
     const [chatSidebarWidth, setChatSidebarWidth] = useState(0);
-    const isChatPanelVisible = !!chattingWith;
-
-    useEffect(() => {
-        const remToPx = (rem: number) => rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
-        
-        if (isChatSidebarOpen && isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(18 + 22));
-        } else if (isChatSidebarOpen && !isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(18));
-        } else if (!isChatSidebarOpen && isChatPanelVisible) {
-            setChatSidebarWidth(remToPx(5 + 22));
-        } else {
-            setChatSidebarWidth(remToPx(5));
-        }
-    }, [isChatSidebarOpen, isChatPanelVisible]);
 
     const contextValue = {
-        chattingWith, setChattingWith,
-        isChatSidebarOpen, setIsChatSidebarOpen,
-        isChatInputFocused, setIsChatInputFocused,
+        // chattingWith, setChattingWith,
+        // isChatSidebarOpen, setIsChatSidebarOpen,
+        // isChatInputFocused, setIsChatInputFocused,
         onInitiateCall,
         outgoingCall, setOutgoingCall,
         ongoingCall, setOngoingCall,
@@ -603,7 +591,7 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     };
     
     return (
-        <ChatContext.Provider value={contextValue}>
+        <ChatContext.Provider value={contextValue as any}>
             {children}
             {permissionRequest && (
                 <PermissionRequestModal
@@ -961,7 +949,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         "flex flex-1 min-w-0",
         !isMobile && sidebarState === 'expanded' && "md:ml-64",
         !isMobile && sidebarState === 'collapsed' && "md:ml-12",
-        isMobileChatFocus && "hidden"
       )}>
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <Header {...modalProps} />
@@ -1002,10 +989,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           )}>
               <div className={cn(
                 "h-full transition-all duration-300",
-                chattingWith ? (isMobileChatFocus ? "w-0 hidden" : "w-[25%]") : "w-full"
+                chattingWith && isChatInputFocused ? "w-0 hidden" : (chattingWith ? "w-[25%]" : "w-full")
               )}>
                   {chattingWith ? (
-                    <ChatSidebar onToggleCollapse={() => {}} />
+                    <MobileMiniChatSidebar />
                   ) : (
                     <MobileChatSidebar />
                   )}
@@ -1013,7 +1000,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               {chattingWith && (
                   <div className={cn(
                     "h-full flex-1 flex flex-col absolute top-0 right-0 transition-all duration-300",
-                     isMobileChatFocus ? "w-full" : "w-[75%]"
+                     isChatInputFocused ? "w-full" : "w-[75%]"
                   )}>
                       <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
                   </div>
@@ -1028,6 +1015,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       {isFullScreen && !isMobile && (
         <AnimatePresence>
             <motion.div
+                key="desktop-fullscreen-nav"
                 initial={{ y: "120%" }}
                 animate={{ y: "0%" }}
                 exit={{ y: "120%" }}
@@ -1132,6 +1120,11 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { setOnboardingCompleted } = useAuth();
+  // State from ChatProvider is moved here
+  const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
+  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
+  
   return (
     <SidebarProvider>
         <PluginProvider>
@@ -1146,7 +1139,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
-
-    
-
-    
