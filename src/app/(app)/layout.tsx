@@ -598,6 +598,40 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     return (
         <ChatContext.Provider value={contextValue}>
             {children}
+            
+            {/* Call UI */}
+            {ongoingCall && otherUserInCall && !isPipMode && (
+                <div className="fixed inset-0 z-50 bg-black">
+                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={endCall} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />
+                </div>
+            )}
+            {ongoingAudioCall && otherUserInCall && !isPipMode && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center">
+                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} />
+                </div>
+            )}
+
+            {/* PiP Call UI */}
+            {isPipMode && (
+                <motion.div
+                    drag
+                    dragMomentum={false}
+                    animate={pipControls}
+                    className={cn(
+                        "fixed top-4 right-4 z-[100] rounded-lg overflow-hidden shadow-2xl border-2 border-accent cursor-grab active:cursor-grabbing",
+                        isResetting && "transition-transform duration-300"
+                    )}
+                    style={{
+                        width: pipSize.width,
+                        height: pipSize.height,
+                    }}
+                >
+                    {ongoingCall && otherUserInCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={endCall} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />}
+                    {ongoingAudioCall && otherUserInCall && <div className="h-full w-full bg-black flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} /></div>}
+                </motion.div>
+            )}
+
+            {/* Call Notifications */}
             {permissionRequest && (
                 <PermissionRequestModal
                     callType={permissionRequest.callType}
@@ -742,7 +776,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       ongoingCall, 
       ongoingAudioCall,
       isPipMode,
-      chatSidebarWidth,
   } = useChat();
     
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
@@ -911,6 +944,19 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   const isMobileChatFocus = isMobile && isChatInputFocused;
   const isVideoCallActive = !!(ongoingCall);
   const isAudioCallActive = !!(ongoingAudioCall);
+  
+  const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
+
+  const chatSidebarWidth = useMemo(() => {
+    if (isMobile) return 0;
+    if (isCallViewActive) return 0; // No sidebar during call
+    
+    if (isChatSidebarOpen) {
+      return isChatPanelVisible ? 288 + 352 : 288; // 18rem + 22rem or 18rem
+    }
+    return isChatPanelVisible ? 80 + 352 : 80; // 5rem + 22rem or 5rem
+  }, [isMobile, isChatSidebarOpen, isChatPanelVisible, isCallViewActive]);
+  
 
   return (
     <>
@@ -920,14 +966,14 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           isPendingDeletion && 'pointer-events-none blur-sm'
       )}>
         <OfflineIndicator />
-        <div className={cn('contents', isMobileChatFocus && 'hidden')}>
+        <div className={cn('contents', isMobileChatFocus && 'hidden', isCallViewActive && 'hidden md:contents')}>
           <SidebarNav {...modalProps} />
         </div>
         
         <div className={cn(
-          "flex flex-1 min-w-0",
-          !isMobile && sidebarState === 'expanded' && "md:ml-64",
-          !isMobile && sidebarState === 'collapsed' && "md:ml-12",
+          "flex flex-1 min-w-0 transition-[margin-left] duration-300",
+          !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
+          !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12",
         )}>
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
             <Header {...modalProps} />
@@ -939,7 +985,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           <aside className={cn(
               "h-full flex-shrink-0 flex-row-reverse transition-all duration-300 ease-in-out z-40",
               "hidden md:flex",
-              (ongoingCall || ongoingAudioCall) && !isPipMode && "hidden",
+              (ongoingCall || ongoingAudioCall) && !isPipMode && "hidden", // Hide during fullscreen call
               isChatSidebarOpen && !isChatPanelVisible && "w-[18rem]",
               isChatSidebarOpen && isChatPanelVisible && "w-[calc(18rem+22rem)]",
               !isChatSidebarOpen && isChatPanelVisible && "w-[calc(5rem+22rem)]",
@@ -948,16 +994,16 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
                 {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />)}
             </div>
-              {isChatSidebarOpen ? (
-                  <div className="w-[18rem] h-full">
-                    <DesktopChatSidebar />
-                  </div>
-                ) : (
-                  <div className="w-20 h-full">
-                      <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
-                  </div>
-                )
-              }
+            {isChatSidebarOpen ? (
+                <div className="w-[18rem] h-full">
+                  <DesktopChatSidebar />
+                </div>
+              ) : (
+                <div className="w-20 h-full">
+                    <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
+                </div>
+              )
+            }
           </aside>
         </div>
 
