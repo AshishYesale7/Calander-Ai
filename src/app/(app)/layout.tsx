@@ -32,7 +32,7 @@ import { StreakProvider } from '@/context/StreakContext';
 import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
-import ChatPanel from '@/components/chat/ChatPanel';
+import ChatPanel, { ChatPanelBody, ChatPanelHeader, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { ChatContext, ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
@@ -948,7 +948,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     setIsTimezoneModalOpen, handleToggleFullScreen, isFullScreen,
   };
   
-  const isMobileChatFocus = isMobile && isChatInputFocused;
   const isVideoCallActive = !!(ongoingCall);
   const isAudioCallActive = !!(ongoingAudioCall);
   
@@ -973,7 +972,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           isPendingDeletion && 'pointer-events-none blur-sm'
       )}>
         <OfflineIndicator />
-        <div className={cn('contents', isMobileChatFocus && 'hidden', isCallViewActive && 'hidden md:contents')}>
+        <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
           <SidebarNav {...modalProps} />
         </div>
         
@@ -983,7 +982,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12",
         )}>
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            <Header {...modalProps} />
+             {!isMobile && <Header {...modalProps} />}
             <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
               {children}
             </main>
@@ -1013,32 +1012,28 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
             }
           </aside>
         </div>
-
-        {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
-            <div className={cn(
-              "fixed inset-0 z-50 flex h-full w-full flex-row",
-              isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
-            )}>
-                <div className={cn(
-                  "h-full transition-all duration-300",
-                  chattingWith && isChatInputFocused ? "w-0 hidden" : (chattingWith ? "w-[25%]" : "w-full")
-                )}>
-                    {chattingWith ? (
-                      <MobileMiniChatSidebar />
-                    ) : (
-                      <MobileChatSidebar />
-                    )}
-                </div>
-                {chattingWith && (
-                    <div className={cn(
-                      "h-full flex-1 flex flex-col absolute top-0 right-0 transition-all duration-300",
-                      isChatInputFocused ? "w-full" : "w-[75%]"
-                    )}>
-                        <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
+        
+         {isMobile && isChatSidebarOpen && !isCallViewActive && (
+            <div className="fixed inset-0 z-50 bg-background flex flex-col">
+              {/* This container will hold both the full-width header and the two-column body */}
+              {chattingWith ? (
+                <>
+                  <ChatPanelHeader user={chattingWith} onClose={() => setChattingWith(null)} />
+                  <div className="flex flex-1 min-h-0">
+                    <div className={cn("h-full transition-all duration-300", isChatInputFocused ? "w-0" : "w-[25%]")}>
+                       <MobileMiniChatSidebar />
                     </div>
-                )}
+                    <div className="flex-1 flex flex-col relative">
+                       <ChatPanelBody user={chattingWith} />
+                       <ChatPanelFooter />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <MobileChatSidebar />
+              )}
             </div>
-        )}
+          )}
 
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
@@ -1069,7 +1064,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         )}
         
         <AnimatePresence>
-          {isBottomNavVisible && isMobile && !isChatInputFocused && !isFullScreen && (
+          {isBottomNavVisible && isMobile && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
             <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
               transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
               className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
