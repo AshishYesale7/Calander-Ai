@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -56,7 +55,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { differenceInDays } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useChat } from '@/hooks/use-chat';
+import { useChat } from '@/context/ChatContext';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 
 
