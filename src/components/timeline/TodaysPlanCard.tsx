@@ -207,7 +207,7 @@ export default function TodaysPlanCard() {
             <AccordionPrimitive.Header className="w-full">
               <AccordionPrimitive.Trigger asChild disabled={isRoutineSetupNeeded}>
                 <div className="p-4 md:p-6 w-full cursor-pointer group" onClick={handleHeaderClick}>
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Button
                             variant="outline"
@@ -234,14 +234,14 @@ export default function TodaysPlanCard() {
                             <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
                             <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
                           </CardTitle>
-                          <CardDescription className="mt-1 truncate hidden md:block">
-                            {isRoutineSetupNeeded
+                           <CardDescription className="mt-1 truncate">
+                              {isRoutineSetupNeeded
                               ? 'Set your weekly routine to get started'
                               : `Your personalized schedule for ${format(displayDate, 'MMMM d, yyyy')}.`}
                           </CardDescription>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 pl-10 md:pl-0">
+                    <div className="flex items-center gap-1 md:pl-0">
                        <Button
                         variant="ghost"
                         size="icon"
