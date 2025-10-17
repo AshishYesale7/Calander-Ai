@@ -32,7 +32,7 @@ import { StreakProvider } from '@/context/StreakContext';
 import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
-import ChatPanel, { ChatPanelBody, ChatPanelHeader, ChatPanelFooter } from '@/components/chat/ChatPanel';
+import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { ChatContext, ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
@@ -998,7 +998,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
               !isChatSidebarOpen && !isChatPanelVisible && "w-20"
           )}>
             <div className={cn("transition-all duration-300 ease-in-out h-full w-[22rem]", isChatPanelVisible ? 'block' : 'hidden')}>
-                {chattingWith && (<ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />)}
+                {chattingWith && (<div className="flex flex-col h-full bg-black border-l border-gray-800"><ChatPanelHeader user={chattingWith} onClose={() => setChattingWith(null)} /><ChatPanelBody user={chattingWith} /><ChatPanelFooter /></div>)}
             </div>
             {isChatSidebarOpen ? (
                 <div className="w-[18rem] h-full">
@@ -1025,7 +1025,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                       {/* Container for scrollable content and sidebar */}
                       <div className="flex flex-1 pt-14 min-h-0">
                           {/* Mini Sidebar */}
-                          <div className={cn("h-full transition-all duration-300", isChatInputFocused ? "w-0" : "w-[25%]")}>
+                          <div className={cn("h-full transition-all duration-300 overflow-hidden", isChatInputFocused ? "w-0" : "w-[25%]")}>
                               <MobileMiniChatSidebar />
                           </div>
                           {/* Main Chat Body, now with padding to avoid footer */}
