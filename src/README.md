@@ -28,6 +28,11 @@ Calendar.ai is a web application built with a modern tech stack, designed to be 
 *   **Smart Daily Plan:** At the start of each day, the AI generates a personalized plan, including a detailed schedule, achievable micro-goals based on your long-term aspirations, and critical reminders.
 *   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas (technical, soft, and hard skills), an actionable multi-step roadmap, and suggested learning resources.
 *   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels. Items from the AI-generated Career Vision can be added here with a single click.
+*   **Real-time Communication Suite:**
+    *   **Chat, Audio & Video Calling:** A collapsible sidebar allows for one-on-one text chats, audio calls, and video calls with other users. The chat interface includes typing indicators, message timestamps, and call logs integrated directly into the conversation history.
+    *   **Picture-in-Picture (PiP) Mode:** Video calls can be minimized to a draggable PiP window, allowing for seamless navigation while on a call.
+    *   **WebRTC Integration:** Built with a peer-to-peer WebRTC architecture, using Firestore for signaling to ensure efficient and direct media streaming.
+    *   **Optimized Mobile Experience:** The chat interface is fully optimized for mobile, with a keyboard-aware input bar and a full-screen conversation view.
 *   **Gamified Motivation & Leaderboard:**
     *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal. It’s not just about logging in; it’s about active engagement to keep your flame alive.
     *   **Competitive Leaderboard:** See how you stack up against other ambitious users. The leaderboard ranks users based on their total time spent and engagement (XP), not just their streak, promoting consistent effort over time.
@@ -46,10 +51,11 @@ Calendar.ai is a web application built with a modern tech stack, designed to be 
     *   An **AI Opportunity Tracker** that can find and track important upcoming deadlines for any topic, exam, or company you provide.
     *   A resources page where you can bookmark your own learning materials and also receive AI-generated suggestions based on your unique goals and skills.
 *   **Advanced User Experience:**
-    *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
+    *   **Multi-Account Support:** Sign in with Email/Password, Google, or Phone. Includes a fast account-switching feature to easily move between known Google accounts.
     *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines so you never miss an important date.
     *   **Extensive Customization:** Personalize the entire app's appearance, from light/dark themes to custom background images, solid colors, and five unique "frosted glass" UI effects with granular controls.
     *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) that serves as a central navigation and action hub. It features a modern, glassmorphic design and allows for quick navigation, plugin management (install/open), user search (`@`), and falls back to a conversational AI assistant for natural language event creation.
+    *   **Floating Desktop Navigation**: In full-screen mode on desktop, a floating navigation bar provides quick access to the command palette.
     *   **Enhanced Trash Management:** A dedicated trash panel allows you to review recently deleted items. It features bulk actions to restore or permanently delete multiple items at once.
     *   **Collapsible Sidebar:** The main navigation sidebar can be collapsed to maximize content view, with its state saved per-device.
     *   **Mobile App Download Section:** The landing page features a dedicated section with a dynamic "gravity well" animation, prompting users to download the mobile applications for iOS and Android.

@@ -32,9 +32,10 @@ Calendar.ai is a web application built with a modern tech stack, designed to be 
 *   **Career Vision Planner:** A standout feature where you describe your passions and career aspirations in natural language. The AI then generates a comprehensive, multi-faceted career plan, including a vision statement, key strengths, development areas, an actionable multi-step roadmap, and suggested learning resources.
 *   **Goal & Skill Tracking:** Dedicated sections to define and monitor your career goals (with progress trackers and deadlines) and to log the skills you're acquiring, complete with proficiency levels.
 *   **Real-time Communication Suite:**
-    *   **Chat & Video Calling:** A collapsible sidebar allows for one-on-one text and video calls with other users.
+    *   **Chat, Audio & Video Calling:** A collapsible sidebar allows for one-on-one text chats, audio calls, and video calls with other users. The chat interface includes typing indicators, message timestamps, and call logs integrated directly into the conversation history.
     *   **Picture-in-Picture (PiP) Mode:** Video calls can be minimized to a draggable PiP window, allowing for seamless navigation while on a call.
     *   **WebRTC Integration:** Built with a peer-to-peer WebRTC architecture, using Firestore for signaling to ensure efficient and direct media streaming.
+    *   **Optimized Mobile Experience:** The chat interface is fully optimized for mobile, with a keyboard-aware input bar and a full-screen conversation view.
 *   **Gamified Motivation & Social Features:**
     *   **Daily Streak Goal:** Build a powerful habit by meeting your daily activity goal.
     *   **Competitive Leaderboard & Profiles:** See how you stack up against others on the leaderboard and connect with them via their public profiles.
@@ -45,10 +46,11 @@ Calendar.ai is a web application built with a modern tech stack, designed to be 
     *   **Important Emails Card:** An AI-powered widget that scans your Gmail for important, non-sensitive emails and summarizes them on your dashboard.
     *   **Data Backup & Restore:** Export your entire account to a JSON file and import it later to restore your data.
 *   **Advanced User Experience:**
-    *   **Multi-Method Authentication:** Secure sign-up and sign-in using email/password, Google, or phone number (OTP).
+    *   **Multi-Account Support:** Sign in with Email/Password, Google, or Phone. Includes a fast account-switching feature to easily move between known Google accounts.
     *   **Push Notifications:** Receive timely, native browser notifications for upcoming events and deadlines.
     *   **Extensive Customization:** Personalize the entire app's appearance, from themes and custom backgrounds to unique "frosted glass" UI effects.
     *   **Intelligent Command Palette:** A powerful, keyboard-accessible palette (Ctrl+K) for quick navigation, plugin management, user search (`@`), and conversational AI event creation.
+    *   **Floating Desktop Navigation**: In full-screen mode on desktop, a floating navigation bar provides quick access to the command palette.
 
 ## 3. Link to Prototype
 
