@@ -158,6 +158,7 @@ export default function LandingPage() {
                         <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-7 px-10 rounded-full">
                             <Link href="/auth/signup" ref={ctaButtonRef}>Get Started For Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
                         </Button>
+                        <p className="mt-4 text-sm text-gray-300">More reliable -&gt; less efforts -&gt; with no time .</p>
                     </div>
                 </section>
                 
