@@ -194,7 +194,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
           </Button>
         )}
         
-        {connectionStatus === 'connected' && callDuration > 0 && (
+        {connectionStatus === 'connected' && callDuration > 0 && !isPipMode && (
           <div className="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-full text-sm font-mono animate-in fade-in duration-300">
             {formatDuration(callDuration)}
           </div>
@@ -214,7 +214,7 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
             className={cn(
               "absolute overflow-hidden border-2 border-gray-700 cursor-grab active:cursor-grabbing",
               isPipMode
-                ? "rounded-md max-h-[7rem] max-w-[5.25rem] top-2 right-2"
+                ? "bottom-1 right-1 h-16 w-12 rounded-md"
                 : "rounded-lg max-h-[14rem] max-w-[10.5rem] top-4 right-4"
             )}
           >
@@ -242,25 +242,27 @@ export default function VideoCallView({ call, otherUser, onEndCall, isPipMode, o
         )}
       </div>
 
-      <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300", isPipMode && "p-2 gap-2")}>
-        <Button onClick={handleToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
-          {isMuted ? <MicOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Mic className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
-        </Button>
-        <Button onClick={handleToggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
-          {isCameraOff ? <VideoOff className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <Video className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
-        </Button>
-        <Button variant="destructive" size="icon" className={cn("rounded-full", isPipMode ? "h-12 w-12" : "h-16 w-16")} onClick={onEndCall}>
-          <PhoneOff className={cn(isPipMode ? "h-6 w-6" : "h-7 w-7")} />
-        </Button>
-        {hasMultipleCameras && (
-            <Button onClick={flipCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")}>
-               <SwitchCamera className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />
+      {!isPipMode && (
+          <div className={cn("flex-shrink-0 bg-black/50 p-4 flex justify-center items-center gap-4 transition-opacity duration-300")}>
+            <Button onClick={handleToggleMute} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14")}>
+              {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
             </Button>
-        )}
-        <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full", isPipMode ? "h-10 w-10" : "h-14 w-14")} onClick={onTogglePipMode}>
-            {isPipMode ? <Maximize className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} /> : <PictureInPicture2 className={cn(isPipMode ? "h-5 w-5" : "h-6 w-6")} />}
-        </Button>
-      </div>
+            <Button onClick={handleToggleCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14")}>
+              {isCameraOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
+            </Button>
+            <Button variant="destructive" size="icon" className="rounded-full h-16 w-16" onClick={onEndCall}>
+              <PhoneOff className="h-7 w-7" />
+            </Button>
+            {hasMultipleCameras && (
+                <Button onClick={flipCamera} variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14")}>
+                   <SwitchCamera className="h-6 w-6" />
+                </Button>
+            )}
+            <Button variant="outline" size="icon" className={cn("bg-white/10 hover:bg-white/20 border-white/20 rounded-full h-14 w-14")} onClick={onTogglePipMode}>
+                <PictureInPicture2 className="h-6 w-6" />
+            </Button>
+          </div>
+      )}
     </div>
   );
 }

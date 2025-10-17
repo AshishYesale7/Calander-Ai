@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -32,7 +33,7 @@ import DesktopChatSidebar from '@/components/layout/DesktopChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
-import { ChatContext, ChatProvider } from '@/context/ChatContext';
+import { ChatContext, ChatProvider, useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -54,7 +55,6 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { differenceInDays } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useChat } from '@/context/ChatContext';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 
@@ -612,13 +612,13 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
             )}
 
             {/* PiP Call UI */}
-            {isPipMode && (
-                <motion.div
+            {isPipMode && (ongoingCall || ongoingAudioCall) && (
+                 <motion.div
                     drag
                     dragMomentum={false}
                     animate={pipControls}
                     className={cn(
-                        "fixed top-4 right-4 z-[100] rounded-lg overflow-hidden shadow-2xl border-2 border-accent cursor-grab active:cursor-grabbing",
+                        "fixed top-4 right-4 z-[100] rounded-lg overflow-hidden shadow-2xl border-2 border-accent cursor-grab active:cursor-grabbing flex flex-col bg-black/50 backdrop-blur-md",
                         isResetting && "transition-transform duration-300"
                     )}
                     style={{
@@ -627,7 +627,7 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
                     }}
                 >
                     {ongoingCall && otherUserInCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={endCall} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />}
-                    {ongoingAudioCall && otherUserInCall && <div className="h-full w-full bg-black flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} /></div>}
+                    {ongoingAudioCall && otherUserInCall && <div className="h-full w-full flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} /></div>}
                 </motion.div>
             )}
 
