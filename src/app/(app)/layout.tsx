@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -1013,40 +1012,33 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           </aside>
         </div>
         
-         {isMobile && isChatSidebarOpen && !isCallViewActive && (
-            <div className="fixed inset-0 z-50 bg-background flex flex-col">
-              {chattingWith ? (
-                  <div className="flex flex-1 min-h-0">
-                      {/* Full-width fixed header */}
-                      <div className="fixed top-0 left-0 right-0 z-20">
-                          <ChatPanelHeader user={chattingWith} onClose={() => setChattingWith(null)} />
-                      </div>
-                      
-                      {/* Container for scrollable content and sidebar */}
-                      <div className="flex flex-1 pt-14 min-h-0">
-                          {/* Mini Sidebar */}
-                          <div className={cn(
-                            "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
-                            isChatInputFocused ? "w-0" : "w-[25%]"
-                          )}>
-                              <MobileMiniChatSidebar />
-                          </div>
-                          {/* Main Chat Body, now with padding to avoid footer */}
-                          <div className="flex-1 flex flex-col relative pb-20">
-                              <ChatPanelBody user={chattingWith} />
-                          </div>
-                      </div>
-                      
-                      {/* Full-width fixed footer */}
-                      <div className="fixed bottom-0 left-0 right-0 z-20">
-                           <ChatPanelFooter />
-                      </div>
-                  </div>
-              ) : (
-                <MobileChatSidebar />
-              )}
-            </div>
-          )}
+        {isMobile && isChatSidebarOpen && !isCallViewActive && (
+          <div className="fixed inset-0 z-50 bg-background flex flex-col">
+            {chattingWith ? (
+              <>
+                <div className="fixed top-0 left-0 right-0 z-20">
+                  <ChatPanelHeader user={chattingWith} onClose={() => setChattingWith(null)} />
+                </div>
+                <div className="flex flex-1 min-h-0 pt-14 pb-20">
+                    <div className={cn(
+                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
+                      isChatInputFocused ? "w-0" : "w-[25%]"
+                    )}>
+                        <MobileMiniChatSidebar />
+                    </div>
+                    <div className="flex-1 flex flex-col relative">
+                        <ChatPanelBody user={chattingWith} />
+                    </div>
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 z-20">
+                    <ChatPanelFooter />
+                </div>
+              </>
+            ) : (
+              <MobileChatSidebar />
+            )}
+          </div>
+        )}
 
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
@@ -1128,3 +1120,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
