@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -32,7 +33,7 @@ import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { saveUserFCMToken, reclaimUserAccount } from '@/services/userService';
 import type { PublicUserProfile } from '@/services/userService';
 import ChatPanel from '@/components/chat/ChatPanel';
-import { ChatProvider, useChat } from '@/context/ChatContext';
+import { ChatProvider, useChat, ChatContext } from '@/context/ChatContext';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -602,7 +603,7 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     };
     
     return (
-        <ChatProvider value={contextValue}>
+        <ChatContext.Provider value={contextValue}>
             {children}
             {permissionRequest && (
                 <PermissionRequestModal
@@ -615,7 +616,7 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
             <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
             <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
             <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
-        </ChatProvider>
+        </ChatContext.Provider>
     );
 }
 
@@ -952,7 +953,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         isPendingDeletion && 'pointer-events-none blur-sm'
     )}>
       <OfflineIndicator />
-      <div className={cn(isMobileChatFocus ? 'hidden' : 'contents')}>
+      <div className={cn('contents', isMobileChatFocus && 'hidden')}>
         <SidebarNav {...modalProps} />
       </div>
       
@@ -996,13 +997,12 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
       {isMobile && isChatSidebarOpen && !isVideoCallActive && !isAudioCallActive && (
           <div className={cn(
-            "fixed inset-0 z-50 flex h-full w-full flex-col",
+            "fixed inset-0 z-50 flex h-full w-full flex-row",
             isChatInputFocused ? "h-[calc(100%-env(safe-area-inset-bottom))]" : "h-full"
           )}>
               <div className={cn(
                 "h-full transition-all duration-300",
-                chattingWith ? "w-[25%]" : "w-full",
-                isMobileChatFocus && chattingWith && "hidden"
+                chattingWith ? (isMobileChatFocus ? "w-0 hidden" : "w-[25%]") : "w-full"
               )}>
                   {chattingWith ? (
                     <ChatSidebar onToggleCollapse={() => {}} />
@@ -1011,7 +1011,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                   )}
               </div>
               {chattingWith && (
-                  <div className="h-full w-[75%] flex-1 flex flex-col absolute top-0 right-0">
+                  <div className={cn(
+                    "h-full flex-1 flex flex-col absolute top-0 right-0 transition-all duration-300",
+                     isMobileChatFocus ? "w-full" : "w-[75%]"
+                  )}>
                       <ChatPanel user={chattingWith} onClose={() => setChattingWith(null)} />
                   </div>
               )}
@@ -1022,8 +1025,31 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
       <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
       
+      {isFullScreen && !isMobile && (
+        <AnimatePresence>
+            <motion.div
+                initial={{ y: "120%" }}
+                animate={{ y: "0%" }}
+                exit={{ y: "120%" }}
+                transition={{ type: "tween", ease: "easeInOut", duration: 0.4 }}
+                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
+            >
+                <div ref={bottomNavRef} className="bottom-nav-glow open">
+                    <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
+                    <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
+                    <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
+                    <div className="inner">
+                        <Button onClick={() => setIsCommandPaletteOpen(true)} variant="ghost" className="text-muted-foreground hover:text-foreground">
+                            <Command className="h-5 w-5 mr-2" /> Open Command Palette
+                        </Button>
+                    </div>
+                </div>
+            </motion.div>
+        </AnimatePresence>
+      )}
+      
       <AnimatePresence>
-        {isBottomNavVisible && isMobile && !isChatInputFocused && (
+        {isBottomNavVisible && isMobile && !isChatInputFocused && !isFullScreen && (
           <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
             transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
             className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
@@ -1120,5 +1146,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   )
 }
+
+    
 
     
