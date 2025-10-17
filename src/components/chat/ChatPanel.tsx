@@ -435,7 +435,7 @@ export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) 
 
       {/* Message Area */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
-        <div className="p-4 space-y-4 pb-4">
+        <div className="p-4 space-y-4 pb-20 md:pb-4">
             <div className="flex flex-col items-center pt-8 pb-4">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
