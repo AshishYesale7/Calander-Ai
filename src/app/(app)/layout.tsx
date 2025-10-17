@@ -56,6 +56,7 @@ import { differenceInDays } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useChat } from '@/context/ChatContext';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
+import { ChatSidebar } from '@/components/layout/ChatSidebar';
 
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
@@ -85,135 +86,10 @@ const listenForCallerCandidates = (callId: string, callback: (candidate: RTCIceC
     });
 };
 
-function ChatProviderWrapper({ children, value }: { children: ReactNode; value: any }) {
-    return (
-        <ChatContext.Provider value={value}>
-            {children}
-        </ChatContext.Provider>
-    );
-}
-
-function ReclamationModal() {
-    const { user, refreshUser } = useAuth();
-    const { toast } = useToast();
-    const router = useRouter();
-    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
-    const [isReclaiming, setIsReclaiming] = useState(false);
-    
-    const deletionDate = useMemo(() => {
-        if (user?.deletionScheduledAt) {
-            return new Date(user.deletionScheduledAt);
-        }
-        return null;
-    }, [user?.deletionScheduledAt]);
-    
-    const daysRemaining = useMemo(() => {
-        if (!deletionDate) return 0;
-        const remaining = differenceInDays(deletionDate, new Date());
-        return Math.max(0, remaining);
-    }, [deletionDate]);
-
-    useEffect(() => {
-        if (reclaimState === 'confirmed') {
-            const timer = setTimeout(async () => {
-                await refreshUser();
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [reclaimState, refreshUser]);
-
-    const handleReclaim = async () => {
-        if (!user) return;
-        setIsReclaiming(true);
-        try {
-            await reclaimUserAccount(user.uid);
-            setReclaimState('confirmed');
-        } catch (error: any) {
-            toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
-        } finally {
-            setIsReclaiming(false);
-        }
-    };
-
-    const handleCancel = async () => {
-        try {
-            await signOut(auth);
-            router.push('/');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
-
-    return (
-        <AlertDialog open={true} onOpenChange={() => {}}>
-            <AlertDialogContent className="frosted-glass" hideCloseButton={true}>
-                <AnimatePresence mode="wait">
-                    {reclaimState === 'prompt' && (
-                        <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This account is scheduled for permanent deletion in{' '}
-                                    <span className="font-bold text-destructive">{daysRemaining} day{daysRemaining !== 1 && 's'}</span>.
-                                    You can reclaim your account now, or cancel to proceed with deletion.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel onClick={handleCancel}>Cancel & Sign Out</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleReclaim} disabled={isReclaiming}>
-                                    {isReclaiming && <LoadingSpinner size="sm" className="mr-2" />}
-                                    Reclaim My Account
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </motion.div>
-                    )}
-                    {reclaimState === 'confirmed' && (
-                        <motion.div key="confirmed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center p-4">
-                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <AlertDialogTitle>Welcome Back!</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Your account has been restored. Reloading your dashboard...
-                            </AlertDialogDescription>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </AlertDialogContent>
-        </AlertDialog>
-    );
-}
-
-function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
-  const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
-  
-    const { toast } = useToast();
-    const router = useRouter();
-    const pathname = usePathname();
-    const isMobile = useIsMobile();
-    useStreakTracker();
-    
-    const mainScrollRef = useRef<HTMLDivElement>(null);
-    const bottomNavRef = useRef<HTMLDivElement>(null);
-    const remoteAudioRef = useRef<HTMLAudioElement>(null);
-
-    const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-    
-    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-    const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-    const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
-    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
-    const lastScrollY = useRef(0);
-    
-    const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
-    
+function ChatProviderWrapper({ children }: { children: ReactNode }) {
     const [chattingWith, setChattingWith] = useState<PublicUserProfile | null>(null);
     const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
     const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-    
     const [outgoingCall, setOutgoingCall] = useState<PublicUserProfile | null>(null);
     const [ongoingCall, setOngoingCall] = useState<CallData | null>(null);
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
@@ -234,6 +110,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
     const messageSentSoundRef = useRef<HTMLAudioElement>(null);
     const outgoingRingtoneRef = useRef<HTMLAudioElement>(null);
     const incomingRingtoneRef = useRef<HTMLAudioElement>(null);
+    const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const [activeCallId, setActiveCallId] = useState<string | null>(() => {
       if (typeof window !== 'undefined') {
@@ -242,26 +119,11 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
       return null;
     });
 
-    const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
-
-    const checkAndRequestPermissions = async (callType: CallType): Promise<{ granted: boolean; error?: string }> => {
-        if (typeof window === 'undefined' || !navigator.mediaDevices) {
-            return { granted: false, error: 'Media devices not supported.' };
-        }
-        const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            stream.getTracks().forEach(track => track.stop());
-            return { granted: true };
-        } catch (error: any) {
-            console.error("Permission error:", error.name, error.message);
-            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                return { granted: false, error: 'denied' };
-            }
-            return { granted: false, error: error.message || 'An unknown error occurred.' };
-        }
-    };
+    const [pipSize, setPipSize] = useState({ width: 256, height: 192 });
     
+    const { user } = useAuth();
+    const { toast } = useToast();
+
     const setAndStoreActiveCallId = (callId: string | null) => {
         setActiveCallId(callId);
         if (typeof window !== 'undefined') {
@@ -530,6 +392,24 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         return () => unsubscribe();
     }, [activeCallId, user?.uid, ongoingCall, ongoingAudioCall, endCall]);
 
+    const checkAndRequestPermissions = async (callType: CallType): Promise<{ granted: boolean; error?: string }> => {
+        if (typeof window === 'undefined' || !navigator.mediaDevices) {
+            return { granted: false, error: 'Media devices not supported.' };
+        }
+        const constraints = callType === 'video' ? { video: true, audio: true } : { audio: true };
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            stream.getTracks().forEach(track => track.stop());
+            return { granted: true };
+        } catch (error: any) {
+            console.error("Permission error:", error.name, error.message);
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                return { granted: false, error: 'denied' };
+            }
+            return { granted: false, error: error.message || 'An unknown error occurred.' };
+        }
+    };
+    
     const acceptCall = useCallback(async () => {
         const callToAccept = incomingCall || incomingAudioCall;
         if (!callToAccept) return;
@@ -666,25 +546,30 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         }
     }, [incomingCall, incomingAudioCall, outgoingCall, outgoingAudioCall]);
 
-    const pipSize = useMemo(() => {
-        const baseWidth = pipSizeMode === 'large' ? 320 : 256;
-        const baseHeight = pipSizeMode === 'large' ? 240 : 192;
-        if (remoteStream && remoteStream.getVideoTracks().length > 0) {
-            const settings = remoteStream.getVideoTracks()[0].getSettings();
-            if (settings.width && settings.height) {
-                const aspectRatio = settings.width / settings.height;
-                if (aspectRatio > 1) { // Landscape
-                    return { width: baseWidth, height: baseWidth / aspectRatio };
-                } else { // Portrait
-                    return { width: baseHeight * aspectRatio, height: baseHeight };
-                }
+    const activeCallIdMemo = useMemo(() => {
+        if (ongoingCall) return ongoingCall.id;
+        if (ongoingAudioCall) return ongoingAudioCall.id;
+        if (outgoingCall || outgoingAudioCall) {
+            if (typeof window !== 'undefined') {
+                return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
             }
         }
-        return { width: baseWidth, height: baseHeight };
-    }, [pipSizeMode, remoteStream]);
-    
-    const [chatSidebarWidth, setChatSidebarWidth] = useState(0);
+        return null;
+    }, [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall]);
 
+    useEffect(() => {
+        if (connectionStatus === 'disconnected') {
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = setTimeout(() => {
+            toast({ title: 'Call Failed', description: 'Connection lost. The call has been ended.', variant: 'destructive' });
+            endCall();
+          }, 15000); // 15-second timeout
+        } else if (connectionStatus === 'connected') {
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+        }
+        return () => { if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current) };
+    }, [connectionStatus, endCall, toast]);
+  
     const contextValue = {
         chattingWith, setChattingWith, 
         isChatSidebarOpen, setIsChatSidebarOpen,
@@ -701,42 +586,168 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         localStream, remoteStream,
         isPipMode, onTogglePipMode, pipControls, isResetting,
         pipSize,
-        setPipSize: () => {}, 
+        setPipSize,
         pipSizeMode, setPipSizeMode,
         isMuted, onToggleMute,
         connectionStatus,
         peerConnectionRef,
         playSendMessageSound,
-        chatSidebarWidth,
+        chatSidebarWidth: 0,
     };
     
-    const isChatPanelVisible = !!chattingWith;
+    return (
+        <ChatContext.Provider value={contextValue}>
+            {children}
+            {permissionRequest && (
+                <PermissionRequestModal
+                    callType={permissionRequest.callType}
+                    onGrant={permissionRequest.onGrant}
+                    onDeny={permissionRequest.onDeny}
+                    onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
+                />
+            )}
+            {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
+            {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
+            {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
+            {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
+            
+            <audio ref={remoteStream && remoteStream.getAudioTracks().length > 0 ? (el => { if (el) el.srcObject = remoteStream; }) : null} autoPlay playsInline className="hidden" />
 
-  const activeCallIdMemo = useMemo(() => {
-    if (ongoingCall) return ongoingCall.id;
-    if (ongoingAudioCall) return ongoingAudioCall.id;
-    if (outgoingCall || outgoingAudioCall) {
-        if (typeof window !== 'undefined') {
-            return sessionStorage.getItem(ACTIVE_CALL_SESSION_KEY);
+            <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
+            <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
+            <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
+        </ChatContext.Provider>
+    );
+}
+
+function ReclamationModal() {
+    const { user, refreshUser } = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+    const [reclaimState, setReclaimState] = useState<'prompt' | 'confirmed'>('prompt');
+    const [isReclaiming, setIsReclaiming] = useState(false);
+    
+    const deletionDate = useMemo(() => {
+        if (user?.deletionScheduledAt) {
+            return new Date(user.deletionScheduledAt);
         }
-    }
-    return null;
-  }, [ongoingCall, ongoingAudioCall, outgoingCall, outgoingAudioCall]);
+        return null;
+    }, [user?.deletionScheduledAt]);
+    
+    const daysRemaining = useMemo(() => {
+        if (!deletionDate) return 0;
+        const remaining = differenceInDays(deletionDate, new Date());
+        return Math.max(0, remaining);
+    }, [deletionDate]);
 
-  useEffect(() => {
-    if (connectionStatus === 'disconnected') {
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = setTimeout(() => {
-        toast({ title: 'Call Failed', description: 'Connection lost. The call has been ended.', variant: 'destructive' });
-        endCall();
-      }, 15000); // 15-second timeout
-    } else if (connectionStatus === 'connected') {
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-    }
-    return () => { if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current) };
-  }, [connectionStatus, endCall, toast]);
+    useEffect(() => {
+        if (reclaimState === 'confirmed') {
+            const timer = setTimeout(async () => {
+                await refreshUser();
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [reclaimState, refreshUser]);
+
+    const handleReclaim = async () => {
+        if (!user) return;
+        setIsReclaiming(true);
+        try {
+            await reclaimUserAccount(user.uid);
+            setReclaimState('confirmed');
+        } catch (error: any) {
+            toast({ title: 'Error', description: `Could not reclaim account: ${error.message}`, variant: 'destructive' });
+        } finally {
+            setIsReclaiming(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        try {
+            await signOut(auth);
+            router.push('/');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    return (
+        <AlertDialog open={true} onOpenChange={() => {}}>
+            <AlertDialogContent className="frosted-glass" hideCloseButton={true}>
+                <AnimatePresence mode="wait">
+                    {reclaimState === 'prompt' && (
+                        <motion.div key="prompt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Reclaim Your Account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This account is scheduled for permanent deletion in{' '}
+                                    <span className="font-bold text-destructive">{daysRemaining} day{daysRemaining !== 1 && 's'}</span>.
+                                    You can reclaim your account now, or cancel to proceed with deletion.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel onClick={handleCancel}>Cancel & Sign Out</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReclaim} disabled={isReclaiming}>
+                                    {isReclaiming && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Reclaim My Account
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </motion.div>
+                    )}
+                    {reclaimState === 'confirmed' && (
+                        <motion.div key="confirmed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center p-4">
+                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                            <AlertDialogTitle>Welcome Back!</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Your account has been restored. Reloading your dashboard...
+                            </AlertDialogDescription>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+  const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   
-
+    const { toast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+    const isMobile = useIsMobile();
+    useStreakTracker();
+    
+    const mainScrollRef = useRef<HTMLDivElement>(null);
+    const bottomNavRef = useRef<HTMLDivElement>(null);
+    const remoteAudioRef = useRef<HTMLAudioElement>(null);
+    
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+    const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    
+    const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
+    
+    const { 
+      chattingWith, setChattingWith, 
+      isChatSidebarOpen, setIsChatSidebarOpen, 
+      isChatInputFocused, 
+      ongoingCall, 
+      ongoingAudioCall,
+      isPipMode,
+      chatSidebarWidth,
+  } = useChat();
+    
+    const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
+    const isChatPanelVisible = !!chattingWith;
+    
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
         setSidebarOpen(false);
@@ -863,13 +874,6 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
 
     return () => clearInterval(colorInterval);
   }, []);
-  
-  
-  useEffect(() => {
-    if (remoteStream && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
 
   if (loading) {
     return (
@@ -905,11 +909,11 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
   };
   
   const isMobileChatFocus = isMobile && isChatInputFocused;
-  const isVideoCallActive = !!(ongoingCall && otherUserInCall);
-  const isAudioCallActive = !!(ongoingAudioCall && otherUserInCall);
+  const isVideoCallActive = !!(ongoingCall);
+  const isAudioCallActive = !!(ongoingAudioCall);
 
   return (
-    <ChatProviderWrapper value={contextValue}>
+    <>
       {isPendingDeletion && <ReclamationModal />}
       <div className={cn(
           'relative z-0 flex h-screen w-full overflow-hidden',
@@ -950,7 +954,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                   </div>
                 ) : (
                   <div className="w-20 h-full">
-                      {/* You had an import issue here. Let's fix this in the file. */}
+                      <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
                   </div>
                 )
               }
@@ -1036,73 +1040,13 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           )}
         </AnimatePresence>
         
-        {permissionRequest && (
-            <PermissionRequestModal
-                callType={permissionRequest.callType}
-                onGrant={permissionRequest.onGrant}
-                onDeny={permissionRequest.onDeny}
-                onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
-            />
-        )}
-        
-        {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
-        {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
-        {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
-        {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
-        
-        {isVideoCallActive && (
-          <motion.div
-              drag={isPipMode && !isResetting}
-              dragMomentum={false}
-              animate={pipControls}
-              className={cn(
-                  "fixed bg-black/50 backdrop-blur-md z-[100] border border-white/20",
-                  isPipMode 
-                      ? "rounded-xl shadow-2xl cursor-grab active:cursor-grabbing top-4 right-4" 
-                      : "inset-0"
-              )}
-              style={isPipMode ? { maxWidth: pipSize.width, maxHeight: pipSize.height } : {}}
-          >
-              <VideoCallView 
-                  call={ongoingCall!} 
-                  otherUser={otherUserInCall!} 
-                  onEndCall={() => endCall(ongoingCall?.id)}
-                  isPipMode={isPipMode}
-                  onTogglePipMode={onTogglePipMode}
-                  pipSizeMode={pipSizeMode}
-                  onTogglePipSizeMode={() => setPipSizeMode(prev => prev === 'medium' ? 'large' : 'medium')}
-              />
-          </motion.div>
-        )}
-
-        {isAudioCallActive && (
-            <motion.div
-              drag
-              dragMomentum={false}
-              className="fixed bottom-5 right-5 z-[200] cursor-grab active:cursor-grabbing"
-            >
-              <AudioCallView
-                  call={ongoingAudioCall!}
-                  otherUser={otherUserInCall!}
-                  onEndCall={() => endCall(ongoingAudioCall?.id)}
-                  connectionStatus={connectionStatus}
-              />
-            </motion.div>
-        )}
-        
-        <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
-        <audio ref={messageSentSoundRef} src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" preload="auto" className="hidden"></audio>
-        <audio ref={incomingRingtoneRef} src="/assets/ringtone.mp3" preload="auto" loop className="hidden" />
-        <audio ref={outgoingRingtoneRef} src="https://cdn.pixabay.com/audio/2022/08/22/audio_1079450c39.mp3" preload="auto" loop className="hidden" />
-
-
         <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
         <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
         <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
         <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
         <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
       </div>
-    </ChatProviderWrapper>
+    </>
   );
 }
 
@@ -1113,9 +1057,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
         <PluginProvider>
             <StreakProvider>
-                <AppContent onFinishOnboarding={() => setOnboardingCompleted(true)}>
-                    {children}
-                </AppContent>
+                <ChatProviderWrapper>
+                    <AppContent onFinishOnboarding={() => setOnboardingCompleted(true)}>
+                        {children}
+                    </AppContent>
+                </ChatProviderWrapper>
             </StreakProvider>
         </PluginProvider>
     </SidebarProvider>
