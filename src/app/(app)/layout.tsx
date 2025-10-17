@@ -1025,7 +1025,10 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
                       {/* Container for scrollable content and sidebar */}
                       <div className="flex flex-1 pt-14 min-h-0">
                           {/* Mini Sidebar */}
-                          <div className={cn("h-full transition-all duration-300 overflow-hidden", isChatInputFocused ? "w-0" : "w-[25%]")}>
+                          <div className={cn(
+                            "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
+                            isChatInputFocused ? "w-0" : "w-[25%]"
+                          )}>
                               <MobileMiniChatSidebar />
                           </div>
                           {/* Main Chat Body, now with padding to avoid footer */}
