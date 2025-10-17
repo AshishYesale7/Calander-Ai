@@ -23,7 +23,7 @@ export default function OutgoingAudioCall({ user, onCancel }: OutgoingAudioCallP
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       className={cn(
-        "fixed top-5 left-1/2 -translate-x-1/2 z-[200] p-3 rounded-lg shadow-2xl frosted-glass bg-gray-900/80 border border-gray-700 text-white cursor-grab active:cursor-grabbing",
+        "fixed top-5 left-5 z-[200] p-3 rounded-lg shadow-2xl frosted-glass bg-gray-900/80 border border-gray-700 text-white cursor-grab active:cursor-grabbing",
         "w-[calc(100vw-2rem)] max-w-[320px] sm:w-auto" 
       )}
     >
