@@ -162,14 +162,11 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
     
     const endCall = useCallback((callIdToUpdate?: string, status: 'ended' | 'declined' = 'ended') => {
         const id = callIdToUpdate || activeCallId;
-    
-        // Always try to update the remote status, even if cleaning up locally.
-        if (id && typeof id === 'string') {
+
+        if (id) {
             updateCallStatus(id, status).catch(err => {
                 console.warn(`Failed to send final call status update for call ${id}:`, err);
             });
-        } else {
-            console.warn("endCall invoked without a valid callId. Cleaning up local state only.");
         }
     
         // Immediately clean up all local state to end the call for the current user.
@@ -608,17 +605,17 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
             {/* Call UI */}
             {ongoingCall && otherUserInCall && !isPipMode && (
                 <div className="fixed inset-0 z-50 bg-black">
-                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={endCall} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />
+                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />
                 </div>
             )}
             {ongoingAudioCall && otherUserInCall && !isPipMode && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center">
-                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} />
+                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
                 </div>
             )}
 
             {/* PiP Call UI */}
-            {isPipMode && (ongoingCall || ongoingAudioCall) && (
+            {isPipMode && (ongoingCall || ongoingAudioCall) && otherUserInCall && (
                  <motion.div
                     drag
                     dragMomentum={false}
@@ -632,8 +629,8 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
                         height: pipSize.height,
                     }}
                 >
-                    {ongoingCall && otherUserInCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={endCall} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />}
-                    {ongoingAudioCall && otherUserInCall && <div className="h-full w-full flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={endCall} connectionStatus={connectionStatus} /></div>}
+                    {ongoingCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />}
+                    {ongoingAudioCall && <div className="h-full w-full flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} /></div>}
                 </motion.div>
             )}
 
