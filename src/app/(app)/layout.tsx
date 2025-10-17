@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -982,7 +983,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
         )}>
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
              <Header {...modalProps} />
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
               {children}
             </main>
           </div>
