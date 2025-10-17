@@ -609,9 +609,13 @@ function ChatProviderWrapper({ children }: { children: ReactNode }) {
                 </div>
             )}
             {ongoingAudioCall && otherUserInCall && !isPipMode && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center">
+                <motion.div
+                    drag
+                    dragMomentum={false}
+                    className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 cursor-grab active:cursor-grabbing"
+                >
                     <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
-                </div>
+                </motion.div>
             )}
 
             {/* PiP Call UI */}
