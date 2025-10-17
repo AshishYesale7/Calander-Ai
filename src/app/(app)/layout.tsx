@@ -981,7 +981,7 @@ function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onF
           !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12",
         )}>
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-             {!isMobile && <Header {...modalProps} />}
+             <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24">
               {children}
             </main>
