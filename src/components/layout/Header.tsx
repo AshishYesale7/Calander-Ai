@@ -30,7 +30,7 @@ import { getInstalledPlugins, getUserProfile } from '@/services/userService';
 import { useStreak } from '@/context/StreakContext';
 import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
-import { usePlugin } from '@/context/use-plugin';
+import { usePlugin } from '@/hooks/use-plugin';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, addDays, toDate, isToday as dfnsIsToday } from 'date-fns';
 import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
