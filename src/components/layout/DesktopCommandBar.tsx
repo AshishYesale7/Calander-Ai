@@ -46,10 +46,10 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
         onClick={onOpenCommandPalette}
         className="bottom-nav-glow open cursor-pointer"
       >
-        {/* These spans are for the glow effect */}
-        <span className="shine"></span><span className="shine shine-bottom"></span>
-        <span className="glow"></span><span className="glow glow-bottom"></span>
-        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
+        {/* These spans are for the glow effect. Both 'shine' elements now originate from the bottom. */}
+        <span className="shine shine-bottom"></span><span className="shine shine-bottom" style={{ left: 'auto', right: 'calc(var(--border) * -1)', transform: 'scaleX(-1)' }}></span>
+        <span className="glow glow-bottom"></span><span className="glow glow-bottom"></span>
+        <span className="glow glow-bright glow-bottom"></span><span className="glow glow-bright glow-bottom"></span>
 
         <div className="inner h-14">
           <div className="relative w-full h-full flex items-center px-4 text-gray-400">
