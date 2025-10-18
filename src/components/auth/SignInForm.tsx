@@ -59,39 +59,45 @@ export default function SignInForm() {
   const prefilledEmail = searchParams.get('email');
 
   useEffect(() => {
-    if (view !== 'phone' || !auth) return;
-
-    const container = document.getElementById('recaptcha-container');
-
-    // If a verifier instance exists on the window, clear it first
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      if (container) container.innerHTML = ''; // Clear the container div
+    // Only run this effect when the phone view is active
+    if (view !== 'phone' || !auth) {
+      return;
     }
 
+    const containerId = 'recaptcha-container';
+    let verifier = window.recaptchaVerifier;
+    const container = document.getElementById(containerId);
+
+    // If a verifier exists, clear it and its container
+    if (verifier) {
+      verifier.clear();
+    }
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    // Create a new verifier and render it
     try {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'normal', // Changed to 'normal' to make it visible
-          'callback': () => { console.log("reCAPTCHA verified for sign-in") },
-          'expired-callback': () => {
-            toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-            if (window.recaptchaVerifier) {
-              window.recaptchaVerifier.clear();
-              if (container) container.innerHTML = '';
-            }
-          }
+      verifier = new RecaptchaVerifier(auth, containerId, {
+        'size': 'normal',
+        'callback': () => { console.log("reCAPTCHA verified for sign-in") },
+        'expired-callback': () => {
+          toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+        }
       });
-      window.recaptchaVerifier.render(); // Explicitly render it
+      verifier.render();
+      window.recaptchaVerifier = verifier;
     } catch (error) {
-      console.error("Error creating RecaptchaVerifier:", error);
+      console.error("Error creating new RecaptchaVerifier:", error);
     }
-  
+    
+    // Cleanup function to run when the component unmounts or the view changes
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
       }
     };
-  }, [view, toast]);
+  }, [view, toast]); // Rerun this effect whenever the `view` changes
 
 
   useEffect(() => {
@@ -166,7 +172,7 @@ export default function SignInForm() {
              const methods = await fetchSignInMethodsForEmail(auth, email);
              toast({
                 title: 'Account Exists',
-                description: `You\'ve previously signed in with ${methods.join(', ')}. Please use that method to sign in.`,
+                description: `You've previously signed in with ${methods.join(', ')}. Please use that method to sign in.`,
                 variant: 'destructive',
                 duration: 9000,
             });
@@ -411,5 +417,7 @@ export default function SignInForm() {
     </>
   );
 }
+
+    
 
     

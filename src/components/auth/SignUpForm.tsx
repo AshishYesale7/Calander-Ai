@@ -62,39 +62,46 @@ export default function SignUpForm() {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (view !== 'phone' || !auth) return;
-
-    const container = document.getElementById('recaptcha-container-signup');
-    
-    // If a verifier instance exists on the window, clear it first
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      if (container) container.innerHTML = ''; // Clear the container div
+    // Only run this effect when the phone view is active
+    if (view !== 'phone' || !auth) {
+      return;
     }
 
+    const containerId = 'recaptcha-container-signup';
+    let verifier = window.recaptchaVerifier;
+    const container = document.getElementById(containerId);
+
+    // If a verifier exists, clear it and its container
+    if (verifier) {
+      verifier.clear();
+    }
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    // Create a new verifier and render it
     try {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
-          'size': 'normal', // Changed to 'normal' to make it visible
-          'callback': () => { console.log("reCAPTCHA verified for sign-up") },
-          'expired-callback': () => {
-            toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-            if (window.recaptchaVerifier) {
-              window.recaptchaVerifier.clear();
-              if (container) container.innerHTML = '';
-            }
-          }
+      verifier = new RecaptchaVerifier(auth, containerId, {
+        'size': 'normal',
+        'callback': () => { console.log("reCAPTCHA verified for sign-up") },
+        'expired-callback': () => {
+          toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+        }
       });
-      window.recaptchaVerifier.render(); // Explicitly render it
+      verifier.render();
+      window.recaptchaVerifier = verifier;
     } catch (error) {
-      console.error("Error creating RecaptchaVerifier for sign-up:", error);
+      console.error("Error creating new RecaptchaVerifier for sign-up:", error);
     }
-  
+    
+    // Cleanup function to run when the component unmounts or the view changes
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
       }
     };
   }, [view, toast]);
+
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -430,5 +437,7 @@ export default function SignUpForm() {
     </>
   );
 }
+
+    
 
     
