@@ -248,15 +248,16 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       console.error(`reCAPTCHA container with id "${containerId}" not found.`);
       return null;
     }
-    // Use a ref to manage the instance to avoid re-creation
     if (recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current.clear();
+        container.innerHTML = "";
     }
     const verifier = new RecaptchaVerifier(auth, container, {
-        'size': 'invisible',
+        'size': 'normal', // Make reCAPTCHA visible
         'callback': () => console.log('reCAPTCHA verified')
     });
     recaptchaVerifierRef.current = verifier;
+    verifier.render(); // Explicitly render it
     return verifier;
   }, [auth]);
 
@@ -361,7 +362,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       if (!verifier) throw new Error("Could not set up OTP verifier.");
       const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
       window.confirmationResult = confirmationResult;
-      setReauthStep('otp');
+      setReauthStep('verifying');
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to send OTP for verification.', variant: 'destructive' });
     } finally {
@@ -810,7 +811,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                             )}
 
                             {hasPhoneProvider && (
-                                <Button onClick={() => setReauthStep('otp')} className="w-full" disabled={isReauthenticating}>
+                                <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
                                 Verify with Phone Number
                                 </Button>
