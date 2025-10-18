@@ -52,7 +52,7 @@ export function ChatSidebar({ onToggleCollapse }: { onToggleCollapse: () => void
     }, [recentChats, searchTerm]);
     
     return (
-        <div className="flex flex-col h-full bg-card/60 backdrop-blur-xl border-l border-border/30 items-center p-2 gap-2">
+        <div className="flex flex-col h-full bg-black/80 backdrop-blur-lg border-l border-border/30 items-center p-2 gap-2">
             <TooltipProvider delayDuration={0}>
                 <div className="space-y-2">
                      <Tooltip>
