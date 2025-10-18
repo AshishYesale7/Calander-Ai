@@ -40,9 +40,13 @@ const slideVariants = {
 const avatarOptions = [
     { id: 'male-sunglasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?w=740' },
     { id: 'female-glasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?w=740' },
-    { id: 'male-green-hoodie', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?w=740' },
+    { id: 'male-green-hoodie', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-green-hoodie_23-2149436191.jpg?w=740' },
     { id: 'female-yellow-shirt', url: 'https://img.freepik.com/free-psd/3d-illustration-person_23-2149436192.jpg?w=740' },
     { id: 'male-rainbow-glasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436190.jpg?w=740' },
+    { id: 'male2', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?w=740' },
+    { id: 'female2', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671140.jpg?w=740' },
+    { id: 'male3', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436196.jpg?w=740' },
+    { id: 'female3', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671113.jpg?w=740' },
 ];
 
 
@@ -163,34 +167,36 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                 </div>
                 <div>
                   <Label className="text-xs mb-2 block">Choose Your Avatar</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                      {avatarOptions.map((avatar) => (
+                  <ScrollArea className="h-40">
+                    <div className="grid grid-cols-3 gap-4 pr-3">
+                        {avatarOptions.map((avatar) => (
+                          <button
+                            key={avatar.id}
+                            onClick={() => setSelectedAvatarUrl(avatar.url)}
+                            className={cn(
+                              "relative aspect-square w-full rounded-full border-2 p-1 transition-all flex items-center justify-center",
+                              selectedAvatarUrl === avatar.url
+                                ? 'border-accent'
+                                : 'border-transparent hover:border-accent/50'
+                            )}
+                          >
+                            <Image
+                              src={avatar.url}
+                              alt={avatar.id}
+                              width={80}
+                              height={80}
+                              className="rounded-full bg-muted/30"
+                            />
+                          </button>
+                        ))}
                         <button
-                          key={avatar.id}
-                          onClick={() => setSelectedAvatarUrl(avatar.url)}
-                          className={cn(
-                            "relative aspect-square w-full rounded-full border-2 p-1 transition-all flex items-center justify-center",
-                            selectedAvatarUrl === avatar.url
-                              ? 'border-accent'
-                              : 'border-transparent hover:border-accent/50'
-                          )}
+                          onClick={() => toast({ title: 'Coming Soon' })}
+                          className="aspect-square w-full rounded-full bg-black/30 border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent transition-colors"
                         >
-                          <Image
-                            src={avatar.url}
-                            alt={avatar.id}
-                            width={80}
-                            height={80}
-                            className="rounded-full bg-muted/30"
-                          />
+                          <User className="h-8 w-8 text-muted-foreground" />
                         </button>
-                      ))}
-                      <button
-                        onClick={() => toast({ title: 'Coming Soon' })}
-                        className="aspect-square w-full rounded-full bg-black/30 border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent transition-colors"
-                      >
-                        <User className="h-8 w-8 text-muted-foreground" />
-                      </button>
-                  </div>
+                    </div>
+                  </ScrollArea>
                 </div>
                 {!hasGoogleProvider && (
                     <div className="pt-2">
