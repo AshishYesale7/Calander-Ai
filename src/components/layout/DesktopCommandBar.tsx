@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion } from 'framer-motion';
@@ -17,9 +18,9 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
       transition={{ type: 'spring', stiffness: 50, damping: 15 }}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-lg"
     >
-      <button 
+      <div 
         onClick={onOpenCommandPalette}
-        className="w-full h-14 rounded-full bg-gray-900/80 backdrop-blur-md border border-white/10 shadow-lg flex items-center px-4 text-gray-400 hover:bg-gray-800 transition-colors"
+        className="w-full h-14 rounded-full bg-gray-900/80 backdrop-blur-md border border-white/10 shadow-lg flex items-center px-4 text-gray-400 hover:bg-gray-800 transition-colors cursor-pointer"
       >
         <Paperclip className="h-5 w-5 mr-3" />
         <span className="flex-1 text-left">How can Calendar.ai help?</span>
@@ -34,7 +35,7 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
                 <AudioLines className="h-5 w-5" />
             </div>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 }
