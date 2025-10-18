@@ -147,10 +147,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
 
     if (!user) {
       router.push('/auth/signin');
-    } else if (!isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
+    } else if (onboardingCompleted && !isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {
       router.push('/subscription');
     }
-  }, [user, loading, isSubscribed, router, pathname]);
+  }, [user, loading, isSubscribed, router, pathname, onboardingCompleted]);
   
 
   const requestNotificationPermission = async () => {

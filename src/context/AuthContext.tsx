@@ -74,7 +74,7 @@ const MissingConfiguration = () => (
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(true); // Always true to bypass onboarding
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseUser) {
       setUser(null);
       setSubscription(null);
-      setOnboardingCompleted(true); // Default to true for guests
+      setOnboardingCompleted(true); // Guests don't need onboarding
       setDataLoading(false);
       return;
     }
@@ -131,13 +131,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ]);
 
       const userProfile = profile || await createUserProfile(firebaseUser);
-
+      
       const fullUser = { ...firebaseUser, ...userProfile };
       setUser(fullUser);
       setSubscription(userSub);
-      setOnboardingCompleted(true); // Bypass onboarding modal for all users
+      setOnboardingCompleted(userProfile.onboardingCompleted);
 
-      // Add user to known users list upon successful full profile fetch
       addKnownUser(firebaseUser);
 
     } catch (error) {
