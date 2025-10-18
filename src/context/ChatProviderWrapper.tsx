@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { type ReactNode, useState, useRef, useCallback, useEffect, useMemo } from 'react';
@@ -81,6 +82,18 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
     });
 
     const [pipSize, setPipSize] = useState({ width: 256, height: 192 });
+
+    const handleTogglePipSizeMode = useCallback(() => {
+        setPipSizeMode(currentMode => {
+            const newMode = currentMode === 'medium' ? 'large' : 'medium';
+            if (newMode === 'large') {
+                setPipSize({ width: 320, height: 240 });
+            } else {
+                setPipSize({ width: 256, height: 192 });
+            }
+            return newMode;
+        });
+    }, []);
     
     const { user } = useAuth();
     const { toast } = useToast();
@@ -570,7 +583,7 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
             {/* Call UI */}
             {ongoingCall && otherUserInCall && !isPipMode && (
                 <div className="fixed inset-0 z-50 bg-black">
-                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />
+                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
                 </div>
             )}
             {ongoingAudioCall && otherUserInCall && !isPipMode && (
@@ -598,7 +611,7 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
                         height: pipSize.height,
                     }}
                 >
-                    {ongoingCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={() => setPipSizeMode(s => s === 'medium' ? 'large' : 'medium')} />}
+                    {ongoingCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />}
                     {ongoingAudioCall && <div className="h-full w-full flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} /></div>}
                 </motion.div>
             )}
