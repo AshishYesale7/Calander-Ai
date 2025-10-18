@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -57,52 +58,51 @@ function ChatAndCallUI() {
   const isAudioCallActive = !!(ongoingAudioCall);
   const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
 
+  if (isMobile || isCallViewActive) return null;
+
   return (
-    <>
-       {/* Desktop Chat Sidebars */}
-       {!isMobile && !isCallViewActive && (
-          <AnimatePresence initial={false}>
-              {isChatSidebarOpen ? (
-                  <motion.div
-                      key="desktop-chat-full"
-                      initial={{ width: 80 }}
-                      animate={{ width: 352 }}
-                      exit={{ width: 80 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="flex-shrink-0 h-full overflow-hidden"
-                  >
-                     <DesktopChatSidebar />
-                  </motion.div>
-              ) : (
-                  <motion.div
-                      key="desktop-chat-collapsed"
-                      initial={{ width: 352 }}
-                      animate={{ width: 80 }}
-                      exit={{ width: 352 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="flex-shrink-0 h-full overflow-hidden"
-                  >
-                     <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
-                  </motion.div>
-              )}
-              {isChatPanelVisible && (
-                   <motion.div
-                      key="desktop-chat-panel"
-                      initial={{ width: 0 }}
-                      animate={{ width: 352 }}
-                      exit={{ width: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
-                   >
-                       {chattingWith && <ChatPanelHeader user={chattingWith} onClose={() => {}} />}
-                       {chattingWith && <ChatPanelBody user={chattingWith} />}
-                       <ChatPanelFooter />
-                   </motion.div>
-              )}
-          </AnimatePresence>
+    <AnimatePresence initial={false}>
+      {isChatSidebarOpen ? (
+        <motion.div
+          key="desktop-chat-full"
+          initial={{ width: 80 }}
+          animate={{ width: 352 }}
+          exit={{ width: 80 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="flex-shrink-0 h-full overflow-hidden"
+        >
+          <DesktopChatSidebar />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="desktop-chat-collapsed"
+          initial={{ width: 352 }}
+          animate={{ width: 80 }}
+          exit={{ width: 352 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="flex-shrink-0 h-full overflow-hidden"
+        >
+          <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
+        </motion.div>
       )}
-    </>
-  )
+      {isChatPanelVisible && (
+        <motion.div
+          key="desktop-chat-panel"
+          initial={{ width: 0 }}
+          animate={{ width: 352 }}
+          exit={{ width: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
+        >
+          <div className="flex flex-col h-full bg-black">
+            {chattingWith && <ChatPanelHeader user={chattingWith} onClose={() => {}} />}
+            {chattingWith && <ChatPanelBody user={chattingWith} />}
+            <ChatPanelFooter />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 
@@ -169,7 +169,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       if (permission === 'granted') {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
         if (!vapidKey) throw new Error("VAPID key is missing.");
-        const fcmToken = await getToken(messaging, { vapidKey });
+        // const fcmToken = await getToken(messaging, { vapidKey });
         // await saveUserFCMToken(user.uid, fcmToken);
         toast({ title: 'Success', description: 'Push notifications enabled!' });
       } else {
@@ -264,7 +264,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       </div>
     );
   }
-  
+
   if (isPendingDeletion) {
     return (
         <div className="h-screen w-full flex-col">
@@ -316,9 +316,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           <SidebarNav {...modalProps} />
         </div>
         
-        <div className={cn(
-          "flex flex-1 min-w-0"
-        )}>
+        <div className={cn("flex flex-1 min-w-0")}>
           <div className={cn(
               "flex-1 flex flex-col min-h-0 min-w-0 transition-[margin-left] duration-300",
               !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
@@ -329,7 +327,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
               {children}
             </main>
           </div>
-            <ChatAndCallUI />
+          <ChatAndCallUI />
         </div>
         
         {isMobile && isChatSidebarOpen && !isCallViewActive && (
