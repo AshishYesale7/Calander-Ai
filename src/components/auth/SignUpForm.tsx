@@ -1,3 +1,4 @@
+
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
@@ -60,15 +61,20 @@ export default function SignUpForm() {
 
   const { user, loading: authLoading } = useAuth();
 
-  // New useEffect to manage RecaptchaVerifier lifecycle for sign-up
   useEffect(() => {
     if (view === 'phone' && auth) {
-      if (!window.recaptchaVerifier) {
-        const container = document.getElementById('recaptcha-container-signup');
-        if (container) {
-          container.innerHTML = '';
-        }
+      // Ensure the container is clean before rendering a new verifier
+      const container = document.getElementById('recaptcha-container-signup');
+      if (container) {
+        container.innerHTML = '';
+      }
+      
+      // If a verifier instance exists on the window, clear it first
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
 
+      try {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
             'size': 'invisible',
             'callback': () => { console.log("reCAPTCHA verified for sign-up") },
@@ -76,17 +82,18 @@ export default function SignUpForm() {
               toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
               if (window.recaptchaVerifier) {
                 window.recaptchaVerifier.clear();
-                delete window.recaptchaVerifier;
               }
             }
         });
+      } catch (error) {
+        console.error("Error creating RecaptchaVerifier for sign-up:", error);
       }
     }
   
+    // Cleanup function to clear the verifier when the component unmounts or view changes
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
-        delete window.recaptchaVerifier;
       }
     };
   }, [view, toast]);
