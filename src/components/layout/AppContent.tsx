@@ -34,11 +34,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
-import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
+import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter, ChatPanel } from '@/components/chat/ChatPanel';
 import { Button } from '../ui/button';
 import { Command, MessageSquare } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
+import { ChatSidebar } from './ChatSidebar';
+import DesktopChatSidebar from './DesktopChatSidebar';
 
 
 export default function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
@@ -151,35 +153,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    let currentIndex = 0;
-    const colorPairs = [
-        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
-        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
-        { hue1: 140, hue2: 60 }, { hue1: 60, hue2: 30 },
-        { hue1: 30, hue2: 0 }, { hue1: 0, hue2: 320 },
-    ];
-    
-    const colorInterval = setInterval(() => {
-        const navElement = bottomNavRef.current;
-        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
-        const nextColor = colorPairs[currentIndex];
-
-        if (navElement) {
-            navElement.style.setProperty('--hue1', String(nextColor.hue1));
-            navElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-        if (cmdkElement) {
-            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
-            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-
-        currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 3000); 
-
-    return () => clearInterval(colorInterval);
-  }, []);
-
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -240,6 +213,47 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
               {children}
             </main>
           </div>
+          
+           {/* Desktop Chat Sidebars */}
+          {!isMobile && !isCallViewActive && (
+              <AnimatePresence initial={false}>
+                  {isChatSidebarOpen ? (
+                      <motion.div
+                          key="desktop-chat-full"
+                          initial={{ width: 80 }}
+                          animate={{ width: 352 }}
+                          exit={{ width: 80 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                          className="flex-shrink-0 h-full overflow-hidden"
+                      >
+                         <DesktopChatSidebar />
+                      </motion.div>
+                  ) : (
+                      <motion.div
+                          key="desktop-chat-collapsed"
+                          initial={{ width: 352 }}
+                          animate={{ width: 80 }}
+                          exit={{ width: 352 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                          className="flex-shrink-0 h-full overflow-hidden"
+                      >
+                         <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
+                      </motion.div>
+                  )}
+                  {isChatPanelVisible && (
+                       <motion.div
+                          key="desktop-chat-panel"
+                          initial={{ width: 0 }}
+                          animate={{ width: 352 }}
+                          exit={{ width: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                          className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
+                       >
+                           <ChatPanel user={chattingWith!} onClose={() => setChattingWith(null)} />
+                       </motion.div>
+                  )}
+              </AnimatePresence>
+          )}
         </div>
         
         {isMobile && isChatSidebarOpen && !isCallViewActive && (

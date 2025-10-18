@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -437,24 +438,9 @@ export function ChatPanelFooter() {
 }
 
 
-export default function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
-    const isMobile = useIsMobile();
-    
-    // On Desktop, ChatPanel is the container for Header, Body, Footer
-    if (!isMobile) {
-        return (
-            <div className="flex flex-col h-full bg-black border-l border-gray-800">
-                <ChatPanelHeader user={otherUser} onClose={onClose} />
-                <ChatPanelBody user={otherUser} />
-                <ChatPanelFooter />
-            </div>
-        );
-    }
-    
-    // On Mobile, this component might not be directly used if the layout is controlled by AppLayout
-    // But we keep it for potential direct use or different layout structures.
+export function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
     return (
-        <div className="flex flex-col h-full bg-black">
+        <div className="flex flex-col h-full bg-black border-l border-gray-800">
             <ChatPanelHeader user={otherUser} onClose={onClose} />
             <ChatPanelBody user={otherUser} />
             <ChatPanelFooter />
