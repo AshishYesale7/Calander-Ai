@@ -152,12 +152,12 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
               <div className="space-y-4">
                  <div>
                   <Label htmlFor="displayName" className="text-xs">Display Name</Label>
-                  <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g., Ashish Yesale" className="mt-1 bg-black/50 h-10" />
+                  <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g., Your Name" className="mt-1 bg-black/50 h-10" />
                 </div>
                 <div>
                   <Label htmlFor="username" className="text-xs">Username</Label>
                   <div className="relative mt-1">
-                    <Input id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g., ashish" className="bg-black/50 h-10"/>
+                    <Input id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g., your_username" className="bg-black/50 h-10"/>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       {isCheckingUsername ? <LoadingSpinner size="sm" /> : isUsernameAvailable === true ? <Check className="h-5 w-5 text-green-500" /> : isUsernameAvailable === false ? <X className="h-5 w-5 text-destructive" /> : null}
                     </div>
