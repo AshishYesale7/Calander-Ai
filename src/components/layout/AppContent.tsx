@@ -28,7 +28,7 @@ import { useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { CallData, CallType } from '@/types';
+import type { CallData, CallType, PublicUserProfile } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
@@ -159,7 +159,8 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     }
   }, [user, loading, isSubscribed, router, pathname]);
   
-   const requestNotificationPermission = async () => {
+
+  const requestNotificationPermission = async () => {
     if (!messaging || !user) {
       toast({ title: 'Error', description: 'Push notifications not supported or not signed in.', variant: 'destructive' });
       return;
@@ -316,18 +317,18 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           <SidebarNav {...modalProps} />
         </div>
         
-        <div className={cn("flex flex-1 min-w-0")}>
-          <div className={cn(
-              "flex-1 flex flex-col min-h-0 min-w-0 transition-[margin-left] duration-300",
-              !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
-              !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
-          )}>
-             <Header {...modalProps} />
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
-              {children}
-            </main>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <Header {...modalProps} />
+          <div className="flex flex-1 min-h-0 min-w-0">
+              <main ref={mainScrollRef} className={cn(
+                  "flex-1 overflow-y-auto p-6 pb-24 md:pb-6 transition-[margin-left] duration-300",
+                  !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
+                  !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
+              )}>
+                {children}
+              </main>
+              <ChatAndCallUI />
           </div>
-          <ChatAndCallUI />
         </div>
         
         {isMobile && isChatSidebarOpen && !isCallViewActive && (
