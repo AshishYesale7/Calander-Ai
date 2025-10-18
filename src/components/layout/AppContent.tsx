@@ -33,6 +33,7 @@ import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
 import ReclamationModal from '@/components/auth/ReclamationModal';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
+import OnboardingModal from '@/components/auth/OnboardingModal';
 
 
 function ChatAndCallUI() {
@@ -252,14 +253,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   }
   
   if (!onboardingCompleted) {
-    // This block should no longer be reached with the AuthContext change
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Preloader />
-      </div>
-    );
+    return <OnboardingModal onFinish={onFinishOnboarding} />;
   }
-
+  
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();

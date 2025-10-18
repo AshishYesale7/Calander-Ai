@@ -662,7 +662,3 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         await setDoc(userDocRef, finalUserData);
     }
 }
-
-
-    
-    

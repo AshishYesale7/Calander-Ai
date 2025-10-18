@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { LucideIcon } from 'lucide-react';
@@ -27,6 +26,7 @@ export interface UserProfile {
   routine: RoutineItem[];
   onboardingCompleted: boolean;
   deletionStatus?: 'PENDING_DELETION' | 'DELETED';
+  deletionScheduledAt?: string; // Add this to track when the deletion is scheduled
 }
 
 
