@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -34,6 +33,7 @@ import ReclamationModal from '@/components/auth/ReclamationModal';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
+import DesktopCommandBar from './DesktopCommandBar';
 
 
 function ChatAndCallUI() {
@@ -119,7 +119,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+    const [isMobileBottomNavVisible, setIsMobileBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
@@ -223,9 +223,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const handleScroll = () => {
       const currentScrollY = mainEl.scrollTop;
       if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-        setIsBottomNavVisible(false);
+        setIsMobileBottomNavVisible(false);
       } else {
-        setIsBottomNavVisible(true);
+        setIsMobileBottomNavVisible(true);
       }
       lastScrollY.current = currentScrollY;
     };
@@ -333,9 +333,11 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
         
         <AnimatePresence>
-            {!isMobile && isFullScreen && <DesktopBottomNav onCommandClick={() => setIsCommandPaletteOpen(true)} />}
+            {!isMobile && isFullScreen && !isCallViewActive && (
+                <DesktopCommandBar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+            )}
 
-            {isMobile && isBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
+            {isMobile && isMobileBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
                  <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
                     transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
                     className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
@@ -346,10 +348,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                         <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
                         <div className="inner">
                             <div className="flex items-center justify-around w-full">
-                            <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open command palette">
+                            <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open command palette">
                                 <Command className="h-5 w-5" /><span className="text-xs">Search</span>
                             </button>
-                            <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20" aria-label="Open chat">
+                            <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open chat">
                                 <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
                             </button>
                             </div>
