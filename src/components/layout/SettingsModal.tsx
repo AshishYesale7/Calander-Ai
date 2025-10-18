@@ -21,7 +21,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -45,8 +45,8 @@ import { saveAs } from 'file-saver';
 
 declare global {
   interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: any;
+    // Keep for confirmationResult, but not verifier
+    confirmationResult?: ConfirmationResult;
   }
 }
 
@@ -88,9 +88,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
   
-  // Use separate refs for each reCAPTCHA container
   const linkRecaptchaContainerRef = useRef<HTMLDivElement>(null);
   const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const linkVerifier = useRef<RecaptchaVerifier | null>(null);
+  const reauthVerifier = useRef<RecaptchaVerifier | null>(null);
 
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
@@ -148,6 +149,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         // Cleanup logic when modal closes
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         if (testIntervalRef.current) clearInterval(testIntervalRef.current);
+        if (linkVerifier.current) { linkVerifier.current.clear(); linkVerifier.current = null; }
+        if (reauthVerifier.current) { reauthVerifier.current.clear(); reauthVerifier.current = null; }
         setIsPolling(false);
         setIsLinkingPhone(false);
         setLinkingPhoneState('input');
@@ -223,32 +226,32 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
   
-  // Effect specifically for the "Link Phone" reCAPTCHA
   useEffect(() => {
     if (isLinkingPhone && linkingPhoneState === 'input' && linkRecaptchaContainerRef.current) {
-        if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-        
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-settings', { 'size': 'normal' });
-        window.recaptchaVerifier = verifier;
-        verifier.render();
+        if (linkVerifier.current) linkVerifier.current.clear();
+        linkVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container-settings', { 'size': 'normal' });
+        linkVerifier.current.render();
 
         return () => {
-            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+            if (linkVerifier.current) {
+                linkVerifier.current.clear();
+                linkVerifier.current = null;
+            }
         };
     }
   }, [isLinkingPhone, linkingPhoneState]);
 
-  // Effect specifically for the "Re-auth" reCAPTCHA
   useEffect(() => {
     if (actionToConfirm && reauthStep === 'otp' && reauthRecaptchaContainerRef.current) {
-        if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-
-        const verifier = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', { 'size': 'normal' });
-        window.recaptchaVerifier = verifier;
-        verifier.render();
+        if (reauthVerifier.current) reauthVerifier.current.clear();
+        reauthVerifier.current = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', { 'size': 'normal' });
+        reauthVerifier.current.render();
 
         return () => {
-            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+            if (reauthVerifier.current) {
+                reauthVerifier.current.clear();
+                reauthVerifier.current = null;
+            }
         };
     }
   }, [actionToConfirm, reauthStep]);
@@ -260,8 +263,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     setLinkingPhoneState('loading');
     try {
-      if (!window.recaptchaVerifier) throw new Error("reCAPTCHA not initialized.");
-      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, window.recaptchaVerifier);
+      if (!linkVerifier.current) throw new Error("reCAPTCHA not initialized.");
+      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, linkVerifier.current);
       window.confirmationResult = confirmationResult;
       setLinkingPhoneState('otp-sent');
       toast({ title: 'OTP Sent', description: 'Check your phone for the verification code.' });
@@ -346,10 +349,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
   
   const handleSendReauthOtp = async () => {
-    if (!auth || !user?.phoneNumber || !window.recaptchaVerifier) return;
+    if (!auth || !user?.phoneNumber || !reauthVerifier.current) return;
     setIsReauthenticating(true);
     try {
-      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, window.recaptchaVerifier);
+      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, reauthVerifier.current);
       window.confirmationResult = confirmationResult;
       setReauthStep('verifying');
     } catch (error: any) {
