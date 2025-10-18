@@ -91,7 +91,6 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
       setIsSaving(true);
       try {
         await updateUserProfile(user!.uid, { displayName, username, photoURL: selectedAvatarUrl });
-        await refreshUser();
         setCurrentStep(2);
       } catch (error: any) {
         toast({ title: 'Error Saving Profile', description: error.message, variant: 'destructive' });
@@ -164,20 +163,37 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                   {isUsernameAvailable === false && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
                 </div>
                 <div>
-                  <Label className="text-xs">Choose Your Avatar</Label>
-                   <ScrollArea className="w-full whitespace-nowrap rounded-md">
-                        <div className="flex w-max space-x-3 p-2">
-                           {avatarOptions.map((avatar) => (
-                               <button key={avatar.id} onClick={() => setSelectedAvatarUrl(avatar.url)} className={cn("relative h-20 w-20 flex-shrink-0 rounded-full border-4 p-1 transition-all", selectedAvatarUrl === avatar.url ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                                   <Image src={avatar.url} alt={avatar.id} width={72} height={72} className="rounded-full bg-muted/30" />
-                               </button>
-                           ))}
-                            <button onClick={() => toast({title: 'Coming Soon'})} className="h-20 w-20 flex-shrink-0 rounded-full bg-black/30 border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent transition-colors">
-                               <User className="h-8 w-8 text-muted-foreground" />
-                            </button>
-                        </div>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
+                  <Label className="text-xs mb-2 block">Choose Your Avatar</Label>
+                  <ScrollArea className="h-[120px] rounded-md border p-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      {avatarOptions.map((avatar) => (
+                        <button
+                          key={avatar.id}
+                          onClick={() => setSelectedAvatarUrl(avatar.url)}
+                          className={cn(
+                            "relative aspect-square w-full rounded-lg border-2 p-1 transition-all flex items-center justify-center",
+                            selectedAvatarUrl === avatar.url
+                              ? 'border-accent'
+                              : 'border-transparent hover:border-accent/50'
+                          )}
+                        >
+                          <Image
+                            src={avatar.url}
+                            alt={avatar.id}
+                            width={100}
+                            height={100}
+                            className="rounded-md bg-muted/30"
+                          />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => toast({ title: 'Coming Soon' })}
+                        className="aspect-square w-full rounded-lg bg-black/30 border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent transition-colors"
+                      >
+                        <User className="h-10 w-10 text-muted-foreground" />
+                      </button>
+                    </div>
+                  </ScrollArea>
                 </div>
                 {!hasGoogleProvider && (
                     <div className="pt-2">
