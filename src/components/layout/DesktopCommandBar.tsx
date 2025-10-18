@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion } from 'framer-motion';
@@ -17,7 +18,7 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
       transition={{ type: 'spring', stiffness: 50, damping: 15 }}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[60%]"
     >
-      <div
+      <div 
         onClick={onOpenCommandPalette}
         className="w-full h-14 rounded-full bg-gray-900/80 backdrop-blur-md border border-white/10 shadow-lg flex items-center px-4 text-gray-400 hover:bg-gray-800 transition-colors cursor-pointer"
       >
