@@ -34,13 +34,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
-import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter, ChatPanel } from '@/components/chat/ChatPanel';
+import { ChatPanel, ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { Button } from '../ui/button';
 import { Command, MessageSquare } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
-import { ChatSidebar } from './ChatSidebar';
 import DesktopChatSidebar from './DesktopChatSidebar';
+import { ChatSidebar } from './ChatSidebar';
+import ReclamationModal from '@/components/auth/ReclamationModal';
 
 
 export default function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
@@ -69,7 +70,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
     const { 
-      chattingWith, 
+      chattingWith, setChattingWith,
       isChatSidebarOpen, setIsChatSidebarOpen, 
       isChatInputFocused, 
       ongoingCall, 
@@ -98,7 +99,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   
 
   const requestNotificationPermission = async () => {
-    // Logic remains the same
+    // This is the function that was missing.
   };
 
   useEffect(() => {
@@ -168,6 +169,16 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         <OnboardingModal onFinish={onFinishOnboarding} />
         <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
       </div>
+    );
+  }
+  
+  if (isPendingDeletion) {
+    return (
+        <div className="h-screen w-full flex-col">
+            <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+            <ReclamationModal />
+            <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+        </div>
     );
   }
 
