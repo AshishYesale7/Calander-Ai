@@ -88,7 +88,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
   
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  // Use separate refs for each reCAPTCHA container
+  const linkRecaptchaContainerRef = useRef<HTMLDivElement>(null);
   const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -134,52 +135,34 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   }, [user]);
 
+  // General setup/cleanup when modal opens/closes
   useEffect(() => {
-    const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success-google') {
-          checkGoogleStatus();
-      }
-      if (event.data === 'auth-success-notion') {
-          checkNotionStatus();
-      }
-    };
-    window.addEventListener('message', handleAuthSuccess);
-    return () => {
-      window.removeEventListener('message', handleAuthSuccess);
-    };
-  }, [checkGoogleStatus, checkNotionStatus]);
-
-  useEffect(() => {
-    if (!isOpen) {
-       // Cleanup logic when modal closes
-       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-       if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-       if (window.recaptchaVerifier) {
-         window.recaptchaVerifier.clear();
-       }
-       setIsPolling(false);
-       setIsLinkingPhone(false);
-       setLinkingPhoneState('input');
-       setPhoneForLinking(undefined);
-       setOtpForLinking('');
-       setIsSendingTest(false);
-       setActionToConfirm(null);
-       setIsReauthenticating(false);
-       setIsDeleteConfirmOpen(false);
-       setIsFormatConfirmOpen(false);
-       setReauthStep('prompt');
-       setReauthOtp('');
-
-    } else {
+    if (isOpen) {
         setApiKeyInput(currentApiKey || '');
         if (user) {
-            setIsGoogleConnected(null); 
+            setIsGoogleConnected(null);
             checkGoogleStatus();
             checkNotionStatus();
         }
+    } else {
+        // Cleanup logic when modal closes
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        if (testIntervalRef.current) clearInterval(testIntervalRef.current);
+        setIsPolling(false);
+        setIsLinkingPhone(false);
+        setLinkingPhoneState('input');
+        setPhoneForLinking(undefined);
+        setOtpForLinking('');
+        setIsSendingTest(false);
+        setActionToConfirm(null);
+        setIsReauthenticating(false);
+        setIsDeleteConfirmOpen(false);
+        setIsFormatConfirmOpen(false);
+        setReauthStep('prompt');
+        setReauthOtp('');
     }
-  }, [currentApiKey, isOpen, user, checkGoogleStatus, checkNotionStatus]);
-  
+  }, [isOpen, currentApiKey, user, checkGoogleStatus, checkNotionStatus]);
+
 
   const handleApiKeySave = () => {
     const trimmedKey = apiKeyInput.trim();
@@ -240,23 +223,35 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
   
-  const setupRecaptcha = useCallback((containerId: string) => {
-    if (!auth) return;
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  // Effect specifically for the "Link Phone" reCAPTCHA
+  useEffect(() => {
+    if (isLinkingPhone && linkingPhoneState === 'input' && linkRecaptchaContainerRef.current) {
+        if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+        
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-settings', { 'size': 'normal' });
+        window.recaptchaVerifier = verifier;
+        verifier.render();
 
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      container.innerHTML = ''; // Ensure container is empty
+        return () => {
+            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+        };
     }
+  }, [isLinkingPhone, linkingPhoneState]);
 
-    const verifier = new RecaptchaVerifier(auth, container, {
-        'size': 'normal',
-        'callback': () => console.log('reCAPTCHA verified')
-    });
-    window.recaptchaVerifier = verifier;
-    verifier.render();
-  }, [auth]);
+  // Effect specifically for the "Re-auth" reCAPTCHA
+  useEffect(() => {
+    if (actionToConfirm && reauthStep === 'otp' && reauthRecaptchaContainerRef.current) {
+        if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+
+        const verifier = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', { 'size': 'normal' });
+        window.recaptchaVerifier = verifier;
+        verifier.render();
+
+        return () => {
+            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+        };
+    }
+  }, [actionToConfirm, reauthStep]);
 
   const handleSendLinkOtp = async () => {
     if (!auth.currentUser || !phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
@@ -350,15 +345,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
   
-    useEffect(() => {
-        if (actionToConfirm && reauthStep === 'otp' && reauthRecaptchaContainerRef.current) {
-            setupRecaptcha('reauth-recaptcha-container');
-        }
-        if (isLinkingPhone && linkingPhoneState === 'input' && recaptchaContainerRef.current) {
-            setupRecaptcha('recaptcha-container-settings');
-        }
-    }, [actionToConfirm, reauthStep, isLinkingPhone, linkingPhoneState, setupRecaptcha]);
-
   const handleSendReauthOtp = async () => {
     if (!auth || !user?.phoneNumber || !window.recaptchaVerifier) return;
     setIsReauthenticating(true);
@@ -639,7 +625,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                         {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
                                         Send OTP
                                     </Button>
-                                    <div id="recaptcha-container-settings" ref={recaptchaContainerRef}></div>
+                                    <div id="recaptcha-container-settings" ref={linkRecaptchaContainerRef}></div>
                                 </div>
                             )}
                             {(linkingPhoneState === 'otp-sent' || linkingPhoneState === 'loading') && (
