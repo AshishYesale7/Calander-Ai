@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -336,7 +337,15 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
             {!isMobile && isFullScreen && !isCallViewActive && (
                 <DesktopCommandBar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
             )}
-
+            {!isMobile && isFullScreen && (
+                <DesktopBottomNav
+                    onCommandClick={() => setIsCommandPaletteOpen(true)}
+                    onChatClick={() => setIsChatSidebarOpen(true)}
+                />
+            )}
+        </AnimatePresence>
+        
+        <AnimatePresence>
             {isMobile && isMobileBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
                  <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
                     transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
@@ -370,3 +379,5 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
+
+    
