@@ -1,4 +1,3 @@
-
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
@@ -43,6 +42,7 @@ const formSchema = z.object({
 declare global {
   interface Window {
     confirmationResult?: ConfirmationResult;
+    recaptchaVerifier?: RecaptchaVerifier;
   }
 }
 
@@ -59,6 +59,37 @@ export default function SignUpForm() {
   const [showOtpInput, setShowOtpInput] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
+
+  // New useEffect to manage RecaptchaVerifier lifecycle for sign-up
+  useEffect(() => {
+    if (view === 'phone' && auth) {
+      if (!window.recaptchaVerifier) {
+        const container = document.getElementById('recaptcha-container-signup');
+        if (container) {
+          container.innerHTML = '';
+        }
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
+            'size': 'invisible',
+            'callback': () => { console.log("reCAPTCHA verified for sign-up") },
+            'expired-callback': () => {
+              toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+              if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                delete window.recaptchaVerifier;
+              }
+            }
+        });
+      }
+    }
+  
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        delete window.recaptchaVerifier;
+      }
+    };
+  }, [view, toast]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -156,14 +187,10 @@ export default function SignUpForm() {
     }
     setLoading(true);
     try {
-      // Create a new RecaptchaVerifier instance on demand.
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
-        'size': 'invisible',
-        'callback': () => console.log("reCAPTCHA verified for sign-up"),
-        'expired-callback': () => {
-          toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-        }
-      });
+      const verifier = window.recaptchaVerifier;
+      if (!verifier) {
+          throw new Error("reCAPTCHA not initialized. Please refresh and try again.");
+      }
 
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
       window.confirmationResult = confirmationResult;

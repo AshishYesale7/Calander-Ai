@@ -1,10 +1,9 @@
-
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, fetchSignInMethodsForEmail } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import Image from 'next/image';
@@ -38,6 +37,7 @@ const formSchema = z.object({
 declare global {
   interface Window {
     confirmationResult?: ConfirmationResult;
+    recaptchaVerifier?: RecaptchaVerifier;
   }
 }
 
@@ -56,6 +56,41 @@ export default function SignInForm() {
   const { user, loading: authLoading } = useAuth();
   
   const prefilledEmail = searchParams.get('email');
+
+  // New useEffect to manage RecaptchaVerifier lifecycle
+  useEffect(() => {
+    if (view === 'phone' && auth) {
+      if (!window.recaptchaVerifier) {
+        // Ensure the container is clean before rendering
+        const container = document.getElementById('recaptcha-container');
+        if (container) {
+          container.innerHTML = '';
+        }
+        
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => { console.log("reCAPTCHA verified for sign-in") },
+            'expired-callback': () => {
+              toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
+              // Clear the verifier to allow re-initialization
+              if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                delete window.recaptchaVerifier;
+              }
+            }
+        });
+      }
+    }
+  
+    // Cleanup function to clear the verifier when the component unmounts or view changes
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        delete window.recaptchaVerifier;
+      }
+    };
+  }, [view, toast]);
+
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -129,7 +164,7 @@ export default function SignInForm() {
              const methods = await fetchSignInMethodsForEmail(auth, email);
              toast({
                 title: 'Account Exists',
-                description: `You've previously signed in with ${methods.join(', ')}. Please use that method to sign in.`,
+                description: `You\'ve previously signed in with ${methods.join(', ')}. Please use that method to sign in.`,
                 variant: 'destructive',
                 duration: 9000,
             });
@@ -153,13 +188,10 @@ export default function SignInForm() {
     }
     setLoading(true);
     try {
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => { console.log("reCAPTCHA callback") },
-        'expired-callback': () => {
-            toast({ title: 'reCAPTCHA Expired', description: 'Please try sending the OTP again.', variant: 'destructive' });
-        }
-      });
+      const verifier = window.recaptchaVerifier;
+      if (!verifier) {
+        throw new Error("reCAPTCHA not initialized. Please refresh and try again.");
+      }
       
       const confirmationResult = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
       window.confirmationResult = confirmationResult;
@@ -367,7 +399,7 @@ export default function SignInForm() {
           </Link>
         </div>
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
+          Don't have an account?{' '}
           <Link href="/auth/signup" className="font-medium text-primary hover:underline">
             Sign up
           </Link>
