@@ -340,15 +340,20 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                     transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
                     className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
                  >
-                    <div className="p-3 bg-black/50 backdrop-blur-xl border border-white/10 rounded-full shadow-lg">
-                      <div className="flex items-center justify-around w-full">
-                        <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open command palette">
-                            <Command className="h-5 w-5" /><span className="text-xs">Search</span>
-                        </button>
-                        <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open chat">
-                            <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
-                        </button>
-                      </div>
+                    <div ref={bottomNavRef} className="bottom-nav-glow open">
+                        <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
+                        <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
+                        <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
+                        <div className="inner">
+                          <div className="flex items-center justify-around w-full">
+                            <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open command palette">
+                                <Command className="h-5 w-5" /><span className="text-xs">Search</span>
+                            </button>
+                            <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open chat">
+                                <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
+                            </button>
+                          </div>
+                        </div>
                     </div>
                 </motion.div>
             )}
@@ -378,3 +383,5 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
+
+    
