@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -25,7 +24,6 @@ import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
-import { useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -34,14 +32,115 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
-import { ChatPanel, ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
+import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { Button } from '../ui/button';
 import { Command, MessageSquare } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
-import ReclamationModal from '@/components/auth/ReclamationModal';
+import { ChatProvider, useChat } from '@/context/ChatContext';
+import ReclamationModal from '../auth/ReclamationModal';
+
+
+function ChatAndCallUI() {
+    const { 
+      chattingWith, 
+      isChatSidebarOpen, setIsChatSidebarOpen, 
+      isChatInputFocused, 
+      ongoingCall, 
+      ongoingAudioCall,
+      isPipMode,
+  } = useChat();
+  const isMobile = useIsMobile();
+  const isChatPanelVisible = !!chattingWith;
+  const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
+  
+  useEffect(() => {
+    if (!isMobile && chattingWith && sidebarState === 'expanded') {
+        setSidebarOpen(false);
+    }
+  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
+
+  const isVideoCallActive = !!(ongoingCall);
+  const isAudioCallActive = !!(ongoingAudioCall);
+  const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
+
+  return (
+    <>
+       {/* Desktop Chat Sidebars */}
+       {!isMobile && !isCallViewActive && (
+          <AnimatePresence initial={false}>
+              {isChatSidebarOpen ? (
+                  <motion.div
+                      key="desktop-chat-full"
+                      initial={{ width: 80 }}
+                      animate={{ width: 352 }}
+                      exit={{ width: 80 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex-shrink-0 h-full overflow-hidden"
+                  >
+                     <DesktopChatSidebar />
+                  </motion.div>
+              ) : (
+                  <motion.div
+                      key="desktop-chat-collapsed"
+                      initial={{ width: 352 }}
+                      animate={{ width: 80 }}
+                      exit={{ width: 352 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex-shrink-0 h-full overflow-hidden"
+                  >
+                     <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
+                  </motion.div>
+              )}
+              {isChatPanelVisible && (
+                   <motion.div
+                      key="desktop-chat-panel"
+                      initial={{ width: 0 }}
+                      animate={{ width: 352 }}
+                      exit={{ width: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
+                   >
+                       {chattingWith && <ChatPanelHeader user={chattingWith} onClose={() => {}} />}
+                       {chattingWith && <ChatPanelBody user={chattingWith} />}
+                       <ChatPanelFooter />
+                   </motion.div>
+              )}
+          </AnimatePresence>
+      )}
+
+      {isMobile && isChatSidebarOpen && !isCallViewActive && (
+          <div className="fixed inset-0 z-50 bg-background flex flex-col">
+            {chattingWith ? (
+              <div className="flex flex-col h-full">
+                <div className="fixed top-0 left-0 right-0 z-20">
+                  <ChatPanelHeader user={chattingWith} onClose={() => {}} />
+                </div>
+                <div className="flex flex-1 min-h-0 pt-14 pb-20">
+                    <div className={cn(
+                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
+                      isChatInputFocused ? "w-0" : "w-[25%]"
+                    )}>
+                        <MobileMiniChatSidebar />
+                    </div>
+                    <div className="flex-1 flex flex-col relative">
+                        <ChatPanelBody user={chattingWith} />
+                    </div>
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 z-20">
+                    <ChatPanelFooter />
+                </div>
+              </div>
+            ) : (
+              <MobileChatSidebar />
+            )}
+          </div>
+        )}
+    </>
+  )
+}
 
 
 export default function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
@@ -67,10 +166,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     
-    const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
-    
     const { 
-      chattingWith, setChattingWith,
       isChatSidebarOpen, setIsChatSidebarOpen, 
       isChatInputFocused, 
       ongoingCall, 
@@ -79,13 +175,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   } = useChat();
     
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
-    const isChatPanelVisible = !!chattingWith;
-    
-  useEffect(() => {
-    if (!isMobile && chattingWith && sidebarState === 'expanded') {
-        setSidebarOpen(false);
-    }
-  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
     if (loading) return;
@@ -97,6 +186,30 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     }
   }, [user, loading, isSubscribed, router, pathname]);
   
+  useEffect(() => {
+    let currentIndex = 0;
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
+        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
+        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
+        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
+    ];
+    const colorInterval = setInterval(() => {
+        const navElement = bottomNavRef.current;
+        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+        const nextColor = colorPairs[currentIndex];
+        if (navElement) {
+            navElement.style.setProperty('--hue1', String(nextColor.hue1));
+            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        if (cmdkElement) {
+            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
+            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        currentIndex = (currentIndex + 1) % colorPairs.length;
+    }, 3000);
+    return () => clearInterval(colorInterval);
+  }, []);
 
   const requestNotificationPermission = async () => {
     // This is the function that was missing.
@@ -209,91 +322,23 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           isPendingDeletion && 'pointer-events-none blur-sm'
       )}>
         <OfflineIndicator />
-        <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
-          <SidebarNav {...modalProps} />
-        </div>
-        
-        <div className={cn(
-          "flex flex-1 min-w-0 transition-[margin-left] duration-300",
-          !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
-          !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12",
-        )}>
-          <div className="flex-1 flex flex-col min-h-0 min-w-0">
-             <Header {...modalProps} />
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
-              {children}
-            </main>
+        <SidebarProvider>
+          <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
+            <SidebarNav {...modalProps} />
           </div>
           
-           {/* Desktop Chat Sidebars */}
-          {!isMobile && !isCallViewActive && (
-              <AnimatePresence initial={false}>
-                  {isChatSidebarOpen ? (
-                      <motion.div
-                          key="desktop-chat-full"
-                          initial={{ width: 80 }}
-                          animate={{ width: 352 }}
-                          exit={{ width: 80 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="flex-shrink-0 h-full overflow-hidden"
-                      >
-                         <DesktopChatSidebar />
-                      </motion.div>
-                  ) : (
-                      <motion.div
-                          key="desktop-chat-collapsed"
-                          initial={{ width: 352 }}
-                          animate={{ width: 80 }}
-                          exit={{ width: 352 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="flex-shrink-0 h-full overflow-hidden"
-                      >
-                         <ChatSidebar onToggleCollapse={() => setIsChatSidebarOpen(true)} />
-                      </motion.div>
-                  )}
-                  {isChatPanelVisible && (
-                       <motion.div
-                          key="desktop-chat-panel"
-                          initial={{ width: 0 }}
-                          animate={{ width: 352 }}
-                          exit={{ width: 0 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
-                       >
-                           <ChatPanel user={chattingWith!} onClose={() => setChattingWith(null)} />
-                       </motion.div>
-                  )}
-              </AnimatePresence>
-          )}
-        </div>
-        
-        {isMobile && isChatSidebarOpen && !isCallViewActive && (
-          <div className="fixed inset-0 z-50 bg-background flex flex-col">
-            {chattingWith ? (
-              <div className="flex flex-col h-full">
-                <div className="fixed top-0 left-0 right-0 z-20">
-                  <ChatPanelHeader user={chattingWith} onClose={() => {}} />
-                </div>
-                <div className="flex flex-1 min-h-0 pt-14 pb-20">
-                    <div className={cn(
-                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
-                      isChatInputFocused ? "w-0" : "w-[25%]"
-                    )}>
-                        <MobileMiniChatSidebar />
-                    </div>
-                    <div className="flex-1 flex flex-col relative">
-                        <ChatPanelBody user={chattingWith} />
-                    </div>
-                </div>
-                <div className="fixed bottom-0 left-0 right-0 z-20">
-                    <ChatPanelFooter />
-                </div>
-              </div>
-            ) : (
-              <MobileChatSidebar />
-            )}
+          <div className="flex flex-1 min-w-0">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
+               <Header {...modalProps} />
+              <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
+                {children}
+              </main>
+            </div>
+            
+            <ChatAndCallUI />
+
           </div>
-        )}
+        </SidebarProvider>
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
         <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
