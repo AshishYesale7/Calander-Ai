@@ -91,7 +91,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   const handleStep1Submit = async (values: OnboardingFormValues) => {
     if (!user) return;
-    if (!usernameAvailable) {
+    if (usernameAvailable === false) {
       toast({ title: "Username not available", description: "Please choose a different username.", variant: "destructive" });
       return;
     }
