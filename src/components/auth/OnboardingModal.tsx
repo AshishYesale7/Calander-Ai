@@ -34,8 +34,17 @@ const slideVariants = {
   exit: { opacity: 0, x: -300 },
 };
 
+const avatars = [
+    { id: 'male-sunglasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?w=740' },
+    { id: 'female-glasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?w=740' },
+    { id: 'male-green-hoodie', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-green-hoodie_23-2149436191.jpg?w=740' },
+    { id: 'female-yellow-shirt', url: 'https://img.freepik.com/free-psd/3d-illustration-person_23-2149436192.jpg?w=740' },
+    { id: 'male-rainbow-glasses', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436190.jpg?w=740' },
+];
+
+
 export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,7 +55,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const [username, setUsername] = useState('');
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [selectedGender, setSelectedGender] = useState<'male' | 'female' | null>(null);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -71,15 +80,13 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   const handleNextStep = async () => {
     if (currentStep === 1) {
-      if (!displayName || !username || !selectedGender || !isUsernameAvailable) {
-        toast({ title: 'Profile Incomplete', description: 'Please fill all fields and ensure username is available.', variant: 'destructive' });
+      if (!displayName || !username || !selectedAvatarUrl || !isUsernameAvailable) {
+        toast({ title: 'Profile Incomplete', description: 'Please fill all fields and choose an avatar.', variant: 'destructive' });
         return;
       }
       setIsSaving(true);
       try {
-        const avatarUrl = selectedGender === 'male' ? '/assets/male-avatar.png' : '/assets/female-avatar.png';
-        await updateUserProfile(user!.uid, { displayName, username, photoURL: avatarUrl });
-        // Removed `await refreshUser()` to prevent page reload
+        await updateUserProfile(user!.uid, { displayName, username, photoURL: selectedAvatarUrl });
         setCurrentStep(2);
       } catch (error: any) {
         toast({ title: 'Error Saving Profile', description: error.message, variant: 'destructive' });
@@ -123,43 +130,39 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
           {currentStep === 1 && (
             <motion.div key="step1" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
               <h2 className="font-headline text-2xl font-semibold text-primary mb-2">Welcome to Calendar.ai!</h2>
-              <p className="text-muted-foreground mb-6">Let's set up your profile to get you started.</p>
-              <div className="space-y-4">
-                <div className="flex justify-center gap-4">
-                    <div className="flex flex-col items-center gap-2">
-                        <button onClick={() => setSelectedGender('male')} className={cn("rounded-full border-4 p-1 transition-all", selectedGender === 'male' ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                            <Image src="/assets/male-avatar.png" alt="Male Avatar" width={80} height={80} className="rounded-full" />
-                        </button>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                        <button onClick={() => setSelectedGender('female')} className={cn("rounded-full border-4 p-1 transition-all", selectedGender === 'female' ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
-                            <Image src="/assets/female-avatar.png" alt="Female Avatar" width={80} height={80} className="rounded-full" />
-                        </button>
-                    </div>
-                </div>
-                <div>
+              <p className="text-muted-foreground mb-6">Let's set up your profile. All fields are required.</p>
+              <div className="space-y-6">
+                 <div>
                   <Label htmlFor="displayName">Display Name</Label>
-                  <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g., Ashish Yesale" />
+                  <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g., Ashish Yesale" className="mt-2 bg-black/50 h-11" />
                 </div>
                 <div>
                   <Label htmlFor="username">Username</Label>
-                  <div className="relative">
-                    <Input id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g., ashish" />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <div className="relative mt-2">
+                    <Input id="username" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g., ashish" className="bg-black/50 h-11"/>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       {isCheckingUsername ? <LoadingSpinner size="sm" /> : isUsernameAvailable === true ? <Check className="h-5 w-5 text-green-500" /> : isUsernameAvailable === false ? <X className="h-5 w-5 text-destructive" /> : null}
                     </div>
                   </div>
                   {isUsernameAvailable === false && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
                 </div>
-                 {!hasGoogleProvider && (
-                    <Button variant="outline" className="w-full">
-                        <LinkIcon className="mr-2 h-4 w-4" /> Connect Google Account
-                    </Button>
-                 )}
+                <div>
+                  <Label>Choose Your Avatar</Label>
+                   <div className="mt-3 grid grid-cols-3 gap-4">
+                       {avatars.map((avatar) => (
+                           <button key={avatar.id} onClick={() => setSelectedAvatarUrl(avatar.url)} className={cn("relative aspect-square rounded-full border-4 p-1 transition-all", selectedAvatarUrl === avatar.url ? 'border-accent' : 'border-transparent hover:border-accent/50')}>
+                               <Image src={avatar.url} alt={avatar.id} width={96} height={96} className="rounded-full bg-muted/30" />
+                           </button>
+                       ))}
+                        <button onClick={() => toast({title: 'Coming Soon', description: 'Custom avatar uploads will be available soon.'})} className="aspect-square rounded-full bg-black/30 border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent transition-colors">
+                           <User className="h-8 w-8 text-muted-foreground" />
+                        </button>
+                   </div>
+                </div>
               </div>
-              <Button onClick={handleNextStep} disabled={isSaving || !displayName || !username || !selectedGender || isUsernameAvailable === false} className="w-full mt-8">
+              <Button onClick={handleNextStep} disabled={isSaving || !displayName || !username || !selectedAvatarUrl || isUsernameAvailable === false} className="w-full mt-8 h-12 text-base">
                 {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
-                Next
+                Continue
               </Button>
             </motion.div>
           )}
