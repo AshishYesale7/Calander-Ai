@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, UserPlus, Users, LogIn } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, UserPlus, Users, LogIn, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -183,6 +183,11 @@ export default function Header({
     if (email) {
       switchUser(email);
     }
+  };
+
+  const handleRemoveAccount = (e: React.MouseEvent, uid: string) => {
+    e.stopPropagation();
+    removeKnownUser(uid);
   };
 
 
@@ -482,23 +487,26 @@ export default function Header({
                 
                 <DropdownMenuGroup>
                     {knownUsers.filter(u => u.uid !== user?.uid).map(knownUser => (
-                        <DropdownMenuItem key={knownUser.uid} onSelect={() => handleSwitchAccount(knownUser.email)}>
+                        <DropdownMenuItem key={knownUser.uid} onSelect={(e) => { e.preventDefault(); handleSwitchAccount(knownUser.email); }}>
                             <Avatar className="h-6 w-6 mr-2">
                                 <AvatarImage src={knownUser.photoURL || undefined} />
                                 <AvatarFallback>{knownUser.displayName?.charAt(0) || '?'}</AvatarFallback>
                             </Avatar>
                             <span className="truncate flex-1">{knownUser.displayName || knownUser.email}</span>
-                            <LogIn className="h-4 w-4 ml-auto text-muted-foreground" />
+                            <button
+                                onClick={(e) => handleRemoveAccount(e, knownUser.uid)}
+                                className="p-1 text-muted-foreground hover:text-destructive z-10"
+                                aria-label={`Remove ${knownUser.displayName || knownUser.email}`}
+                            >
+                                <XCircle className="h-4 w-4" />
+                            </button>
                         </DropdownMenuItem>
                     ))}
                     <DropdownMenuItem onSelect={handleAddAccount}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         <span>Add Account</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => {
-                        if(user) removeKnownUser(user.uid);
-                        handleSignOut();
-                    }}>
+                    <DropdownMenuItem onSelect={() => handleSignOut()}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sign out of all accounts</span>
                     </DropdownMenuItem>
