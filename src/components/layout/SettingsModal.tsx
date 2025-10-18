@@ -90,7 +90,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
@@ -154,9 +154,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
        // Cleanup logic when modal closes
        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
        if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-       if (recaptchaVerifierRef.current) {
-         recaptchaVerifierRef.current.clear();
-         recaptchaVerifierRef.current = null;
+       if (window.recaptchaVerifier) {
+         window.recaptchaVerifier.clear();
        }
        setIsPolling(false);
        setIsLinkingPhone(false);
@@ -241,24 +240,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
   };
   
-  const setupRecaptcha = useCallback((containerId: string): RecaptchaVerifier | null => {
-    if (!auth) return null;
+  const setupRecaptcha = useCallback((containerId: string) => {
+    if (!auth) return;
     const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`reCAPTCHA container with id "${containerId}" not found.`);
-      return null;
+    if (!container) return;
+
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      container.innerHTML = ''; // Ensure container is empty
     }
-    if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        container.innerHTML = "";
-    }
+
     const verifier = new RecaptchaVerifier(auth, container, {
-        'size': 'normal', // Make reCAPTCHA visible
+        'size': 'normal',
         'callback': () => console.log('reCAPTCHA verified')
     });
-    recaptchaVerifierRef.current = verifier;
-    verifier.render(); // Explicitly render it
-    return verifier;
+    window.recaptchaVerifier = verifier;
+    verifier.render();
   }, [auth]);
 
   const handleSendLinkOtp = async () => {
@@ -268,9 +265,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     setLinkingPhoneState('loading');
     try {
-      const verifier = setupRecaptcha('recaptcha-container-settings');
-      if (!verifier) throw new Error("Could not initialize reCAPTCHA.");
-      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
+      if (!window.recaptchaVerifier) throw new Error("reCAPTCHA not initialized.");
+      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, window.recaptchaVerifier);
       window.confirmationResult = confirmationResult;
       setLinkingPhoneState('otp-sent');
       toast({ title: 'OTP Sent', description: 'Check your phone for the verification code.' });
@@ -354,13 +350,20 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
   
+    useEffect(() => {
+        if (actionToConfirm && reauthStep === 'otp' && reauthRecaptchaContainerRef.current) {
+            setupRecaptcha('reauth-recaptcha-container');
+        }
+        if (isLinkingPhone && linkingPhoneState === 'input' && recaptchaContainerRef.current) {
+            setupRecaptcha('recaptcha-container-settings');
+        }
+    }, [actionToConfirm, reauthStep, isLinkingPhone, linkingPhoneState, setupRecaptcha]);
+
   const handleSendReauthOtp = async () => {
-    if (!auth || !user?.phoneNumber) return;
+    if (!auth || !user?.phoneNumber || !window.recaptchaVerifier) return;
     setIsReauthenticating(true);
     try {
-      const verifier = setupRecaptcha('reauth-recaptcha-container');
-      if (!verifier) throw new Error("Could not set up OTP verifier.");
-      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
+      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, window.recaptchaVerifier);
       window.confirmationResult = confirmationResult;
       setReauthStep('verifying');
     } catch (error: any) {
@@ -811,7 +814,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                             )}
 
                             {hasPhoneProvider && (
-                                <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
+                                <Button onClick={() => setReauthStep('otp')} className="w-full" disabled={isReauthenticating}>
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
                                 Verify with Phone Number
                                 </Button>
@@ -829,6 +832,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                 {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
                                 Send Verification Code
                             </Button>
+                            <div id="reauth-recaptcha-container" ref={reauthRecaptchaContainerRef} className="flex justify-center"></div>
                         </div>
                     )}
                     {reauthStep === 'verifying' && (
@@ -847,10 +851,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                  <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => { setActionToConfirm(null); setReauthStep('prompt'); }}>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
-                <div id="reauth-recaptcha-container" ref={reauthRecaptchaContainerRef}></div>
             </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
     </Dialog>
   );
 }
+
+```
