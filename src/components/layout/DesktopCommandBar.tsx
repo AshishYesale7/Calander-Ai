@@ -15,7 +15,7 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 50, damping: 15 }}
-      className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-[60%]"
+      className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-[468px]"
     >
       <div 
         onClick={onOpenCommandPalette}
