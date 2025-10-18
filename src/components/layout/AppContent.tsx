@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -37,9 +38,9 @@ import { Button } from '../ui/button';
 import { Command, MessageSquare } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
+import ReclamationModal from '@/components/auth/ReclamationModal';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
-import ReclamationModal from '@/components/auth/ReclamationModal';
 
 
 function ChatAndCallUI() {
@@ -319,7 +320,11 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         <div className={cn(
           "flex flex-1 min-w-0"
         )}>
-          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <div className={cn(
+              "flex-1 flex flex-col min-h-0 min-w-0 transition-[margin-left] duration-300",
+              !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
+              !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
+          )}>
              <Header {...modalProps} />
             <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
               {children}
