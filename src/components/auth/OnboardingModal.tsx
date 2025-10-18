@@ -46,7 +46,6 @@ const avatarOptions = [
     { id: 'male2', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?w=740' },
     { id: 'female2', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671140.jpg?w=740' },
     { id: 'male3', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436196.jpg?w=740' },
-    { id: 'female3', url: 'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671113.jpg?w=740' },
 ];
 
 
