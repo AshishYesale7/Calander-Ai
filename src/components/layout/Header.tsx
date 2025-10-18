@@ -449,7 +449,7 @@ export default function Header({
             </>
           )}
 
-          <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(prev => !prev)} className="hidden md:inline-flex">
+          <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(prev => !prev)}>
             <MessageSquare className="h-5 w-5" />
             <span className="sr-only">Toggle Chat</span>
           </Button>
