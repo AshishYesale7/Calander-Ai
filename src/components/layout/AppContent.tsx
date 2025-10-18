@@ -24,7 +24,6 @@ import { useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
-import OnboardingModal from '@/components/auth/OnboardingModal';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
 import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { Button } from '../ui/button';
@@ -253,11 +252,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   }
   
   if (!onboardingCompleted) {
+    // This block should no longer be reached with the AuthContext change
     return (
-      <div className="h-screen w-full flex-col">
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={onFinishOnboarding} />
-        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Preloader />
       </div>
     );
   }
