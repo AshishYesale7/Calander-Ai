@@ -78,8 +78,8 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
       setIsSaving(true);
       try {
         const avatarUrl = selectedGender === 'male' ? '/assets/male-avatar.png' : '/assets/female-avatar.png';
-        await updateUserProfile(user!.uid, { displayName, username, photoURL: avatarUrl, onboardingCompleted: false });
-        await refreshUser();
+        await updateUserProfile(user!.uid, { displayName, username, photoURL: avatarUrl });
+        // Removed `await refreshUser()` to prevent page reload
         setCurrentStep(2);
       } catch (error: any) {
         toast({ title: 'Error Saving Profile', description: error.message, variant: 'destructive' });
