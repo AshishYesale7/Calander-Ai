@@ -22,7 +22,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
-import { SidebarTrigger } from '../ui/sidebar';
+import { SidebarTrigger, useSidebar } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
 import Image from 'next/image';
 import { allPlugins } from '@/data/plugins';
@@ -30,7 +30,7 @@ import { getInstalledPlugins, getUserProfile } from '@/services/userService';
 import { useStreak } from '@/context/StreakContext';
 import type { StreakData } from '@/types';
 import { Code } from 'lucide-react';
-import { usePlugin } from '@/hooks/use-plugin';
+import { usePlugin } from '@/context/use-plugin';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, addDays, toDate, isToday as dfnsIsToday } from 'date-fns';
 import ContributionGraphCard from '../extensions/codefolio/ContributionGraphCard';
@@ -41,6 +41,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { WidgetIcon } from '../logo/WidgetIcon';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const navItems = [
@@ -124,6 +125,8 @@ export default function Header({
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { setActivePlugin } = usePlugin();
+  const { state: sidebarState } = useSidebar();
+  const isMobile = useIsMobile();
   const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
   const [isStreakPopoverOpen, setIsStreakPopoverOpen] = useState(false);
   const [isExtensionsPopoverOpen, setIsExtensionsPopoverOpen] = useState(false);
@@ -253,7 +256,10 @@ export default function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-black/50 px-4 backdrop-blur-md">
+      <header className={cn("sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-black/50 px-4 backdrop-blur-md transition-[margin-left] duration-300",
+        !isMobile && sidebarState === 'expanded' && "md:ml-64",
+        !isMobile && sidebarState === 'collapsed' && "md:ml-12",
+      )}>
         <div className="flex items-center gap-2">
             <SidebarTrigger className="hidden md:flex" />
             <div className="h-6 w-px bg-border hidden md:block" />

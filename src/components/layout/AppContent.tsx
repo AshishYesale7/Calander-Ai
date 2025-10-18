@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -24,6 +23,7 @@ import { messaging } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
+import { useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, collection, query, where, doc, getDoc, type DocumentData, or, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -39,29 +39,20 @@ import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
-import { ChatProvider, useChat } from '@/context/ChatContext';
-import ReclamationModal from '../auth/ReclamationModal';
+import ReclamationModal from '@/components/auth/ReclamationModal';
 
 
 function ChatAndCallUI() {
     const { 
       chattingWith, 
       isChatSidebarOpen, setIsChatSidebarOpen, 
-      isChatInputFocused, 
       ongoingCall, 
       ongoingAudioCall,
       isPipMode,
   } = useChat();
   const isMobile = useIsMobile();
   const isChatPanelVisible = !!chattingWith;
-  const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
   
-  useEffect(() => {
-    if (!isMobile && chattingWith && sidebarState === 'expanded') {
-        setSidebarOpen(false);
-    }
-  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
-
   const isVideoCallActive = !!(ongoingCall);
   const isAudioCallActive = !!(ongoingAudioCall);
   const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
@@ -110,34 +101,6 @@ function ChatAndCallUI() {
               )}
           </AnimatePresence>
       )}
-
-      {isMobile && isChatSidebarOpen && !isCallViewActive && (
-          <div className="fixed inset-0 z-50 bg-background flex flex-col">
-            {chattingWith ? (
-              <div className="flex flex-col h-full">
-                <div className="fixed top-0 left-0 right-0 z-20">
-                  <ChatPanelHeader user={chattingWith} onClose={() => {}} />
-                </div>
-                <div className="flex flex-1 min-h-0 pt-14 pb-20">
-                    <div className={cn(
-                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
-                      isChatInputFocused ? "w-0" : "w-[25%]"
-                    )}>
-                        <MobileMiniChatSidebar />
-                    </div>
-                    <div className="flex-1 flex flex-col relative">
-                        <ChatPanelBody user={chattingWith} />
-                    </div>
-                </div>
-                <div className="fixed bottom-0 left-0 right-0 z-20">
-                    <ChatPanelFooter />
-                </div>
-              </div>
-            ) : (
-              <MobileChatSidebar />
-            )}
-          </div>
-        )}
     </>
   )
 }
@@ -166,7 +129,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     
+    const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
+    
     const { 
+      chattingWith, 
       isChatSidebarOpen, setIsChatSidebarOpen, 
       isChatInputFocused, 
       ongoingCall, 
@@ -175,6 +141,13 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   } = useChat();
     
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
+    const isChatPanelVisible = !!chattingWith;
+    
+  useEffect(() => {
+    if (!isMobile && chattingWith && sidebarState === 'expanded') {
+        setSidebarOpen(false);
+    }
+  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
     if (loading) return;
@@ -186,33 +159,25 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     }
   }, [user, loading, isSubscribed, router, pathname]);
   
-  useEffect(() => {
-    let currentIndex = 0;
-    const colorPairs = [
-        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
-        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
-        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
-        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
-    ];
-    const colorInterval = setInterval(() => {
-        const navElement = bottomNavRef.current;
-        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
-        const nextColor = colorPairs[currentIndex];
-        if (navElement) {
-            navElement.style.setProperty('--hue1', String(nextColor.hue1));
-            navElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-        if (cmdkElement) {
-            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
-            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-        currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 3000);
-    return () => clearInterval(colorInterval);
-  }, []);
-
-  const requestNotificationPermission = async () => {
-    // This is the function that was missing.
+   const requestNotificationPermission = async () => {
+    if (!messaging || !user) {
+      toast({ title: 'Error', description: 'Push notifications not supported or not signed in.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) throw new Error("VAPID key is missing.");
+        const fcmToken = await getToken(messaging, { vapidKey });
+        // await saveUserFCMToken(user.uid, fcmToken);
+        toast({ title: 'Success', description: 'Push notifications enabled!' });
+      } else {
+        toast({ title: 'Notifications Denied', variant: 'default' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
+    }
   };
 
   useEffect(() => {
@@ -239,6 +204,31 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
+  }, []);
+  
+  useEffect(() => {
+    let currentIndex = 0;
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
+        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
+        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
+        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
+    ];
+    const colorInterval = setInterval(() => {
+        const navElement = bottomNavRef.current;
+        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+        const nextColor = colorPairs[currentIndex];
+        if (navElement) {
+            navElement.style.setProperty('--hue1', String(nextColor.hue1));
+            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        if (cmdkElement) {
+            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
+            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        currentIndex = (currentIndex + 1) % colorPairs.length;
+    }, 3000);
+    return () => clearInterval(colorInterval);
   }, []);
 
   useEffect(() => {
@@ -275,16 +265,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     );
   }
   
-  if (!onboardingCompleted) {
-    return (
-      <div className="h-screen w-full flex-col">
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
-        <OnboardingModal onFinish={onFinishOnboarding} />
-        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
-      </div>
-    );
-  }
-  
   if (isPendingDeletion) {
     return (
         <div className="h-screen w-full flex-col">
@@ -292,6 +272,16 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
             <ReclamationModal />
             <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
         </div>
+    );
+  }
+  
+  if (!onboardingCompleted) {
+    return (
+      <div className="h-screen w-full flex-col">
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50"></div>
+        <OnboardingModal onFinish={onFinishOnboarding} />
+        <div className="flex-1 opacity-20 pointer-events-none">{children}</div>
+      </div>
     );
   }
 
@@ -322,23 +312,49 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           isPendingDeletion && 'pointer-events-none blur-sm'
       )}>
         <OfflineIndicator />
-        <SidebarProvider>
-          <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
-            <SidebarNav {...modalProps} />
+        <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
+          <SidebarNav {...modalProps} />
+        </div>
+        
+        <div className={cn(
+          "flex flex-1 min-w-0"
+        )}>
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+             <Header {...modalProps} />
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
+              {children}
+            </main>
           </div>
-          
-          <div className="flex flex-1 min-w-0">
-            <div className="flex-1 flex flex-col min-h-0 min-w-0">
-               <Header {...modalProps} />
-              <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
-                {children}
-              </main>
-            </div>
-            
             <ChatAndCallUI />
-
+        </div>
+        
+        {isMobile && isChatSidebarOpen && !isCallViewActive && (
+          <div className="fixed inset-0 z-50 bg-background flex flex-col">
+            {chattingWith ? (
+              <div className="flex flex-col h-full">
+                <div className="fixed top-0 left-0 right-0 z-20">
+                  <ChatPanelHeader user={chattingWith} onClose={() => {}} />
+                </div>
+                <div className="flex flex-1 min-h-0 pt-14 pb-20">
+                    <div className={cn(
+                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
+                      isChatInputFocused ? "w-0" : "w-[25%]"
+                    )}>
+                        <MobileMiniChatSidebar />
+                    </div>
+                    <div className="flex-1 flex flex-col relative">
+                        <ChatPanelBody user={chattingWith} />
+                    </div>
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 z-20">
+                    <ChatPanelFooter />
+                </div>
+              </div>
+            ) : (
+              <MobileChatSidebar />
+            )}
           </div>
-        </SidebarProvider>
+        )}
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
         <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
