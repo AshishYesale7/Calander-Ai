@@ -62,26 +62,10 @@ export default function SignUpForm() {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Only run this effect when the phone view is active
-    if (view !== 'phone' || !auth) {
-      return;
-    }
-
-    const containerId = 'recaptcha-container-signup';
-    let verifier = window.recaptchaVerifier;
-    const container = document.getElementById(containerId);
-
-    // If a verifier exists, clear it and its container
-    if (verifier) {
-      verifier.clear();
-    }
-    if (container) {
-      container.innerHTML = '';
-    }
-
-    // Create a new verifier and render it
-    try {
-      verifier = new RecaptchaVerifier(auth, containerId, {
+    // This effect manages the lifecycle of the RecaptchaVerifier
+    if (view === 'phone' && auth) {
+      // If we are in phone view, create the verifier
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-signup', {
         'size': 'normal',
         'callback': () => { console.log("reCAPTCHA verified for sign-up") },
         'expired-callback': () => {
@@ -90,17 +74,15 @@ export default function SignUpForm() {
       });
       verifier.render();
       window.recaptchaVerifier = verifier;
-    } catch (error) {
-      console.error("Error creating new RecaptchaVerifier for sign-up:", error);
+
+      // The cleanup function will run when the component unmounts OR when the `view` changes
+      return () => {
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+        }
+      };
     }
-    
-    // Cleanup function to run when the component unmounts or the view changes
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-    };
-  }, [view, toast]);
+  }, [view, toast]); // The effect is dependent on the `view` state
 
 
   useEffect(() => {
@@ -407,10 +389,9 @@ export default function SignUpForm() {
                     </Button>
                 </div>
             )}
+            <div id="recaptcha-container-signup" className="my-4 flex justify-center"></div>
             </div>
         )}
-
-        <div id="recaptcha-container-signup" className="my-4"></div>
 
         <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
@@ -437,7 +418,3 @@ export default function SignUpForm() {
     </>
   );
 }
-
-    
-
-    
