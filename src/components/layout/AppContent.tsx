@@ -35,6 +35,7 @@ import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
+import AiCommandPalette from './AiCommandPalette';
 
 
 function ChatAndCallUI() {
@@ -122,9 +123,15 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isMobileBottomNavVisible, setIsMobileBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     
-    // State lifted from CommandPalette
     const [search, setSearch] = useState('');
     const commandBarInputRef = useRef<HTMLInputElement>(null);
+    const [isAiPaletteOpen, setIsAiPaletteOpen] = useState(false);
+    const [navBarPosition, setNavBarPosition] = useState({ x: 0, y: 0 });
+
+    const isPaletteAbove = useMemo(() => {
+        if (typeof window === 'undefined') return true;
+        return navBarPosition.y > window.innerHeight / 2;
+    }, [navBarPosition.y]);
 
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
@@ -181,6 +188,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setIsCommandPaletteOpen((open) => !open);
+        setIsAiPaletteOpen(false);
+      }
+      if (e.key === "Escape") {
+        setIsAiPaletteOpen(false);
       }
     };
     document.addEventListener('keydown', down);
@@ -310,6 +321,20 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         )}
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
+        
+        <AnimatePresence>
+            {!isMobile && isAiPaletteOpen && (
+                <AiCommandPalette
+                    onOpenChange={setIsAiPaletteOpen}
+                    search={search}
+                    setSearch={setSearch}
+                    modalProps={modalProps}
+                    navBarPosition={navBarPosition}
+                    isPaletteAbove={isPaletteAbove}
+                />
+            )}
+        </AnimatePresence>
+
         <CommandPalette 
           isOpen={isCommandPaletteOpen} 
           onOpenChange={setIsCommandPaletteOpen} 
@@ -318,7 +343,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           {...modalProps} 
         />
         
-        {/* Mobile bottom nav - logic remains unchanged */}
         <AnimatePresence>
             {isMobile && isMobileBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
                  <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
@@ -344,14 +368,17 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
             )}
         </AnimatePresence>
 
-        {/* Separated logic for Desktop nav bars */}
         <AnimatePresence>
             {!isMobile && !isFullScreen && !isCallViewActive && (
               <DesktopCommandBar 
-                onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+                onOpenCommandPalette={() => setIsAiPaletteOpen(true)}
                 search={search}
                 setSearch={setSearch}
                 inputRef={commandBarInputRef}
+                onDrag={(e, info) => {
+                    const newY = navBarPosition.y + info.delta.y;
+                    setNavBarPosition({ x: 0, y: newY });
+                }}
               />
             )}
         </AnimatePresence>

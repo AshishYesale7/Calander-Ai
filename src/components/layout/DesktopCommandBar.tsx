@@ -1,8 +1,8 @@
 
 'use client';
 
-import { motion } from 'framer-motion';
-import { Paperclip, Mic, Sparkles, ChevronDown, AudioLines, Search } from 'lucide-react';
+import { motion, type PanInfo } from 'framer-motion';
+import { Sparkles, ChevronDown, AudioLines, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import React from 'react';
 import { Input } from '../ui/input';
@@ -12,12 +12,12 @@ interface DesktopCommandBarProps {
   search: string;
   setSearch: (search: string) => void;
   inputRef: React.RefObject<HTMLInputElement>;
+  onDrag: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
 }
 
-export default function DesktopCommandBar({ onOpenCommandPalette, search, setSearch, inputRef }: DesktopCommandBarProps) {
+export default function DesktopCommandBar({ onOpenCommandPalette, search, setSearch, inputRef, onDrag }: DesktopCommandBarProps) {
   const bottomNavRef = React.useRef<HTMLDivElement>(null);
 
-  // This effect is for the glowing border animation, taken from the mobile nav.
   React.useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [
@@ -40,12 +40,10 @@ export default function DesktopCommandBar({ onOpenCommandPalette, search, setSea
   return (
     <motion.div
       drag
+      onDrag={onDrag}
       dragMomentum={false}
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 100, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 50, damping: 15 }}
-      className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-[468px] cursor-grab active:cursor-grabbing"
+      initial={{ y: 0, x: "-50%", opacity: 1 }}
+      className="fixed bottom-6 left-1/2 z-40 w-[468px] cursor-grab active:cursor-grabbing"
     >
       <div 
         ref={bottomNavRef}
