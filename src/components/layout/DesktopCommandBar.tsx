@@ -1,15 +1,20 @@
+
 'use client';
 
 import { motion } from 'framer-motion';
-import { Paperclip, Mic, Sparkles, ChevronDown, AudioLines } from 'lucide-react';
+import { Paperclip, Mic, Sparkles, ChevronDown, AudioLines, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import React from 'react';
+import { Input } from '../ui/input';
 
 interface DesktopCommandBarProps {
   onOpenCommandPalette: () => void;
+  search: string;
+  setSearch: (search: string) => void;
+  inputRef: React.RefObject<HTMLInputElement>;
 }
 
-export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopCommandBarProps) {
+export default function DesktopCommandBar({ onOpenCommandPalette, search, setSearch, inputRef }: DesktopCommandBarProps) {
   const bottomNavRef = React.useRef<HTMLDivElement>(null);
 
   // This effect is for the glowing border animation, taken from the mobile nav.
@@ -40,23 +45,28 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 50, damping: 15 }}
-      className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-[468px]"
+      className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-[468px] cursor-grab active:cursor-grabbing"
     >
       <div 
         ref={bottomNavRef}
-        onClick={onOpenCommandPalette}
-        className="bottom-nav-glow open cursor-grab active:cursor-grabbing"
+        className="bottom-nav-glow open"
       >
-        {/* These spans are for the glow effect */}
         <span className="shine shine-bottom"></span><span className="shine shine-bottom" style={{ left: 'auto', right: 'calc(var(--border) * -1)', transform: 'scaleX(-1)' }}></span>
         <span className="glow glow-bottom"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright glow-bottom"></span><span className="glow glow-bright glow-bottom"></span>
 
-        <div className="inner h-14">
+        <div className="inner h-12">
           <div className="relative w-full h-full flex items-center px-4 text-gray-400">
-            <Paperclip className="h-5 w-5 mr-3" />
-            <span className="flex-1 text-left">How can Calendar.ai help?</span>
-
+            <Search className="h-5 w-5 mr-3" />
+             <Input
+                ref={inputRef}
+                placeholder="How can Calendar.ai help?"
+                className="flex-1 bg-transparent border-none text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={onOpenCommandPalette}
+                onClick={onOpenCommandPalette}
+              />
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
                     <Sparkles className="h-4 w-4 mr-1.5" />
