@@ -106,7 +106,7 @@ export default function DesktopCommandBar() {
             )}
             
             <div className="relative w-full h-14 flex px-4 text-gray-400">
-              <div className="flex w-full items-start pt-2">
+              <div className="flex w-full pt-2">
                 <Search className="h-5 w-5 mr-3 mt-1" />
                 <Input
                     ref={inputRef}
@@ -115,7 +115,7 @@ export default function DesktopCommandBar() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => setIsOpen(true)}
-                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag from starting on input click
+                    onPointerDown={(e) => e.stopPropagation()}
                 />
                 <div className="flex items-center gap-2 mt-1">
                     <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
