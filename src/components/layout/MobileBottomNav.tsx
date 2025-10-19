@@ -4,12 +4,12 @@
 import { Command, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface DesktopBottomNavProps {
+interface MobileBottomNavProps {
   onCommandClick: () => void;
   onChatClick: () => void;
 }
 
-export default function DesktopBottomNav({ onCommandClick, onChatClick }: DesktopBottomNavProps) {
+export default function MobileBottomNav({ onCommandClick, onChatClick }: MobileBottomNavProps) {
   return (
     <motion.div
       initial={{ y: "100%" }}
@@ -18,7 +18,7 @@ export default function DesktopBottomNav({ onCommandClick, onChatClick }: Deskto
       transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
       className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40"
     >
-      <div className="bottom-nav-glow open">
+      <div className="mobile-bottom-nav-glow open">
         <span className="shine"></span><span className="shine shine-bottom"></span>
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>

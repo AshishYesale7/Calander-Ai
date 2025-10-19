@@ -34,7 +34,7 @@ import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
-import DesktopBottomNav from './DesktopBottomNav';
+import MobileBottomNav from './MobileBottomNav';
 
 
 function ChatAndCallUI() {
@@ -290,7 +290,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
             <DesktopCommandBar />
           )}
           {isMobile && !isCallViewActive && (
-            <DesktopBottomNav
+            <MobileBottomNav
               onCommandClick={() => setIsCommandPaletteOpen(true)}
               onChatClick={() => setIsChatSidebarOpen(true)}
             />
