@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion } from 'framer-motion';
@@ -35,6 +34,8 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
 
   return (
     <motion.div
+      drag
+      dragMomentum={false}
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
@@ -44,9 +45,9 @@ export default function DesktopCommandBar({ onOpenCommandPalette }: DesktopComma
       <div 
         ref={bottomNavRef}
         onClick={onOpenCommandPalette}
-        className="bottom-nav-glow open cursor-pointer"
+        className="bottom-nav-glow open cursor-grab active:cursor-grabbing"
       >
-        {/* These spans are for the glow effect. Both 'shine' elements now originate from the bottom. */}
+        {/* These spans are for the glow effect */}
         <span className="shine shine-bottom"></span><span className="shine shine-bottom" style={{ left: 'auto', right: 'calc(var(--border) * -1)', transform: 'scaleX(-1)' }}></span>
         <span className="glow glow-bottom"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright glow-bottom"></span><span className="glow glow-bright glow-bottom"></span>
