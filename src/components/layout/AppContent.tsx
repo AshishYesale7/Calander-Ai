@@ -127,6 +127,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const commandBarInputRef = useRef<HTMLInputElement>(null);
     const [isAiPaletteOpen, setIsAiPaletteOpen] = useState(false);
     const [navBarPosition, setNavBarPosition] = useState({ x: 0, y: 0 });
+    const GAP_BETWEEN_PALETTES = 4; // Reduced from 10
+    const NAVBAR_HEIGHT = 48; // Corresponds to h-12
+    const PALETTE_HEIGHT = 450;
+    const CLOSE_BUTTON_SIZE = 28; // Corresponds to h-7 w-7
 
     const isPaletteAbove = useMemo(() => {
         if (typeof window === 'undefined') return true;
@@ -332,20 +336,24 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                     modalProps={modalProps}
                     navBarPosition={navBarPosition}
                     isPaletteAbove={isPaletteAbove}
+                    gap={GAP_BETWEEN_PALETTES}
+                    paletteHeight={PALETTE_HEIGHT}
                 />
-                <Button 
-                  size="icon" 
-                  variant="secondary"
-                  onClick={() => setIsAiPaletteOpen(false)}
-                  className="fixed z-40 h-7 w-7 rounded-full shadow-lg"
-                  style={{
-                    top: isPaletteAbove ? navBarPosition.y - 10 - 14 : navBarPosition.y + 48 + 10 - 14,
-                    left: '50%',
-                    transform: 'translateX(calc(234px - 14px)) translateY(-50%)',
-                  }}
-                  aria-label="Close command palette"
+                 <Button
+                    size="icon"
+                    variant="secondary"
+                    onClick={() => setIsAiPaletteOpen(false)}
+                    className="fixed z-40 h-7 w-7 rounded-full shadow-lg"
+                    style={{
+                      top: isPaletteAbove
+                          ? navBarPosition.y - GAP_BETWEEN_PALETTES / 2
+                          : navBarPosition.y + NAVBAR_HEIGHT + GAP_BETWEEN_PALETTES / 2,
+                      left: '50%',
+                      transform: `translateX(calc(234px - ${CLOSE_BUTTON_SIZE / 2}px)) translateY(-50%)`,
+                    }}
+                    aria-label="Close command palette"
                 >
-                  <XCircle className="h-5 w-5" />
+                    <XCircle className="h-5 w-5" />
                 </Button>
                 </>
             )}
