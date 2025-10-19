@@ -29,13 +29,20 @@ interface CommandDialogProps extends DialogProps {}
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogContent 
+      <DialogContent
         className={cn(
           "overflow-hidden p-0 shadow-lg sm:max-w-md cmdk-dialog-glass"
         )}
       >
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
-        <Command>{children}</Command>
+        <div className="bottom-nav-glow open">
+          <span className="shine"></span><span className="shine shine-bottom"></span>
+          <span className="glow"></span><span className="glow glow-bottom"></span>
+          <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
+          <div className="inner !p-0">
+            <Command>{children}</Command>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
