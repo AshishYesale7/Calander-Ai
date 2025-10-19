@@ -78,7 +78,7 @@ export default function DesktopCommandBar() {
     >
       <motion.div 
         className="desktop-command-bar-glow open flex flex-col"
-        animate={{ height: isOpen ? '450px' : '56px' }}
+        animate={{ height: isOpen ? '450px' : 'auto' }} // Set height to auto
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
         <span className="shine"></span><span className="shine shine-bottom"></span>
@@ -105,13 +105,13 @@ export default function DesktopCommandBar() {
                 />
             )}
             
-            <div className="relative w-full h-14 flex px-4 text-gray-400 pt-2">
-              <div className="flex w-full">
-                <Search className="h-5 w-5 mr-3 mt-1" />
+            <div className="relative w-full flex items-start px-4 text-gray-400 py-2">
+              <div className="flex w-full items-start">
+                <Search className="h-5 w-5 mr-3 mt-1.5" />
                 <Input
                     ref={inputRef}
                     placeholder="How can Calendar.ai help?"
-                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto"
+                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => setIsOpen(true)}
