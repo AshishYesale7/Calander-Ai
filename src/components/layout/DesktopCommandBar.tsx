@@ -58,10 +58,10 @@ export default function DesktopCommandBar() {
   // Effect to center the component only on initial mount
   useEffect(() => {
     if (bottomNavRef.current) {
-        const { offsetWidth, offsetHeight } = bottomNavRef.current;
+        const { offsetWidth } = bottomNavRef.current;
         // Position it at the bottom center initially
         bottomNavRef.current.style.left = `${(window.innerWidth - offsetWidth) / 2}px`;
-        bottomNavRef.current.style.top = `${window.innerHeight - offsetHeight - 24}px`; // 24px from bottom (like bottom-6)
+        bottomNavRef.current.style.bottom = '24px'; // Anchor to bottom
     }
   }, []);
 
