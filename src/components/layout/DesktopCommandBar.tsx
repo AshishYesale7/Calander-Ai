@@ -1,24 +1,22 @@
 
 'use client';
 
-import { motion, type PanInfo } from 'framer-motion';
+import { motion, useDragControls } from 'framer-motion';
 import { Sparkles, ChevronDown, AudioLines, Search, XCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
 
-interface DesktopCommandBarProps {
-  // Props are removed as the component will now manage its own state.
-}
-
-export default function DesktopCommandBar({}: DesktopCommandBarProps) {
+export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const bottomNavRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const dragControls = useDragControls();
 
-  React.useEffect(() => {
+  // Effect for cycling through the glow colors
+  useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [
         { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
@@ -37,7 +35,7 @@ export default function DesktopCommandBar({}: DesktopCommandBarProps) {
     return () => clearInterval(colorInterval);
   }, []);
   
-  // Keyboard shortcut to open (Cmd/Ctrl + K)
+  // Effect for keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -46,7 +44,7 @@ export default function DesktopCommandBar({}: DesktopCommandBarProps) {
             if (!open) {
               setTimeout(() => inputRef.current?.focus(), 0);
             }
-            return true; // Always open on shortcut
+            return true;
         });
       }
       if (e.key === 'Escape') {
@@ -57,14 +55,28 @@ export default function DesktopCommandBar({}: DesktopCommandBarProps) {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // Effect to center the component only on initial mount
+  useEffect(() => {
+    if (bottomNavRef.current) {
+        const { offsetWidth } = bottomNavRef.current;
+        const xOffset = (window.innerWidth - offsetWidth) / 2;
+        // Position it at the bottom center initially
+        bottomNavRef.current.style.transform = `translateX(${xOffset}px)`;
+    }
+  }, []);
+
+
   return (
     <motion.div
+      ref={bottomNavRef}
       drag
+      dragListener={false} // We will start drag with the handle
+      onPointerDown={(e) => dragControls.start(e)}
+      dragControls={dragControls}
       dragMomentum={false}
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[468px] cursor-grab active:cursor-grabbing"
+      className="fixed bottom-6 left-0 z-40 w-[468px] cursor-grab active:cursor-grabbing"
     >
       <motion.div 
-        ref={bottomNavRef}
         className="bottom-nav-glow open flex flex-col"
         animate={{ height: isOpen ? '450px' : '56px' }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
@@ -105,6 +117,7 @@ export default function DesktopCommandBar({}: DesktopCommandBarProps) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => setIsOpen(true)}
+                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag from starting on input click
                 />
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
