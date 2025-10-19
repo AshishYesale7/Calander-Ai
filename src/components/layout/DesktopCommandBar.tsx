@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useDragControls } from 'framer-motion';
@@ -34,7 +33,7 @@ export default function DesktopCommandBar() {
     }, 3000);
     return () => clearInterval(colorInterval);
   }, []);
-  
+
   // Effect for keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
