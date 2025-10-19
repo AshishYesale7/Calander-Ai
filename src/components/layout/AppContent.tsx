@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -33,6 +34,7 @@ import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
+import AiAssistantChat from './AiAssistantChat';
 
 
 function ChatAndCallUI() {
@@ -117,13 +119,8 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [isMobileBottomNavVisible, setIsMobileBottomNavVisible] = useState(true);
-    const lastScrollY = useRef(0);
     
     const [search, setSearch] = useState('');
-    const commandBarInputRef = useRef<HTMLInputElement>(null);
-    const [isAiPaletteOpen, setIsAiPaletteOpen] = useState(false);
-    const [navBarPosition, setNavBarPosition] = useState({ x: 0, y: 0 });
 
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
@@ -176,22 +173,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   }, [user, loading, isSubscribed, pathname, toast, onboardingCompleted]);
 
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsCommandPaletteOpen((open) => !open);
-        setIsAiPaletteOpen(false);
-      }
-      if (e.key === "Escape") {
-        setIsAiPaletteOpen(false);
-      }
-    };
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
-  }, []);
-  
-
-  useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
@@ -199,24 +180,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
   
-  useEffect(() => {
-    const mainEl = mainScrollRef.current;
-    if (!mainEl) return;
-
-    const handleScroll = () => {
-      const currentScrollY = mainEl.scrollTop;
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-        setIsMobileBottomNavVisible(false);
-      } else {
-        setIsMobileBottomNavVisible(true);
-      }
-      lastScrollY.current = currentScrollY;
-    };
-
-    mainEl.addEventListener('scroll', handleScroll);
-    return () => mainEl.removeEventListener('scroll', handleScroll);
-  }, []);
-
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -324,20 +287,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         
         <AnimatePresence>
             {!isMobile && !isFullScreen && !isCallViewActive && (
-              <DesktopCommandBar 
-                onOpenCommandPalette={() => setIsAiPaletteOpen(true)}
-                search={search}
-                setSearch={setSearch}
-                inputRef={commandBarInputRef}
-                onDrag={(e, info) => {
-                    const newY = navBarPosition.y + info.delta.y;
-                    setNavBarPosition({ x: 0, y: newY });
-                }}
-                navBarPosition={navBarPosition}
-                isAiPaletteOpen={isAiPaletteOpen}
-                onOpenChange={setIsAiPaletteOpen}
-                modalProps={modalProps}
-              />
+              <DesktopCommandBar />
             )}
         </AnimatePresence>
         

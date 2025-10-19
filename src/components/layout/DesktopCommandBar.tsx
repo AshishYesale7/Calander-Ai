@@ -2,27 +2,21 @@
 'use client';
 
 import { motion, type PanInfo } from 'framer-motion';
-import { Sparkles, ChevronDown, AudioLines, Search } from 'lucide-react';
+import { Sparkles, ChevronDown, AudioLines, Search, XCircle } from 'lucide-react';
 import { Button } from '../ui/button';
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
+import AiAssistantChat from './AiAssistantChat';
 
 interface DesktopCommandBarProps {
-  onOpenCommandPalette: () => void;
-  search: string;
-  setSearch: (search: string) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
-  onDrag: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  // Props are removed as the component will now manage its own state.
 }
 
-export default function DesktopCommandBar({
-  onOpenCommandPalette,
-  search,
-  setSearch,
-  inputRef,
-  onDrag,
-}: DesktopCommandBarProps) {
+export default function DesktopCommandBar({}: DesktopCommandBarProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const bottomNavRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     let currentIndex = 0;
@@ -42,24 +36,66 @@ export default function DesktopCommandBar({
     }, 3000);
     return () => clearInterval(colorInterval);
   }, []);
+  
+  // Keyboard shortcut to open (Cmd/Ctrl + K)
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsOpen((open) => {
+            if (!open) {
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }
+            return true; // Always open on shortcut
+        });
+      }
+      if (e.key === 'Escape') {
+          setIsOpen(false);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   return (
     <motion.div
-      drag
-      onDrag={onDrag}
-      dragMomentum={false}
-      initial={{ y: 0, x: "-50%" }}
+      initial={{ y: 0 }}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[468px] cursor-grab active:cursor-grabbing"
     >
-      <div ref={bottomNavRef} className="bottom-nav-glow open">
+      <motion.div 
+        ref={bottomNavRef}
+        className="bottom-nav-glow open flex flex-col"
+        animate={{ height: isOpen ? '450px' : '56px' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      >
         <span className="shine"></span>
         <span className="shine shine-bottom"></span>
         <span className="glow"></span>
         <span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span>
         <span className="glow glow-bright glow-bottom"></span>
-        <div className="inner h-14 flex items-center">
-            <div className="relative w-full h-full flex items-center px-4 text-gray-400">
+
+        <div className="inner h-full !p-0 flex flex-col">
+            {isOpen && (
+              <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setIsOpen(false)}
+                  className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+                  aria-label="Close command palette"
+              >
+                  <XCircle className="h-5 w-5" />
+              </Button>
+            )}
+
+            {isOpen && (
+                <AiAssistantChat 
+                  initialPrompt={search} 
+                  onBack={() => setIsOpen(false)} 
+                />
+            )}
+            
+            <div className="relative w-full h-14 flex-shrink-0 flex items-center px-4 text-gray-400 mt-auto">
                 <Search className="h-5 w-5 mr-3" />
                 <Input
                     ref={inputRef}
@@ -67,8 +103,7 @@ export default function DesktopCommandBar({
                     className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    onFocus={onOpenCommandPalette}
-                    onClick={onOpenCommandPalette}
+                    onFocus={() => setIsOpen(true)}
                 />
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
@@ -82,7 +117,7 @@ export default function DesktopCommandBar({
                 </div>
             </div>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
