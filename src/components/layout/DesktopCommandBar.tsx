@@ -105,8 +105,8 @@ export default function DesktopCommandBar() {
                 />
             )}
             
-            <div className="relative w-full h-14 flex px-4 text-gray-400">
-              <div className="flex w-full pt-2">
+            <div className="relative w-full h-14 flex px-4 text-gray-400 pt-2">
+              <div className="flex w-full">
                 <Search className="h-5 w-5 mr-3 mt-1" />
                 <Input
                     ref={inputRef}
