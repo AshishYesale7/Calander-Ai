@@ -190,7 +190,7 @@ export function CommandListContent({
     }, [search, groups, isUserSearchMode]);
 
     return (
-        <>
+        
             <CommandList>
                 {isUserSearchMode ? (
                 <>
@@ -214,13 +214,13 @@ export function CommandListContent({
                 ) : (
                 <>
                     <CommandEmpty>
-                        {search.trim().length > 0 ? (
+                        {search.trim().length > 0 && !isUserSearchMode ? (
                             <div className="flex items-center justify-center p-6 gap-2 text-base text-muted-foreground">
                                 <CalendarAiLogo className="h-6 w-6" />
                                 <span>Press Enter to ask AI...</span>
                             </div>
                         ) : (
-                        <div className="py-6 text-center text-sm">No results found.</div>
+                          search.trim().length === 0 && <div className="py-6 text-center text-sm">No results found.</div>
                         )}
                     </CommandEmpty>
                     {filteredGroups.map((group, groupIndex) => (
@@ -251,7 +251,7 @@ export function CommandListContent({
                 </>
                 )}
             </CommandList>
-        </>
+        
     );
 }
 

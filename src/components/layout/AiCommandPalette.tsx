@@ -10,6 +10,7 @@ import type { TimelineEvent } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CommandListContent } from './CommandPalette';
 import { saveTimelineEvent } from '@/services/timelineService';
+import { Command } from '@/components/ui/command';
 
 interface AiCommandPaletteProps {
   onOpenChange: (isOpen: boolean) => void;
@@ -83,12 +84,14 @@ export default function AiCommandPalette({
             <span className="glow"></span><span className="glow glow-bottom"></span>
             <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
             <div className="inner !p-0">
-              <CommandListContent
-                  search={search}
-                  onSelectCommand={handleCommandSelect}
-                  onEventCreation={handleEventCreation}
-                  {...modalProps}
-              />
+              <Command>
+                <CommandListContent
+                    search={search}
+                    onSelectCommand={handleCommandSelect}
+                    onEventCreation={handleEventCreation}
+                    {...modalProps}
+                />
+              </Command>
             </div>
         </div>
     </motion.div>
