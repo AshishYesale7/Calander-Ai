@@ -58,10 +58,10 @@ export default function DesktopCommandBar() {
   // Effect to center the component only on initial mount
   useEffect(() => {
     if (bottomNavRef.current) {
-        const { offsetWidth } = bottomNavRef.current;
-        const xOffset = (window.innerWidth - offsetWidth) / 2;
+        const { offsetWidth, offsetHeight } = bottomNavRef.current;
         // Position it at the bottom center initially
-        bottomNavRef.current.style.transform = `translateX(${xOffset}px)`;
+        bottomNavRef.current.style.left = `${(window.innerWidth - offsetWidth) / 2}px`;
+        bottomNavRef.current.style.top = `${window.innerHeight - offsetHeight - 24}px`; // 24px from bottom (like bottom-6)
     }
   }, []);
 
@@ -70,23 +70,21 @@ export default function DesktopCommandBar() {
     <motion.div
       ref={bottomNavRef}
       drag
-      dragListener={false} // We will start drag with the handle
+      dragListener={false} 
       onPointerDown={(e) => dragControls.start(e)}
       dragControls={dragControls}
       dragMomentum={false}
-      className="fixed bottom-6 left-0 z-40 w-[468px] cursor-grab active:cursor-grabbing"
+      style={{ position: 'fixed', zIndex: 40 }}
+      className="w-[468px] cursor-grab active:cursor-grabbing"
     >
       <motion.div 
         className="bottom-nav-glow open flex flex-col"
         animate={{ height: isOpen ? '450px' : '56px' }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
-        <span className="shine"></span>
-        <span className="shine shine-bottom"></span>
-        <span className="glow"></span>
-        <span className="glow glow-bottom"></span>
-        <span className="glow glow-bright"></span>
-        <span className="glow glow-bright glow-bottom"></span>
+        <span className="shine"></span><span className="shine shine-bottom"></span>
+        <span className="glow"></span><span className="glow glow-bottom"></span>
+        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
 
         <div className="inner h-full !p-0 flex flex-col">
             {isOpen && (
