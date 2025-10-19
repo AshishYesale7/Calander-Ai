@@ -61,7 +61,7 @@ export default function DesktopCommandBar({}: DesktopCommandBarProps) {
     <motion.div
       drag
       dragMomentum={false}
-      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-[468px] cursor-grab active:cursor-grabbing"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[468px] cursor-grab active:cursor-grabbing"
     >
       <motion.div 
         ref={bottomNavRef}
