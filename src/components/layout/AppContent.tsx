@@ -339,9 +339,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                   onClick={() => setIsAiPaletteOpen(false)}
                   className="fixed z-40 h-7 w-7 rounded-full shadow-lg"
                   style={{
-                    top: isPaletteAbove ? navBarPosition.y - 450 - 10 - 28 : navBarPosition.y - 28,
+                    top: isPaletteAbove ? navBarPosition.y - 10 - 14 : navBarPosition.y + 48 + 10 - 14,
                     left: '50%',
-                    transform: 'translateX(calc(234px - 14px))',
+                    transform: 'translateX(calc(234px - 14px)) translateY(-50%)',
                   }}
                   aria-label="Close command palette"
                 >
@@ -408,4 +408,3 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
-
