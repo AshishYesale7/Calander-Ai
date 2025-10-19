@@ -59,7 +59,7 @@ export default function DesktopCommandBar({ onOpenCommandPalette, search, setSea
              <Input
                 ref={inputRef}
                 placeholder="How can Calendar.ai help?"
-                className="flex-1 bg-transparent border-none text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                className="flex-1 bg-black border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={onOpenCommandPalette}
