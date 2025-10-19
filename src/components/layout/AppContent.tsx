@@ -27,7 +27,7 @@ import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
 import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
 import { Button } from '../ui/button';
-import { Command, MessageSquare } from 'lucide-react';
+import { Command, MessageSquare, XCircle } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
 import ReclamationModal from '@/components/auth/ReclamationModal';
@@ -324,6 +324,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         
         <AnimatePresence>
             {!isMobile && isAiPaletteOpen && (
+                <>
                 <AiCommandPalette
                     onOpenChange={setIsAiPaletteOpen}
                     search={search}
@@ -332,6 +333,21 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                     navBarPosition={navBarPosition}
                     isPaletteAbove={isPaletteAbove}
                 />
+                <Button 
+                  size="icon" 
+                  variant="secondary"
+                  onClick={() => setIsAiPaletteOpen(false)}
+                  className="fixed z-40 h-7 w-7 rounded-full shadow-lg"
+                  style={{
+                    top: isPaletteAbove ? navBarPosition.y - 450 - 10 - 28 : navBarPosition.y - 28,
+                    left: '50%',
+                    transform: 'translateX(calc(234px - 14px))',
+                  }}
+                  aria-label="Close command palette"
+                >
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                </>
             )}
         </AnimatePresence>
 
@@ -392,3 +408,4 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
+
