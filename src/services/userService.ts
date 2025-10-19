@@ -512,29 +512,15 @@ export async function anonymizeUserAccount(userId: string): Promise<void> {
       throw new Error("Admin Firestore not initialized.");
     }
     const userDocRef = adminDb.collection('users').doc(userId);
-    const privateDataRef = userDocRef.collection('_private').doc('profileBackup');
     const deletionDate = addDays(new Date(), 30);
 
     const docSnap = await userDocRef.get();
     if (!docSnap.exists) {
         throw new Error("User profile not found to anonymize.");
     }
-    const currentData = docSnap.data()!;
-
-    // Backup original data to a private subcollection
-    const backupData = {
-        originalDisplayName: currentData.displayName || null,
-        originalPhotoURL: currentData.photoURL || null,
-        originalCoverPhotoURL: currentData.coverPhotoURL || null,
-        originalBio: currentData.bio || null,
-        originalSocials: currentData.socials || null,
-        originalStatusEmoji: currentData.statusEmoji || null,
-        originalCountryCode: currentData.countryCode || null,
-    };
-    await privateDataRef.set(backupData);
-
+    
     // Update the main document to set the deletion status and scheduled date.
-    // We no longer clear the data at this stage.
+    // This no longer clears the main profile data immediately.
     await userDocRef.update({
         deletionStatus: 'PENDING_DELETION',
         deletionScheduledAt: Timestamp.fromDate(deletionDate),
@@ -545,48 +531,11 @@ export async function reclaimUserAccount(userId: string): Promise<void> {
     if (!adminDb) throw new Error("Admin Firestore not initialized.");
     
     const userDocRef = adminDb.collection('users').doc(userId);
-    const privateDataRef = userDocRef.collection('_private').doc('profileBackup');
-
-    const backupDocSnap = await privateDataRef.get();
-    if (!backupDocSnap.exists) {
-        // If there's no backup, it's safe to just remove the deletion flags.
-        // This handles edge cases where the backup might have failed.
-        await userDocRef.update({
-            deletionStatus: adminFieldValue.delete(),
-            deletionScheduledAt: adminFieldValue.delete(),
-        });
-        return;
-    }
-    const backupData = backupDocSnap.data()!;
     
-    const userDocSnap = await userDocRef.get();
-    if (!userDocSnap.exists) {
-        throw new Error("User document does not exist for reclamation.");
-    }
-    const currentUserData = userDocSnap.data()!;
-
-    const restoredData: any = {
-        displayName: backupData.originalDisplayName,
-        photoURL: backupData.originalPhotoURL,
-        coverPhotoURL: backupData.originalCoverPhotoURL,
-        bio: backupData.originalBio,
-        socials: backupData.originalSocials,
-        statusEmoji: backupData.originalStatusEmoji,
-        countryCode: backupData.originalCountryCode,
+    await userDocRef.update({
         deletionStatus: adminFieldValue.delete(),
         deletionScheduledAt: adminFieldValue.delete(),
-    };
-    
-    // Rebuild the search index
-    const indexSet = new Set<string>();
-    if (backupData.originalDisplayName) indexSet.add(backupData.originalDisplayName.toLowerCase());
-    if (currentUserData.username) indexSet.add(currentUserData.username.toLowerCase());
-    restoredData.searchableIndex = Array.from(indexSet);
-
-    await userDocRef.update(restoredData);
-
-    // Clean up the private recovery data
-    await privateDataRef.delete();
+    });
 }
     
 export async function permanentlyDeleteUserData(userId: string): Promise<void> {
@@ -661,4 +610,69 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
         };
         await setDoc(userDocRef, finalUserData);
     }
+}
+
+
+/**
+ * Deletes all user-generated content from subcollections and resets specific user document fields,
+ * but preserves the user account and subscription status.
+ */
+export async function formatUserData(userId: string): Promise<void> {
+    if (!db) throw new Error("Firestore not initialized.");
+
+    const batch = writeBatch(db);
+
+    const collectionsToClear = [
+        'activityLogs',
+        'careerGoals',
+        'careerVisions',
+        'dailyPlans',
+        'fcmTokens', // Keeping these might be desired, but for a full format, we clear them.
+        'notifications',
+        'resources',
+        'skills',
+        'timelineEvents',
+        'trackedKeywords',
+        'calls',
+    ];
+
+    // 1. Delete all documents in simple subcollections
+    for (const collectionName of collectionsToClear) {
+        const collectionRef = collection(db, 'users', userId, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    }
+    
+    // 2. Handle nested 'chats' collection separately
+    const chatsCollectionRef = collection(db, 'users', userId, 'chats');
+    const chatsSnapshot = await getDocs(chatsCollectionRef);
+    for (const chatDoc of chatsSnapshot.docs) {
+        const messagesCollectionRef = collection(chatDoc.ref, 'messages');
+        const messagesSnapshot = await getDocs(messagesCollectionRef);
+        messagesSnapshot.docs.forEach(msgDoc => batch.delete(msgDoc.ref));
+        batch.delete(chatDoc.ref);
+    }
+
+    // 3. Delete the separate streak document
+    const streakDocRef = doc(db, 'streaks', userId);
+    batch.delete(streakDocRef);
+
+    // 4. Reset fields on the main user document, PRESERVING subscription data.
+    const userDocRef = doc(db, 'users', userId);
+    batch.update(userDocRef, {
+        bio: '',
+        'socials.github': '',
+        'socials.linkedin': '',
+        'socials.twitter': '',
+        statusEmoji: null,
+        countryCode: null,
+        coverPhotoURL: null,
+        geminiApiKey: null,
+        installedPlugins: [],
+        'preferences.routine': [],
+        codingUsernames: {},
+        // The 'subscription' field is intentionally omitted to preserve it.
+    });
+
+    await batch.commit();
 }
