@@ -34,7 +34,7 @@ import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
-import AiAssistantChat from './AiAssistantChat';
+import DesktopBottomNav from './DesktopBottomNav';
 
 
 function ChatAndCallUI() {
@@ -286,9 +286,15 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         />
         
         <AnimatePresence>
-            {!isMobile && !isFullScreen && !isCallViewActive && (
-              <DesktopCommandBar />
-            )}
+          {!isMobile && (
+            <DesktopCommandBar />
+          )}
+          {isMobile && !isCallViewActive && (
+            <DesktopBottomNav
+              onCommandClick={() => setIsCommandPaletteOpen(true)}
+              onChatClick={() => setIsChatSidebarOpen(true)}
+            />
+          )}
         </AnimatePresence>
         
         <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
