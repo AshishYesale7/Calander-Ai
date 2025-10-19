@@ -26,8 +26,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
 import OfflineIndicator from '@/components/layout/OfflineIndicator';
 import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/chat/ChatPanel';
-import { Button } from '../ui/button';
-import { Command, MessageSquare, XCircle } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
 import ReclamationModal from '@/components/auth/ReclamationModal';
 import DesktopChatSidebar from './DesktopChatSidebar';
@@ -110,6 +108,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     useStreakTracker();
     
     const mainScrollRef = useRef<HTMLDivElement>(null);
+    const bottomNavRef = useRef<HTMLDivElement>(null);
     
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -119,9 +118,11 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    
-    const [search, setSearch] = useState('');
+    const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
 
+    const [search, setSearch] = useState('');
+    
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
     const { 
@@ -171,6 +172,49 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       }
     }
   }, [user, loading, isSubscribed, pathname, toast, onboardingCompleted]);
+
+  useEffect(() => {
+    let currentIndex = 0;
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
+        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
+        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
+        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
+    ];
+    const colorInterval = setInterval(() => {
+        const navElement = bottomNavRef.current;
+        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+        const nextColor = colorPairs[currentIndex];
+        if (navElement) {
+            navElement.style.setProperty('--hue1', String(nextColor.hue1));
+            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        if (cmdkElement) {
+            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
+            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+        currentIndex = (currentIndex + 1) % colorPairs.length;
+    }, 3000);
+    return () => clearInterval(colorInterval);
+  }, []);
+  
+  useEffect(() => {
+    const mainEl = mainScrollRef.current;
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      const currentScrollY = mainEl.scrollTop;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsBottomNavVisible(false);
+      } else {
+        setIsBottomNavVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    mainEl.addEventListener('scroll', handleScroll);
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleFullScreenChange = () => {
@@ -286,15 +330,15 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         />
         
         <AnimatePresence>
-          {!isMobile && (
-            <DesktopCommandBar />
-          )}
-          {isMobile && !isCallViewActive && (
-            <MobileBottomNav
-              onCommandClick={() => setIsCommandPaletteOpen(true)}
-              onChatClick={() => setIsChatSidebarOpen(true)}
-            />
-          )}
+          {!isMobile && isFullScreen && <DesktopCommandBar />}
+
+          {isMobile && isBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
+                 <MobileBottomNav
+                    onCommandClick={() => setIsCommandPaletteOpen(true)}
+                    onChatClick={() => setIsChatSidebarOpen(true)}
+                    bottomNavRef={bottomNavRef}
+                 />
+            )}
         </AnimatePresence>
         
         <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
