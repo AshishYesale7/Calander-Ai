@@ -110,7 +110,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     useStreakTracker();
     
     const mainScrollRef = useRef<HTMLDivElement>(null);
-    const bottomNavRef = useRef<HTMLDivElement>(null);
     
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -123,6 +122,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isMobileBottomNavVisible, setIsMobileBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
     
+    // State lifted from CommandPalette
+    const [search, setSearch] = useState('');
+    const commandBarInputRef = useRef<HTMLInputElement>(null);
+
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
     const { 
@@ -184,30 +187,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return () => document.removeEventListener('keydown', down);
   }, []);
   
-  useEffect(() => {
-    let currentIndex = 0;
-    const colorPairs = [
-        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
-        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
-        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
-        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
-    ];
-    const colorInterval = setInterval(() => {
-        const navElement = bottomNavRef.current;
-        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
-        const nextColor = colorPairs[currentIndex];
-        if (navElement) {
-            navElement.style.setProperty('--hue1', String(nextColor.hue1));
-            navElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-        if (cmdkElement) {
-            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
-            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
-        }
-        currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 3000);
-    return () => clearInterval(colorInterval);
-  }, []);
 
   useEffect(() => {
     const handleFullScreenChange = () => {
@@ -331,7 +310,13 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         )}
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
-        <CommandPalette isOpen={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} {...modalProps} />
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen} 
+          onOpenChange={setIsCommandPaletteOpen} 
+          search={search}
+          setSearch={setSearch}
+          {...modalProps} 
+        />
         
         {/* Mobile bottom nav - logic remains unchanged */}
         <AnimatePresence>
@@ -340,10 +325,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                     transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
                     className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
                  >
-                    <div ref={bottomNavRef} className="bottom-nav-glow open">
-                        <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
-                        <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
-                        <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>
+                    <div className="bottom-nav-glow open">
+                        <span className="shine"></span><span className="shine shine-bottom"></span>
+                        <span className="glow"></span><span className="glow glow-bottom"></span>
+                        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
                         <div className="inner">
                           <div className="flex items-center justify-around w-full">
                             <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open command palette">
@@ -361,16 +346,13 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
 
         {/* Separated logic for Desktop nav bars */}
         <AnimatePresence>
-            {!isMobile && isFullScreen && !isCallViewActive && (
-                 <DesktopBottomNav
-                    onCommandClick={() => setIsCommandPaletteOpen(true)}
-                    onChatClick={() => setIsChatSidebarOpen(true)}
-                  />
-            )}
-        </AnimatePresence>
-        <AnimatePresence>
             {!isMobile && !isFullScreen && !isCallViewActive && (
-              <DesktopCommandBar onOpenCommandPalette={() => {}} />
+              <DesktopCommandBar 
+                onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+                search={search}
+                setSearch={setSearch}
+                inputRef={commandBarInputRef}
+              />
             )}
         </AnimatePresence>
         
