@@ -127,7 +127,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const commandBarInputRef = useRef<HTMLInputElement>(null);
     const [isAiPaletteOpen, setIsAiPaletteOpen] = useState(false);
     const [navBarPosition, setNavBarPosition] = useState({ x: 0, y: 0 });
-    const GAP_BETWEEN_PALETTES = 4;
+    const GAP_BETWEEN_PALETTES = 0;
     const NAVBAR_HEIGHT = 48; // h-12
     const PALETTE_HEIGHT = 450;
     const CLOSE_BUTTON_SIZE = 28; // h-7 w-7
