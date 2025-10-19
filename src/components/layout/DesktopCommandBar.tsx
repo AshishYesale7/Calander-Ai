@@ -59,7 +59,6 @@ export default function DesktopCommandBar() {
   useEffect(() => {
     if (bottomNavRef.current) {
         const { offsetWidth } = bottomNavRef.current;
-        // Position it at the bottom center initially
         bottomNavRef.current.style.left = `${(window.innerWidth - offsetWidth) / 2}px`;
         bottomNavRef.current.style.bottom = '24px';
     }
@@ -106,18 +105,19 @@ export default function DesktopCommandBar() {
                 />
             )}
             
-            <div className="relative w-full h-14 flex-shrink-0 flex px-4 text-gray-400">
-                <Search className="h-5 w-5 mr-3 self-center" />
+            <div className="relative w-full h-14 flex px-4 text-gray-400">
+              <div className="flex w-full items-start pt-2">
+                <Search className="h-5 w-5 mr-3 mt-1" />
                 <Input
                     ref={inputRef}
                     placeholder="How can Calendar.ai help?"
-                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto self-center pb-1"
+                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => setIsOpen(true)}
                     onPointerDown={(e) => e.stopPropagation()} // Prevent drag from starting on input click
                 />
-                <div className="flex items-center gap-2 self-center">
+                <div className="flex items-center gap-2 mt-1">
                     <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
                         <Sparkles className="h-4 w-4 mr-1.5" />
                         Auto
@@ -127,6 +127,7 @@ export default function DesktopCommandBar() {
                         <AudioLines className="h-5 w-5" />
                     </div>
                 </div>
+              </div>
             </div>
         </div>
       </motion.div>
