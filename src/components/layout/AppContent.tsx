@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -29,13 +28,11 @@ import { ChatPanelHeader, ChatPanelBody, ChatPanelFooter } from '@/components/ch
 import { Button } from '../ui/button';
 import { Command, MessageSquare, XCircle } from 'lucide-react';
 import MobileMiniChatSidebar from '@/components/layout/MobileMiniChatSidebar';
-import DesktopBottomNav from '@/components/layout/DesktopBottomNav';
 import ReclamationModal from '@/components/auth/ReclamationModal';
 import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
-import AiCommandPalette from './AiCommandPalette';
 
 
 function ChatAndCallUI() {
@@ -127,15 +124,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const commandBarInputRef = useRef<HTMLInputElement>(null);
     const [isAiPaletteOpen, setIsAiPaletteOpen] = useState(false);
     const [navBarPosition, setNavBarPosition] = useState({ x: 0, y: 0 });
-    const GAP_BETWEEN_PALETTES = 0;
-    const NAVBAR_HEIGHT = 48; // h-12
-    const PALETTE_HEIGHT = 450;
-    const CLOSE_BUTTON_SIZE = 28; // h-7 w-7
-
-    const isPaletteAbove = useMemo(() => {
-        if (typeof window === 'undefined') return true;
-        return navBarPosition.y > window.innerHeight / 2;
-    }, [navBarPosition.y]);
 
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
@@ -326,21 +314,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
 
         <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
         
-        <AnimatePresence>
-            {!isMobile && isAiPaletteOpen && (
-                <AiCommandPalette
-                    onOpenChange={setIsAiPaletteOpen}
-                    search={search}
-                    setSearch={setSearch}
-                    modalProps={modalProps}
-                    navBarPosition={navBarPosition}
-                    isPaletteAbove={isPaletteAbove}
-                    gap={GAP_BETWEEN_PALETTES}
-                    paletteHeight={PALETTE_HEIGHT}
-                />
-            )}
-        </AnimatePresence>
-
         <CommandPalette 
           isOpen={isCommandPaletteOpen} 
           onOpenChange={setIsCommandPaletteOpen} 
@@ -349,31 +322,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           {...modalProps} 
         />
         
-        <AnimatePresence>
-            {isMobile && isMobileBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
-                 <motion.div initial={{ y: "100%" }} animate={{ y: "0%" }} exit={{ y: "100%" }}
-                    transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-                    className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
-                 >
-                    <div className="bottom-nav-glow open">
-                        <span className="shine"></span><span className="shine shine-bottom"></span>
-                        <span className="glow"></span><span className="glow glow-bottom"></span>
-                        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
-                        <div className="inner">
-                          <div className="flex items-center justify-around w-full">
-                            <button onClick={() => setIsCommandPaletteOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open command palette">
-                                <Command className="h-5 w-5" /><span className="text-xs">Search</span>
-                            </button>
-                            <button onClick={() => setIsChatSidebarOpen(true)} className="flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 hover:text-foreground transition-colors" aria-label="Open chat">
-                                <MessageSquare className="h-5 w-5" /><span className="text-xs">Chats</span>
-                            </button>
-                          </div>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-
         <AnimatePresence>
             {!isMobile && !isFullScreen && !isCallViewActive && (
               <DesktopCommandBar 
@@ -385,6 +333,10 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                     const newY = navBarPosition.y + info.delta.y;
                     setNavBarPosition({ x: 0, y: newY });
                 }}
+                navBarPosition={navBarPosition}
+                isAiPaletteOpen={isAiPaletteOpen}
+                onOpenChange={setIsAiPaletteOpen}
+                modalProps={modalProps}
               />
             )}
         </AnimatePresence>
