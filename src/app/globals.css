@@ -5,6 +5,12 @@
 
 body {
   font-family: var(--font-inter), sans-serif;
+  /* Disable text selection and callouts as requested */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 @layer base {
@@ -225,6 +231,10 @@ body {
     to { --border-angle: 360deg; }
 }
 
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: var(--foreground) }
+}
 
 .cmdk-dialog-glass [cmdk-input-wrapper] {
   @apply border-white/10;
@@ -753,3 +763,5 @@ body {
 [data-theme='wood'] .timetable-event-card .text-accent {
   color: #8c6a4d !important;
 }
+
+  

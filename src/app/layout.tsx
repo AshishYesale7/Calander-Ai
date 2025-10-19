@@ -130,6 +130,58 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Effect to disable right-click, copy, and certain keyboard shortcuts
+  useEffect(() => {
+    const disabledEvent = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+    };
+
+    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+    const handleCopy = (e: ClipboardEvent) => e.preventDefault();
+    const handleCut = (e: ClipboardEvent) => e.preventDefault();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        // "I" key (Ctrl+Shift+I)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+            disabledEvent(e);
+        }
+        // "J" key (Ctrl+Shift+J)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+            disabledEvent(e);
+        }
+        // "S" key (Ctrl+S or Cmd+S)
+        if (e.keyCode === 83 && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) {
+            disabledEvent(e);
+        }
+        // "U" key (Ctrl+U)
+        if (e.ctrlKey && e.keyCode === 85) {
+            disabledEvent(e);
+        }
+        // "F12" key
+        if (e.keyCode === 123) {
+            disabledEvent(e);
+        }
+        // "C" key (Ctrl+C)
+        if (e.ctrlKey && e.keyCode === 67) {
+            disabledEvent(e);
+        }
+    };
+    
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('keydown', handleKeyDown, false);
+
+    return () => {
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('copy', handleCopy);
+        document.removeEventListener('cut', handleCut);
+        document.removeEventListener('keydown', handleKeyDown, false);
+    };
+  }, []);
+
   return <>{children}</>;
 }
 
@@ -193,3 +245,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+  
