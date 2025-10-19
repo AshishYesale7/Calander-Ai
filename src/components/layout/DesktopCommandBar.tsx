@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
+import { cn } from '@/lib/utils';
 
 export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,13 +78,13 @@ export default function DesktopCommandBar() {
       className="w-[468px] cursor-grab active:cursor-grabbing"
     >
       <motion.div 
-        className="desktop-command-bar-glow open flex flex-col"
-        animate={{ height: isOpen ? '450px' : 'auto' }} // Set height to auto
+        className={cn("desktop-command-bar-glow flex flex-col", isOpen && 'open')}
+        animate={{ height: isOpen ? '450px' : 'auto' }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
-        <span className="shine"></span><span className="shine shine-bottom"></span>
-        <span className="glow"></span><span className="glow glow-bottom"></span>
-        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
+        <span className="shine-bottom"></span>
+        <span className="glow-bottom"></span>
+        <span className="glow-bright glow-bottom"></span>
 
         <div className="inner h-full !p-0 flex flex-col">
             {isOpen && (
