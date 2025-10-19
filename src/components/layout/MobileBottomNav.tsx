@@ -20,7 +20,7 @@ export default function MobileBottomNav({ onCommandClick, onChatClick, bottomNav
       transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
       className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
     >
-      <div ref={bottomNavRef} className="bottom-nav-glow open">
+      <div ref={bottomNavRef} className="mobile-bottom-nav-glow open">
           <span className="shine shine-top"></span><span className="shine shine-bottom"></span>
           <span className="glow glow-top"></span><span className="glow glow-bottom"></span>
           <span className="glow glow-bright glow-top"></span><span className="glow glow-bright glow-bottom"></span>

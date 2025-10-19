@@ -106,12 +106,12 @@ export default function DesktopCommandBar() {
                 />
             )}
             
-            <div className="relative w-full h-14 flex-shrink-0 flex px-4 text-gray-400 mt-auto">
+            <div className="relative w-full h-14 flex-shrink-0 flex px-4 text-gray-400">
                 <Search className="h-5 w-5 mr-3 self-center" />
                 <Input
                     ref={inputRef}
                     placeholder="How can Calendar.ai help?"
-                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto self-center"
+                    className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto self-center pb-1"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => setIsOpen(true)}
