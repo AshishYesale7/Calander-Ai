@@ -4,6 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Command } from '@/components/ui/command';
 import { CommandListContent } from './CommandPalette';
+import { Button } from '../ui/button';
+import { XCircle } from 'lucide-react';
 
 interface AiCommandPaletteProps {
   onOpenChange: (isOpen: boolean) => void;
@@ -48,7 +50,16 @@ export default function AiCommandPalette({
             <span className="shine"></span><span className="shine shine-bottom"></span>
             <span className="glow"></span><span className="glow glow-bottom"></span>
             <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
-            <div className="inner !p-0">
+            <div className="inner !p-0 relative">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="absolute top-2 right-2 z-10 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+                aria-label="Close command palette"
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
               <Command>
                  <CommandListContent
                     search={search}
