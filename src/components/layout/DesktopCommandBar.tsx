@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, type PanInfo } from 'framer-motion';
@@ -49,9 +48,12 @@ export default function DesktopCommandBar({ onOpenCommandPalette, search, setSea
         ref={bottomNavRef}
         className="bottom-nav-glow open"
       >
-        <span className="shine shine-bottom"></span><span className="shine shine-bottom" style={{ left: 'auto', right: 'calc(var(--border) * -1)', transform: 'scaleX(-1)' }}></span>
-        <span className="glow glow-bottom"></span><span className="glow glow-bottom"></span>
-        <span className="glow glow-bright glow-bottom"></span><span className="glow glow-bright glow-bottom"></span>
+        <span className="shine shine-bottom"></span>
+        <span className="shine shine-bottom" style={{ left: 'auto', right: 'calc(var(--border) * -1)', transform: 'scaleX(-1)' }}></span>
+        <span className="glow glow-bottom"></span>
+        <span className="glow glow-bottom"></span>
+        <span className="glow glow-bright glow-bottom"></span>
+        <span className="glow glow-bright glow-bottom"></span>
 
         <div className="inner h-12">
           <div className="relative w-full h-full flex items-center px-4 text-gray-400">
@@ -59,7 +61,7 @@ export default function DesktopCommandBar({ onOpenCommandPalette, search, setSea
              <Input
                 ref={inputRef}
                 placeholder="How can Calendar.ai help?"
-                className="flex-1 bg-black border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto"
+                className="flex-1 bg-transparent focus:bg-black border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={onOpenCommandPalette}
