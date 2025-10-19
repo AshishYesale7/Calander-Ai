@@ -1,11 +1,12 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { CareerGoal, Skill, CareerVisionHistoryItem, ResourceLink } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2, FileText, BarChart } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Bot, CheckCircle, Lightbulb, Map, BookOpen, Link as LinkIconLucide, Share2, Palette, ExternalLink, ArrowRight, PlusCircle, History, Trash2, FileText, BarChart, Target, Edit3, CalendarDays } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { generateCareerVision, type GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
@@ -23,14 +24,46 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/AuthContext';
-import { saveCareerGoal } from '@/services/careerGoalsService';
+import { getCareerGoals, saveCareerGoal, deleteCareerGoal } from '@/services/careerGoalsService';
 import { saveSkill } from '@/services/skillsService';
 import { getCareerVisionHistory, saveCareerVision, deleteCareerVision } from '@/services/careerVisionService';
 import { saveBookmarkedResource } from '@/services/resourcesService';
-import { formatDistanceToNow } from 'date-fns';
+import { logUserActivity } from '@/services/activityLogService';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import CareerRoadmapChart from '@/components/career-vision/CareerRoadmapChart';
+import { Progress } from '@/components/ui/progress';
+import EditGoalModal from '@/components/career-goals/EditGoalModal';
+
+const CAREER_GOALS_STORAGE_KEY = 'futureSightCareerGoals';
+
+// --- Career Goals Logic ---
+
+const syncGoalsToLocalStorage = (data: CareerGoal[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const serializableGoals = data.map(g => ({...g, deadline: g.deadline?.toISOString()}));
+    localStorage.setItem(CAREER_GOALS_STORAGE_KEY, JSON.stringify(serializableGoals));
+  } catch (error) {
+    console.error("Failed to save goals to local storage", error);
+  }
+};
+
+const loadGoalsFromLocalStorage = (): CareerGoal[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const storedGoals = localStorage.getItem(CAREER_GOALS_STORAGE_KEY);
+    if (storedGoals) {
+      const parsedGoals: (Omit<CareerGoal, 'deadline'> & { deadline?: string })[] = JSON.parse(storedGoals);
+      return parsedGoals.map(g => ({...g, deadline: g.deadline ? new Date(g.deadline) : undefined}));
+    }
+  } catch (error) {
+    console.error("Failed to load goals from local storage", error);
+  }
+  return [];
+};
+
 
 const getResourceIcon = (category: ResourceLink['category']) => {
   switch (category) {
@@ -60,6 +93,42 @@ export default function CareerVisionPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
 
+  // --- Career Goals State ---
+  const [goals, setGoals] = useState<CareerGoal[]>(loadGoalsFromLocalStorage);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<CareerGoal | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // --- Career Goals Effects ---
+  useEffect(() => {
+    const syncWithFirestore = async () => {
+      if (user) {
+        try {
+          const firestoreGoals = await getCareerGoals(user.uid);
+          setGoals(firestoreGoals);
+          syncGoalsToLocalStorage(firestoreGoals);
+        } catch (error: any) {
+           if (error.message.includes('Failed to fetch')) {
+             console.warn("Could not sync goals, likely offline.");
+           } else {
+            console.error("Failed to fetch from Firestore, using local data.", error);
+            toast({ title: "Sync Error", description: "Could not sync goals.", variant: "destructive"});
+           }
+        }
+      }
+    };
+    syncWithFirestore();
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'newGoal') {
+      handleOpenGoalModal(null);
+      router.replace('/career-vision', { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  // --- Career Vision Effects ---
   useEffect(() => {
     if (user) {
       setIsHistoryLoading(true);
@@ -70,7 +139,81 @@ export default function CareerVisionPage() {
     }
   }, [user, toast]);
 
+  // --- Career Goals Handlers ---
+  const handleOpenGoalModal = (goal: CareerGoal | null) => {
+    setEditingGoal(goal);
+    setIsGoalModalOpen(true);
+  };
+  
+  const handleDeleteGoal = async (goalId: string) => {
+    const originalGoals = goals;
+    const goalToDelete = originalGoals.find(g => g.id === goalId);
+    if (!goalToDelete) return;
+    
+    const newGoals = goals.filter(goal => goal.id !== goalId);
+    setGoals(newGoals); // Optimistic update
+    
+    toast({ title: "Goal Deleted", description: "The career goal has been successfully removed." });
+    
+    syncGoalsToLocalStorage(newGoals);
 
+    if (user) {
+      try {
+        await deleteCareerGoal(user.uid, goalId);
+        await logUserActivity(user.uid, 'goal_deleted', { id: goalId, title: goalToDelete.title });
+      } catch (error) {
+        console.error("Failed to delete goal from Firestore", error);
+        toast({ title: "Sync Error", description: "Failed to delete goal from the server. It is removed locally.", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleSaveGoal = async (goalToSave: CareerGoal) => {
+    const originalGoals = goals;
+    const isEditing = goals.some(g => g.id === goalToSave.id);
+    let newGoals: CareerGoal[];
+
+    if (isEditing) {
+      newGoals = goals.map(g => g.id === goalToSave.id ? goalToSave : g);
+      toast({ title: "Goal Updated", description: "Your career goal has been successfully updated." });
+    } else {
+      newGoals = [...goals, goalToSave];
+      toast({ title: "Goal Added", description: "A new career goal has been successfully added." });
+    }
+
+    setGoals(newGoals); // Optimistic update
+    setIsGoalModalOpen(false);
+    setEditingGoal(null);
+
+    syncGoalsToLocalStorage(newGoals);
+
+    if (user) {
+        try {
+            const payload = {
+              ...goalToSave,
+              deadline: goalToSave.deadline ? goalToSave.deadline.toISOString() : null,
+            };
+            await saveCareerGoal(user.uid, payload);
+            
+            const previousGoal = originalGoals.find(g => g.id === goalToSave.id);
+            if (isEditing) {
+                if (goalToSave.progress === 100 && (!previousGoal || previousGoal.progress < 100)) {
+                    await logUserActivity(user.uid, 'goal_completed', { id: goalToSave.id, title: goalToSave.title });
+                } else {
+                    await logUserActivity(user.uid, 'goal_updated', { id: goalToSave.id, title: goalToSave.title, progress: goalToSave.progress });
+                }
+            } else {
+                await logUserActivity(user.uid, 'goal_added', { id: goalToSave.id, title: goalToSave.title });
+            }
+
+        } catch (error) {
+            console.error("Failed to save goal to Firestore", error);
+            toast({ title: "Sync Error", description: "Could not save goal to the server. Your changes are saved locally.", variant: "destructive" });
+        }
+    }
+  };
+
+  // --- Career Vision Handlers ---
   const handleGenerateVision = async () => {
     if (!userInput.trim()) {
         toast({
@@ -90,11 +233,10 @@ export default function CareerVisionPage() {
       const result = await generateCareerVision({ aspirations: userInput, apiKey });
       setCareerPlan(result);
 
-      // Save to history
       if (user) {
         const newHistoryItem = await saveCareerVision(user.uid, userInput, result);
         setVisionHistory(prev => [newHistoryItem, ...prev]);
-        setSelectedHistoryId(newHistoryItem.id); // Select the newly created one
+        setSelectedHistoryId(newHistoryItem.id);
       }
 
     } catch (error) {
@@ -123,51 +265,36 @@ export default function CareerVisionPage() {
     }
   };
 
-  const handleAddGoal = async (roadmapStep: GenerateCareerVisionOutput['roadmap'][0]) => {
+  const handleAddRoadmapGoal = async (roadmapStep: GenerateCareerVisionOutput['roadmap'][0]) => {
     if (!user) return;
     const goalId = `goal-${roadmapStep.step}`;
     
-    const newGoal: Omit<CareerGoal, 'deadline'> & { deadline?: string | null } = {
+    const newGoal: CareerGoal = {
         id: `vision-${Date.now()}-${roadmapStep.step}`,
         title: roadmapStep.title,
         description: `${roadmapStep.description} (Suggested Duration: ${roadmapStep.duration})`,
         progress: 0,
     };
 
-    try {
-      await saveCareerGoal(user.uid, newGoal);
-      toast({ title: 'Goal Added', description: `"${roadmapStep.title}" has been added to your Career Goals.` });
-      setAddedItems(prev => new Set(prev).add(goalId));
-    } catch (error) {
-      console.error('Failed to save career goal:', error);
-      toast({ title: 'Error', description: 'Could not save the goal.', variant: 'destructive' });
-    }
+    handleSaveGoal(newGoal);
+    setAddedItems(prev => new Set(prev).add(goalId));
   };
 
   const handleAddSkill = async (skillName: string) => {
     if (!user) return;
     
-    const safeIdPart = skillName
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w-]/g, ' ') // Allow spaces
-      .replace(/\s+/g, '-')
-      .replace(/--+/g, '-');
-
-
-    const newSkill: Omit<Skill, 'lastUpdated'> & { lastUpdated: string } = {
+    const safeIdPart = skillName.toLowerCase().trim().replace(/[^\w-]/g, '-');
+    const newSkill: Skill = {
         id: `vision-${Date.now()}-${safeIdPart}`,
         name: skillName,
         category: 'Other',
         proficiency: 'Beginner',
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: new Date(),
     };
 
     try {
-      await saveSkill(user.uid, newSkill);
+      // Direct call to skill service
+      await saveSkill(user.uid, { ...newSkill, lastUpdated: newSkill.lastUpdated.toISOString() });
       toast({ title: 'Skill Added', description: `"${skillName}" has been added to your Skills.` });
       setAddedItems(prev => new Set(prev).add(skillName));
     } catch (error) {
@@ -186,7 +313,7 @@ export default function CareerVisionPage() {
         url: resource.url,
         description: resource.description,
         category: resource.category,
-        isAiRecommended: false, // Save it as a user-bookmarked resource
+        isAiRecommended: false,
     };
 
     try {
@@ -201,15 +328,13 @@ export default function CareerVisionPage() {
 
   const handleViewHistory = (item: CareerVisionHistoryItem) => {
     if (selectedHistoryId === item.id) {
-      // This history item is currently displayed. Hide it.
       setUserInput('');
       setCareerPlan(null);
       setSelectedHistoryId(null);
     } else {
-      // A different (or no) history item is displayed. Show this one.
       setUserInput(item.prompt);
       setCareerPlan(item.plan);
-      setAddedItems(new Set()); // Reset added items for the new plan context
+      setAddedItems(new Set());
       setSelectedHistoryId(item.id);
     }
   };
@@ -237,6 +362,88 @@ export default function CareerVisionPage() {
 
   return (
     <div className="space-y-8">
+      
+      {/* --- Career Goals Section --- */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+            <h1 className="font-headline text-3xl font-semibold text-primary">Your Career Goals</h1>
+            <Button onClick={() => handleOpenGoalModal(null)} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <PlusCircle className="mr-2 h-5 w-5" /> Add New Goal
+            </Button>
+        </div>
+        <p className="text-foreground/80">
+            Define your aspirations and track your progress towards achieving them.
+        </p>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {goals.map((goal) => (
+            <Card key={goal.id} className="frosted-glass shadow-lg flex flex-col">
+                <CardHeader>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="font-headline text-xl text-primary flex items-center">
+                    <Target className="mr-2 h-5 w-5 text-accent" /> {goal.title}
+                    </CardTitle>
+                    <div className="flex space-x-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenGoalModal(goal)}>
+                        <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="frosted-glass">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this career goal.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90"
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            >
+                            Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    </div>
+                </div>
+                {goal.deadline && (
+                    <p className="text-xs text-muted-foreground flex items-center">
+                    <CalendarDays className="mr-1 h-3 w-3" />
+                    Deadline: {format(new Date(goal.deadline), 'MMM d, yyyy')}
+                    </p>
+                )}
+                </CardHeader>
+                <CardContent className="flex-grow">
+                {goal.description && <p className="text-sm text-foreground/80 mb-4">{goal.description}</p>}
+                <div>
+                    <div className="mb-1 flex justify-between">
+                    <span className="text-sm font-medium text-primary">Progress</span>
+                    <span className="text-sm font-medium text-accent">{goal.progress}%</span>
+                    </div>
+                    <Progress value={goal.progress} aria-label={`${goal.title} progress ${goal.progress}%`} className="h-3 [&>div]:bg-accent" />
+                </div>
+                </CardContent>
+            </Card>
+            ))}
+        </div>
+        <EditGoalModal 
+            isOpen={isGoalModalOpen}
+            onOpenChange={setIsGoalModalOpen}
+            goalToEdit={editingGoal}
+            onSave={handleSaveGoal}
+        />
+      </div>
+
+      <div className='my-12 border-t border-border/30'></div>
+
+      {/* --- Career Vision Section --- */}
       <div>
         <h1 className="font-headline text-3xl font-semibold text-primary">Career Vision Planner</h1>
         <p className="text-foreground/80 mt-1">
@@ -244,7 +451,6 @@ export default function CareerVisionPage() {
         </p>
       </div>
 
-      {/* Main Content Area */}
       <div className="space-y-6">
         <Card className="frosted-glass shadow-lg">
           <CardHeader>
@@ -389,7 +595,7 @@ export default function CareerVisionPage() {
                                     size="sm"
                                     variant="outline"
                                     className="h-8"
-                                    onClick={() => handleAddGoal(step)}
+                                    onClick={() => handleAddRoadmapGoal(step)}
                                     disabled={addedItems.has(`goal-${step.step}`)}
                                   >
                                     {addedItems.has(`goal-${step.step}`) ? <CheckCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}

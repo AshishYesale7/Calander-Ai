@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -50,9 +49,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/career-goals', label: 'Career Goals', icon: Target },
-  { href: '/skills', label: 'Skills', icon: Brain },
   { href: '/career-vision', label: 'Career Vision', icon: Eye },
+  { href: '/skills', label: 'Skills', icon: Brain },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
