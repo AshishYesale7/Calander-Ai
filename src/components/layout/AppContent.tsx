@@ -370,7 +370,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         </AnimatePresence>
         <AnimatePresence>
             {!isMobile && !isFullScreen && !isCallViewActive && (
-              <DesktopCommandBar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+              <DesktopCommandBar onOpenCommandPalette={() => {}} />
             )}
         </AnimatePresence>
         
