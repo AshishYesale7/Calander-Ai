@@ -9,6 +9,7 @@ import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
+import { Badge } from '../ui/badge';
 
 
 export default function DesktopCommandBar() {
@@ -50,22 +51,7 @@ export default function DesktopCommandBar() {
     return { left: 0, right: 0, top: 0, bottom: 0 };
   };
 
-  // This effect sets the initial, correct bottom-center position
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !isInitialized.current && containerRef.current) {
-      const initialX = (window.innerWidth - size.closed.width) / 2;
-      const initialY = window.innerHeight - size.closed.height - 24; // 24px from bottom
-      animationControls.set({
-          x: initialX,
-          y: initialY,
-          width: size.closed.width,
-          height: size.closed.height,
-      });
-      isInitialized.current = true;
-    }
-  }, [animationControls, size.closed]);
-
-  // --- Smart Re-opening & Fullscreen Logic ---
+  // --- Smart Re-opening Logic ---
   // This effect handles the opening, closing, and full-screen animations.
   // It includes "smart re-opening" logic to check screen boundaries and prevent the
   // command bar from opening partially off-screen.
@@ -191,7 +177,7 @@ export default function DesktopCommandBar() {
       dragControls={dragControls}
       dragMomentum={false}
       dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 200, bounceDamping: 15 }}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
     >
@@ -241,29 +227,62 @@ export default function DesktopCommandBar() {
              }}
           >
              <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
-                <Paperclip className="h-5 w-5 mr-3" />
-                <Input
-                    ref={inputRef}
-                    placeholder="Ask Calendar.ai..."
-                    className={cn(
-                      "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
-                      isOpen ? "bg-black" : "bg-transparent cursor-pointer"
-                    )}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onFocus={() => {if (!isOpen) setIsOpen(true)}}
-                    onPointerDown={(e) => e.stopPropagation()}
-                />
+                
                 <AnimatePresence mode="wait">
-                {!isOpen ? (
+                {isOpen ? (
+                     <motion.div 
+                        key="open-input"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1, transition: { delay: 0.1 } }}
+                        exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                        className="w-full"
+                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag from input area
+                     >
+                       <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg">
+                            <Textarea
+                                placeholder="Send a message..."
+                                className="bg-transparent border-none focus-visible:ring-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
+                                rows={1}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <div className="mt-1.5 flex justify-between items-center">
+                                <div className="flex items-center gap-0.5">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
+                                    <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
+                                        rag-v1 <X size={10} className="ml-1 cursor-pointer" />
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
+                                    <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">Insert</Button>
+                                    <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500"><ArrowUp size={14}/></Button>
+                                </div>
+                            </div>
+                        </div>
+                     </motion.div>
+                ) : (
                   <motion.div 
-                    key="collapsed-buttons"
+                    key="collapsed-bar"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2"
+                    className="flex items-center w-full"
                   >
+                      <Paperclip className="h-5 w-5 mr-3" />
+                      <Input
+                          ref={inputRef}
+                          placeholder="Ask Calendar.ai..."
+                          className={cn(
+                            "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
+                            "bg-transparent cursor-pointer"
+                          )}
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          onFocus={() => {if (!isOpen) setIsOpen(true)}}
+                      />
                       <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
                           <Sparkles className="h-4 w-4 mr-1.5" />
                           Auto
@@ -273,17 +292,6 @@ export default function DesktopCommandBar() {
                           <AudioLines className="h-5 w-5" />
                       </div>
                   </motion.div>
-                ) : (
-                   <motion.div
-                    key="open-button"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
-                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
-                   >
-                     <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500 rounded-full">
-                        <ArrowUp size={18}/>
-                      </Button>
-                   </motion.div>
                 )}
                 </AnimatePresence>
             </div>
