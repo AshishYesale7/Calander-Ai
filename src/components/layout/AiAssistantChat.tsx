@@ -19,6 +19,7 @@ import {
   Terminal,
   Folder,
   Search as SearchIcon,
+  X,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '../ui/badge';
