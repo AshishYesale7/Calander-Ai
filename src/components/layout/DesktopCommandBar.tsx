@@ -19,11 +19,62 @@ export default function DesktopCommandBar() {
   const dragControls = useDragControls();
 
   const [size, setSize] = useState({ width: 580, height: 480 });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  const handleResize = (event: React.PointerEvent) => {
-    const newWidth = Math.max(480, size.width + event.movementX * 2);
-    const newHeight = Math.max(400, size.height + event.movementY * 2);
-    setSize({ width: newWidth, height: newHeight });
+  const handleResize = (
+    event: PointerEvent,
+    direction: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  ) => {
+    setSize(prevSize => {
+      let newWidth = prevSize.width;
+      let newHeight = prevSize.height;
+
+      if (direction.includes('right')) newWidth += event.movementX;
+      if (direction.includes('left')) newWidth -= event.movementX;
+      if (direction.includes('bottom')) newHeight += event.movementY;
+      if (direction.includes('top')) newHeight -= event.movementY;
+      
+      newWidth = Math.max(480, newWidth);
+      newHeight = Math.max(400, newHeight);
+
+      return { width: newWidth, height: newHeight };
+    });
+     // Adjust position when resizing from top or left
+     if (direction.includes('top')) {
+      setPosition(prevPos => ({...prevPos, y: prevPos.y + event.movementY}));
+    }
+    if (direction.includes('left')) {
+      setPosition(prevPos => ({...prevPos, x: prevPos.x + event.movementX}));
+    }
+  };
+  
+  const ResizeHandle = ({ direction }: { direction: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' }) => {
+    const classMap = {
+      'top': 'cursor-n-resize top-0 left-1/2 -translate-x-1/2 h-2 w-full',
+      'bottom': 'cursor-s-resize bottom-0 left-1/2 -translate-x-1/2 h-2 w-full',
+      'left': 'cursor-w-resize top-1/2 -translate-y-1/2 left-0 w-2 h-full',
+      'right': 'cursor-e-resize top-1/2 -translate-y-1/2 right-0 w-2 h-full',
+      'top-left': 'cursor-nw-resize top-0 left-0 h-3 w-3',
+      'top-right': 'cursor-ne-resize top-0 right-0 h-3 w-3',
+      'bottom-left': 'cursor-sw-resize bottom-0 left-0 h-3 w-3',
+      'bottom-right': 'cursor-se-resize bottom-0 right-0 h-3 w-3',
+    };
+    
+    return (
+       <div
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            const onPointerMove = (e: PointerEvent) => handleResize(e, direction);
+            const onPointerUp = () => {
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+            };
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+          }}
+          className={cn("absolute", classMap[direction])}
+      />
+    )
   };
   
   // Effect for cycling through the glow colors
@@ -69,11 +120,21 @@ export default function DesktopCommandBar() {
   // Effect to center the component only on initial mount
   useEffect(() => {
     if (containerRef.current) {
-        const { offsetWidth } = containerRef.current;
-        containerRef.current.style.left = `${(window.innerWidth - offsetWidth) / 2}px`;
-        containerRef.current.style.bottom = '24px';
+        setPosition({
+          x: (window.innerWidth - size.width) / 2,
+          y: window.innerHeight - (isOpen ? size.height : 80) - 24, // 24px from bottom
+        });
     }
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
+
+  useEffect(() => {
+    if (containerRef.current) {
+       setPosition(prevPos => ({
+        ...prevPos,
+        y: window.innerHeight - (isOpen ? size.height : 80) - 24,
+      }));
+    }
+  }, [isOpen, size.height]);
 
 
   return (
@@ -85,8 +146,16 @@ export default function DesktopCommandBar() {
       dragMomentum={false}
       style={{ position: 'fixed', zIndex: 40 }}
       className="cursor-grab active:cursor-grabbing"
-      animate={{ width: size.width, height: isOpen ? size.height : "auto" }}
+      animate={{ 
+        width: size.width, 
+        height: isOpen ? size.height : "auto",
+        x: position.x,
+        y: position.y
+      }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      onDragEnd={(_, info) => {
+        setPosition({ x: info.offset.x, y: info.offset.y });
+      }}
     >
       <motion.div 
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
@@ -96,6 +165,19 @@ export default function DesktopCommandBar() {
         
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
+        
+        {isOpen && (
+          <>
+            <ResizeHandle direction="top" />
+            <ResizeHandle direction="right" />
+            <ResizeHandle direction="bottom" />
+            <ResizeHandle direction="left" />
+            <ResizeHandle direction="top-left" />
+            <ResizeHandle direction="top-right" />
+            <ResizeHandle direction="bottom-left" />
+            <ResizeHandle direction="bottom-right" />
+          </>
+        )}
 
         <div className={cn("inner !p-0 flex flex-col h-full", isOpen ? "justify-between" : "justify-center")}>
           <AnimatePresence>
@@ -112,19 +194,6 @@ export default function DesktopCommandBar() {
                 onBack={() => setIsOpen(false)}
                 dragControls={dragControls}
               />
-               <motion.div
-                  onPointerDown={(event) => {
-                    event.stopPropagation();
-                    const onPointerMove = (e: PointerEvent) => handleResize(e);
-                    const onPointerUp = () => {
-                        document.removeEventListener('pointermove', onPointerMove);
-                        document.removeEventListener('pointerup', onPointerUp);
-                    };
-                    document.addEventListener('pointermove', onPointerMove);
-                    document.addEventListener('pointerup', onPointerUp);
-                  }}
-                  className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize"
-              />
             </motion.div>
           )}
           </AnimatePresence>
@@ -133,7 +202,7 @@ export default function DesktopCommandBar() {
            <div 
             className={cn(
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "" : "py-2 px-4"
+              isOpen ? "py-2 px-3 bg-black" : "py-2 px-4"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
