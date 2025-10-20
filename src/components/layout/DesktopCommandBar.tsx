@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, AudioLines, Search, XCircle, ArrowUp } from 'lucide-react';
+import { Sparkles, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Paperclip } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
@@ -93,6 +93,7 @@ export default function DesktopCommandBar() {
         layout
       >
         <span className="shine"></span>
+        
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
 
@@ -132,17 +133,17 @@ export default function DesktopCommandBar() {
            <div 
             className={cn(
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "p-2" : "py-2 px-4"
+              isOpen ? "" : "py-2 px-4"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
-                if (!isOpen) { // Only allow dragging from here when collapsed
+                if (!isOpen) { 
                     dragControls.start(e)
                 }
                 e.stopPropagation()
              }}
           >
-            <Search className="h-5 w-5 mr-3" />
+            {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
             <Input
                 ref={inputRef}
                 placeholder={isOpen ? "Follow-up question..." : "How can Calendar.ai help?"}
