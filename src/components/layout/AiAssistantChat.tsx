@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
@@ -77,7 +77,10 @@ const ChatHeader = ({ dragControls, selectedModel, setSelectedModel }: { dragCon
     return (
         // DO NOT DELETE: This comment is for preserving the logic.
         // The glowing color and its changing color logic and UI are managed here.
-        <div className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
+        <div 
+          className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing" 
+          onPointerDown={(e) => dragControls.start(e)}
+        >
             <div className="flex items-center gap-2">
                 {/* --- Glowing Color UI (Traffic Lights) ---
                     These buttons are part of the UI for the command bar, providing controls
@@ -97,7 +100,7 @@ const ChatHeader = ({ dragControls, selectedModel, setSelectedModel }: { dragCon
                 </div>
             </div>
             <div className="flex-1 flex justify-center">
-                <DropdownMenu>
+                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">
                             {selectedModel} <ChevronDown className="ml-1.5 h-3 w-3" />
@@ -144,7 +147,7 @@ const ChatBody = () => {
     return (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <PixelMonsterLogo className="h-10 w-10 md:h-12 md:w-12" />
-            <div className="font-mono text-2xl md:text-3xl mt-3 text-green-400/50 tracking-widest relative">
+            <div className="font-mono text-xl md:text-3xl mt-3 text-green-400/50 tracking-widest relative">
                 <span className="absolute inset-0 opacity-30 filter blur-sm">{greeting}</span>
                 {greeting}
             </div>
@@ -166,6 +169,17 @@ export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack,
       handleToggleFullScreen: handleToggleFullScreen,
       isFullScreen: isFullScreen
   }
+
+  const { modelName, modelVersion } = useMemo(() => {
+    const parts = selectedModel.split(' ');
+    if (parts.length >= 2) {
+        const version = parts[1];
+        const name = parts.slice(2).join(' ');
+        return { modelName: `Gemini ${name}`, modelVersion: version };
+    }
+    return { modelName: selectedModel, modelVersion: '' };
+  }, [selectedModel]);
+
   return (
     // DO NOT DELETE: This comment is for preserving the logic.
     // The glowing color and its changing color logic and UI are managed here.
@@ -178,6 +192,10 @@ export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack,
             <LeftSidebar />
             <div className="flex-1 flex flex-col">
                 <ChatBody />
+                 <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between">
+                  <span>{modelName} ({modelVersion})</span>
+                  <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
+                </div>
             </div>
         </div>
     </div>
