@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -33,14 +34,12 @@ export default function DesktopCommandBar() {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
 
-  // State for chat functionality, lifted up to this component
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
 
-  // Initialize with one empty session
   useEffect(() => {
     if (chatSessions.length === 0) {
       const newId = shortid.generate();
@@ -223,7 +222,6 @@ export default function DesktopCommandBar() {
     return { modelName: selectedModel, modelVersion: '' };
   }, [selectedModel]);
 
-  // Chat logic now lives here
   const handleAIResponse = async (history: ChatMessage[]) => {
       setIsLoading(true);
       try {
@@ -252,6 +250,16 @@ export default function DesktopCommandBar() {
           setIsLoading(false);
       }
   };
+
+  useEffect(() => {
+    if (!activeChat || isLoading) return;
+
+    const lastMessage = activeChat.messages[activeChat.messages.length - 1];
+    if (lastMessage && lastMessage.role === 'user') {
+      handleAIResponse(activeChat.messages);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChat?.messages, activeChatId]);
   
   const handleNewChat = () => {
     const newId = shortid.generate();
@@ -266,20 +274,16 @@ export default function DesktopCommandBar() {
 
     const newUserMessage: ChatMessage = { role: 'user', content: textToSend };
     
-    setChatSessions(prevSessions => {
-      return prevSessions.map(session => {
+    setChatSessions(prevSessions =>
+      prevSessions.map(session => {
         if (session.id === activeChatId) {
           const newMessages = [...session.messages, newUserMessage];
           const newTitle = session.messages.length === 0 ? textToSend.substring(0, 30) : session.title;
-          
-          // Trigger AI response after state is updated
-          handleAIResponse(newMessages);
-
           return { ...session, messages: newMessages, title: newTitle };
         }
         return session;
-      });
-    });
+      })
+    );
 
     setInput('');
     setSearch('');
@@ -441,3 +445,6 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
+
+
+    
