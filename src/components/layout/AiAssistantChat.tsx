@@ -1,5 +1,6 @@
 
 'use client';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,8 +117,7 @@ const ChatBody = () => {
 };
 
 const ChatInput = () => (
-    // DO NOT DELETE: This comment is for preserving the logic.
-    // The glowing color and its changing color logic and UI are managed here.
+    // This is the new ChatInput component based on the user's image.
     <div className="p-2">
         <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg">
             <Textarea
@@ -129,7 +129,9 @@ const ChatInput = () => (
                 <div className="flex items-center gap-0.5">
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
-                    <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">rag-v1 <X size={10} className="ml-1 cursor-pointer" /></Badge>
+                    <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
+                        rag-v1 <X size={10} className="ml-1 cursor-pointer" />
+                    </Badge>
                 </div>
                 <div className="flex items-center gap-1">
                     <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
