@@ -155,7 +155,6 @@ export default function DesktopCommandBar() {
         layout="position"
       >
         <span className="shine"></span>
-        <span className="shine-bottom"></span>
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
 
