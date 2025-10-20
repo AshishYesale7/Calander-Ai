@@ -20,6 +20,8 @@ import {
   Folder,
   Search as SearchIcon,
   X,
+  Minus,
+  Code,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '../ui/badge';
@@ -115,11 +117,15 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls }:
             <div className="flex items-center gap-2">
                 {/* Traffic light buttons */}
                 <div className="flex gap-1.5 p-2">
-                    <button onClick={onBack} aria-label="Close">
-                      <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                    <button onClick={onBack} aria-label="Close" className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <X size={8} strokeWidth={3} />
                     </button>
-                    <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
-                    <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                    <div className="h-3 w-3 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <Minus size={8} strokeWidth={3} />
+                    </div>
+                    <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <Code size={8} strokeWidth={3} />
+                    </div>
                 </div>
             </div>
             <div className="flex-1 flex justify-center">
