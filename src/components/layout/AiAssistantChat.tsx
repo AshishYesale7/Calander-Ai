@@ -121,13 +121,13 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls, h
             <div className="flex items-center gap-2">
                 {/* Traffic light buttons */}
                 <div className="flex gap-1.5 p-2">
-                    <button onClick={onBack} aria-label="Close" className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
-                        <X size={8} strokeWidth={3} />
+                    <button onClick={onBack} aria-label="Close" className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <X size={10} strokeWidth={4} />
                     </button>
-                    <div className="h-3 w-3 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
-                        <Minus size={8} strokeWidth={3} />
+                    <div className="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <Minus size={10} strokeWidth={4} />
                     </div>
-                    <button onClick={handleToggleFullScreen} aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
+                    <button onClick={handleToggleFullScreen} aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
                          {isFullScreen ? <Shrink size={8} strokeWidth={3} /> : <Expand size={8} strokeWidth={3} />}
                     </button>
                 </div>
