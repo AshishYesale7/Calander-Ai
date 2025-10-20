@@ -182,17 +182,26 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
     ];
     const colorInterval = setInterval(() => {
-        const navElement = bottomNavRef.current;
-        const cmdkElement = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+        // Target both the desktop bar and the mobile bar if they exist
+        const desktopBar = document.querySelector('.desktop-command-bar-glow') as HTMLElement;
+        const mobileBar = bottomNavRef.current;
+        const cmdkDialog = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
+
         const nextColor = colorPairs[currentIndex];
-        if (navElement) {
-            navElement.style.setProperty('--hue1', String(nextColor.hue1));
-            navElement.style.setProperty('--hue2', String(nextColor.hue2));
+        
+        if (desktopBar) {
+            desktopBar.style.setProperty('--hue1', String(nextColor.hue1));
+            desktopBar.style.setProperty('--hue2', String(nextColor.hue2));
         }
-        if (cmdkElement) {
-            cmdkElement.style.setProperty('--hue1', String(nextColor.hue1));
-            cmdkElement.style.setProperty('--hue2', String(nextColor.hue2));
+        if (mobileBar) {
+            mobileBar.style.setProperty('--hue1', String(nextColor.hue1));
+            mobileBar.style.setProperty('--hue2', String(nextColor.hue2));
         }
+        if (cmdkDialog) {
+            cmdkDialog.style.setProperty('--hue1', String(nextColor.hue1));
+            cmdkDialog.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+
         currentIndex = (currentIndex + 1) % colorPairs.length;
     }, 3000);
     return () => clearInterval(colorInterval);
