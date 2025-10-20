@@ -339,7 +339,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         />
         
         <AnimatePresence>
-          {!isMobile && <DesktopCommandBar />}
+          {!isMobile && <DesktopCommandBar {...modalProps} />}
 
           {isMobile && isBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
                  <MobileBottomNav

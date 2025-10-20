@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 
 
-export default function DesktopCommandBar() {
+export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen }: { handleToggleFullScreen: () => void; isFullScreen: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -127,8 +127,6 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -163,6 +161,8 @@ export default function DesktopCommandBar() {
                 initialPrompt={search} 
                 onBack={() => setIsOpen(false)}
                 dragControls={dragControls}
+                handleToggleFullScreen={handleToggleFullScreen}
+                isFullScreen={isFullScreen}
               />
             </motion.div>
           )}

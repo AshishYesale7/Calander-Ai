@@ -22,6 +22,8 @@ import {
   X,
   Minus,
   Code,
+  Expand,
+  Shrink,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '../ui/badge';
@@ -31,6 +33,8 @@ interface AiAssistantChatProps {
   initialPrompt: string;
   onBack: () => void;
   dragControls: any;
+  handleToggleFullScreen: () => void;
+  isFullScreen: boolean;
 }
 
 const LeftSidebar = () => {
@@ -108,7 +112,7 @@ const ChatInput = () => (
 );
 
 
-export default function AiAssistantChat({ initialPrompt, onBack, dragControls }: AiAssistantChatProps) {
+export default function AiAssistantChat({ initialPrompt, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#1d2025] text-white rounded-xl overflow-hidden">
@@ -123,9 +127,9 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls }:
                     <div className="h-3 w-3 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
                         <Minus size={8} strokeWidth={3} />
                     </div>
-                    <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
-                        <Code size={8} strokeWidth={3} />
-                    </div>
+                    <button onClick={handleToggleFullScreen} aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
+                         {isFullScreen ? <Shrink size={8} strokeWidth={3} /> : <Expand size={8} strokeWidth={3} />}
+                    </button>
                 </div>
             </div>
             <div className="flex-1 flex justify-center">
