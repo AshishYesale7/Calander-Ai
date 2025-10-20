@@ -92,8 +92,9 @@ export default function DesktopCommandBar() {
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
         layout
       >
-        <span className="glow-bottom"></span>
-        <span className="glow-bright glow-bottom"></span>
+        <span className="shine"></span>
+        <span className="glow"></span><span className="glow glow-bottom"></span>
+        <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
 
         <div className={cn("inner !p-0 flex flex-col h-full", isOpen ? "justify-between" : "justify-center")}>
           <AnimatePresence>
@@ -145,7 +146,10 @@ export default function DesktopCommandBar() {
             <Input
                 ref={inputRef}
                 placeholder={isOpen ? "Follow-up question..." : "How can Calendar.ai help?"}
-                className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1"
+                className={cn(
+                  "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
+                  isOpen ? "bg-black" : "bg-transparent"
+                )}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => {if (!isOpen) setIsOpen(true)}}
