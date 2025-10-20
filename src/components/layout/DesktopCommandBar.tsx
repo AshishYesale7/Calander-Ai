@@ -1,8 +1,7 @@
-
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles, X } from 'lucide-react';
+import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles, X, Minus, Code, Expand, Shrink } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
@@ -255,7 +254,7 @@ export default function DesktopCommandBar() {
                        <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg">
                             <Textarea
                                 placeholder="Send a message..."
-                                className="bg-transparent border-none focus-visible:ring-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
+                                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
                                 rows={1}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
