@@ -117,7 +117,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
     const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
     const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
     const lastScrollY = useRef(0);
 
@@ -224,14 +223,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     mainEl.addEventListener('scroll', handleScroll);
     return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-  }, []);
   
   if (loading) {
     return (
@@ -255,19 +246,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return <OnboardingModal onFinish={onFinishOnboarding} />;
   }
   
-  const handleToggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
-  
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
-    setIsTimezoneModalOpen, handleToggleFullScreen, isFullScreen,
+    setIsTimezoneModalOpen,
   };
   
   const isVideoCallActive = !!(ongoingCall);
@@ -283,11 +264,11 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       )}>
         <OfflineIndicator />
         <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
-          <SidebarNav {...modalProps} />
+          <SidebarNav {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
         </div>
         
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <Header {...modalProps} />
+          <Header {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
           <div className="flex flex-1 min-h-0 min-w-0">
               <main ref={mainScrollRef} className={cn(
                   "flex-1 overflow-y-auto p-6 pb-24 md:pb-6 transition-[margin-left] duration-300",
@@ -336,10 +317,12 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
           search={search}
           setSearch={setSearch}
           {...modalProps} 
+          handleToggleFullScreen={() => {}} 
+          isFullScreen={false}
         />
         
         <AnimatePresence>
-          {!isMobile && <DesktopCommandBar {...modalProps} />}
+          {!isMobile && <DesktopCommandBar />}
 
           {isMobile && isBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
                  <MobileBottomNav
@@ -359,3 +342,5 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
+
+    

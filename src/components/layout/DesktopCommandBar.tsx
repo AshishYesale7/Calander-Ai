@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Sparkles, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Paperclip } from 'lucide-react';
+import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
@@ -11,8 +11,9 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 
 
-export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen }: { handleToggleFullScreen: () => void; isFullScreen: boolean }) {
+export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -45,6 +46,18 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
   // This effect handles the logic for opening and closing the command bar
   useEffect(() => {
     if (!isInitialized.current) return;
+    
+    if (isFullScreen) {
+        animationControls.start({
+            x: 0,
+            y: 0,
+            width: '100vw',
+            height: '100vh',
+            borderRadius: '0px',
+            transition: { type: 'spring', stiffness: 400, damping: 30 }
+        });
+        return; // Don't proceed to other states if fullscreen
+    }
 
     if (isOpen) {
       let targetX, targetY;
@@ -70,6 +83,7 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
         y: targetY,
         width: size.open.width,
         height: size.open.height,
+        borderRadius: '1.25rem', // From cmdk-dialog-glass
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
@@ -80,10 +94,11 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
         y: closedY,
         width: size.closed.width,
         height: size.closed.height,
+        borderRadius: '1.375rem', // 22px
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
     }
-  }, [isOpen, size.open, size.closed, animationControls]);
+  }, [isOpen, isFullScreen, size.open, size.closed, animationControls]);
 
 
   // Effect for keyboard shortcuts
@@ -100,37 +115,27 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
       }
       if (e.key === 'Escape') {
           setIsOpen(false);
+          setIsFullScreen(false);
       }
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  const getDragConstraints = () => {
-    if (containerRef.current) {
-      const currentWidth = isOpen ? size.open.width : size.closed.width;
-      const currentHeight = isOpen ? size.open.height : size.closed.height;
-      return {
-        top: 8,
-        left: 8,
-        right: window.innerWidth - currentWidth - 8,
-        bottom: window.innerHeight - currentHeight - 8,
-      };
-    }
-    return { top: 0, left: 0, right: 0, bottom: 0 };
-  };
+  const handleToggleFullScreen = () => {
+    setIsFullScreen(prev => !prev);
+  }
 
   return (
     <motion.div
       ref={containerRef}
-      drag
+      drag={!isFullScreen}
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
       onDragEnd={() => {
-        if (containerRef.current) {
+        if (containerRef.current && !isFullScreen) {
             const { x, y } = containerRef.current.getBoundingClientRect();
-            // Only update the open position if the card is actually open
             if (isOpen) {
               lastOpenPosition.current = { x, y };
             }
@@ -140,7 +145,7 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
       animate={animationControls}
     >
       <motion.div 
-        className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
+        className={cn("desktop-command-bar-glow flex flex-col h-full", (isOpen || isFullScreen) && 'open')}
         layout="position"
       >
         <span className="shine"></span>
@@ -232,3 +237,5 @@ export default function DesktopCommandBar({ handleToggleFullScreen, isFullScreen
     </motion.div>
   );
 }
+
+    
