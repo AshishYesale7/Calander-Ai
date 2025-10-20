@@ -137,7 +137,7 @@ export default function DesktopCommandBar() {
       dragControls={dragControls}
       dragMomentum={false}
       dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+      dragTransition={{ bounceStiffness: 200, bounceDamping: 15 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -188,55 +188,56 @@ export default function DesktopCommandBar() {
                 }
              }}
           >
-            {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
-            <Input
-                ref={inputRef}
-                placeholder={isOpen ? "Follow-up question..." : "Ask Calendar.ai"}
-                className={cn(
-                  "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
-                  isOpen ? "bg-black" : "bg-transparent cursor-pointer"
+            <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
+                {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
+                <Input
+                    ref={inputRef}
+                    placeholder={isOpen ? "Ask Calendar.ai ..." : "Ask Calendar.ai"}
+                    className={cn(
+                      "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
+                      isOpen ? "bg-black" : "bg-transparent cursor-pointer"
+                    )}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={() => {if (!isOpen) setIsOpen(true)}}
+                    onPointerDown={(e) => e.stopPropagation()} // Stop this from triggering the parent's drag
+                />
+                <AnimatePresence mode="wait">
+                {!isOpen ? (
+                  <motion.div 
+                    key="collapsed-buttons"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
+                  >
+                      <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
+                          <Sparkles className="h-4 w-4 mr-1.5" />
+                          Auto
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                      </Button>
+                      <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                          <AudioLines className="h-5 w-5" />
+                      </div>
+                  </motion.div>
+                ) : (
+                   <motion.div
+                    key="open-button"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
+                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
+                   >
+                     <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500 rounded-full">
+                        <ArrowUp size={18}/>
+                      </Button>
+                   </motion.div>
                 )}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onFocus={() => {if (!isOpen) setIsOpen(true)}}
-                onPointerDown={(e) => e.stopPropagation()} // Stop this from triggering the parent's drag
-            />
-            <AnimatePresence mode="wait">
-            {!isOpen ? (
-              <motion.div 
-                key="collapsed-buttons"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-2"
-              >
-                  <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Auto
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                  <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
-                      <AudioLines className="h-5 w-5" />
-                  </div>
-              </motion.div>
-            ) : (
-               <motion.div
-                key="open-button"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
-                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
-               >
-                 <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500 rounded-full">
-                    <ArrowUp size={18}/>
-                  </Button>
-               </motion.div>
-            )}
-            </AnimatePresence>
+                </AnimatePresence>
+            </div>
           </div>
         </div>
       </motion.div>
     </motion.div>
   );
 }
-
