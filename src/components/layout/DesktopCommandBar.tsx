@@ -117,7 +117,7 @@ export default function DesktopCommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // NEW: Calculate drag constraints based on current size and window dimensions
+  // Calculate drag constraints based on current size and window dimensions
   const getDragConstraints = () => {
     const currentSize = isOpen ? size.open : size.closed;
     return {
@@ -137,7 +137,7 @@ export default function DesktopCommandBar() {
       dragControls={dragControls}
       dragMomentum={false}
       dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 200, bounceDamping: 25 }}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -191,7 +191,7 @@ export default function DesktopCommandBar() {
             {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
             <Input
                 ref={inputRef}
-                placeholder={isOpen ? "Follow-up question..." : "How can Calendar.ai help?"}
+                placeholder={isOpen ? "Follow-up question..." : "Ask Calendar.ai"}
                 className={cn(
                   "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
                   isOpen ? "bg-black" : "bg-transparent cursor-pointer"
