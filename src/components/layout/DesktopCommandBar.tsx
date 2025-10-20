@@ -18,7 +18,7 @@ export default function DesktopCommandBar() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
-  const [selectedMcpServer, setSelectedMcpServer] = useState('MCP-US-East-1');
+  const [selectedMcpServer, setSelectedMcpServer] = useState('Calander ai mcp server');
   const containerRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
@@ -192,6 +192,8 @@ export default function DesktopCommandBar() {
     return { modelName: selectedModel, modelVersion: '' };
   }, [selectedModel]);
 
+  const mcpServers = ['Calander ai mcp server', 'MCP-US-West-2', 'MCP-EU-Central-1'];
+
   return (
     <motion.div
       ref={containerRef}
@@ -255,6 +257,7 @@ export default function DesktopCommandBar() {
                           rows={1}
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
+                          onFocus={() => setIsOpen(true)}
                       />
                       <div className="mt-1.5 flex justify-between items-center">
                           <div className="flex items-center gap-0.5">
@@ -273,8 +276,24 @@ export default function DesktopCommandBar() {
                   </div>
               </div>
 
-               <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
+              <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
                   <span>{modelName} ({modelVersion})</span>
+                  <div className="flex items-center gap-4">
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-auto p-0 text-[10px] text-gray-500 hover:text-white gap-1">
+                                  MCP Server: {selectedMcpServer} <ChevronDown className="h-3 w-3"/>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="frosted-glass text-xs">
+                              {mcpServers.map(server => (
+                                  <DropdownMenuItem key={server} onSelect={() => setSelectedMcpServer(server)}>
+                                      {server}
+                                  </DropdownMenuItem>
+                              ))}
+                          </DropdownMenuContent>
+                      </DropdownMenu>
+                  </div>
               </div>
             </motion.div>
           ) : (
@@ -305,7 +324,6 @@ export default function DesktopCommandBar() {
                       onFocus={() => {
                         if (!isOpen) {
                             setIsOpen(true);
-                            setTimeout(() => textareaRef.current?.focus(), 100);
                         }
                       }}
                   />
