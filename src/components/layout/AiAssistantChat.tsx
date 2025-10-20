@@ -118,7 +118,7 @@ const ChatHeader = ({ dragControls, selectedModel, setSelectedModel }: { dragCon
                 </DropdownMenu>
             </div>
              <div className="flex items-center gap-1">
-                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">Eject</Button>
+                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">New Chat</Button>
                  <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400"><Settings size={16}/></Button>
             </div>
         </div>
