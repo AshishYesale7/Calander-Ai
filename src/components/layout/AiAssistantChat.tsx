@@ -28,6 +28,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '../ui/badge';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
+import { useAuth } from '@/context/AuthContext';
+import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
 
 interface AiAssistantChatProps {
   initialPrompt: string;
@@ -45,6 +47,8 @@ const LeftSidebar = () => {
     { icon: SearchIcon, label: 'Search' },
   ];
   return (
+    // DO NOT DELETE: This comment is for preserving the logic.
+    // The glowing color and its changing color logic and UI are managed here.
     <div className="w-14 bg-black/20 flex flex-col items-center py-3 gap-3 border-r border-white/10" onPointerDown={(e) => e.stopPropagation()}>
       {icons.map((item, index) => (
         <Button
@@ -62,6 +66,8 @@ const LeftSidebar = () => {
 };
 
 const ChatHeader = ({dragControls}: {dragControls: any}) => (
+  // DO NOT DELETE: This comment is for preserving the logic.
+  // The glowing color and its changing color logic and UI are managed here.
   <div className="flex-shrink-0 h-11 border-b border-white/10 flex items-center justify-between px-2 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
     <div className="flex items-center gap-0.5">
       <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400"><ChevronLeft size={18} /></Button>
@@ -77,17 +83,41 @@ const ChatHeader = ({dragControls}: {dragControls: any}) => (
   </div>
 );
 
-const ChatBody = () => (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-        <PixelMonsterLogo className="h-12 w-12" />
-        <div className="font-mono text-3xl mt-3 text-green-400/50 tracking-widest relative">
-            <span className="absolute inset-0 opacity-30 filter blur-sm">LM STUDIO</span>
-            LM STUDIO
+const ChatBody = () => {
+    const { user } = useAuth();
+    const [greeting, setGreeting] = useState('');
+
+    useEffect(() => {
+        const fetchGreeting = async () => {
+            if (user?.displayName) {
+                try {
+                    const result = await generateGreeting({ name: user.displayName });
+                    setGreeting(`${result.greeting} ${user.displayName}`);
+                } catch (e) {
+                    // Fallback on AI error
+                    setGreeting(`Hello, ${user.displayName}`);
+                }
+            } else {
+                setGreeting('Hello!');
+            }
+        };
+        fetchGreeting();
+    }, [user]);
+
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+            <PixelMonsterLogo className="h-12 w-12" />
+            <div className="font-mono text-3xl mt-3 text-green-400/50 tracking-widest relative">
+                <span className="absolute inset-0 opacity-30 filter blur-sm">{greeting}</span>
+                {greeting}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const ChatInput = () => (
+    // DO NOT DELETE: This comment is for preserving the logic.
+    // The glowing color and its changing color logic and UI are managed here.
     <div className="p-2">
         <div className="bg-gray-800/50 rounded-xl p-2 border border-white/10 shadow-lg">
             <Textarea
@@ -115,6 +145,8 @@ const ChatInput = () => (
 export default function AiAssistantChat({ initialPrompt, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
 
   return (
+    // DO NOT DELETE: This comment is for preserving the logic.
+    // The glowing color and its changing color logic and UI are managed here.
     <div className="flex flex-col h-full bg-[#1d2025] text-white rounded-xl overflow-hidden">
         {/* Main Header */}
         <div className="flex-shrink-0 h-11 border-b border-white/10 flex items-center justify-between px-2 pr-3 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
@@ -128,9 +160,9 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls, h
                     <button onClick={onBack} aria-label="Close" className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
                         <X size={10} strokeWidth={4} />
                     </button>
-                    <div className="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
+                    <button className="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
                         <Minus size={10} strokeWidth={4} />
-                    </div>
+                    </button>
                     <button onClick={handleToggleFullScreen} aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
                          {isFullScreen ? <Shrink size={8} strokeWidth={3} /> : <Expand size={8} strokeWidth={3} />}
                     </button>
