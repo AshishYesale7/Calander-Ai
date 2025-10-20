@@ -148,7 +148,6 @@ export default function DesktopCommandBar() {
         }
       }}
       style={{ position: 'fixed', zIndex: 40 }}
-      animate={animationControls}
     >
       <motion.div 
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
@@ -179,7 +178,7 @@ export default function DesktopCommandBar() {
            <div 
             className={cn(
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "py-2 px-3 bg-black" : "py-2 px-4 cursor-grab active:cursor-grabbing"
+              isOpen ? "py-2 px-3 bg-black" : "p-2 px-4 cursor-grab active:cursor-grabbing"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
