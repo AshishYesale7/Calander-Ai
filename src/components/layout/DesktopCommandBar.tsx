@@ -4,7 +4,7 @@
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
 import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles, X, Minus, Code, Expand, Shrink } from 'lucide-react';
 import { Button } from '../ui/button';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [search, setSearch] = useState('');
+  const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -180,6 +181,16 @@ export default function DesktopCommandBar() {
     setIsFullScreen(prev => !prev);
   }
 
+  const { modelName, modelVersion } = useMemo(() => {
+    const parts = selectedModel.split(' ');
+    if (parts.length >= 2) {
+        const version = parts[1];
+        const name = parts.slice(2).join(' ');
+        return { modelName: `Gemini ${name}`, modelVersion: version };
+    }
+    return { modelName: selectedModel, modelVersion: '' };
+  }, [selectedModel]);
+
   return (
     <motion.div
       ref={containerRef}
@@ -228,6 +239,8 @@ export default function DesktopCommandBar() {
                 dragControls={dragControls}
                 handleToggleFullScreen={handleToggleFullScreen}
                 isFullScreen={isFullScreen}
+                selectedModel={selectedModel}
+                setSelectedModel={setSelectedModel}
               />
               <div 
                   className="relative w-full flex items-center text-gray-400 p-3"
@@ -260,7 +273,7 @@ export default function DesktopCommandBar() {
               </div>
 
                <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between">
-                  <span>LM Studio 0.3.30</span>
+                  <span>{modelName} ({modelVersion})</span>
                   <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
               </div>
             </motion.div>
@@ -285,7 +298,11 @@ export default function DesktopCommandBar() {
                       )}
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      onFocus={() => {if (!isOpen) setIsOpen(true)}}
+                      onFocus={() => {
+                        if (!isOpen) {
+                            setIsOpen(true);
+                        }
+                      }}
                   />
                   <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
                       <Sparkles className="h-4 w-4 mr-1.5" />

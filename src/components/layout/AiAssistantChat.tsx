@@ -44,6 +44,8 @@ interface AiAssistantChatProps {
   dragControls: any;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
 }
 
 const LeftSidebar = () => {
@@ -102,7 +104,7 @@ const ChatHeader = ({ dragControls, selectedModel, setSelectedModel }: { dragCon
             <div className="flex-1 flex justify-center">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">
+                        <Button variant="outline" className="frosted-glass bg-gray-700/50 border-white/10 h-7 text-xs">
                             {selectedModel} <ChevronDown className="ml-1.5 h-3 w-3" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -148,6 +150,7 @@ const ChatBody = () => {
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <PixelMonsterLogo className="h-10 w-10 md:h-12 md:w-12" />
             <div className="font-mono text-xl md:text-3xl mt-3 text-green-400/50 tracking-widest relative">
+                {/* DO NOT DELETE: This comment preserves the glowing text effect */}
                 <span className="absolute inset-0 opacity-30 filter blur-sm">{greeting}</span>
                 {greeting}
             </div>
@@ -156,8 +159,16 @@ const ChatBody = () => {
 };
 
 
-export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
-  const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
+export default function AiAssistantChat({ 
+    initialPrompt, 
+    onPromptChange, 
+    onBack, 
+    dragControls, 
+    handleToggleFullScreen, 
+    isFullScreen,
+    selectedModel,
+    setSelectedModel,
+}: AiAssistantChatProps) {
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
         // Only allow dragging if the dragControls prop is valid
@@ -169,16 +180,6 @@ export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack,
       handleToggleFullScreen: handleToggleFullScreen,
       isFullScreen: isFullScreen
   }
-
-  const { modelName, modelVersion } = useMemo(() => {
-    const parts = selectedModel.split(' ');
-    if (parts.length >= 2) {
-        const version = parts[1];
-        const name = parts.slice(2).join(' ');
-        return { modelName: `Gemini ${name}`, modelVersion: version };
-    }
-    return { modelName: selectedModel, modelVersion: '' };
-  }, [selectedModel]);
 
   return (
     // DO NOT DELETE: This comment is for preserving the logic.
@@ -192,10 +193,6 @@ export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack,
             <LeftSidebar />
             <div className="flex-1 flex flex-col">
                 <ChatBody />
-                 <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between">
-                  <span>{modelName} ({modelVersion})</span>
-                  <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
-                </div>
             </div>
         </div>
     </div>
