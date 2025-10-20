@@ -10,6 +10,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 
 export default function DesktopCommandBar() {
@@ -17,8 +18,8 @@ export default function DesktopCommandBar() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
+  const [selectedMcpServer, setSelectedMcpServer] = useState('MCP-US-East-1');
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
 
@@ -184,12 +185,14 @@ export default function DesktopCommandBar() {
   const { modelName, modelVersion } = useMemo(() => {
     const parts = selectedModel.split(' ');
     if (parts.length >= 2) {
-        const version = parts[1];
-        const name = parts.slice(2).join(' ');
-        return { modelName: `Gemini ${name}`, modelVersion: version };
+        const version = parts.pop();
+        const name = parts.join(' ');
+        return { modelName: name, modelVersion: version };
     }
     return { modelName: selectedModel, modelVersion: '' };
   }, [selectedModel]);
+
+  const mcpServers = ['MCP-US-East-1', 'MCP-EU-West-1', 'MCP-Asia-1'];
 
   return (
     <motion.div
@@ -272,9 +275,29 @@ export default function DesktopCommandBar() {
                   </div>
               </div>
 
-               <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between">
+               <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
                   <span>{modelName} ({modelVersion})</span>
-                  <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
+                    <span className="text-gray-600">|</span>
+                    <div className="flex items-center gap-1">
+                        <span>MCP Server:</span>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="link" className="p-0 h-auto text-[10px] text-gray-400 hover:text-white">
+                                    {selectedMcpServer} <ChevronDown className="ml-1 h-3 w-3" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="frosted-glass text-xs">
+                                {mcpServers.map(server => (
+                                    <DropdownMenuItem key={server} onSelect={() => setSelectedMcpServer(server)}>
+                                        {server}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                  </div>
               </div>
             </motion.div>
           ) : (
@@ -286,11 +309,15 @@ export default function DesktopCommandBar() {
                 transition={{ duration: 0.2 }}
                 className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
                 onPointerDown={(e) => dragControls.start(e)}
+                onClick={() => {
+                    if (!isOpen) {
+                        setIsOpen(true);
+                    }
+                }}
               >
                 <div className="flex items-center w-full translate-y-[-2px]">
                   <Paperclip className="h-5 w-5 mr-3" />
                   <Input
-                      ref={inputRef}
                       placeholder="Ask Calendar.ai..."
                       className={cn(
                         "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
