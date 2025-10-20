@@ -1,20 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowLeft,
   Bot,
-  Send,
-  User,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
   ChevronDown,
-  Paperclip,
-  Sparkles,
-  ArrowUp,
   Settings,
   MessageSquare,
   Terminal,
@@ -22,17 +13,12 @@ import {
   Search as SearchIcon,
   X,
   Minus,
-  Code,
   Expand,
   Shrink,
 } from 'lucide-react';
-import { Badge } from '../ui/badge';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
 import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
-import { createConversationalEvent } from '@/ai/flows/conversational-event-flow';
-import type { ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
-import { useApiKey } from '@/hooks/use-api-key';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,21 +32,23 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 
+export interface ChatMessage {
+  role: 'user' | 'model';
+  content: string;
+}
+
 interface AiAssistantChatProps {
   initialPrompt: string;
-  onPromptChange: (value: string) => void;
   onBack: () => void;
   dragControls: any;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
   selectedModel: string;
   setSelectedModel: (model: string) => void;
+  chatHistory: ChatMessage[];
+  isLoading: boolean;
 }
 
-interface ChatMessage {
-  role: 'user' | 'model';
-  content: string;
-}
 
 const LeftSidebar = () => {
   const icons = [
@@ -141,7 +129,7 @@ const ChatHeader = ({
     )
 };
 
-const ChatBody = ({ chatHistory }: { chatHistory: ChatMessage[] }) => {
+const ChatBody = ({ chatHistory, isLoading }: { chatHistory: ChatMessage[], isLoading: boolean }) => {
     const { user } = useAuth();
     const [greeting, setGreeting] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -166,9 +154,9 @@ const ChatBody = ({ chatHistory }: { chatHistory: ChatMessage[] }) => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [chatHistory]);
+    }, [chatHistory, isLoading]);
 
-    if (chatHistory.length === 0) {
+    if (chatHistory.length === 0 && !isLoading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
                 <PixelMonsterLogo className="h-10 w-10 md:h-12 md:w-12" />
@@ -204,108 +192,35 @@ const ChatBody = ({ chatHistory }: { chatHistory: ChatMessage[] }) => {
                         )}
                     </div>
                 ))}
+                {isLoading && (
+                    <div className="flex items-start gap-3">
+                         <Avatar className="h-8 w-8 border border-white/10">
+                            <AvatarFallback className="bg-primary/20"><Bot size={20} /></AvatarFallback>
+                        </Avatar>
+                        <div className="max-w-[75%] rounded-xl p-3 text-sm bg-gray-700/50 flex items-center">
+                            <LoadingSpinner size="sm" />
+                        </div>
+                    </div>
+                )}
             </div>
         </ScrollArea>
     );
 };
 
-const ChatFooter = ({ onSend, input, setInput }: { onSend: () => void, input: string, setInput: (s: string) => void }) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            onSend();
-        }
-    };
-    
-    return (
-        <div 
-            className="relative w-full flex items-center text-gray-400 p-3"
-            onPointerDown={(e) => e.stopPropagation()}
-        >
-            <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg w-full">
-                <textarea
-                    ref={textareaRef}
-                    placeholder="Send a message..."
-                    className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px] w-full"
-                    rows={1}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                />
-                <div className="mt-1.5 flex justify-between items-center">
-                    <div className="flex items-center gap-0.5">
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
-                        <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">Insert</Button>
-                        <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500" onClick={onSend}><ArrowUp size={14}/></Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 export default function AiAssistantChat({ 
-    initialPrompt, 
-    onPromptChange, 
     onBack, 
     dragControls, 
     handleToggleFullScreen, 
     isFullScreen,
     selectedModel,
     setSelectedModel,
+    chatHistory,
+    isLoading
 }: AiAssistantChatProps) {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { apiKey } = useApiKey();
 
-  useEffect(() => {
-    setInput(initialPrompt);
-    // If there's an initial prompt, start the conversation
-    if (initialPrompt.trim()) {
-        const userMessage: ChatMessage = { role: 'user', content: initialPrompt };
-        setChatHistory([userMessage]);
-        handleAIResponse([userMessage]);
-        onPromptChange(''); // Clear the initial prompt from parent
-    }
-  }, [initialPrompt]);
-
-  const handleAIResponse = async (history: ChatMessage[]) => {
-      setIsLoading(true);
-      try {
-          const result: ConversationalEventOutput = await createConversationalEvent({
-              chatHistory: history.map(m => ({ role: m.role, content: m.content })),
-              apiKey,
-          });
-          if (result.response) {
-              setChatHistory(prev => [...prev, { role: 'model', content: result.response! }]);
-          }
-      } catch (e) {
-          setChatHistory(prev => [...prev, { role: 'model', content: "Sorry, I encountered an error." }]);
-      } finally {
-          setIsLoading(false);
-      }
-  };
-
-  const handleSend = () => {
-    if (!input.trim() || isLoading) return;
-    const newUserMessage: ChatMessage = { role: 'user', content: input };
-    const newHistory = [...chatHistory, newUserMessage];
-    setChatHistory(newHistory);
-    setInput('');
-    handleAIResponse(newHistory);
-  };
-  
   const handleNewChat = () => {
-    setChatHistory([]);
-    setInput('');
+    // This function will be implemented in the parent to clear history
   };
 
   const chatHeaderDragControls = {
@@ -328,15 +243,11 @@ export default function AiAssistantChat({
             onNewChat={handleNewChat}
         />
 
-        <div className="flex-1 flex flex-col min-h-0">
-            <ChatBody chatHistory={chatHistory} />
-             {isLoading && (
-                <div className="px-4 pb-2 flex items-center gap-2 text-sm text-muted-foreground">
-                    <LoadingSpinner size="sm" />
-                    <span>Thinking...</span>
-                </div>
-            )}
-            <ChatFooter onSend={handleSend} input={input} setInput={setInput} />
+        <div className="flex-1 flex min-h-0">
+            <LeftSidebar />
+            <div className="flex-1 flex flex-col relative">
+               <ChatBody chatHistory={chatHistory} isLoading={isLoading} />
+            </div>
         </div>
     </div>
   );
