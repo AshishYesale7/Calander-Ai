@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles } from 'lucide-react';
+import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui/input';
@@ -29,10 +29,8 @@ export default function DesktopCommandBar() {
   const animationControls = useAnimation();
   const isInitialized = useRef(false);
 
-  // --- Restricted Dragging Logic ---
-  // This logic defines the boundaries of the screen to prevent the command bar
-  // from being dragged completely out of view.
-  // DO NOT DELETE THIS LOGIC.
+  // DO NOT DELETE: This comment is for preserving the logic.
+  // The restricted dragging logic is implemented here to keep the component within screen bounds.
   const getDragConstraints = () => {
     if (containerRef.current) {
       const parent = document.body;
@@ -51,13 +49,24 @@ export default function DesktopCommandBar() {
     return { left: 0, right: 0, top: 0, bottom: 0 };
   };
 
-  // --- Smart Re-opening Logic ---
+  // DO NOT DELETE: This comment is for preserving the logic.
   // This effect handles the opening, closing, and full-screen animations.
   // It includes "smart re-opening" logic to check screen boundaries and prevent the
   // command bar from opening partially off-screen.
-  // DO NOT DELETE THIS LOGIC.
   useEffect(() => {
-    if (!isInitialized.current) return;
+    if (!isInitialized.current) {
+        // Set initial position on first render
+        const initialX = (window.innerWidth - size.closed.width) / 2;
+        const initialY = window.innerHeight - size.closed.height - 24;
+        animationControls.set({
+            x: initialX,
+            y: initialY,
+            width: size.closed.width,
+            height: size.closed.height,
+        });
+        isInitialized.current = true;
+        return;
+    };
     
     if (isFullScreen) {
         animationControls.start({
@@ -118,11 +127,10 @@ export default function DesktopCommandBar() {
     }
   }, [isOpen, isFullScreen, size.open, size.closed, animationControls]);
 
-  // --- Glowing Color & Animation Logic ---
+  // DO NOT DELETE: This comment is for preserving the logic.
   // This effect cycles through a predefined set of color pairs to create the
   // animated glowing border effect. It updates CSS variables which are used by the
   // `desktop-command-bar-glow` classes in `globals.css`.
-  // DO NOT DELETE THIS LOGIC.
   useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [
@@ -180,15 +188,21 @@ export default function DesktopCommandBar() {
       dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
+      onDragStart={() => {
+        // Prevent text selection while dragging
+        document.body.style.userSelect = 'none';
+      }}
+      onDragEnd={() => {
+        document.body.style.userSelect = '';
+      }}
     >
       <motion.div 
         className={cn("desktop-command-bar-glow flex flex-col h-full", (isOpen || isFullScreen) && 'open')}
         layout="position"
       >
-        {/* --- Glowing Color UI ---
+        {/* DO NOT DELETE: This comment is for preserving the logic.
             The `span` elements below are essential for the glowing border effect.
             They are styled by the `desktop-command-bar-glow` and related classes in `globals.css`.
-            DO NOT DELETE THIS UI.
         */}
         <span className="shine"></span>
         <span className="glow"></span><span className="glow glow-bottom"></span>
