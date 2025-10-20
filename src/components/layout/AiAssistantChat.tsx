@@ -156,7 +156,12 @@ const ChatBody = () => {
 export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
   const chatHeaderDragControls = {
-      start: dragControls.start,
+      start: (e: React.PointerEvent) => {
+        // Only allow dragging if the dragControls prop is valid
+        if (dragControls && typeof dragControls.start === 'function') {
+            dragControls.start(e);
+        }
+      },
       onBack: onBack,
       handleToggleFullScreen: handleToggleFullScreen,
       isFullScreen: isFullScreen
