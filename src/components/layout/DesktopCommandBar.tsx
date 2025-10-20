@@ -278,8 +278,6 @@ export default function DesktopCommandBar() {
                <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
                   <span>{modelName} ({modelVersion})</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
-                    <span className="text-gray-600">|</span>
                     <div className="flex items-center gap-1">
                         <span>MCP Server:</span>
                         <DropdownMenu>
