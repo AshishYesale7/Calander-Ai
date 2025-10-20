@@ -106,6 +106,20 @@ export default function DesktopCommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  const getDragConstraints = () => {
+    if (containerRef.current) {
+      const currentWidth = isOpen ? size.open.width : size.closed.width;
+      const currentHeight = isOpen ? size.open.height : size.closed.height;
+      return {
+        top: 8,
+        left: 8,
+        right: window.innerWidth - currentWidth - 8,
+        bottom: window.innerHeight - currentHeight - 8,
+      };
+    }
+    return { top: 0, left: 0, right: 0, bottom: 0 };
+  };
+
   return (
     <motion.div
       ref={containerRef}
@@ -113,6 +127,8 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
+      dragConstraints={getDragConstraints()}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -216,4 +232,3 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
-
