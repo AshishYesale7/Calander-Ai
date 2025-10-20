@@ -58,7 +58,7 @@ export default function DesktopCommandBar() {
         targetY = window.innerHeight - size.open.height - 24;
       }
 
-      // NEW: Boundary checks before opening
+      // Boundary checks before opening
       const rightBoundary = window.innerWidth - size.open.width - 8; // 8px padding
       const bottomBoundary = window.innerHeight - size.open.height - 8;
       
@@ -154,7 +154,7 @@ export default function DesktopCommandBar() {
            <div 
             className={cn(
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "py-2 px-3" : "p-2 px-4 cursor-grab active:cursor-grabbing justify-center pb-1"
+              isOpen ? "py-2 px-3" : "p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
