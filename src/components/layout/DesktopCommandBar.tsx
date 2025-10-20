@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
@@ -91,7 +92,6 @@ export default function DesktopCommandBar() {
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
         layout
       >
-        <span className="shine-bottom"></span>
         <span className="glow-bottom"></span>
         <span className="glow-bright glow-bottom"></span>
 
@@ -128,12 +128,13 @@ export default function DesktopCommandBar() {
           </AnimatePresence>
 
           {/* This is the search bar that is now always present but styled differently */}
-          <div 
+           <div 
             className={cn(
-              "relative w-full flex items-center text-gray-400", 
-              isOpen ? "p-2" : "py-2 px-4"
+              "relative w-full flex items-center text-gray-400 transition-all duration-300", 
+              isOpen ? "p-2 border-t border-white/10" : "py-2 px-4"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             <Search className="h-5 w-5 mr-3" />
             <Input
