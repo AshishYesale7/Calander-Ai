@@ -10,6 +10,9 @@ const mockFiles = {
         { name: 'Images', type: 'folder', id: 'img1' },
         { name: 'project-notes.md', type: 'file', id: 'file1', size: '2 KB' },
         { name: 'roadmap.pdf', type: 'file', id: 'file2', size: '1.2 MB' },
+        { name: 'onboarding-video.mp4', type: 'file', id: 'file6', size: '25.6 MB' },
+        { name: 'design-assets.zip', type: 'file', id: 'file7', size: '10.1 MB' },
+        { name: 'client-feedback.docx', type: 'file', id: 'file8', size: '128 KB' },
     ],
     'doc1': [
         { name: 'meeting-notes-q1.docx', type: 'file', id: 'file3', size: '24 KB' },
@@ -49,7 +52,7 @@ const FileSystemBody = () => {
     return (
         <div className="flex-1 flex flex-col h-full bg-black/30 p-4">
             {/* Header with breadcrumbs and actions */}
-            <header className="flex justify-between items-center mb-4">
+            <header className="flex-shrink-0 flex justify-between items-center mb-4">
                 <nav className="flex items-center text-sm text-gray-400">
                     {pathHistory.map((p, index) => (
                         <div key={p.id} className="flex items-center">
@@ -66,28 +69,28 @@ const FileSystemBody = () => {
                 <div className="flex items-center gap-2">
                     <button className="flex items-center gap-2 text-sm text-gray-300 hover:text-white bg-white/10 px-3 py-1.5 rounded-md">
                         <Upload size={16} />
-                        <span>Upload</span>
+                        <span className="hidden sm:inline">Upload</span>
                     </button>
                      <button className="flex items-center gap-2 text-sm text-gray-300 hover:text-white bg-white/10 px-3 py-1.5 rounded-md">
                         <FolderPlus size={16} />
-                        <span>New Folder</span>
+                        <span className="hidden sm:inline">New Folder</span>
                     </button>
                 </div>
             </header>
 
             {/* File grid */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-y-auto">
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
                 {files.map(item => (
                     <div
                         key={item.id}
                         onClick={() => handleItemClick(item)}
-                        className="group flex flex-col items-center justify-center p-4 rounded-lg bg-gray-800/40 hover:bg-gray-700/60 cursor-pointer transition-colors"
+                        className="group flex flex-col items-center justify-center p-2 rounded-lg bg-gray-800/40 hover:bg-gray-700/60 cursor-pointer transition-colors aspect-square"
                     >
                         <div className="relative">
                             {item.type === 'folder' ? (
-                                <Folder className="h-16 w-16 text-yellow-400" />
+                                <Folder className="h-12 w-12 text-yellow-400" />
                             ) : (
-                                <File className="h-16 w-16 text-blue-300" />
+                                <File className="h-12 w-12 text-blue-300" />
                             )}
                             <button className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-white">
                                 <MoreVertical size={14} />
