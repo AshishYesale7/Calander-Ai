@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Bot,
@@ -31,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
+import FileSystemBody from './FileSystemBody';
 
 
 export interface ChatMessage {
@@ -48,7 +50,6 @@ interface AiAssistantChatProps {
   setSelectedModel: (model: string) => void;
   chatHistory: ChatMessage[];
   isLoading: boolean;
-  // New props for history
   chatSessions: ChatSession[];
   activeChatId: string;
   onNewChat: () => void;
@@ -59,18 +60,22 @@ interface AiAssistantChatProps {
 const LeftSidebar = ({ 
     chatSessions, 
     activeChatId, 
-    onSelectChat 
+    onSelectChat,
+    activeView,
+    setActiveView
 }: { 
     chatSessions: ChatSession[], 
     activeChatId: string, 
-    onSelectChat: (id: string) => void 
+    onSelectChat: (id: string) => void,
+    activeView: 'chat' | 'files' | 'terminal' | 'search',
+    setActiveView: (view: 'chat' | 'files' | 'terminal' | 'search') => void,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const icons = [
-    { icon: MessageSquare, label: 'Chat', active: true, action: () => setIsExpanded(prev => !prev) },
-    { icon: Terminal, label: 'Terminal' },
-    { icon: Folder, label: 'Files' },
-    { icon: SearchIcon, label: 'Search' },
+    { id: 'chat', icon: MessageSquare, label: 'Chat' },
+    { id: 'files', icon: Folder, label: 'Files' },
+    { id: 'terminal', icon: Terminal, label: 'Terminal' },
+    { id: 'search', icon: SearchIcon, label: 'Search' },
   ];
   return (
     <div 
@@ -80,15 +85,21 @@ const LeftSidebar = ({
         )}
         onPointerDown={(e) => e.stopPropagation()}
     >
-      {icons.map((item, index) => (
+      {icons.map((item) => (
         <Button
-          key={index}
+          key={item.id}
           variant="ghost"
-          onClick={item.action}
+          onClick={() => {
+            if (item.id === 'chat') setIsExpanded(prev => !prev);
+            else {
+                setActiveView(item.id as 'chat' | 'files' | 'terminal' | 'search');
+                setIsExpanded(false);
+            }
+          }}
           className={cn(
             "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
             isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
-            item.active && 'bg-yellow-400/80 text-black'
+            activeView === item.id && 'bg-yellow-400/80 text-black'
           )}
           aria-label={item.label}
         >
@@ -97,7 +108,7 @@ const LeftSidebar = ({
         </Button>
       ))}
 
-      {isExpanded && (
+      {isExpanded && activeView === 'chat' && (
         <div className="flex-1 mt-2 overflow-y-auto px-2">
             <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
             {chatSessions.map(session => (
@@ -269,6 +280,8 @@ export default function AiAssistantChat({
     onSelectChat
 }: AiAssistantChatProps) {
 
+  const [activeView, setActiveView] = useState<'chat' | 'files' | 'terminal' | 'search'>('chat');
+
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
         if (dragControls && typeof dragControls.start === 'function') {
@@ -294,9 +307,17 @@ export default function AiAssistantChat({
               chatSessions={chatSessions}
               activeChatId={activeChatId}
               onSelectChat={onSelectChat}
+              activeView={activeView}
+              setActiveView={setActiveView}
             />
             <div className="flex-1 flex flex-col relative">
-               <ChatBody chatHistory={chatHistory} isLoading={isLoading} />
+                {activeView === 'chat' && <ChatBody chatHistory={chatHistory} isLoading={isLoading} />}
+                {activeView === 'files' && <FileSystemBody />}
+                {(activeView === 'terminal' || activeView === 'search') && (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                        <p>{activeView.charAt(0).toUpperCase() + activeView.slice(1)} view coming soon.</p>
+                    </div>
+                )}
             </div>
         </div>
     </div>
