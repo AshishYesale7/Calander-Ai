@@ -1,7 +1,7 @@
 
 'use client';
 
-import { motion, useDragControls, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useDragControls, AnimatePresence } from 'framer-motion';
 import { Sparkles, ChevronDown, AudioLines, Search, XCircle, ArrowUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
@@ -96,9 +96,9 @@ export default function DesktopCommandBar() {
         <span className="glow-bottom"></span>
         <span className="glow-bright glow-bottom"></span>
 
-        <div className={cn("inner !p-0 flex flex-col h-full", isOpen ? "justify-between" : "")}>
+        <div className={cn("inner !p-0 flex flex-col h-full", isOpen ? "justify-between" : "justify-center")}>
           <AnimatePresence>
-          {isOpen ? (
+          {isOpen && (
             <motion.div 
               key="chat-view"
               className="flex flex-col h-full"
@@ -125,25 +125,36 @@ export default function DesktopCommandBar() {
                   className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize"
               />
             </motion.div>
-          ) : (
-             <motion.div 
-                key="collapsed-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="relative w-full flex items-center py-2 px-4 text-gray-400"
+          )}
+          </AnimatePresence>
+
+          {/* This is the search bar that is now always present but styled differently */}
+          <div 
+            className={cn(
+              "relative w-full flex items-center text-gray-400", 
+              isOpen ? "p-2 border-t border-white/10" : "py-2 px-4"
+            )}
+            onClick={() => { if (!isOpen) setIsOpen(true); }}
+          >
+            <Search className="h-5 w-5 mr-3" />
+            <Input
+                ref={inputRef}
+                placeholder={isOpen ? "Follow-up question..." : "How can Calendar.ai help?"}
+                className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => {if (!isOpen) setIsOpen(true)}}
+                onPointerDown={(e) => e.stopPropagation()}
+            />
+            <AnimatePresence>
+            {!isOpen ? (
+              <motion.div 
+                key="collapsed-buttons"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="flex items-center gap-2"
               >
-              <Search className="h-5 w-5 mr-3" />
-              <Input
-                  ref={inputRef}
-                  placeholder="How can Calendar.ai help?"
-                  className="flex-1 bg-transparent border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => setIsOpen(true)}
-                  onPointerDown={(e) => e.stopPropagation()}
-              />
-              <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
                       <Sparkles className="h-4 w-4 mr-1.5" />
                       Auto
@@ -152,10 +163,20 @@ export default function DesktopCommandBar() {
                   <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
                       <AudioLines className="h-5 w-5" />
                   </div>
-              </div>
-            </motion.div>
-          )}
-          </AnimatePresence>
+              </motion.div>
+            ) : (
+               <motion.div
+                key="open-button"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+               >
+                 <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500 rounded-full">
+                    <ArrowUp size={18}/>
+                  </Button>
+               </motion.div>
+            )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
     </motion.div>
