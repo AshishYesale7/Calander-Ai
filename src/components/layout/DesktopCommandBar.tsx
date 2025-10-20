@@ -180,7 +180,7 @@ export default function DesktopCommandBar() {
              }}
           >
              <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
-                {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
+                <Paperclip className="h-5 w-5 mr-3" />
                 <Input
                     ref={inputRef}
                     placeholder="Ask Calendar.ai ..."
