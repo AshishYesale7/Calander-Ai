@@ -324,7 +324,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         <AnimatePresence>
           {!isMobile && <DesktopCommandBar />}
 
-          {isMobile && isBottomNavVisible && !isChatInputFocused && !isFullScreen && !isChatSidebarOpen && (
+          {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
                  <MobileBottomNav
                     onCommandClick={() => setIsCommandPaletteOpen(true)}
                     onChatClick={() => setIsChatSidebarOpen(true)}
