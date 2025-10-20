@@ -18,38 +18,41 @@ export default function DesktopCommandBar() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
 
-  const [size, setSize] = useState({ 
+  const [size, setSize] = useState({
       open: { width: 580, height: 480 },
       closed: { width: 400, height: 56 }
   });
-
+  
+  const lastOpenPosition = useRef<{ x: number, y: number } | null>(null);
   const animationControls = useAnimation();
-  const openPosition = useRef<{ x: number; y: number } | null>(null);
   const isInitialized = useRef(false);
 
   // This effect sets the initial, correct bottom-center position
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isInitialized.current) {
-      const x = (window.innerWidth - size.closed.width) / 2;
-      const y = window.innerHeight - size.closed.height - 24;
-      animationControls.set({ x, y, width: size.closed.width, height: size.closed.height });
+    if (typeof window !== 'undefined' && !isInitialized.current && containerRef.current) {
+      const initialX = (window.innerWidth - size.closed.width) / 2;
+      const initialY = window.innerHeight - size.closed.height - 24;
+      animationControls.set({
+          x: initialX,
+          y: initialY,
+          width: size.closed.width,
+          height: size.closed.height,
+      });
       isInitialized.current = true;
     }
   }, [animationControls, size.closed]);
 
   // This effect handles the logic for opening and closing the command bar
   useEffect(() => {
-    // Don't run the animation on the very first render
     if (!isInitialized.current) return;
 
     if (isOpen) {
       let targetX, targetY;
-      // If we have a saved open position, use it.
-      if (openPosition.current) {
-        targetX = openPosition.current.x;
-        targetY = openPosition.current.y;
+      if (lastOpenPosition.current) {
+        targetX = lastOpenPosition.current.x;
+        targetY = lastOpenPosition.current.y;
       } else {
-        // Otherwise, default to the bottom-center for the first open.
+        // Default to bottom-center on first open
         targetX = (window.innerWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
       }
@@ -61,7 +64,6 @@ export default function DesktopCommandBar() {
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
-      // When closing, ALWAYS return to the bottom-center position.
       const closedX = (window.innerWidth - size.closed.width) / 2;
       const closedY = window.innerHeight - size.closed.height - 24;
       animationControls.start({
@@ -115,6 +117,17 @@ export default function DesktopCommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // NEW: Calculate drag constraints based on current size and window dimensions
+  const getDragConstraints = () => {
+    const currentSize = isOpen ? size.open : size.closed;
+    return {
+      top: 0,
+      left: 0,
+      right: window.innerWidth - currentSize.width,
+      bottom: window.innerHeight - currentSize.height,
+    };
+  };
+
 
   return (
     <motion.div
@@ -123,11 +136,16 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      onDragEnd={(_, info) => {
-          if (containerRef.current) {
-              const { x, y } = containerRef.current.getBoundingClientRect();
-              openPosition.current = { x, y };
-          }
+      dragConstraints={getDragConstraints()}
+      dragTransition={{ bounceStiffness: 200, bounceDamping: 25 }}
+      onDragEnd={() => {
+        if (containerRef.current) {
+            const { x, y } = containerRef.current.getBoundingClientRect();
+            // Only update the open position if the card is actually open
+            if (isOpen) {
+              lastOpenPosition.current = { x, y };
+            }
+        }
       }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
