@@ -2,9 +2,9 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Paperclip, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Sparkles, X, Minus, Code, Expand, Shrink } from 'lucide-react';
+import { Paperclip, ChevronDown, Sparkles, X, Minus, Expand, Shrink, ArrowUp } from 'lucide-react';
 import { Button } from '../ui/button';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
@@ -192,8 +192,6 @@ export default function DesktopCommandBar() {
     return { modelName: selectedModel, modelVersion: '' };
   }, [selectedModel]);
 
-  const mcpServers = ['MCP-US-East-1', 'MCP-EU-West-1', 'MCP-Asia-1'];
-
   return (
     <motion.div
       ref={containerRef}
@@ -277,25 +275,6 @@ export default function DesktopCommandBar() {
 
                <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
                   <span>{modelName} ({modelVersion})</span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        <span>MCP Server:</span>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="link" className="p-0 h-auto text-[10px] text-gray-400 hover:text-white">
-                                    {selectedMcpServer} <ChevronDown className="ml-1 h-3 w-3" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="frosted-glass text-xs">
-                                {mcpServers.map(server => (
-                                    <DropdownMenuItem key={server} onSelect={() => setSelectedMcpServer(server)}>
-                                        {server}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                  </div>
               </div>
             </motion.div>
           ) : (
@@ -305,7 +284,7 @@ export default function DesktopCommandBar() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
-                className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
+                className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-text active:cursor-grabbing justify-center"
                 onPointerDown={(e) => dragControls.start(e)}
                 onClick={() => {
                     if (!isOpen) {
@@ -326,6 +305,7 @@ export default function DesktopCommandBar() {
                       onFocus={() => {
                         if (!isOpen) {
                             setIsOpen(true);
+                            setTimeout(() => textareaRef.current?.focus(), 100);
                         }
                       }}
                   />
@@ -334,9 +314,9 @@ export default function DesktopCommandBar() {
                       Auto
                       <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
-                  <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
-                      <AudioLines className="h-5 w-5" />
-                  </div>
+                  <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                      <ArrowUp className="h-5 w-5" />
+                  </Button>
                 </div>
             </motion.div>
           )}
