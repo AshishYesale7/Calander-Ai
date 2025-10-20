@@ -1,7 +1,7 @@
 
 'use client';
 
-import { motion, useDragControls, AnimatePresence } from 'framer-motion';
+import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
 import { Sparkles, ChevronDown, AudioLines, Search, XCircle, ArrowUp, Paperclip } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,67 +18,63 @@ export default function DesktopCommandBar() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
 
-  const [size, setSize] = useState({ width: 580, height: 480 });
-  
-  // Use refs to store position to prevent re-renders on drag, which is smoother.
-  const positionRef = useRef({ x: 0, y: 0 });
+  const [size, setSize] = useState({ 
+      open: { width: 580, height: 480 },
+      closed: { width: 400, height: 56 }
+  });
 
-  const handleResize = (
-    event: PointerEvent,
-    direction: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-  ) => {
-    setSize(prevSize => {
-      let newWidth = prevSize.width;
-      let newHeight = prevSize.height;
+  const animationControls = useAnimation();
+  const openPosition = useRef<{ x: number; y: number } | null>(null);
+  const isInitialized = useRef(false);
 
-      if (direction.includes('right')) newWidth += event.movementX;
-      if (direction.includes('left')) {
-        newWidth -= event.movementX;
-        positionRef.current.x += event.movementX;
+  // This effect sets the initial, correct bottom-center position
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !isInitialized.current) {
+      const x = (window.innerWidth - size.closed.width) / 2;
+      const y = window.innerHeight - size.closed.height - 24;
+      animationControls.set({ x, y, width: size.closed.width, height: size.closed.height });
+      isInitialized.current = true;
+    }
+  }, [animationControls, size.closed]);
+
+  // This effect handles the logic for opening and closing the command bar
+  useEffect(() => {
+    // Don't run the animation on the very first render
+    if (!isInitialized.current) return;
+
+    if (isOpen) {
+      let targetX, targetY;
+      // If we have a saved open position, use it.
+      if (openPosition.current) {
+        targetX = openPosition.current.x;
+        targetY = openPosition.current.y;
+      } else {
+        // Otherwise, default to the bottom-center for the first open.
+        targetX = (window.innerWidth - size.open.width) / 2;
+        targetY = window.innerHeight - size.open.height - 24;
       }
-      if (direction.includes('bottom')) newHeight += event.movementY;
-      if (direction.includes('top')) {
-        newHeight -= event.movementY;
-        positionRef.current.y += event.movementY;
-      }
-      
-      newWidth = Math.max(480, newWidth);
-      newHeight = Math.max(400, newHeight);
+      animationControls.start({
+        x: targetX,
+        y: targetY,
+        width: size.open.width,
+        height: size.open.height,
+        transition: { type: 'spring', stiffness: 400, damping: 30 }
+      });
+    } else {
+      // When closing, ALWAYS return to the bottom-center position.
+      const closedX = (window.innerWidth - size.closed.width) / 2;
+      const closedY = window.innerHeight - size.closed.height - 24;
+      animationControls.start({
+        x: closedX,
+        y: closedY,
+        width: size.closed.width,
+        height: size.closed.height,
+        transition: { type: 'spring', stiffness: 400, damping: 25 }
+      });
+    }
+  }, [isOpen, size.open, size.closed, animationControls]);
 
-      return { width: newWidth, height: newHeight };
-    });
-  };
-  
-  const ResizeHandle = ({ direction }: { direction: 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' }) => {
-    const classMap = {
-      'top': 'cursor-n-resize top-0 left-1/2 -translate-x-1/2 h-2 w-full',
-      'bottom': 'cursor-s-resize bottom-0 left-1/2 -translate-x-1/2 h-2 w-full',
-      'left': 'cursor-w-resize top-1/2 -translate-y-1/2 left-0 w-2 h-full',
-      'right': 'cursor-e-resize top-1/2 -translate-y-1/2 right-0 w-2 h-full',
-      'top-left': 'cursor-nw-resize top-0 left-0 h-3 w-3',
-      'top-right': 'cursor-ne-resize top-0 right-0 h-3 w-3',
-      'bottom-left': 'cursor-sw-resize bottom-0 left-0 h-3 w-3',
-      'bottom-right': 'cursor-se-resize bottom-0 right-0 h-3 w-3',
-    };
-    
-    return (
-       <div
-          onPointerDown={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const onPointerMove = (e: PointerEvent) => handleResize(e, direction);
-            const onPointerUp = () => {
-                document.removeEventListener('pointermove', onPointerMove);
-                document.removeEventListener('pointerup', onPointerUp);
-            };
-            document.addEventListener('pointermove', onPointerMove);
-            document.addEventListener('pointerup', onPointerUp);
-          }}
-          className={cn("absolute", classMap[direction])}
-      />
-    )
-  };
-  
+
   // Effect for cycling through the glow colors
   useEffect(() => {
     let currentIndex = 0;
@@ -106,7 +102,7 @@ export default function DesktopCommandBar() {
         e.preventDefault();
         setIsOpen((open) => {
             if (!open) {
-              setTimeout(() => inputRef.current?.focus(), 0);
+              setTimeout(() => inputRef.current?.focus(), 100);
             }
             return true;
         });
@@ -119,32 +115,6 @@ export default function DesktopCommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Effect to center the component only on initial mount
-  useEffect(() => {
-    if (containerRef.current) {
-        positionRef.current = {
-          x: (window.innerWidth - size.width) / 2,
-          y: window.innerHeight - (isOpen ? size.height : 80) - 24, // 24px from bottom
-        };
-        // Force a re-render to apply initial position
-        if (containerRef.current) {
-          containerRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
-        }
-    }
-  }, []); // Empty dependency array ensures this runs only once
-
-  useEffect(() => {
-    if (containerRef.current) {
-       positionRef.current = {
-        ...positionRef.current,
-        y: window.innerHeight - (isOpen ? size.height : 80) - 24,
-      };
-      if (containerRef.current) {
-        containerRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
-      }
-    }
-  }, [isOpen, size.height]);
-
 
   return (
     <motion.div
@@ -153,46 +123,23 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      style={{ position: 'fixed', zIndex: 40 }}
-      animate={{ 
-        width: size.width, 
-        height: isOpen ? size.height : "auto",
-      }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      onDragStart={() => {
-        if (containerRef.current) {
-          const { x, y } = containerRef.current.getBoundingClientRect();
-          positionRef.current = { x, y };
-        }
-      }}
       onDragEnd={(_, info) => {
-        positionRef.current = {
-            x: positionRef.current.x + info.offset.x,
-            y: positionRef.current.y + info.offset.y
-        };
+          if (containerRef.current) {
+              const { x, y } = containerRef.current.getBoundingClientRect();
+              openPosition.current = { x, y };
+          }
       }}
+      style={{ position: 'fixed', zIndex: 40 }}
+      animate={animationControls}
     >
       <motion.div 
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
-        layout
+        layout="position"
       >
         <span className="shine"></span>
-        
+        <span className="shine-bottom"></span>
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
-        
-        {isOpen && (
-          <>
-            <ResizeHandle direction="top" />
-            <ResizeHandle direction="right" />
-            <ResizeHandle direction="bottom" />
-            <ResizeHandle direction="left" />
-            <ResizeHandle direction="top-left" />
-            <ResizeHandle direction="top-right" />
-            <ResizeHandle direction="bottom-left" />
-            <ResizeHandle direction="bottom-right" />
-          </>
-        )}
 
         <div className={cn("inner !p-0 flex flex-col h-full justify-between")}>
           <AnimatePresence>
@@ -201,8 +148,8 @@ export default function DesktopCommandBar() {
               key="chat-view"
               className="flex-1 flex flex-col min-h-0"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.1 } }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
             >
               <AiAssistantChat 
                 initialPrompt={search} 
@@ -217,6 +164,7 @@ export default function DesktopCommandBar() {
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
               isOpen ? "py-2 px-3 bg-black" : "py-2 px-4 cursor-grab active:cursor-grabbing"
             )}
+            onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
                 if (!isOpen) { 
                     dragControls.start(e)
@@ -236,13 +184,14 @@ export default function DesktopCommandBar() {
                 onFocus={() => {if (!isOpen) setIsOpen(true)}}
                 onPointerDown={(e) => e.stopPropagation()} // Stop this from triggering the parent's drag
             />
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
             {!isOpen ? (
               <motion.div 
                 key="collapsed-buttons"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
                 className="flex items-center gap-2"
               >
                   <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
@@ -258,7 +207,8 @@ export default function DesktopCommandBar() {
                <motion.div
                 key="open-button"
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
+                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
                >
                  <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500 rounded-full">
                     <ArrowUp size={18}/>
