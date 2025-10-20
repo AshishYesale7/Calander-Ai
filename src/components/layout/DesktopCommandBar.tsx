@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -14,6 +13,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
 import { useApiKey } from '@/hooks/use-api-key';
+import shortid from 'shortid';
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+}
 
 export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,10 +34,25 @@ export default function DesktopCommandBar() {
   const dragControls = useDragControls();
 
   // State for chat functionality, lifted up to this component
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
+
+  // Initialize with one empty session
+  useEffect(() => {
+    if (chatSessions.length === 0) {
+      const newId = shortid.generate();
+      setChatSessions([{ id: newId, title: 'New Chat', messages: [], createdAt: new Date() }]);
+      setActiveChatId(newId);
+    }
+  }, [chatSessions]);
+
+  const activeChat = useMemo(() => {
+    return chatSessions.find(session => session.id === activeChatId);
+  }, [chatSessions, activeChatId]);
+
 
   const [size, setSize] = useState({
       open: { width: 580, height: 480 },
@@ -210,24 +232,57 @@ export default function DesktopCommandBar() {
               apiKey,
           });
           if (result.response) {
-              setChatHistory(prev => [...prev, { role: 'model', content: result.response! }]);
+            setChatSessions(prevSessions =>
+              prevSessions.map(session =>
+                session.id === activeChatId
+                  ? { ...session, messages: [...session.messages, { role: 'model', content: result.response! }] }
+                  : session
+              )
+            );
           }
       } catch (e) {
-          setChatHistory(prev => [...prev, { role: 'model', content: "Sorry, I encountered an error." }]);
+          setChatSessions(prevSessions =>
+            prevSessions.map(session =>
+              session.id === activeChatId
+                ? { ...session, messages: [...session.messages, { role: 'model', content: "Sorry, I encountered an error." }] }
+                : session
+            )
+          );
       } finally {
           setIsLoading(false);
       }
   };
+  
+  const handleNewChat = () => {
+    const newId = shortid.generate();
+    const newSession: ChatSession = { id: newId, title: 'New Chat', messages: [], createdAt: new Date() };
+    setChatSessions(prev => [...prev, newSession]);
+    setActiveChatId(newId);
+  };
 
   const handleSend = () => {
     const textToSend = input || search;
-    if (!textToSend.trim() || isLoading) return;
+    if (!textToSend.trim() || isLoading || !activeChatId) return;
+
     const newUserMessage: ChatMessage = { role: 'user', content: textToSend };
-    const newHistory = [...chatHistory, newUserMessage];
-    setChatHistory(newHistory);
+    
+    setChatSessions(prevSessions => {
+      return prevSessions.map(session => {
+        if (session.id === activeChatId) {
+          const newMessages = [...session.messages, newUserMessage];
+          const newTitle = session.messages.length === 0 ? textToSend.substring(0, 30) : session.title;
+          
+          // Trigger AI response after state is updated
+          handleAIResponse(newMessages);
+
+          return { ...session, messages: newMessages, title: newTitle };
+        }
+        return session;
+      });
+    });
+
     setInput('');
     setSearch('');
-    handleAIResponse(newHistory);
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -249,7 +304,6 @@ export default function DesktopCommandBar() {
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
       onDragStart={() => {
-        // Prevent text selection while dragging
         document.body.style.userSelect = 'none';
       }}
       onDragEnd={() => {
@@ -282,8 +336,12 @@ export default function DesktopCommandBar() {
                 isFullScreen={isFullScreen}
                 selectedModel={selectedModel}
                 setSelectedModel={setSelectedModel}
-                chatHistory={chatHistory}
+                chatHistory={activeChat?.messages || []}
                 isLoading={isLoading}
+                chatSessions={chatSessions}
+                activeChatId={activeChatId || ''}
+                onNewChat={handleNewChat}
+                onSelectChat={setActiveChatId}
               />
               <div 
                   className="relative w-full flex items-center text-gray-400 p-3"

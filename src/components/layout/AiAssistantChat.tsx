@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -15,6 +14,7 @@ import {
   Minus,
   Expand,
   Shrink,
+  Plus,
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
@@ -30,6 +30,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import type { ChatSession } from './DesktopCommandBar';
 
 
 export interface ChatMessage {
@@ -47,29 +48,72 @@ interface AiAssistantChatProps {
   setSelectedModel: (model: string) => void;
   chatHistory: ChatMessage[];
   isLoading: boolean;
+  // New props for history
+  chatSessions: ChatSession[];
+  activeChatId: string;
+  onNewChat: () => void;
+  onSelectChat: (id: string) => void;
 }
 
 
-const LeftSidebar = () => {
+const LeftSidebar = ({ 
+    chatSessions, 
+    activeChatId, 
+    onSelectChat 
+}: { 
+    chatSessions: ChatSession[], 
+    activeChatId: string, 
+    onSelectChat: (id: string) => void 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const icons = [
-    { icon: MessageSquare, label: 'Chat', active: true },
+    { icon: MessageSquare, label: 'Chat', active: true, action: () => setIsExpanded(prev => !prev) },
     { icon: Terminal, label: 'Terminal' },
     { icon: Folder, label: 'Files' },
     { icon: SearchIcon, label: 'Search' },
   ];
   return (
-    <div className="w-12 bg-black/20 flex flex-col items-center py-2 gap-2 border-r border-white/10" onPointerDown={(e) => e.stopPropagation()}>
+    <div 
+        className={cn(
+            "bg-black/20 flex flex-col items-center py-2 gap-2 border-r border-white/10 transition-[width] duration-300",
+            isExpanded ? "w-48 items-stretch" : "w-12"
+        )}
+        onPointerDown={(e) => e.stopPropagation()}
+    >
       {icons.map((item, index) => (
         <Button
           key={index}
           variant="ghost"
-          size="icon"
-          className={`h-8 w-8 rounded-lg ${item.active ? 'bg-yellow-400/80 text-black' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}
+          onClick={item.action}
+          className={cn(
+            "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
+            isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
+            item.active && 'bg-yellow-400/80 text-black'
+          )}
           aria-label={item.label}
         >
-          <item.icon className="h-4 w-4" />
+          <item.icon className="h-4 w-4 shrink-0" />
+          {isExpanded && <span className="text-sm truncate">{item.label}</span>}
         </Button>
       ))}
+
+      {isExpanded && (
+        <div className="flex-1 mt-2 overflow-y-auto px-2">
+            <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
+            {chatSessions.map(session => (
+                <button 
+                    key={session.id}
+                    onClick={() => onSelectChat(session.id)}
+                    className={cn(
+                        "w-full text-left text-sm p-2 rounded-md truncate",
+                        session.id === activeChatId ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
+                    )}
+                >
+                    {session.title}
+                </button>
+            ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -122,7 +166,9 @@ const ChatHeader = ({
                 </DropdownMenu>
             </div>
              <div className="flex items-center gap-1">
-                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs" onClick={onNewChat}>New Chat</Button>
+                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs" onClick={onNewChat}>
+                  <Plus className="mr-1 h-3 w-3" /> New Chat
+                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400"><Settings size={16}/></Button>
             </div>
         </div>
@@ -216,12 +262,12 @@ export default function AiAssistantChat({
     selectedModel,
     setSelectedModel,
     chatHistory,
-    isLoading
+    isLoading,
+    chatSessions,
+    activeChatId,
+    onNewChat,
+    onSelectChat
 }: AiAssistantChatProps) {
-
-  const handleNewChat = () => {
-    // This function will be implemented in the parent to clear history
-  };
 
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
@@ -240,11 +286,15 @@ export default function AiAssistantChat({
             dragControls={chatHeaderDragControls} 
             selectedModel={selectedModel} 
             setSelectedModel={setSelectedModel}
-            onNewChat={handleNewChat}
+            onNewChat={onNewChat}
         />
 
         <div className="flex-1 flex min-h-0">
-            <LeftSidebar />
+            <LeftSidebar 
+              chatSessions={chatSessions}
+              activeChatId={activeChatId}
+              onSelectChat={onSelectChat}
+            />
             <div className="flex-1 flex flex-col relative">
                <ChatBody chatHistory={chatHistory} isLoading={isLoading} />
             </div>
