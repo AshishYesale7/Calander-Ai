@@ -48,6 +48,7 @@ export default function DesktopCommandBar() {
 
     if (isOpen) {
       let targetX, targetY;
+      
       if (lastOpenPosition.current) {
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
@@ -56,6 +57,14 @@ export default function DesktopCommandBar() {
         targetX = (window.innerWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
       }
+
+      // NEW: Boundary checks before opening
+      const rightBoundary = window.innerWidth - size.open.width - 8; // 8px padding
+      const bottomBoundary = window.innerHeight - size.open.height - 8;
+      
+      targetX = Math.max(8, Math.min(targetX, rightBoundary));
+      targetY = Math.max(8, Math.min(targetY, bottomBoundary));
+
       animationControls.start({
         x: targetX,
         y: targetY,
@@ -77,26 +86,6 @@ export default function DesktopCommandBar() {
   }, [isOpen, size.open, size.closed, animationControls]);
 
 
-  // Effect for cycling through the glow colors
-  useEffect(() => {
-    let currentIndex = 0;
-    const colorPairs = [
-        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
-        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
-        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
-        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
-    ];
-    const colorInterval = setInterval(() => {
-        const navElement = containerRef.current;
-        if (navElement) {
-            navElement.style.setProperty('--hue1', String(colorPairs[currentIndex].hue1));
-            navElement.style.setProperty('--hue2', String(colorPairs[currentIndex].hue2));
-        }
-        currentIndex = (currentIndex + 1) % colorPairs.length;
-    }, 3000);
-    return () => clearInterval(colorInterval);
-  }, []);
-
   // Effect for keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -117,18 +106,6 @@ export default function DesktopCommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Calculate drag constraints based on current size and window dimensions
-  const getDragConstraints = () => {
-    const currentSize = isOpen ? size.open : size.closed;
-    return {
-      top: 0,
-      left: 0,
-      right: window.innerWidth - currentSize.width,
-      bottom: window.innerHeight - currentSize.height,
-    };
-  };
-
-
   return (
     <motion.div
       ref={containerRef}
@@ -136,8 +113,6 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 200, bounceDamping: 15 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -188,11 +163,11 @@ export default function DesktopCommandBar() {
                 }
              }}
           >
-            <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
+             <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
                 {isOpen ? <Paperclip className="h-5 w-5 mr-3" /> : <Search className="h-5 w-5 mr-3" />}
                 <Input
                     ref={inputRef}
-                    placeholder={isOpen ? "Ask Calendar.ai ..." : "Ask Calendar.ai"}
+                    placeholder="Ask Calendar.ai ..."
                     className={cn(
                       "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
                       isOpen ? "bg-black" : "bg-transparent cursor-pointer"
@@ -241,3 +216,4 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
+
