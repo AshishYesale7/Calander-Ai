@@ -26,11 +26,16 @@ import {
   Expand,
   Shrink,
 } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '../ui/badge';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
 import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface AiAssistantChatProps {
   initialPrompt: string;
@@ -67,23 +72,53 @@ const LeftSidebar = () => {
   );
 };
 
-const ChatHeader = ({dragControls}: {dragControls: any}) => (
-  // DO NOT DELETE: This comment is for preserving the logic.
-  // The glowing color and its changing color logic and UI are managed here.
-  <div className="flex-shrink-0 h-9 border-b border-white/10 flex items-center justify-between px-1.5 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
-    <div className="flex items-center gap-0.5">
-      <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400"><ChevronLeft size={16} /></Button>
-      <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400"><ChevronRight size={16} /></Button>
-    </div>
-    <div className="flex-1 flex items-center justify-center">
-        <div className="bg-white/10 px-2 py-0.5 rounded-md text-xs flex items-center gap-1 border-b-2 border-white/50">
-            <span>Unnamed Chat</span>
-            <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-400"><MoreHorizontal size={14}/></Button>
+const ChatHeader = ({ dragControls, selectedModel, setSelectedModel }: { dragControls: any, selectedModel: string, setSelectedModel: (model: string) => void }) => {
+    const aiModels = ['Gemini 2.5 Pro', 'Gemini 2.0 Flash', 'Gemini 2.0 Nano'];
+    return (
+        // DO NOT DELETE: This comment is for preserving the logic.
+        // The glowing color and its changing color logic and UI are managed here.
+        <div className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
+            <div className="flex items-center gap-2">
+                {/* --- Glowing Color UI (Traffic Lights) ---
+                    These buttons are part of the UI for the command bar, providing controls
+                    for closing, minimizing, and maximizing.
+                    DO NOT DELETE THIS UI.
+                */}
+                <div className="flex gap-1.5 p-2">
+                    <button onClick={dragControls.onBack} aria-label="Close" className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <X size={10} strokeWidth={4} />
+                    </button>
+                    <button className="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
+                        <Minus size={10} strokeWidth={4} />
+                    </button>
+                    <button onClick={dragControls.handleToggleFullScreen} aria-label={dragControls.isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
+                         {dragControls.isFullScreen ? <Shrink size={8} strokeWidth={3} /> : <Expand size={8} strokeWidth={3} />}
+                    </button>
+                </div>
+            </div>
+            <div className="flex-1 flex justify-center">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">
+                            {selectedModel} <ChevronDown className="ml-1.5 h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="frosted-glass">
+                        {aiModels.map(model => (
+                            <DropdownMenuItem key={model} onSelect={() => setSelectedModel(model)}>
+                                {model}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+             <div className="flex items-center gap-1">
+                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">Eject</Button>
+                 <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400"><Settings size={16}/></Button>
+            </div>
         </div>
-    </div>
-    <div className="w-12"></div>
-  </div>
-);
+    )
+};
 
 const ChatBody = () => {
     const { user } = useAuth();
@@ -119,47 +154,24 @@ const ChatBody = () => {
 
 
 export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
-
+  const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
+  const chatHeaderDragControls = {
+      start: dragControls.start,
+      onBack: onBack,
+      handleToggleFullScreen: handleToggleFullScreen,
+      isFullScreen: isFullScreen
+  }
   return (
     // DO NOT DELETE: This comment is for preserving the logic.
     // The glowing color and its changing color logic and UI are managed here.
     <div className="flex flex-col h-full bg-[#1d2025] text-white rounded-xl overflow-hidden">
         {/* Main Header */}
-        <div className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
-            <div className="flex items-center gap-2">
-                {/* --- Glowing Color UI (Traffic Lights) ---
-                    These buttons are part of the UI for the command bar, providing controls
-                    for closing, minimizing, and maximizing.
-                    DO NOT DELETE THIS UI.
-                */}
-                <div className="flex gap-1.5 p-2">
-                    <button onClick={onBack} aria-label="Close" className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
-                        <X size={10} strokeWidth={4} />
-                    </button>
-                    <button className="h-4 w-4 rounded-full bg-yellow-500 flex items-center justify-center text-black/60 hover:text-black">
-                        <Minus size={10} strokeWidth={4} />
-                    </button>
-                    <button onClick={handleToggleFullScreen} aria-label={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center text-black/60 hover:text-black">
-                         {isFullScreen ? <Shrink size={8} strokeWidth={3} /> : <Expand size={8} strokeWidth={3} />}
-                    </button>
-                </div>
-            </div>
-            <div className="flex-1 flex justify-center">
-                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">
-                    Select a model <ChevronDown className="ml-1.5 h-3 w-3" />
-                </Button>
-            </div>
-             <div className="flex items-center gap-1">
-                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs">Eject</Button>
-                 <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400"><Settings size={16}/></Button>
-            </div>
-        </div>
+         <ChatHeader dragControls={chatHeaderDragControls} selectedModel={selectedModel} setSelectedModel={setSelectedModel} />
 
         {/* Main Body */}
         <div className="flex flex-1 min-h-0">
             <LeftSidebar />
             <div className="flex-1 flex flex-col">
-                <ChatHeader dragControls={dragControls} />
                 <ChatBody />
             </div>
         </div>
