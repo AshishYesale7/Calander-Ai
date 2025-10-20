@@ -31,7 +31,7 @@ export default function DesktopCommandBar() {
   useEffect(() => {
     if (typeof window !== 'undefined' && !isInitialized.current && containerRef.current) {
       const initialX = (window.innerWidth - size.closed.width) / 2;
-      const initialY = window.innerHeight - size.closed.height - 24;
+      const initialY = window.innerHeight - size.closed.height - 24; // 24px from bottom
       animationControls.set({
           x: initialX,
           y: initialY,
@@ -137,7 +137,7 @@ export default function DesktopCommandBar() {
       dragControls={dragControls}
       dragMomentum={false}
       dragConstraints={getDragConstraints()}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       onDragEnd={() => {
         if (containerRef.current) {
             const { x, y } = containerRef.current.getBoundingClientRect();
@@ -148,6 +148,7 @@ export default function DesktopCommandBar() {
         }
       }}
       style={{ position: 'fixed', zIndex: 40 }}
+      animate={animationControls}
     >
       <motion.div 
         className={cn("desktop-command-bar-glow flex flex-col h-full", isOpen && 'open')}
@@ -178,7 +179,7 @@ export default function DesktopCommandBar() {
            <div 
             className={cn(
               "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "py-2 px-3 bg-black" : "p-2 px-4 cursor-grab active:cursor-grabbing"
+              isOpen ? "py-2 px-3" : "p-2 px-4 cursor-grab active:cursor-grabbing justify-center pb-1"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
             onPointerDown={(e) => {
@@ -238,3 +239,4 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
+
