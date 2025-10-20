@@ -28,6 +28,28 @@ export default function DesktopCommandBar() {
   const animationControls = useAnimation();
   const isInitialized = useRef(false);
 
+  const getDragConstraints = () => {
+    if (containerRef.current) {
+      const parent = document.body; // Constrain to the entire body
+      if (parent) {
+        const parentRect = parent.getBoundingClientRect();
+        const selfRect = containerRef.current.getBoundingClientRect();
+        
+        // We calculate constraints relative to the element's current position,
+        // which Framer Motion does automatically if we just give it the parent boundaries.
+        // For this to work correctly with a fixed element, we can set the boundaries
+        // to be the viewport dimensions minus the element's size.
+        return {
+          left: 0,
+          right: parentRect.width - selfRect.width,
+          top: 0,
+          bottom: parentRect.height - selfRect.height,
+        };
+      }
+    }
+    return { left: 0, right: 0, top: 0, bottom: 0 };
+  };
+
   // This effect sets the initial, correct bottom-center position
   useEffect(() => {
     if (typeof window !== 'undefined' && !isInitialized.current && containerRef.current) {
@@ -87,6 +109,15 @@ export default function DesktopCommandBar() {
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
+      // Before closing, save the current position if it was open
+      if (containerRef.current) {
+         const { x, y } = containerRef.current.getBoundingClientRect();
+         // Check if it's not already at the closing position to avoid saving it
+         if (y < window.innerHeight - size.closed.height - 50) {
+            lastOpenPosition.current = { x, y };
+         }
+      }
+      
       const closedX = (window.innerWidth - size.closed.width) / 2;
       const closedY = window.innerHeight - size.closed.height - 24;
       animationControls.start({
@@ -133,14 +164,13 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      onDragEnd={() => {
-        if (containerRef.current && !isFullScreen) {
-            const { x, y } = containerRef.current.getBoundingClientRect();
-            if (isOpen) {
-              lastOpenPosition.current = { x, y };
-            }
-        }
+      dragConstraints={{
+        top: 0,
+        left: 0,
+        right: typeof window !== 'undefined' ? window.innerWidth - (isOpen ? size.open.width : size.closed.width) : 0,
+        bottom: typeof window !== 'undefined' ? window.innerHeight - (isOpen ? size.open.height : size.closed.height) : 0,
       }}
+      dragTransition={{ bounceStiffness: 200, bounceDamping: 15 }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
     >
@@ -237,5 +267,3 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
-
-    
