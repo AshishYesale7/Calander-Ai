@@ -10,7 +10,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -21,6 +21,7 @@ export default function DesktopCommandBar() {
   const [search, setSearch] = useState('');
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
   const [selectedMcpServer, setSelectedMcpServer] = useState('Calendar ai');
+  const mcpServers = ['Calendar ai', 'Google Drive', 'Gmail', 'Slack', 'Notion'];
   const containerRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
@@ -315,9 +316,23 @@ export default function DesktopCommandBar() {
                   </div>
               </div>
 
-              <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
+               <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
                   <span>{modelName} ({modelVersion})</span>
-                   <span className="text-gray-500">MCP Server: {selectedMcpServer}</span>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="link" size="sm" className="h-auto p-0 text-xs text-gray-500 hover:text-white">
+                              MCP Server: {selectedMcpServer} <ChevronDown className="ml-1.5 h-3 w-3" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="frosted-glass">
+                          <DropdownMenuLabel>MCP Server</DropdownMenuLabel>
+                          {mcpServers.map(server => (
+                              <DropdownMenuItem key={server} onSelect={() => setSelectedMcpServer(server)}>
+                                  {server}
+                              </DropdownMenuItem>
+                          ))}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
               </div>
             </motion.div>
           ) : (
