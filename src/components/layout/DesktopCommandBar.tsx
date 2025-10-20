@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -17,6 +18,7 @@ export default function DesktopCommandBar() {
   const [search, setSearch] = useState('');
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
 
   const [size, setSize] = useState({
@@ -80,6 +82,8 @@ export default function DesktopCommandBar() {
     }
 
     if (isOpen) {
+      // When opening, focus the textarea
+      setTimeout(() => textareaRef.current?.focus(), 100);
       let targetX, targetY;
       
       if (lastOpenPosition.current) {
@@ -253,6 +257,7 @@ export default function DesktopCommandBar() {
                      >
                        <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg">
                             <Textarea
+                                ref={textareaRef}
                                 placeholder="Send a message..."
                                 className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
                                 rows={1}
@@ -290,7 +295,7 @@ export default function DesktopCommandBar() {
                           placeholder="Ask Calendar.ai..."
                           className={cn(
                             "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
-                            "bg-transparent cursor-pointer"
+                            "bg-transparent cursor-text"
                           )}
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
