@@ -101,7 +101,7 @@ export default function DesktopCommandBar() {
           {isOpen && (
             <motion.div 
               key="chat-view"
-              className="flex flex-col h-full"
+              className="flex-1 flex flex-col min-h-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -132,7 +132,7 @@ export default function DesktopCommandBar() {
           <div 
             className={cn(
               "relative w-full flex items-center text-gray-400", 
-              isOpen ? "p-2 border-t border-white/10" : "py-2 px-4"
+              isOpen ? "p-2" : "py-2 px-4"
             )}
             onClick={() => { if (!isOpen) setIsOpen(true); }}
           >
