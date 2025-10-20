@@ -213,7 +213,7 @@ export default function DesktopCommandBar() {
 
         <div className={cn("inner !p-0 flex flex-col h-full justify-between")}>
           <AnimatePresence>
-          {isOpen && (
+          {isOpen ? (
             <motion.div 
               key="chat-view"
               className="flex-1 flex flex-col min-h-0"
@@ -223,97 +223,49 @@ export default function DesktopCommandBar() {
             >
               <AiAssistantChat 
                 initialPrompt={search} 
+                onPromptChange={setSearch}
                 onBack={() => setIsOpen(false)}
                 dragControls={dragControls}
                 handleToggleFullScreen={handleToggleFullScreen}
                 isFullScreen={isFullScreen}
+                textareaRef={textareaRef}
               />
+            </motion.div>
+          ) : (
+             <motion.div 
+                key="collapsed-bar"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
+                onPointerDown={(e) => dragControls.start(e)}
+              >
+                <div className="flex items-center w-full translate-y-[-2px]">
+                  <Paperclip className="h-5 w-5 mr-3" />
+                  <Input
+                      ref={inputRef}
+                      placeholder="Ask Calendar.ai..."
+                      className={cn(
+                        "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
+                        "bg-transparent cursor-text"
+                      )}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onFocus={() => {if (!isOpen) setIsOpen(true)}}
+                  />
+                  <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
+                      <Sparkles className="h-4 w-4 mr-1.5" />
+                      Auto
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                  <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                      <AudioLines className="h-5 w-5" />
+                  </div>
+                </div>
             </motion.div>
           )}
           </AnimatePresence>
-           <div 
-            className={cn(
-              "relative w-full flex items-center text-gray-400 transition-all duration-300", 
-              isOpen ? "py-2 px-3" : "p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
-            )}
-            onClick={() => { if (!isOpen) setIsOpen(true); }}
-            onPointerDown={(e) => {
-                if (!isOpen) { 
-                    dragControls.start(e)
-                }
-             }}
-          >
-             <div className={cn("flex items-center w-full", isOpen ? "" : "translate-y-[-2px]")}>
-                
-                <AnimatePresence mode="wait">
-                {isOpen ? (
-                     <motion.div 
-                        key="open-input"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1, transition: { delay: 0.1 } }}
-                        exit={{ opacity: 0, transition: { duration: 0.1 } }}
-                        className="w-full"
-                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag from input area
-                     >
-                       <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg">
-                            <Textarea
-                                ref={textareaRef}
-                                placeholder="Send a message..."
-                                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
-                                rows={1}
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                            <div className="mt-1.5 flex justify-between items-center">
-                                <div className="flex items-center gap-0.5">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
-                                    <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
-                                        rag-v1 <X size={10} className="ml-1 cursor-pointer" />
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
-                                    <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">Insert</Button>
-                                    <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500"><ArrowUp size={14}/></Button>
-                                </div>
-                            </div>
-                        </div>
-                     </motion.div>
-                ) : (
-                  <motion.div 
-                    key="collapsed-bar"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center w-full"
-                  >
-                      <Paperclip className="h-5 w-5 mr-3" />
-                      <Input
-                          ref={inputRef}
-                          placeholder="Ask Calendar.ai..."
-                          className={cn(
-                            "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
-                            "bg-transparent cursor-text"
-                          )}
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          onFocus={() => {if (!isOpen) setIsOpen(true)}}
-                      />
-                      <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
-                          <Sparkles className="h-4 w-4 mr-1.5" />
-                          Auto
-                          <ChevronDown className="h-4 w-4 ml-1" />
-                      </Button>
-                      <div className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
-                          <AudioLines className="h-5 w-5" />
-                      </div>
-                  </motion.div>
-                )}
-                </AnimatePresence>
-            </div>
-          </div>
         </div>
       </motion.div>
     </motion.div>

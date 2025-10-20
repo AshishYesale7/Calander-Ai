@@ -34,10 +34,12 @@ import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
 
 interface AiAssistantChatProps {
   initialPrompt: string;
+  onPromptChange: (value: string) => void;
   onBack: () => void;
   dragControls: any;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
 const LeftSidebar = () => {
@@ -117,7 +119,7 @@ const ChatBody = () => {
 };
 
 
-export default function AiAssistantChat({ initialPrompt, onBack, dragControls, handleToggleFullScreen, isFullScreen }: AiAssistantChatProps) {
+export default function AiAssistantChat({ initialPrompt, onPromptChange, onBack, dragControls, handleToggleFullScreen, isFullScreen, textareaRef }: AiAssistantChatProps) {
 
   return (
     // DO NOT DELETE: This comment is for preserving the logic.
@@ -160,6 +162,38 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls, h
             <div className="flex-1 flex flex-col">
                 <ChatHeader dragControls={dragControls} />
                 <ChatBody />
+
+                {/* Input Area */}
+                <div 
+                    className="relative w-full flex items-center text-gray-400 py-2 px-3"
+                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag from input area
+                >
+                    <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg w-full">
+                        <Textarea
+                            ref={textareaRef}
+                            placeholder="Send a message..."
+                            className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none min-h-[32px]"
+                            rows={1}
+                            value={initialPrompt}
+                            onChange={(e) => onPromptChange(e.target.value)}
+                        />
+                        <div className="mt-1.5 flex justify-between items-center">
+                            <div className="flex items-center gap-0.5">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
+                                <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
+                                    rag-v1 <X size={10} className="ml-1 cursor-pointer" />
+                                </Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
+                                <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">Insert</Button>
+                                <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500"><ArrowUp size={14}/></Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                  <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between">
                     <span>LM Studio 0.3.30</span>
                     <span className="font-mono">RAM: 0 GB | CPU: 0 %</span>
