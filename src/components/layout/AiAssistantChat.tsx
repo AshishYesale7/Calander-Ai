@@ -119,7 +119,11 @@ export default function AiAssistantChat({ initialPrompt, onBack, dragControls, h
         {/* Main Header */}
         <div className="flex-shrink-0 h-11 border-b border-white/10 flex items-center justify-between px-2 pr-3 cursor-grab active:cursor-grabbing" onPointerDown={(e) => dragControls.start(e)}>
             <div className="flex items-center gap-2">
-                {/* Traffic light buttons */}
+                {/* --- Glowing Color UI (Traffic Lights) ---
+                    These buttons are part of the UI for the command bar, providing controls
+                    for closing, minimizing, and maximizing.
+                    DO NOT DELETE THIS UI.
+                */}
                 <div className="flex gap-1.5 p-2">
                     <button onClick={onBack} aria-label="Close" className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-black/60 hover:text-black">
                         <X size={10} strokeWidth={4} />

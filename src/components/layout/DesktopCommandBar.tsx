@@ -28,17 +28,17 @@ export default function DesktopCommandBar() {
   const animationControls = useAnimation();
   const isInitialized = useRef(false);
 
+  // --- Restricted Dragging Logic ---
+  // This logic defines the boundaries of the screen to prevent the command bar
+  // from being dragged completely out of view.
+  // DO NOT DELETE THIS LOGIC.
   const getDragConstraints = () => {
     if (containerRef.current) {
-      const parent = document.body; // Constrain to the entire body
+      const parent = document.body;
       if (parent) {
         const parentRect = parent.getBoundingClientRect();
         const selfRect = containerRef.current.getBoundingClientRect();
         
-        // We calculate constraints relative to the element's current position,
-        // which Framer Motion does automatically if we just give it the parent boundaries.
-        // For this to work correctly with a fixed element, we can set the boundaries
-        // to be the viewport dimensions minus the element's size.
         return {
           left: 0,
           right: parentRect.width - selfRect.width,
@@ -65,7 +65,11 @@ export default function DesktopCommandBar() {
     }
   }, [animationControls, size.closed]);
 
-  // This effect handles the logic for opening and closing the command bar
+  // --- Smart Re-opening & Fullscreen Logic ---
+  // This effect handles the opening, closing, and full-screen animations.
+  // It includes "smart re-opening" logic to check screen boundaries and prevent the
+  // command bar from opening partially off-screen.
+  // DO NOT DELETE THIS LOGIC.
   useEffect(() => {
     if (!isInitialized.current) return;
     
@@ -78,7 +82,7 @@ export default function DesktopCommandBar() {
             borderRadius: '0px',
             transition: { type: 'spring', stiffness: 400, damping: 30 }
         });
-        return; // Don't proceed to other states if fullscreen
+        return; 
     }
 
     if (isOpen) {
@@ -88,13 +92,12 @@ export default function DesktopCommandBar() {
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
       } else {
-        // Default to bottom-center on first open
         targetX = (window.innerWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
       }
 
-      // Boundary checks before opening
-      const rightBoundary = window.innerWidth - size.open.width - 8; // 8px padding
+      // Boundary checks before opening to prevent overflow.
+      const rightBoundary = window.innerWidth - size.open.width - 8;
       const bottomBoundary = window.innerHeight - size.open.height - 8;
       
       targetX = Math.max(8, Math.min(targetX, rightBoundary));
@@ -105,14 +108,12 @@ export default function DesktopCommandBar() {
         y: targetY,
         width: size.open.width,
         height: size.open.height,
-        borderRadius: '1.25rem', // From cmdk-dialog-glass
+        borderRadius: '1.25rem',
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
-      // Before closing, save the current position if it was open
       if (containerRef.current) {
          const { x, y } = containerRef.current.getBoundingClientRect();
-         // Check if it's not already at the closing position to avoid saving it
          if (y < window.innerHeight - size.closed.height - 50) {
             lastOpenPosition.current = { x, y };
          }
@@ -125,12 +126,37 @@ export default function DesktopCommandBar() {
         y: closedY,
         width: size.closed.width,
         height: size.closed.height,
-        borderRadius: '1.375rem', // 22px
+        borderRadius: '1.375rem',
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
     }
   }, [isOpen, isFullScreen, size.open, size.closed, animationControls]);
 
+  // --- Glowing Color & Animation Logic ---
+  // This effect cycles through a predefined set of color pairs to create the
+  // animated glowing border effect. It updates CSS variables which are used by the
+  // `desktop-command-bar-glow` classes in `globals.css`.
+  // DO NOT DELETE THIS LOGIC.
+  useEffect(() => {
+    let currentIndex = 0;
+    const colorPairs = [
+        { hue1: 320, hue2: 280 }, { hue1: 280, hue2: 240 },
+        { hue1: 240, hue2: 180 }, { hue1: 180, hue2: 140 },
+        { hue1: 140, hue2: 60 },  { hue1: 60, hue2: 30 },
+        { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
+    ];
+    const colorInterval = setInterval(() => {
+        const bar = containerRef.current;
+        if (bar) {
+            const nextColor = colorPairs[currentIndex];
+            bar.style.setProperty('--hue1', String(nextColor.hue1));
+            bar.style.setProperty('--hue2', String(nextColor.hue2));
+        }
+
+        currentIndex = (currentIndex + 1) % colorPairs.length;
+    }, 3000);
+    return () => clearInterval(colorInterval);
+  }, []);
 
   // Effect for keyboard shortcuts
   useEffect(() => {
@@ -164,12 +190,7 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      dragConstraints={{
-        top: 0,
-        left: 0,
-        right: typeof window !== 'undefined' ? window.innerWidth - (isOpen ? size.open.width : size.closed.width) : 0,
-        bottom: typeof window !== 'undefined' ? window.innerHeight - (isOpen ? size.open.height : size.closed.height) : 0,
-      }}
+      dragConstraints={getDragConstraints()}
       dragTransition={{ bounceStiffness: 200, bounceDamping: 15 }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
@@ -178,6 +199,11 @@ export default function DesktopCommandBar() {
         className={cn("desktop-command-bar-glow flex flex-col h-full", (isOpen || isFullScreen) && 'open')}
         layout="position"
       >
+        {/* --- Glowing Color UI ---
+            The `span` elements below are essential for the glowing border effect.
+            They are styled by the `desktop-command-bar-glow` and related classes in `globals.css`.
+            DO NOT DELETE THIS UI.
+        */}
         <span className="shine"></span>
         <span className="glow"></span><span className="glow glow-bottom"></span>
         <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
@@ -218,7 +244,7 @@ export default function DesktopCommandBar() {
                 <Paperclip className="h-5 w-5 mr-3" />
                 <Input
                     ref={inputRef}
-                    placeholder="Ask Calendar.ai ..."
+                    placeholder="Ask Calendar.ai..."
                     className={cn(
                       "flex-1 border-none text-base text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-1",
                       isOpen ? "bg-black" : "bg-transparent cursor-pointer"
@@ -226,7 +252,7 @@ export default function DesktopCommandBar() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onFocus={() => {if (!isOpen) setIsOpen(true)}}
-                    onPointerDown={(e) => e.stopPropagation()} // Stop this from triggering the parent's drag
+                    onPointerDown={(e) => e.stopPropagation()}
                 />
                 <AnimatePresence mode="wait">
                 {!isOpen ? (
