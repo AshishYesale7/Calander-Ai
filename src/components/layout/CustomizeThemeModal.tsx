@@ -115,8 +115,8 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // Increased limit for videos
-        toast({ title: 'Error', description: 'File size exceeds 50MB limit.', variant: 'destructive' });
+      if (file.size > 100 * 1024 * 1024) { // Increased limit for videos
+        toast({ title: 'Error', description: 'File size exceeds 100MB limit.', variant: 'destructive' });
         return;
       }
       setUploadedFile(file);
@@ -316,7 +316,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
 
             <div className="space-y-2">
               <Label htmlFor="background-file-upload" className="text-sm flex items-center">
-                <ImageUp className="mr-2 h-4 w-4" /> Upload Image or Video (Max 50MB)
+                <ImageUp className="mr-2 h-4 w-4" /> Upload Image or Video (Max 100MB)
               </Label>
               <Input id="background-file-upload" type="file" accept="image/*,video/mp4,video/webm" onChange={handleFileChange} />
             </div>
