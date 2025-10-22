@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -12,12 +13,40 @@ import { useEffect } from 'react';
 import { ApiKeyProvider } from '@/context/ApiKeyContext';
 import { TimezoneProvider } from '@/context/TimezoneContext';
 
+function BackgroundManager() {
+  const { backgroundVideo, backgroundImage, backgroundColor } = useTheme();
+
+  useEffect(() => {
+    document.body.style.backgroundImage = backgroundImage ? `url("${backgroundImage}")` : '';
+    document.body.style.backgroundColor = backgroundColor || '';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  }, [backgroundImage, backgroundColor]);
+  
+  if (backgroundVideo) {
+    return (
+      <video
+        key={backgroundVideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed top-0 left-0 w-full h-full object-cover -z-10"
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    );
+  }
+
+  return null;
+}
+
 function AppThemeApplicator({ children }: { children: ReactNode }) {
   const { 
     theme: userPreferredTheme, 
-    backgroundImage, 
-    backgroundColor, 
-    customTheme, 
     glassEffect, 
     glassEffectSettings, 
     isMounted 
@@ -29,48 +58,19 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     if (isMounted) {
       const root = document.documentElement;
       
-      // 1. Set Light/Dark mode class
       root.classList.remove('light', 'dark');
       const themeClass = isAuthPage ? 'dark' : userPreferredTheme;
       if (typeof themeClass === 'string') {
         root.classList.add(themeClass);
       }
       
-      // 2. Apply custom theme colors as CSS variables
-      if (customTheme) {
-        Object.entries(customTheme).forEach(([key, value]) => {
-          root.style.setProperty(key, value);
-        });
-      } else {
-        // Clear custom theme variables when not in use
-        const themeKeys = ['--background', '--foreground', '--card', '--primary', '--accent']; // Add all your theme keys here
-        themeKeys.forEach(key => root.style.removeProperty(key));
-      }
-
-      // 3. Apply background color first
-      document.body.style.backgroundColor = backgroundColor || '';
-
-      // 4. Apply background image, which will sit on top of the color
-      if (backgroundImage) {
-        document.body.style.backgroundImage = `url("${backgroundImage}")`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundRepeat = 'no-repeat';
-        document.body.style.backgroundAttachment = 'fixed';
-      } else {
-        document.body.style.backgroundImage = '';
-      }
-
-      // 5. Apply glass effect data attribute
       if (glassEffect) {
         root.setAttribute('data-glass-effect', glassEffect);
       } else {
         root.removeAttribute('data-glass-effect');
       }
       
-      // 6. Apply dynamic glass effect settings as CSS variables
       if (glassEffectSettings) {
-        // Check for each setting property before applying to prevent runtime errors
         if (glassEffectSettings.frosted) {
           root.style.setProperty('--glass-blur', `${glassEffectSettings.frosted.blur}px`);
         }
@@ -88,19 +88,8 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
       }
 
     }
-  }, [pathname, userPreferredTheme, isAuthPage, backgroundImage, backgroundColor, customTheme, glassEffect, glassEffectSettings, isMounted]);
+  }, [pathname, userPreferredTheme, isAuthPage, glassEffect, glassEffectSettings, isMounted]);
 
-  // Clean up body styles on unmount or if background is removed
-  useEffect(() => {
-    return () => {
-      if (isMounted) {
-        document.body.style.backgroundImage = '';
-        document.body.style.backgroundColor = '';
-      }
-    };
-  }, [isMounted]);
-
-  // Effect to register the Firebase messaging service worker
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       const firebaseConfig = {
@@ -112,7 +101,6 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
         appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       };
       
-      // Ensure all firebase config values are present before registering
       if (Object.values(firebaseConfig).every(Boolean)) {
         const queryParams = new URLSearchParams(firebaseConfig as Record<string, string>).toString();
         const swUrl = `/firebase-messaging-sw.js?${queryParams}`;
@@ -130,7 +118,6 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Effect to disable right-click, copy, and certain keyboard shortcuts
   useEffect(() => {
     const disabledEvent = (e: Event) => {
         e.stopPropagation();
@@ -143,30 +130,12 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     const handleCut = (e: ClipboardEvent) => e.preventDefault();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-        // "I" key (Ctrl+Shift+I)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-            disabledEvent(e);
-        }
-        // "J" key (Ctrl+Shift+J)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
-            disabledEvent(e);
-        }
-        // "S" key (Ctrl+S or Cmd+S)
-        if (e.keyCode === 83 && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) {
-            disabledEvent(e);
-        }
-        // "U" key (Ctrl+U)
-        if (e.ctrlKey && e.keyCode === 85) {
-            disabledEvent(e);
-        }
-        // "F12" key
-        if (e.keyCode === 123) {
-            disabledEvent(e);
-        }
-        // "C" key (Ctrl+C)
-        if (e.ctrlKey && e.keyCode === 67) {
-            disabledEvent(e);
-        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 73) disabledEvent(e);
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 74) disabledEvent(e);
+        if (e.keyCode === 83 && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) disabledEvent(e);
+        if (e.ctrlKey && e.keyCode === 85) disabledEvent(e);
+        if (e.keyCode === 123) disabledEvent(e);
+        if (e.ctrlKey && e.keyCode === 67) disabledEvent(e);
     };
     
     document.addEventListener('contextmenu', handleContextMenu);
@@ -182,7 +151,12 @@ function AppThemeApplicator({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      <BackgroundManager />
+      {children}
+    </>
+  );
 }
 
 export default function RootLayout({
@@ -245,5 +219,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-  

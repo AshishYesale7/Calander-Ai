@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTheme } from '@/hooks/use-theme';
 import { useToast } from '@/hooks/use-toast';
-import { ImageUp, Link, Trash2, Palette, Slash, Paintbrush, Text, Sparkles, Box, Droplets, Layers } from 'lucide-react';
+import { ImageUp, Link, Trash2, Palette, Slash, Paintbrush, Text, Sparkles, Box, Droplets, Layers, Video } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { ColorPickerPopover } from '../ui/ColorPickerPopover';
@@ -48,6 +48,7 @@ const glassEffectConfig: {id: GlassEffect, label: string, icon: React.ElementTyp
 export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeThemeModalProps) {
   const { 
     setBackgroundImage,
+    setBackgroundVideo,
     backgroundColor: currentBackgroundColor,
     setBackgroundColor, 
     customTheme,
@@ -63,6 +64,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
   
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [initialThemeValues, setInitialThemeValues] = useState<Record<string, string>>({});
@@ -94,11 +96,27 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
     }
   };
 
+  const handleVideoUrlApply = () => {
+    if (!videoUrl.trim()) {
+        toast({ title: 'Error', description: 'Please enter a video URL.', variant: 'destructive' });
+        return;
+    }
+    try {
+        new URL(videoUrl);
+        setBackgroundVideo(videoUrl);
+        toast({ title: 'Success', description: 'Background video updated.' });
+        onOpenChange(false);
+        resetForm();
+    } catch (error) {
+        toast({ title: 'Error', description: 'Invalid video URL.', variant: 'destructive' });
+    }
+  };
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'Error', description: 'File size exceeds 5MB limit.', variant: 'destructive' });
+      if (file.size > 50 * 1024 * 1024) { // Increased limit for videos
+        toast({ title: 'Error', description: 'File size exceeds 50MB limit.', variant: 'destructive' });
         return;
       }
       setUploadedFile(file);
@@ -109,9 +127,14 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
   };
 
   const handleFileUploadApply = () => {
-    if (previewUrl) {
-      setBackgroundImage(previewUrl);
-      toast({ title: 'Success', description: 'Background image uploaded.' });
+    if (previewUrl && uploadedFile) {
+      if (uploadedFile.type.startsWith('video/')) {
+        setBackgroundVideo(previewUrl);
+        toast({ title: 'Success', description: 'Background video uploaded.' });
+      } else {
+        setBackgroundImage(previewUrl);
+        toast({ title: 'Success', description: 'Background image uploaded.' });
+      }
       onOpenChange(false);
       resetForm();
     }
@@ -144,6 +167,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
 
   const resetForm = () => {
     setImageUrl('');
+    setVideoUrl('');
     setUploadedFile(null);
     setPreviewUrl(null);
     const fileInput = document.getElementById('background-file-upload') as HTMLInputElement | null;
@@ -265,11 +289,11 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
 
           <Separator />
           
-          {/* Background Customization */}
           <div className="space-y-4">
             <Label className="font-semibold text-base flex items-center text-primary">
-              <ImageUp className="mr-2 h-4 w-4" /> Background Image
+              <ImageUp className="mr-2 h-4 w-4" /> Background
             </Label>
+
             <div className="space-y-2">
               <Label htmlFor="imageUrl" className="text-sm flex items-center">
                 <Link className="mr-2 h-4 w-4" /> Image URL
@@ -279,17 +303,33 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
                 <Button onClick={handleUrlApply} variant="outline" className="shrink-0">Apply</Button>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="videoUrl" className="text-sm flex items-center">
+                <Video className="mr-2 h-4 w-4" /> Video URL
+              </Label>
+              <div className="flex space-x-2">
+                <Input id="videoUrl" type="url" placeholder="https://example.com/video.mp4" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+                <Button onClick={handleVideoUrlApply} variant="outline" className="shrink-0">Apply</Button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="background-file-upload" className="text-sm flex items-center">
-                <ImageUp className="mr-2 h-4 w-4" /> Upload (Max 5MB)
+                <ImageUp className="mr-2 h-4 w-4" /> Upload Image or Video (Max 50MB)
               </Label>
-              <Input id="background-file-upload" type="file" accept="image/*" onChange={handleFileChange} />
+              <Input id="background-file-upload" type="file" accept="image/*,video/mp4,video/webm" onChange={handleFileChange} />
             </div>
+
             {previewUrl && (
               <div className="space-y-2">
                 <Label>Preview:</Label>
-                <img src={previewUrl} alt="Background Preview" className="rounded-md max-h-40 w-auto object-contain border border-border" />
-                <Button onClick={handleFileUploadApply} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Apply Uploaded Image</Button>
+                {uploadedFile?.type.startsWith('video/') ? (
+                    <video src={previewUrl} className="rounded-md max-h-40 w-auto border border-border" autoPlay loop muted playsInline />
+                ) : (
+                    <img src={previewUrl} alt="Background Preview" className="rounded-md max-h-40 w-auto object-contain border border-border" />
+                )}
+                <Button onClick={handleFileUploadApply} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Apply Uploaded File</Button>
               </div>
             )}
           </div>
