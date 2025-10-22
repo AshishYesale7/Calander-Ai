@@ -17,13 +17,20 @@ function BackgroundManager() {
   const { backgroundVideo, backgroundImage, backgroundColor } = useTheme();
 
   useEffect(() => {
-    document.body.style.backgroundImage = backgroundImage ? `url("${backgroundImage}")` : '';
-    document.body.style.backgroundColor = backgroundColor || '';
+    // If a video is active, ensure the body has no background color or image.
+    if (backgroundVideo) {
+      document.body.style.backgroundImage = '';
+      document.body.style.backgroundColor = 'transparent';
+    } else {
+      // Otherwise, set the image or color as before.
+      document.body.style.backgroundImage = backgroundImage ? `url("${backgroundImage}")` : '';
+      document.body.style.backgroundColor = backgroundColor || '';
+    }
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundRepeat = 'no-repeat';
     document.body.style.backgroundAttachment = 'fixed';
-  }, [backgroundImage, backgroundColor]);
+  }, [backgroundVideo, backgroundImage, backgroundColor]);
   
   if (backgroundVideo) {
     return (
