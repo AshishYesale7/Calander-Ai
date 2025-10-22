@@ -636,7 +636,7 @@ export default function DashboardPage() {
         <div className="xl:col-span-2 space-y-8">
           <Tabs defaultValue="calendar" className="relative">
             <div className="flex justify-between items-center mb-4 gap-2">
-              <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/80 backdrop-blur-sm border border-border/30">
+              <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
                 <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
                   <Calendar className="mr-2 h-4 w-4" /> Calendar
                 </TabsTrigger>
