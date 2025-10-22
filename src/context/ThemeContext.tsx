@@ -128,10 +128,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const setItemInStorage = <T,>(key: string, value: T | null) => {
     if (isMounted) {
+      // **FIX:** Check if the value is a 'data:' URL before saving.
+      if (typeof value === 'string' && value.startsWith('data:')) {
+        // Do not save large data URLs to localStorage to avoid quota errors.
+        // The state will hold it for the session, but it won't persist.
+        return;
+      }
+
       if (value === null || value === undefined) {
         localStorage.removeItem(key);
       } else {
-        localStorage.setItem(key, JSON.stringify(value));
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+          console.error(`Error setting localStorage key “${key}”:`, error);
+          // This might be a quota exceeded error even with the check, so we just log it.
+        }
       }
     }
   };
@@ -159,7 +171,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setBackgroundImageState(url);
     setBackgroundColorState(null);
     setBackgroundVideoState(null);
-    if (user) {
+    if (user && (!url || !url.startsWith('data:'))) { // Only sync remote URLs
         updateUserProfile(user.uid, { coverPhotoURL: url }).catch(err => console.error("Failed to sync background to profile", err));
     }
   }, [user]);
@@ -177,7 +189,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setBackgroundVideoState(url);
     setBackgroundImageState(null);
     setBackgroundColorState(null);
-    if (user) {
+    if (user && (!url || !url.startsWith('data:'))) { // Only sync remote URLs
         updateUserProfile(user.uid, { coverPhotoURL: url }).catch(err => console.error("Failed to sync video background to profile", err));
     }
   }, [user]);
