@@ -128,10 +128,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const setItemInStorage = <T,>(key: string, value: T | null) => {
     if (isMounted) {
-      // **FIX:** Check if the value is a 'data:' URL before saving.
       if (typeof value === 'string' && value.startsWith('data:')) {
-        // Do not save large data URLs to localStorage to avoid quota errors.
-        // The state will hold it for the session, but it won't persist.
         return;
       }
 
@@ -142,7 +139,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem(key, JSON.stringify(value));
         } catch (error) {
           console.error(`Error setting localStorage key “${key}”:`, error);
-          // This might be a quota exceeded error even with the check, so we just log it.
         }
       }
     }
