@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { CheckCircle, Crown } from 'lucide-react';
+import { CheckCircle, Crown, GraduationCap, Briefcase, Switch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Switch as ShadcnSwitch } from '@/components/ui/switch';
+
 
 // Define a structure for currency data
 interface Currency {
@@ -27,29 +30,133 @@ const SUPPORTED_CURRENCIES: Currency[] = [
 ];
 
 const plans = {
-    monthly: {
-        id: 'monthly',
-        title: 'Monthly Plan',
-        priceINR: 59,
-        priceSuffix: '/ month',
-        features: ['Access to all AI features', 'Unlimited timeline events', 'Personalized news feed', 'Email support'],
+    student: {
+        monthly: {
+            id: 'student_monthly',
+            title: 'Monthly',
+            priceINR: 59,
+            priceSuffix: '/ month',
+            features: ['All AI Features', 'Timeline & Goal Tracking', 'Codefolio Ally Plugin', 'Community Access'],
+        },
+        yearly: {
+            id: 'student_yearly',
+            title: 'Yearly',
+            priceINR: 599,
+            priceSuffix: '/ year',
+            features: ['Everything in Monthly', 'Save 20% Annually', 'Priority Email Support', 'Early Access to Plugins'],
+        }
     },
-    yearly: {
-        id: 'yearly',
-        title: 'Yearly Plan',
-        priceINR: 599,
-        priceSuffix: '/ year',
-        features: ['All features from Monthly', 'Save 20% with annual billing', 'Priority support', 'Early access to new features'],
-    },
+    professional: {
+        monthly: {
+            id: 'professional_monthly',
+            title: 'Monthly Pro',
+            priceINR: 149,
+            priceSuffix: '/ month',
+            features: ['All AI Features', 'Advanced Project Sync', 'Team Collaboration (Beta)', 'Priority Email Support'],
+        },
+        yearly: {
+            id: 'professional_yearly',
+            title: 'Yearly Pro',
+            priceINR: 1499,
+            priceSuffix: '/ year',
+            features: ['Everything in Monthly Pro', 'Save 20% Annually', '24/7 Dedicated Support', 'API Access (Coming Soon)'],
+        }
+    }
 };
 
-type PlanID = keyof typeof plans;
+type PlanID = 'student_monthly' | 'student_yearly' | 'professional_monthly' | 'professional_yearly';
 
 declare global {
   interface Window {
     Razorpay: any;
   }
 }
+
+const PriceDisplay = ({ priceInr, currency }: { priceInr: number, currency: Currency }) => {
+    const convertAndFormatPrice = (priceInr: number) => {
+        if (currency.code === 'INR') {
+            return priceInr.toString();
+        }
+        const converted = priceInr * currency.rate;
+        const rounded = Math.ceil(converted) - 0.01;
+        return rounded.toFixed(2);
+    };
+
+    return <span className="text-3xl font-bold text-foreground">{currency.symbol}{convertAndFormatPrice(priceInr)}</span>;
+};
+
+
+const PricingCard = ({ plan, currency, isLoading, currentPlanId, onSubscribe }: { plan: any, currency: Currency, isLoading: boolean, currentPlanId: PlanID | null, onSubscribe: () => void }) => (
+    <Card className={cn("frosted-glass w-full flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1",
+        plan.id.includes('yearly') ? "border-accent shadow-accent/10" : "border-border/30"
+    )}>
+        {plan.id.includes('yearly') && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-sm">Best Value</Badge></div>}
+        <CardHeader className="text-center p-6">
+            <CardTitle className="text-xl font-bold text-primary">{plan.title}</CardTitle>
+            <div className="mt-2 h-10 flex items-center justify-center">
+                <PriceDisplay priceInr={plan.priceINR} currency={currency} />
+                <span className="text-muted-foreground ml-1.5">{plan.priceSuffix}</span>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-6 pt-0">
+            <ul className="space-y-3 text-sm">
+                {plan.features.map((feature: string, i: number) => (
+                    <li key={i} className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-400 shrink-0"/>
+                        <span className="text-foreground/90">{feature}</span>
+                    </li>
+                ))}
+            </ul>
+        </CardContent>
+        <CardFooter className="p-6 pt-0">
+            <Button
+                onClick={onSubscribe}
+                disabled={isLoading || currentPlanId === plan.id}
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            >
+                {isLoading && currentPlanId === plan.id ? <LoadingSpinner size="sm" /> : 'Subscribe'}
+            </Button>
+        </CardFooter>
+    </Card>
+);
+
+const PlanSection = ({ type, icon: Icon, plans, currency, isLoading, onSubscribe }: { type: string, icon: React.ElementType, plans: any, currency: Currency, isLoading: PlanID | null, onSubscribe: (planId: PlanID) => void }) => {
+    const [isYearly, setIsYearly] = useState(false);
+    const plan = isYearly ? plans.yearly : plans.monthly;
+
+    return (
+         <Card className="frosted-glass p-6 md:p-8 relative overflow-hidden">
+            <div className="absolute top-4 right-4 h-16 w-16 bg-accent/10 rounded-full flex items-center justify-center">
+                <Icon className="h-8 w-8 text-accent"/>
+            </div>
+            <div className="mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold font-headline text-primary">{type} Plans</h2>
+                <p className="text-muted-foreground mt-1">For ambitious {type.toLowerCase()}s looking to get ahead.</p>
+            </div>
+
+             <div className="flex items-center justify-center gap-4 mb-8">
+                <span className={cn("font-medium", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</span>
+                <ShadcnSwitch
+                    checked={isYearly}
+                    onCheckedChange={setIsYearly}
+                    aria-label="Toggle billing period"
+                />
+                <span className={cn("font-medium", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</span>
+            </div>
+            
+            <div className="max-w-sm mx-auto">
+                 <PricingCard
+                    plan={plan}
+                    currency={currency}
+                    isLoading={isLoading === plan.id}
+                    currentPlanId={isLoading}
+                    onSubscribe={() => onSubscribe(plan.id)}
+                />
+            </div>
+        </Card>
+    )
+};
+
 
 export default function SubscriptionPage() {
     const { user, refreshSubscription } = useAuth();
@@ -76,7 +183,6 @@ export default function SubscriptionPage() {
                 }
             } catch (error) {
                 console.warn("Could not detect user's currency, defaulting to INR.", error);
-                // Default to INR if API fails
                 setCurrency(SUPPORTED_CURRENCIES[0]);
             } finally {
                 setIsCurrencyLoading(false);
@@ -85,25 +191,15 @@ export default function SubscriptionPage() {
 
         fetchCurrency();
     }, []);
-
-    const convertAndFormatPrice = (priceInr: number) => {
-        if (currency.code === 'INR') {
-            return priceInr.toString();
-        }
-        const converted = priceInr * currency.rate;
-        // Round up to the nearest whole number, then subtract 0.01 to get a ".99" figure
-        const rounded = Math.ceil(converted) - 0.01;
-        return rounded.toFixed(2);
-    };
-
+    
     const handleSubscribe = async (planId: PlanID) => {
         if (!user) {
             toast({ title: 'Error', description: 'You must be logged in to subscribe.', variant: 'destructive' });
             return;
         }
 
-        if (!isScriptLoaded) {
-            toast({ title: 'Payment Service Unavailable', description: 'Could not connect to the payment provider. Please check your internet connection and try again.', variant: 'destructive' });
+        if (!isScriptLoaded || isCurrencyLoading) {
+            toast({ title: 'Payment Service Unavailable', description: 'Please wait a moment and try again.', variant: 'destructive' });
             return;
         }
         
@@ -120,12 +216,17 @@ export default function SubscriptionPage() {
             if (!res.ok) {
                 throw new Error(data.error || 'Failed to create subscription.');
             }
+            
+            const currentPlan = planId.includes('student')
+                ? (planId.includes('monthly') ? plans.student.monthly : plans.student.yearly)
+                : (planId.includes('monthly') ? plans.professional.monthly : plans.professional.yearly);
+
 
             const options = {
                 key: data.key_id,
                 subscription_id: data.subscription_id,
                 name: 'Calendar.ai Subscription',
-                description: `Calendar.ai - ${plans[planId].title}`,
+                description: `Calendar.ai - ${planId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`,
                 image: 'https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg',
                 handler: async function (response: any) {
                     const verificationRes = await fetch('/api/payment/verify', {
@@ -154,7 +255,7 @@ export default function SubscriptionPage() {
                     email: user.email || '',
                 },
                 theme: {
-                    color: '#4A6580', // Deep slate blue
+                    color: '#4A6580',
                 },
             };
             const rzp = new window.Razorpay(options);
@@ -173,13 +274,6 @@ export default function SubscriptionPage() {
             setIsLoading(null);
         }
     };
-
-    const PriceDisplay = ({ plan }: { plan: { priceINR: number } }) => {
-        if (isCurrencyLoading) {
-            return <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />;
-        }
-        return <span className="text-3xl font-bold text-foreground">{currency.symbol}{convertAndFormatPrice(plan.priceINR)}</span>;
-    };
     
     return (
         <>
@@ -189,66 +283,35 @@ export default function SubscriptionPage() {
                 onLoad={() => setIsScriptLoaded(true)}
             />
             <div className="space-y-8">
-                <div>
-                    <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
-                       <Crown className="mr-3 h-8 w-8 text-accent"/> Manage Subscription
+                <div className="text-center">
+                    <h1 className="font-headline text-3xl md:text-4xl font-semibold text-primary">
+                       Upgrade Your Plan
                     </h1>
-                    <p className="text-foreground/80 mt-1">
-                        Choose a plan that fits your needs. Prices shown in your local currency ({currency.code}).
+                    <p className="text-foreground/80 mt-2 max-w-xl mx-auto">
+                        Choose the perfect plan for your journey. Prices shown in your local currency ({currency.code}).
                     </p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    {(Object.keys(plans) as PlanID[]).map((planId) => {
-                        const plan = plans[planId];
-                        const isPopular = planId === 'yearly';
-                        return (
-                            <Card key={plan.id} className={isPopular ? 'frosted-glass shadow-lg border-accent' : 'frosted-glass'}>
-                                <CardHeader>
-                                    <div className="flex justify-between items-center">
-                                      <CardTitle className="font-headline text-2xl text-primary">{plan.title}</CardTitle>
-                                      {isPopular && <Badge variant="default" className="bg-accent text-accent-foreground">Most Popular</Badge>}
-                                    </div>
-                                    <CardDescription>
-                                        <PriceDisplay plan={plan} />
-                                        <span className="text-muted-foreground">{plan.priceSuffix}</span>
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <ul className="space-y-2">
-                                        {plan.features.map((feature, index) => (
-                                            <li key={index} className="flex items-center gap-2 text-sm text-foreground/90">
-                                                <CheckCircle className="h-4 w-4 text-green-400" />
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button
-                                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                                        disabled={isLoading !== null || !isScriptLoaded || isCurrencyLoading}
-                                        onClick={() => handleSubscribe(planId)}
-                                    >
-                                        {isLoading === planId ? (
-                                            <>
-                                                <LoadingSpinner size="sm" className="mr-2"/>
-                                                Processing...
-                                            </>
-                                        ) : !isScriptLoaded || isCurrencyLoading ? (
-                                            <>
-                                                <LoadingSpinner size="sm" className="mr-2"/>
-                                                Loading...
-                                            </>
-                                        ) : 'Subscribe Now'}
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        );
-                    })}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start max-w-7xl mx-auto">
+                   <PlanSection 
+                        type="Student" 
+                        icon={GraduationCap} 
+                        plans={plans.student} 
+                        currency={currency}
+                        isLoading={isLoading}
+                        onSubscribe={handleSubscribe}
+                   />
+                   <PlanSection 
+                        type="Professional" 
+                        icon={Briefcase} 
+                        plans={plans.professional} 
+                        currency={currency}
+                        isLoading={isLoading}
+                        onSubscribe={handleSubscribe}
+                   />
                 </div>
 
-                <Card className="frosted-glass">
+                <Card className="frosted-glass max-w-4xl mx-auto">
                     <CardHeader>
                         <CardTitle className="font-headline text-xl">Frequently Asked Questions</CardTitle>
                     </CardHeader>
