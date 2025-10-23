@@ -404,13 +404,8 @@ export default function DesktopCommandBar() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
-                className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-text active:cursor-grabbing justify-center"
+                className="relative w-full flex items-center text-gray-400 p-2 px-4 cursor-grab active:cursor-grabbing justify-center"
                 onPointerDown={(e) => dragControls.start(e)}
-                onClick={() => {
-                    if (!isOpen) {
-                        setIsOpen(true);
-                    }
-                }}
               >
                 <div className="flex items-center w-full translate-y-[-2px]">
                   <Paperclip className="h-5 w-5 mr-3" />
@@ -445,6 +440,3 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
-
-
-    
