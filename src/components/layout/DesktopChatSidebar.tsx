@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
+import { useTheme } from '@/hooks/use-theme';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -389,8 +390,8 @@ const CallLogView = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'audio')}><Phone className="h-5 w-5 text-accent"/></Button>
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'video')}><Video className="h-5 w-5 text-accent"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'audio')}><Phone className="h-5 w-5 text-accent hover:text-white dark:hover:text-black"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'video')}><Video className="h-5 w-5 text-accent hover:text-white dark:hover:text-black"/></Button>
                             </div>
                         </div>
                     ))}
@@ -403,11 +404,14 @@ const CallLogView = () => {
 
 export default function DesktopChatSidebar() {
     const { setIsChatSidebarOpen } = useChat();
+    const { theme } = useTheme();
     const [activeView, setActiveView] = useState<'chats' | 'updates' | 'communities' | 'calls'>('chats');
     
     return (
-        <div className={cn("flex flex-col h-full bg-background/80 backdrop-blur-lg border-l border-border")}>
-             <div className="p-4 border-b border-border">
+        <div className={cn("flex flex-col h-full border-l",
+            theme === 'dark' ? 'bg-black/80 backdrop-blur-lg border-border/30' : 'bg-background border-border'
+        )}>
+             <div className="p-4 border-b border-border/30">
                  <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold font-headline text-primary">Chats</h1>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
@@ -426,7 +430,7 @@ export default function DesktopChatSidebar() {
                 )}
             </div>
 
-             <div className="p-2 mt-auto border-t border-border">
+             <div className="p-2 mt-auto border-t border-border/30">
                 <div className="flex justify-around items-center">
                     <NavItem icon={ChatIcon} label="Chats" isActive={activeView === 'chats'} onClick={() => setActiveView('chats')} />
                     <NavItem icon={UpdatesIcon} label="Updates" isActive={activeView === 'updates'} onClick={() => setActiveView('updates')} />
