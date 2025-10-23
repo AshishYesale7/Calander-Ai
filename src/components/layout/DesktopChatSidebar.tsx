@@ -389,8 +389,8 @@ const CallLogView = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'audio')}><Phone className="h-5 w-5 text-accent hover:text-black"/></Button>
-                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'video')}><Video className="h-5 w-5 text-accent hover:text-black"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'audio')}><Phone className="h-5 w-5 text-accent"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onInitiateCall(call.otherUser as PublicUserProfile, 'video')}><Video className="h-5 w-5 text-accent"/></Button>
                             </div>
                         </div>
                     ))}
@@ -406,8 +406,8 @@ export default function DesktopChatSidebar() {
     const [activeView, setActiveView] = useState<'chats' | 'updates' | 'communities' | 'calls'>('chats');
     
     return (
-        <div className={cn("flex flex-col h-full bg-black/80 backdrop-blur-lg border-l border-border/30")}>
-             <div className="p-4 border-b border-border/30">
+        <div className={cn("flex flex-col h-full bg-background/80 backdrop-blur-lg border-l border-border")}>
+             <div className="p-4 border-b border-border">
                  <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold font-headline text-primary">Chats</h1>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
@@ -426,7 +426,7 @@ export default function DesktopChatSidebar() {
                 )}
             </div>
 
-             <div className="p-2 mt-auto border-t border-border/30">
+             <div className="p-2 mt-auto border-t border-border">
                 <div className="flex justify-around items-center">
                     <NavItem icon={ChatIcon} label="Chats" isActive={activeView === 'chats'} onClick={() => setActiveView('chats')} />
                     <NavItem icon={UpdatesIcon} label="Updates" isActive={activeView === 'updates'} onClick={() => setActiveView('updates')} />
@@ -439,5 +439,8 @@ export default function DesktopChatSidebar() {
 }
 
     
+
+    
+
 
     

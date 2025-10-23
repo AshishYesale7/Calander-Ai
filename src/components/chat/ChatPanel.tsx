@@ -114,16 +114,16 @@ const MessageItem = ({
               'max-w-[70%] px-3 py-2 text-sm flex flex-col mt-1 rounded-2xl transition-colors duration-200',
               isSelected 
                 ? 'frosted-glass bg-accent/20 border border-accent/30'
-                : (isMe ? 'bg-blue-500 text-white' : 'bg-[#262626] text-white'),
+                : (isMe ? 'bg-blue-500 text-white' : 'bg-muted text-foreground'),
               isLastInBlock && (isMe ? 'rounded-br-lg' : 'rounded-bl-lg')
             )}
           >
             {msg.isDeleted ? (
-              <span className="italic text-gray-300">{msg.text}</span>
+              <span className="italic text-muted-foreground">{msg.text}</span>
             ) : (
               <span>{msg.text}</span>
             )}
-            <span className={cn('self-end mt-1 text-[10px]', isMe ? 'text-white/70' : 'text-white/70')}>
+            <span className={cn('self-end mt-1 text-[10px]', isMe ? 'text-white/70' : 'text-muted-foreground')}>
               {format(msg.timestamp, 'p')}
             </span>
           </div>
@@ -179,7 +179,7 @@ export function ChatPanelHeader({ user: otherUser, onClose }: { user: PublicUser
     return (
         <header className={cn(
             "sticky top-0 z-10 flex-shrink-0 flex items-center justify-between p-3 border-b h-14",
-            "bg-black/80 backdrop-blur-lg border-gray-800"
+            "bg-background/80 backdrop-blur-lg border-border"
         )}>
             <div className="flex items-center gap-3">
                 <Button variant="ghost" size="icon" onClick={handleBackToChatList} className="md:hidden">
@@ -190,18 +190,18 @@ export function ChatPanelHeader({ user: otherUser, onClose }: { user: PublicUser
                     <AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <h3 className="font-semibold text-sm text-white">{otherUser.displayName}</h3>
-                    <p className="text-xs text-gray-400">@{otherUser.username}</p>
+                    <h3 className="font-semibold text-sm text-foreground">{otherUser.displayName}</h3>
+                    <p className="text-xs text-muted-foreground">@{otherUser.username}</p>
                 </div>
             </div>
-            <div className="flex items-center gap-1 text-white">
+            <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" onClick={handleInitiateAudioCall} disabled={isCallButtonDisabled}>
                     <Phone className="h-5 w-5" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={handleInitiateVideoCall} disabled={isCallButtonDisabled}>
                     <div className="relative">
                         <Video className="h-5 w-5" />
-                        {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-black" />}
+                        {isCallActiveWithThisUser && <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 border border-background" />}
                     </div>
                 </Button>
                 <Button variant="ghost" size="icon"><Info className="h-5 w-5" /></Button>
@@ -313,20 +313,20 @@ export function ChatPanelBody({ user: otherUser }: { user: PublicUserProfile }) 
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                     className={cn(
                         "flex-shrink-0 flex items-center justify-between p-3 h-14 z-10 absolute top-0 left-0 right-0",
-                        "bg-accent/10 backdrop-blur-md border-b border-accent/30 text-white"
+                        "bg-accent/10 backdrop-blur-md border-b border-accent/30 text-foreground"
                     )}
                 >
                     <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMessages(new Set())}>
-                            <X className="h-5 w-5 text-white" />
+                            <X className="h-5 w-5" />
                         </Button>
-                        <span className="font-semibold text-white">{selectedMessages.size} selected</span>
+                        <span className="font-semibold">{selectedMessages.size} selected</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon">
-                                    <Trash2 className="h-5 w-5 text-white" />
+                                    <Trash2 className="h-5 w-5" />
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="w-[90vw] max-w-xs rounded-xl frosted-glass">
@@ -354,13 +354,13 @@ export function ChatPanelBody({ user: otherUser }: { user: PublicUserProfile }) 
             <div className="p-4 space-y-4">
                 <div className="flex flex-col items-center pt-8 pb-4">
                     <Avatar className="h-24 w-24"><AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} /><AvatarFallback className="text-4xl">{otherUser.displayName.charAt(0)}</AvatarFallback></Avatar>
-                    <h2 className="mt-4 text-xl font-bold text-white">{otherUser.displayName}</h2>
-                    <p className="text-sm text-gray-400">@{otherUser.username}</p>
+                    <h2 className="mt-4 text-xl font-bold text-foreground">{otherUser.displayName}</h2>
+                    <p className="text-sm text-muted-foreground">@{otherUser.username}</p>
                 </div>
                 {isLoading && <div className="flex justify-center items-center h-full py-10"><LoadingSpinner /></div>}
                 {Object.entries(groupedChatItems).map(([date, items]) => (
                     <div key={date}>
-                        <div className="text-center text-xs text-gray-500 my-4">{format(new Date(date), 'MMMM d, yyyy')}</div>
+                        <div className="text-center text-xs text-muted-foreground my-4">{format(new Date(date), 'MMMM d, yyyy')}</div>
                         {items.map((item, index) => {
                             if (item.type === 'call') return <CallLogItem key={item.id} item={item} currentUser={currentUser} />;
                             const msg = item as ChatMessage;
@@ -373,7 +373,7 @@ export function ChatPanelBody({ user: otherUser }: { user: PublicUserProfile }) 
                     </div>
                 ))}
                 {isOtherUserTyping && (
-                    <div className="flex items-center gap-2 px-2 pb-1 text-xs text-gray-400 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 px-2 pb-1 text-xs text-muted-foreground animate-in fade-in duration-300">
                         <Avatar className="h-6 w-6"><AvatarImage src={otherUser.photoURL || undefined} /><AvatarFallback>{otherUser.displayName.charAt(0)}</AvatarFallback></Avatar>
                         <span className="italic">typing...</span>
                     </div>
@@ -418,14 +418,14 @@ export function ChatPanelFooter() {
 
     return (
         <footer className="flex-shrink-0 p-3 bg-transparent">
-            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 bg-[#262626] rounded-full px-2">
-                <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Smile className="h-6 w-6"/></Button>
-                <Input value={inputMessage} onChange={handleInputChange} onFocus={() => setIsChatInputFocused(true)} onBlur={() => setIsChatInputFocused(false)} placeholder="Message..." className="flex-1 bg-transparent border-none text-white placeholder:text-gray-400 focus-visible:ring-0 h-12 focus-visible:ring-offset-0" autoComplete="off" />
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 bg-muted rounded-full px-2">
+                <Button variant="ghost" size="icon" type="button" className="text-muted-foreground hover:bg-transparent hover:text-foreground"><Smile className="h-6 w-6"/></Button>
+                <Input value={inputMessage} onChange={handleInputChange} onFocus={() => setIsChatInputFocused(true)} onBlur={() => setIsChatInputFocused(false)} placeholder="Message..." className="flex-1 bg-transparent border-none text-foreground placeholder:text-muted-foreground focus-visible:ring-0 h-12 focus-visible:ring-offset-0" autoComplete="off" />
                 <div className="flex items-center gap-1">
                     {(isMobileView && inputMessage.trim() === '') || !isMobileView ? (
                         <>
-                            <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><Mic className="h-6 w-6"/></Button>
-                            <Button variant="ghost" size="icon" type="button" className="text-white hover:bg-transparent hover:text-gray-300"><ImageIcon className="h-6 w-6"/></Button>
+                            <Button variant="ghost" size="icon" type="button" className="text-muted-foreground hover:bg-transparent hover:text-foreground"><Mic className="h-6 w-6"/></Button>
+                            <Button variant="ghost" size="icon" type="button" className="text-muted-foreground hover:bg-transparent hover:text-foreground"><ImageIcon className="h-6 w-6"/></Button>
                         </>
                     ) : null}
                     {inputMessage.trim() !== '' ? (
@@ -440,12 +440,14 @@ export function ChatPanelFooter() {
 
 export function ChatPanel({ user: otherUser, onClose }: ChatPanelProps) {
     return (
-        <div className="flex flex-col h-full bg-black border-l border-gray-800">
+        <div className="flex flex-col h-full bg-background border-l border-border">
             <ChatPanelHeader user={otherUser} onClose={onClose} />
             <ChatPanelBody user={otherUser} />
             <ChatPanelFooter />
         </div>
     );
 }
+
+    
 
     
