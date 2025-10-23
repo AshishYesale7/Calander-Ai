@@ -86,7 +86,7 @@ function ChatAndCallUI() {
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className="flex-shrink-0 h-full overflow-hidden border-l border-border/30"
         >
-          <div className="flex flex-col h-full bg-black">
+          <div className="flex flex-col h-full bg-background">
             {chattingWith && <ChatPanelHeader user={chattingWith} onClose={() => setChattingWith(null)} />}
             {chattingWith && <ChatPanelBody user={chattingWith} />}
             <ChatPanelFooter />
