@@ -152,7 +152,7 @@ export default function DesktopCommandBar() {
       }
       
       const closedX = isChatSidebarOpen 
-        ? 24 // Position on the left if chat is open
+        ? 80 // Position on the left if chat is open, just right of the main sidebar
         : (window.innerWidth - size.closed.width) / 2; // Center it otherwise
       const closedY = window.innerHeight - size.closed.height - 24;
       
