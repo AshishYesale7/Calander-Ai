@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,17 +16,20 @@ import {
   Camera,
   Check,
   CheckCircle,
-  Link as LinkIcon,
-  MapPin,
+  Briefcase,
+  GraduationCap,
   Sparkles,
   User,
   X,
+  Plus,
 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Card, CardHeader, CardContent } from '../ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface OnboardingModalProps {
   onFinish: () => void;
@@ -48,6 +52,16 @@ const avatarOptions = [
     { id: 'male3', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436196.jpg?w=740' },
 ];
 
+const featureComparison = [
+    { feature: 'Exam Preparation Tracking', student: true, professional: false },
+    { feature: 'Career Goal Roadmaps', student: true, professional: true },
+    { feature: 'AI-Powered Daily Planning', student: true, professional: true },
+    { feature: 'Competitive Programming Stats', student: true, professional: false },
+    { feature: 'Advanced Project Management', student: false, professional: true },
+    { feature: 'Team Collaboration Tools', student: false, professional: true },
+    { feature: 'Skill Gap Analysis', student: true, professional: true },
+];
+
 
 export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const { user, refreshUser } = useAuth();
@@ -56,7 +70,10 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
-  // Slide 1 state
+  // Step 1: Role Selection
+  const [userType, setUserType] = useState<'student' | 'professional' | null>(null);
+
+  // Step 2: Profile Setup
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
@@ -86,6 +103,20 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   const handleNextStep = async () => {
     if (currentStep === 1) {
+        if (!userType) {
+            toast({ title: 'Role Required', description: 'Please select whether you are a student or a professional.', variant: 'destructive'});
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await updateUserProfile(user!.uid, { userType });
+            setCurrentStep(2);
+        } catch (error: any) {
+            toast({ title: 'Error Saving Role', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
+        }
+    } else if (currentStep === 2) {
       if (!displayName || !username || !selectedAvatarUrl || !isUsernameAvailable) {
         toast({ title: 'Profile Incomplete', description: 'Please fill all fields and choose an avatar.', variant: 'destructive' });
         return;
@@ -93,7 +124,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
       setIsSaving(true);
       try {
         await updateUserProfile(user!.uid, { displayName, username, photoURL: selectedAvatarUrl });
-        setCurrentStep(2);
+        setCurrentStep(3);
       } catch (error: any) {
         toast({ title: 'Error Saving Profile', description: error.message, variant: 'destructive' });
       } finally {
@@ -133,7 +164,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const handleFinish = async () => {
     setIsFinishing(true);
     await updateUserProfile(user!.uid, { onboardingCompleted: true });
-    setCurrentStep(3);
+    setCurrentStep(4);
     setTimeout(() => {
         onFinish();
     }, 3000);
@@ -143,10 +174,60 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="frosted-glass sm:max-w-md w-full rounded-2xl overflow-hidden shadow-2xl">
+      <div className="frosted-glass sm:max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl">
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
             <motion.div key="step1" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
+              <h2 className="font-headline text-xl font-semibold text-primary mb-1">Choose Your Role</h2>
+              <p className="text-muted-foreground text-sm mb-6">Select the path that best describes you to personalize your experience.</p>
+                <div className="grid grid-cols-2 gap-4">
+                    <Card
+                        className={cn("text-center p-4 cursor-pointer transition-all", userType === 'student' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
+                        onClick={() => setUserType('student')}
+                    >
+                        <CardHeader className="p-0">
+                            <GraduationCap className="h-10 w-10 mx-auto text-accent"/>
+                            <h3 className="font-semibold mt-2">Student</h3>
+                        </CardHeader>
+                    </Card>
+                    <Card
+                        className={cn("text-center p-4 cursor-pointer transition-all", userType === 'professional' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
+                        onClick={() => setUserType('professional')}
+                    >
+                        <CardHeader className="p-0">
+                            <Briefcase className="h-10 w-10 mx-auto text-accent"/>
+                            <h3 className="font-semibold mt-2">Professional</h3>
+                        </CardHeader>
+                    </Card>
+                </div>
+                <div className="mt-6">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Feature</TableHead>
+                                <TableHead className="text-center">Student</TableHead>
+                                <TableHead className="text-center">Professional</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {featureComparison.map(item => (
+                                <TableRow key={item.feature}>
+                                    <TableCell className="font-medium text-xs">{item.feature}</TableCell>
+                                    <TableCell className="text-center">{item.student ? <Check className="h-4 w-4 mx-auto text-green-500"/> : <X className="h-4 w-4 mx-auto text-muted-foreground"/>}</TableCell>
+                                    <TableCell className="text-center">{item.professional ? <Check className="h-4 w-4 mx-auto text-green-500"/> : <X className="h-4 w-4 mx-auto text-muted-foreground"/>}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+              <Button onClick={handleNextStep} disabled={isSaving || !userType} className="w-full mt-6 h-11 text-base">
+                {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
+                Next
+              </Button>
+            </motion.div>
+          )}
+          {currentStep === 2 && (
+            <motion.div key="step2" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
               <h2 className="font-headline text-xl font-semibold text-primary mb-1">Set up your profile</h2>
               <p className="text-muted-foreground text-sm mb-6">Let's get your account ready.</p>
               <div className="space-y-4">
@@ -213,21 +294,21 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
             </motion.div>
           )}
 
-          {currentStep === 2 && (
-            <motion.div key="step2" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
+          {currentStep === 3 && (
+            <motion.div key="step3" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
                <h2 className="font-headline text-xl font-semibold text-primary mb-2">Permissions</h2>
                <p className="text-muted-foreground text-sm mb-6">Grant access to enable key features. These are optional and can be changed later.</p>
                <div className="space-y-3">
                    <Button variant="outline" className="w-full justify-start h-14" onClick={() => requestPermission('notifications')}><Bell className="mr-4 h-5 w-5 text-accent"/><div><p>Enable Notifications</p><p className="text-xs text-muted-foreground text-left">For event reminders.</p></div></Button>
                    <Button variant="outline" className="w-full justify-start h-14" onClick={() => requestPermission('camera')}><Camera className="mr-4 h-5 w-5 text-accent"/><div><p>Camera & Mic Access</p><p className="text-xs text-muted-foreground text-left">For video/voice calls.</p></div></Button>
-                   <Button variant="outline" className="w-full justify-start h-14" onClick={() => requestPermission('location')}><MapPin className="mr-4 h-5 w-5 text-accent"/><div><p>Location Access</p><p className="text-xs text-muted-foreground text-left">For contextual suggestions.</p></div></Button>
+                   
                </div>
                <Button onClick={handleFinish} className="w-full mt-8 h-11 text-base">Finish Setup</Button>
             </motion.div>
           )}
 
-           {currentStep === 3 && (
-            <motion.div key="step3" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-8 md:p-12 text-center">
+           {currentStep === 4 && (
+            <motion.div key="step4" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-8 md:p-12 text-center">
                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                <h2 className="font-headline text-xl font-semibold text-primary mb-2">Setup Complete!</h2>
                <p className="text-muted-foreground text-sm">Your 30-day free trial has started. Enjoy full access to all features.</p>

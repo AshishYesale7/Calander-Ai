@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -71,6 +72,7 @@ export const createUserProfile = async (user: User): Promise<UserProfile> => {
             followersCount: 0,
             followingCount: 0,
             onboardingCompleted: false, // New users always start with onboarding incomplete
+            userType: undefined, // New userType field
         };
         await setDoc(userDocRef, defaultProfile);
         return { uid: user.uid, ...defaultProfile };
@@ -186,6 +188,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     if (profileData.statusEmoji !== undefined) dataToUpdate['statusEmoji'] = profileData.statusEmoji;
     if (profileData.countryCode !== undefined) dataToUpdate['countryCode'] = profileData.countryCode;
     if (profileData.onboardingCompleted !== undefined) dataToUpdate['onboardingCompleted'] = profileData.onboardingCompleted;
+    if (profileData.userType !== undefined) dataToUpdate['userType'] = profileData.userType; // Handle userType
 
     // If username or displayName changed, fetch the document to correctly build the new index.
     if (needsIndexUpdate) {
@@ -265,6 +268,11 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 needsUpdate = true;
             }
 
+            if (data.userType === undefined) {
+                dataToUpdate.userType = null;
+                needsUpdate = true;
+            }
+
 
             if (needsUpdate) {
                 updateDoc(userDocRef, dataToUpdate).catch(err => {
@@ -287,6 +295,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
                 followingCount: data.followingCount || 0,
                 onboardingCompleted: data.onboardingCompleted ?? false,
                 deletionStatus: data.deletionStatus,
+                userType: data.userType || null,
             };
 
             if (data.deletionScheduledAt) {
@@ -618,7 +627,7 @@ export async function permanentlyDeleteUserData(userId: string): Promise<void> {
  * but preserves the user account and subscription status.
  */
 export async function formatUserData(userId: string): Promise<void> {
-    if (!db) throw new Error("Firestore not initialized.");
+    if (!db) throw new Error("Firestore is not initialized.");
 
     const batch = writeBatch(db);
 
