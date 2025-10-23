@@ -203,7 +203,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === 'google.com');
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-xl z-50 flex items-center justify-center p-4">
       <div className="frosted-glass sm:max-w-xl w-full rounded-2xl overflow-hidden shadow-2xl">
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
