@@ -40,7 +40,7 @@ export default function DesktopCommandBar() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
-  const { isChatSidebarOpen } = useChat();
+  const { isChatSidebarOpen, chattingWith } = useChat();
 
   useEffect(() => {
     if (chatSessions.length === 0) {
@@ -151,7 +151,9 @@ export default function DesktopCommandBar() {
          }
       }
       
-      const closedX = isChatSidebarOpen 
+      const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
+      
+      const closedX = shouldShiftLeft
         ? 80 // Position on the left if chat is open, just right of the main sidebar
         : (window.innerWidth - size.closed.width) / 2; // Center it otherwise
       const closedY = window.innerHeight - size.closed.height - 24;
@@ -165,7 +167,7 @@ export default function DesktopCommandBar() {
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
     }
-  }, [isOpen, isFullScreen, isChatSidebarOpen, size.open, size.closed, animationControls]);
+  }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls]);
 
   // DO NOT DELETE: This comment is for preserving the logic.
   // This effect cycles through a predefined set of color pairs to create the
