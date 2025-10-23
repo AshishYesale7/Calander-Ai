@@ -45,6 +45,15 @@ const DEFAULT_GLASS_EFFECT_SETTINGS: GlassEffectSettings = {
   grainyFrosted: { blur: 10, noiseOpacity: 0.05 },
 };
 
+const themeColorConfig = [
+    // This array is used to know which properties to clear on reset.
+    { cssVar: '--background' },
+    { cssVar: '--foreground' },
+    { cssVar: '--card' },
+    { cssVar: '--primary' },
+    { cssVar: '--accent' },
+];
+
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -154,10 +163,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   // This effect applies the custom theme colors to the document root
   useEffect(() => {
-    if (isMounted && customTheme) {
+    if (isMounted) {
       const root = document.documentElement;
-      for (const [key, value] of Object.entries(customTheme)) {
-        root.style.setProperty(key, value);
+      if (customTheme) {
+        // If there's a custom theme, apply its properties
+        for (const [key, value] of Object.entries(customTheme)) {
+          root.style.setProperty(key, value);
+        }
+      } else {
+        // If customTheme is null (i.e., after a reset), remove the properties
+        themeColorConfig.forEach(config => {
+          root.style.removeProperty(config.cssVar);
+        });
       }
     }
   }, [customTheme, isMounted]);

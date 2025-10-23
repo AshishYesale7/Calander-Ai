@@ -111,12 +111,20 @@ export default function SidebarNav({
   
   const filteredNavItems = useMemo(() => {
     let items = [...navItems];
-    if (user?.userType === 'professional') {
-        // Hide certain links for professionals
-        items = items.filter(item => item.href !== '/career-goals' && item.href !== '/extension');
+    
+    if (user?.userType === 'student') {
+        // HIDE Extensions for students
+        items = items.filter(item => item.href !== '/extension');
     }
+
+    if (user?.userType === 'professional') {
+        // HIDE Career Goals for professionals, but SHOW Extensions
+        items = items.filter(item => item.href !== '/career-goals');
+    }
+
     if (!isSubscribed) {
-      // Further filter for non-subscribed users (this logic is preserved)
+      // Further filter for non-subscribed users (keep this logic if needed)
+      // For now, let's also hide extensions if not subscribed, regardless of role.
       items = items.filter(item => item.href !== '/extension');
     }
     return items;
