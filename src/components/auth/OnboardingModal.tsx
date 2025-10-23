@@ -156,6 +156,12 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
       }
     }
   };
+
+  const handleBackStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
   
   const handleConnectGoogle = async () => {
     if (!user) return;
@@ -306,10 +312,13 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                     </div>
                 )}
               </div>
-              <Button onClick={handleNextStep} disabled={isSaving || !displayName || !username || !selectedAvatarUrl || isUsernameAvailable === false} className="w-full mt-6 h-11 text-base">
-                {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
-                Next
-              </Button>
+              <div className="mt-8 flex gap-4">
+                <Button variant="outline" onClick={handleBackStep} className="w-full h-11 text-base">Back</Button>
+                <Button onClick={handleNextStep} disabled={isSaving || !displayName || !username || !selectedAvatarUrl || isUsernameAvailable === false} className="w-full h-11 text-base">
+                    {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
+                    Next
+                </Button>
+              </div>
             </motion.div>
           )}
 
@@ -322,7 +331,10 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
                    <Button variant="outline" className="w-full justify-start h-14" onClick={() => requestPermission('camera')}><Camera className="mr-4 h-5 w-5 text-accent"/><div><p>Camera & Mic Access</p><p className="text-xs text-muted-foreground text-left">For video/voice calls.</p></div></Button>
                    
                </div>
-               <Button onClick={handleFinish} className="w-full mt-8 h-11 text-base">Finish Setup</Button>
+               <div className="mt-8 flex gap-4">
+                  <Button variant="outline" onClick={handleBackStep} className="w-full h-11 text-base">Back</Button>
+                  <Button onClick={handleFinish} className="w-full h-11 text-base">Finish Setup</Button>
+               </div>
             </motion.div>
           )}
 
