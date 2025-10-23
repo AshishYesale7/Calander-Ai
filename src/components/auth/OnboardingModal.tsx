@@ -29,7 +29,12 @@ import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Card, CardHeader, CardContent } from '../ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface OnboardingModalProps {
   onFinish: () => void;
@@ -58,8 +63,6 @@ const studentFeatures = [
     { name: 'AI-Powered Daily Planning', included: true },
     { name: 'Competitive Programming Stats', included: true },
     { name: 'Skill Gap Analysis', included: true },
-    { name: 'Advanced Project Management', included: false },
-    { name: 'Team Collaboration Tools', included: false },
 ];
 
 const professionalFeatures = [
@@ -68,16 +71,14 @@ const professionalFeatures = [
     { name: 'Career Goal Roadmaps', included: true },
     { name: 'AI-Powered Daily Planning', included: true },
     { name: 'Skill Gap Analysis', included: true },
-    { name: 'Exam Preparation Tracking', included: false },
-    { name: 'Competitive Programming Stats', included: false },
 ];
 
 const FeatureList = ({ features }: { features: { name: string, included: boolean }[] }) => (
-    <ul className="mt-4 space-y-2 text-left">
+    <ul className="space-y-2 text-left">
         {features.filter(f => f.included).map(feature => (
             <li key={feature.name} className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500 shrink-0" />
-                <span className="text-sm">
+                <span className="text-sm text-foreground/90">
                     {feature.name}
                 </span>
             </li>
@@ -197,38 +198,47 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="frosted-glass sm:max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl">
+      <div className="frosted-glass sm:max-w-xl w-full rounded-2xl overflow-hidden shadow-2xl">
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
             <motion.div key="step1" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
               <h2 className="font-headline text-xl font-semibold text-primary mb-1 text-center">Choose Your Role</h2>
-              <p className="text-muted-foreground text-sm mb-6 text-center">Select the path that best describes you to personalize your experience.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card
-                        className={cn("text-center p-4 cursor-pointer transition-all bg-card/50", userType === 'student' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
-                        onClick={() => setUserType('student')}
-                    >
-                        <CardHeader className="p-0 items-center">
-                            <GraduationCap className="h-10 w-10 mx-auto text-accent"/>
-                            <h3 className="font-semibold mt-2 text-lg">Student</h3>
-                        </CardHeader>
-                        <CardContent className="p-0 mt-4">
-                            <FeatureList features={studentFeatures} />
-                        </CardContent>
-                    </Card>
-                    <Card
-                        className={cn("text-center p-4 cursor-pointer transition-all bg-card/50", userType === 'professional' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
-                        onClick={() => setUserType('professional')}
-                    >
-                        <CardHeader className="p-0 items-center">
-                            <Briefcase className="h-10 w-10 mx-auto text-accent"/>
-                            <h3 className="font-semibold mt-2 text-lg">Professional</h3>
-                        </CardHeader>
-                         <CardContent className="p-0 mt-4">
-                            <FeatureList features={professionalFeatures} />
-                        </CardContent>
-                    </Card>
-                </div>
+              <p className="text-muted-foreground text-sm mb-6 text-center">Select your path to personalize your experience.</p>
+                <Accordion type="single" collapsible value={userType || ''} onValueChange={(value) => setUserType(value as 'student' | 'professional')}>
+                    <AccordionItem value="student" className="border rounded-lg mb-4 data-[state=open]:border-accent data-[state=open]:ring-1 data-[state=open]:ring-accent">
+                        <AccordionTrigger className="p-4 hover:no-underline">
+                            <div className="flex items-center gap-4 text-left">
+                                <GraduationCap className="h-8 w-8 text-accent"/>
+                                <div>
+                                    <h3 className="font-semibold text-lg">Student</h3>
+                                    <p className="text-xs text-muted-foreground">For learners and exam preppers.</p>
+                                </div>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                             <div className="p-4 bg-background/50 rounded-md border">
+                                <FeatureList features={studentFeatures} />
+                             </div>
+                        </AccordionContent>
+                    </AccordionItem>
+
+                     <AccordionItem value="professional" className="border rounded-lg data-[state=open]:border-accent data-[state=open]:ring-1 data-[state=open]:ring-accent">
+                        <AccordionTrigger className="p-4 hover:no-underline">
+                            <div className="flex items-center gap-4 text-left">
+                                <Briefcase className="h-8 w-8 text-accent"/>
+                                <div>
+                                    <h3 className="font-semibold text-lg">Professional</h3>
+                                    <p className="text-xs text-muted-foreground">For career-focused individuals.</p>
+                                </div>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                             <div className="p-4 bg-background/50 rounded-md border">
+                                <FeatureList features={professionalFeatures} />
+                             </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
               <Button onClick={handleNextStep} disabled={isSaving || !userType} className="w-full mt-8 h-11 text-base">
                 {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
                 Next
