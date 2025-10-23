@@ -364,82 +364,84 @@ export default function CareerVisionPage() {
     <div className="space-y-8">
       
       {/* --- Career Goals Section --- */}
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-            <h1 className="font-headline text-3xl font-semibold text-primary">Your Career Goals</h1>
-            <Button onClick={() => handleOpenGoalModal(null)} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <PlusCircle className="mr-2 h-5 w-5" /> Add New Goal
-            </Button>
-        </div>
-        <p className="text-foreground/80">
-            Define your aspirations and track your progress towards achieving them.
-        </p>
-        
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {goals.map((goal) => (
-            <Card key={goal.id} className="frosted-glass shadow-lg flex flex-col">
-                <CardHeader>
-                <div className="flex justify-between items-start">
-                    <CardTitle className="font-headline text-xl text-primary flex items-center">
-                    <Target className="mr-2 h-5 w-5 text-accent" /> {goal.title}
-                    </CardTitle>
-                    <div className="flex space-x-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenGoalModal(goal)}>
-                        <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-                            <Trash2 className="h-4 w-4" />
+      <Card className="frosted-glass p-6">
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h1 className="font-headline text-3xl font-semibold text-primary">Your Career Goals</h1>
+                <Button onClick={() => handleOpenGoalModal(null)} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <PlusCircle className="mr-2 h-5 w-5" /> Add New Goal
+                </Button>
+            </div>
+            <p className="text-foreground/80">
+                Define your aspirations and track your progress towards achieving them.
+            </p>
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {goals.map((goal) => (
+                <Card key={goal.id} className="frosted-glass shadow-lg flex flex-col">
+                    <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <CardTitle className="font-headline text-xl text-primary flex items-center">
+                        <Target className="mr-2 h-5 w-5 text-accent" /> {goal.title}
+                        </CardTitle>
+                        <div className="flex space-x-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenGoalModal(goal)}>
+                            <Edit3 className="h-4 w-4" />
                         </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="frosted-glass">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this career goal.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                            className="bg-destructive hover:bg-destructive/90"
-                            onClick={() => handleDeleteGoal(goal.id)}
-                            >
-                            Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="frosted-glass">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this career goal.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={() => handleDeleteGoal(goal.id)}
+                                >
+                                Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        </div>
                     </div>
-                </div>
-                {goal.deadline && (
-                    <p className="text-xs text-muted-foreground flex items-center">
-                    <CalendarDays className="mr-1 h-3 w-3" />
-                    Deadline: {format(new Date(goal.deadline), 'MMM d, yyyy')}
-                    </p>
-                )}
-                </CardHeader>
-                <CardContent className="flex-grow">
-                {goal.description && <p className="text-sm text-foreground/80 mb-4">{goal.description}</p>}
-                <div>
-                    <div className="mb-1 flex justify-between">
-                    <span className="text-sm font-medium text-primary">Progress</span>
-                    <span className="text-sm font-medium text-accent">{goal.progress}%</span>
+                    {goal.deadline && (
+                        <p className="text-xs text-muted-foreground flex items-center">
+                        <CalendarDays className="mr-1 h-3 w-3" />
+                        Deadline: {format(new Date(goal.deadline), 'MMM d, yyyy')}
+                        </p>
+                    )}
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                    {goal.description && <p className="text-sm text-foreground/80 mb-4">{goal.description}</p>}
+                    <div>
+                        <div className="mb-1 flex justify-between">
+                        <span className="text-sm font-medium text-primary">Progress</span>
+                        <span className="text-sm font-medium text-accent">{goal.progress}%</span>
+                        </div>
+                        <Progress value={goal.progress} aria-label={`${goal.title} progress ${goal.progress}%`} className="h-3 [&>div]:bg-accent" />
                     </div>
-                    <Progress value={goal.progress} aria-label={`${goal.title} progress ${goal.progress}%`} className="h-3 [&>div]:bg-accent" />
-                </div>
-                </CardContent>
-            </Card>
-            ))}
+                    </CardContent>
+                </Card>
+                ))}
+            </div>
+            <EditGoalModal 
+                isOpen={isGoalModalOpen}
+                onOpenChange={setIsGoalModalOpen}
+                goalToEdit={editingGoal}
+                onSave={handleSaveGoal}
+            />
         </div>
-        <EditGoalModal 
-            isOpen={isGoalModalOpen}
-            onOpenChange={setIsGoalModalOpen}
-            goalToEdit={editingGoal}
-            onSave={handleSaveGoal}
-        />
-      </div>
+      </Card>
 
       <div className='my-12 border-t border-border/30'></div>
 
@@ -767,3 +769,5 @@ export default function CareerVisionPage() {
     </div>
   );
 }
+
+    
