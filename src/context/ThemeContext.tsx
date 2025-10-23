@@ -152,6 +152,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => setItemInStorage(GLASS_EFFECT_STORAGE_KEY, glassEffect), [glassEffect, isMounted]);
   useEffect(() => setItemInStorage(GLASS_SETTINGS_STORAGE_KEY, glassEffectSettings), [glassEffectSettings, isMounted]);
 
+  // This effect applies the custom theme colors to the document root
+  useEffect(() => {
+    if (isMounted && customTheme) {
+      const root = document.documentElement;
+      for (const [key, value] of Object.entries(customTheme)) {
+        root.style.setProperty(key, value);
+      }
+    }
+  }, [customTheme, isMounted]);
+
 
   const setTheme = useCallback((newTheme: Theme) => {
     if (newTheme === 'light' || newTheme === 'dark') {
