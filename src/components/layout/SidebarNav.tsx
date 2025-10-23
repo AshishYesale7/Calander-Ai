@@ -115,20 +115,24 @@ export default function SidebarNav({
   
   const filteredNavItems = useMemo(() => {
     let items = [...navItems];
-    
-    if (user?.userType === 'student') {
-        items = items.filter(item => item.href !== '/extension');
-    }
+    const professionalHiddenRoutes = ['/career-goals', '/news', '/leaderboard'];
 
     if (user?.userType === 'professional') {
-        items = items.filter(item => item.href !== '/career-goals');
+        items = items.filter(item => !professionalHiddenRoutes.includes(item.href));
+    }
+    
+    // For students, hide extensions for now
+    if (user?.userType === 'student') {
+        items = items.filter(item => item.href !== '/extension');
     }
 
     if (!isSubscribed) {
       items = items.filter(item => item.href !== '/extension');
     }
+
     return items;
   }, [isSubscribed, user?.userType]);
+
 
   const handleRoleChange = (isProfessional: boolean) => {
     const newRole = isProfessional ? 'professional' : 'student';

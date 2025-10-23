@@ -631,7 +631,7 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
             <TodaysPlanCard />
         </div>
-        {user?.userType === 'student' && <DailyStreakCard />}
+        {user?.userType !== 'professional' && <DailyStreakCard />}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">

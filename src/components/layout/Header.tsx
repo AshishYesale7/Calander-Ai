@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -324,7 +325,7 @@ export default function Header({
         
         <div className="flex items-center gap-1 sm:gap-2">
           
-          {streakData && isSubscribed && (
+          {streakData && isSubscribed && user?.userType !== 'professional' && (
               <Popover open={isStreakPopoverOpen} onOpenChange={setIsStreakPopoverOpen}>
                 <PopoverTrigger asChild>
                     <div onMouseEnter={() => handleMouseEnter('streak')} onMouseLeave={() => handleMouseLeave('streak')}>
