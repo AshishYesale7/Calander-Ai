@@ -115,17 +115,12 @@ export default function SidebarNav({
   
   const filteredNavItems = useMemo(() => {
     let items = [...navItems];
-    const professionalHiddenRoutes = ['/career-goals', '/news', '/leaderboard'];
+    const professionalHiddenRoutes = ['/career-goals', '/news', '/leaderboard', '/career-vision'];
 
     if (user?.userType === 'professional') {
         items = items.filter(item => !professionalHiddenRoutes.includes(item.href));
     }
     
-    // For students, hide extensions for now
-    if (user?.userType === 'student') {
-        items = items.filter(item => item.href !== '/extension');
-    }
-
     if (!isSubscribed) {
       items = items.filter(item => item.href !== '/extension');
     }
@@ -196,19 +191,23 @@ export default function SidebarNav({
                 Current Role
               </Label>
               <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className={cn("h-5 w-5", user?.userType === 'student' ? 'text-accent' : 'text-sidebar-foreground/50')} />
-                  <span className={cn("text-sm font-medium", user?.userType === 'student' ? 'text-sidebar-foreground' : 'text-sidebar-foreground/50')}>Student</span>
-                </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <GraduationCap className={cn("h-5 w-5", user?.userType === 'student' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                    </TooltipTrigger>
+                    <TooltipContent><p>Student Mode</p></TooltipContent>
+                </Tooltip>
                 <Switch
                   id="role-switcher"
                   checked={user?.userType === 'professional'}
                   onCheckedChange={handleRoleChange}
                 />
-                <div className="flex items-center gap-2">
-                  <Briefcase className={cn("h-5 w-5", user?.userType === 'professional' ? 'text-accent' : 'text-sidebar-foreground/50')} />
-                  <span className={cn("text-sm font-medium", user?.userType === 'professional' ? 'text-sidebar-foreground' : 'text-sidebar-foreground/50')}>Pro</span>
-                </div>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Briefcase className={cn("h-5 w-5", user?.userType === 'professional' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                    </TooltipTrigger>
+                    <TooltipContent><p>Professional Mode</p></TooltipContent>
+                </Tooltip>
               </div>
             </div>
           )}
