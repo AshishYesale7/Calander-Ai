@@ -27,6 +27,8 @@ import {
   LayoutGrid,
   Code,
   Trophy,
+  GraduationCap,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -47,6 +49,8 @@ import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { Sidebar, useSidebar } from '../ui/sidebar';
 import { getUserProfile } from '@/services/userService';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -79,7 +83,7 @@ export default function SidebarNav({
   isFullScreen,
 }: SidebarNavProps) {
   const pathname = usePathname();
-  const { user, subscription, isSubscribed } = useAuth();
+  const { user, subscription, isSubscribed, updateUserRole } = useAuth();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
@@ -113,23 +117,25 @@ export default function SidebarNav({
     let items = [...navItems];
     
     if (user?.userType === 'student') {
-        // HIDE Extensions for students
         items = items.filter(item => item.href !== '/extension');
     }
 
     if (user?.userType === 'professional') {
-        // HIDE Career Goals for professionals, but SHOW Extensions
         items = items.filter(item => item.href !== '/career-goals');
     }
 
     if (!isSubscribed) {
-      // Further filter for non-subscribed users (keep this logic if needed)
-      // For now, let's also hide extensions if not subscribed, regardless of role.
       items = items.filter(item => item.href !== '/extension');
     }
     return items;
   }, [isSubscribed, user?.userType]);
 
+  const handleRoleChange = (isProfessional: boolean) => {
+    const newRole = isProfessional ? 'professional' : 'student';
+    if (user && user.userType !== newRole) {
+      updateUserRole(newRole);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" className="hidden md:flex md:flex-col">
@@ -179,6 +185,30 @@ export default function SidebarNav({
               <Button size="sm" className="mt-2 w-full h-8 text-xs bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => router.push('/subscription')}>Upgrade</Button>
             </div>
           )}
+
+          {sidebarState === 'expanded' && (
+            <div className="px-3 py-2 my-2 rounded-md bg-sidebar-accent/50 animate-in fade-in duration-300">
+              <Label htmlFor="role-switcher" className="text-xs font-semibold text-sidebar-foreground/80">
+                Current Role
+              </Label>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className={cn("h-5 w-5", user?.userType === 'student' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                  <span className={cn("text-sm font-medium", user?.userType === 'student' ? 'text-sidebar-foreground' : 'text-sidebar-foreground/50')}>Student</span>
+                </div>
+                <Switch
+                  id="role-switcher"
+                  checked={user?.userType === 'professional'}
+                  onCheckedChange={handleRoleChange}
+                />
+                <div className="flex items-center gap-2">
+                  <Briefcase className={cn("h-5 w-5", user?.userType === 'professional' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                  <span className={cn("text-sm font-medium", user?.userType === 'professional' ? 'text-sidebar-foreground' : 'text-sidebar-foreground/50')}>Pro</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-sidebar-border -mx-2 mb-2" />
           <Button variant="ghost" onClick={toggleTheme} className={cn("w-full justify-start gap-3 mb-1 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", sidebarState === 'collapsed' && 'justify-center')}>
             {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}

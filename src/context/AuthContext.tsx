@@ -1,4 +1,5 @@
 
+
 'use client';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut, GoogleAuthProvider, reauthenticateWithPopup, signInWithPopup } from 'firebase/auth';
@@ -8,7 +9,7 @@ import { auth } from '@/lib/firebase';
 import { Preloader } from '@/components/ui/Preloader';
 import { AlertCircle } from 'lucide-react';
 import { getUserSubscription } from '@/services/subscriptionService';
-import { getUserProfile, createUserProfile } from '@/services/userService';
+import { getUserProfile, createUserProfile, updateUserProfile } from '@/services/userService';
 import type { UserSubscription, UserProfile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +33,7 @@ interface AuthContextType {
   setOnboardingCompleted: (completed: boolean) => void;
   refreshSubscription: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateUserRole: (role: 'student' | 'professional') => void; // New function
   // New properties for account switching
   knownUsers: KnownUser[];
   addKnownUser: (user: User) => void;
@@ -194,20 +196,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     provider.setCustomParameters({ login_hint: email, prompt: 'select_account' });
 
     try {
-      // Use signInWithPopup to allow Google's account chooser to handle the switch.
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener will automatically handle the user state update.
-      // We just reload the page to ensure a clean state for the new user.
       toast({ title: "Switched Account", description: `Successfully signed in as ${email}.` });
       window.location.href = '/dashboard';
     } catch (error: any) {
       console.error("Account switch error:", error);
-      // Handle common errors gracefully
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         toast({ title: "Switch Cancelled", description: "You closed the sign-in window.", variant: "default" });
       } else {
         toast({ title: "Switch Failed", description: error.message || "Could not switch accounts.", variant: "destructive" });
       }
+    }
+  };
+
+  const updateUserRole = async (role: 'student' | 'professional') => {
+    if (!user) return;
+    try {
+      await updateUserProfile(user.uid, { userType: role });
+      toast({
+        title: 'Role Switched!',
+        description: `You are now in ${role} mode. The app will reload.`,
+      });
+      // Force a reload to apply all UI changes based on the new role
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Could not switch your role. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
   
@@ -234,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser, knownUsers, addKnownUser, removeKnownUser, switchUser }}>
+    <AuthContext.Provider value={{ user, loading, subscription, isSubscribed, onboardingCompleted, setOnboardingCompleted, refreshSubscription, refreshUser, updateUserRole, knownUsers, addKnownUser, removeKnownUser, switchUser }}>
       {children}
     </AuthContext.Provider>
   );
