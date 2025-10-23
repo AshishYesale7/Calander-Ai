@@ -74,13 +74,10 @@ const professionalFeatures = [
 
 const FeatureList = ({ features }: { features: { name: string, included: boolean }[] }) => (
     <ul className="mt-4 space-y-2 text-left">
-        {features.map(feature => (
+        {features.filter(f => f.included).map(feature => (
             <li key={feature.name} className="flex items-center gap-2">
-                {feature.included
-                    ? <Check className="h-4 w-4 text-green-500 shrink-0" />
-                    : <X className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-                }
-                <span className={cn("text-sm", !feature.included && "text-muted-foreground/50 line-through")}>
+                <Check className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="text-sm">
                     {feature.name}
                 </span>
             </li>
