@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -630,6 +631,7 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
             <TodaysPlanCard />
         </div>
+        {user?.userType === 'student' && <DailyStreakCard />}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">

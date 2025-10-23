@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -49,8 +50,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/career-vision', label: 'Career Vision', icon: Eye },
+  { href: '/career-goals', label: 'Career Goals', icon: Target },
   { href: '/skills', label: 'Skills', icon: Brain },
+  { href: '/career-vision', label: 'Career Vision', icon: Eye },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
@@ -108,16 +110,18 @@ export default function SidebarNav({
   };
   
   const filteredNavItems = useMemo(() => {
-    // Hide Extensions tab from everyone
-    let items = navItems.filter(item => item.href !== '/extension');
+    let items = [...navItems];
+    if (user?.userType === 'professional') {
+        // Hide certain links for professionals
+        items = items.filter(item => item.href !== '/career-goals' && item.href !== '/extension');
+    }
     if (!isSubscribed) {
-      // Further filter for non-subscribed users
-      items = items.filter(item => 
-        item.href !== '/extension'
-      );
+      // Further filter for non-subscribed users (this logic is preserved)
+      items = items.filter(item => item.href !== '/extension');
     }
     return items;
-  }, [isSubscribed]);
+  }, [isSubscribed, user?.userType]);
+
 
   return (
     <Sidebar collapsible="icon" className="hidden md:flex md:flex-col">

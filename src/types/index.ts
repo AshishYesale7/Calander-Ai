@@ -28,7 +28,7 @@ export interface UserProfile {
   onboardingCompleted: boolean;
   deletionStatus?: 'PENDING_DELETION' | 'DELETED';
   deletionScheduledAt?: string; // Add this to track when the deletion is scheduled
-  userType?: 'student' | 'professional'; // New field for user role
+  userType?: 'student' | 'professional' | null; // New field for user role
 }
 
 
