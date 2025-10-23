@@ -52,15 +52,41 @@ const avatarOptions = [
     { id: 'male3', url: 'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436196.jpg?w=740' },
 ];
 
-const featureComparison = [
-    { feature: 'Exam Preparation Tracking', student: true, professional: false },
-    { feature: 'Career Goal Roadmaps', student: true, professional: true },
-    { feature: 'AI-Powered Daily Planning', student: true, professional: true },
-    { feature: 'Competitive Programming Stats', student: true, professional: false },
-    { feature: 'Advanced Project Management', student: false, professional: true },
-    { feature: 'Team Collaboration Tools', student: false, professional: true },
-    { feature: 'Skill Gap Analysis', student: true, professional: true },
+const studentFeatures = [
+    { name: 'Exam Preparation Tracking', included: true },
+    { name: 'Career Goal Roadmaps', included: true },
+    { name: 'AI-Powered Daily Planning', included: true },
+    { name: 'Competitive Programming Stats', included: true },
+    { name: 'Skill Gap Analysis', included: true },
+    { name: 'Advanced Project Management', included: false },
+    { name: 'Team Collaboration Tools', included: false },
 ];
+
+const professionalFeatures = [
+    { name: 'Advanced Project Management', included: true },
+    { name: 'Team Collaboration Tools', included: true },
+    { name: 'Career Goal Roadmaps', included: true },
+    { name: 'AI-Powered Daily Planning', included: true },
+    { name: 'Skill Gap Analysis', included: true },
+    { name: 'Exam Preparation Tracking', included: false },
+    { name: 'Competitive Programming Stats', included: false },
+];
+
+const FeatureList = ({ features }: { features: { name: string, included: boolean }[] }) => (
+    <ul className="mt-4 space-y-2 text-left">
+        {features.map(feature => (
+            <li key={feature.name} className="flex items-center gap-2">
+                {feature.included
+                    ? <Check className="h-4 w-4 text-green-500 shrink-0" />
+                    : <X className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                }
+                <span className={cn("text-sm", !feature.included && "text-muted-foreground/50 line-through")}>
+                    {feature.name}
+                </span>
+            </li>
+        ))}
+    </ul>
+);
 
 
 export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
@@ -174,60 +200,46 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="frosted-glass sm:max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl">
+      <div className="frosted-glass sm:max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl">
         <AnimatePresence mode="wait">
           {currentStep === 1 && (
             <motion.div key="step1" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
-              <h2 className="font-headline text-xl font-semibold text-primary mb-1">Choose Your Role</h2>
-              <p className="text-muted-foreground text-sm mb-6">Select the path that best describes you to personalize your experience.</p>
-                <div className="grid grid-cols-2 gap-4">
+              <h2 className="font-headline text-xl font-semibold text-primary mb-1 text-center">Choose Your Role</h2>
+              <p className="text-muted-foreground text-sm mb-6 text-center">Select the path that best describes you to personalize your experience.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card
-                        className={cn("text-center p-4 cursor-pointer transition-all", userType === 'student' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
+                        className={cn("text-center p-4 cursor-pointer transition-all bg-card/50", userType === 'student' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
                         onClick={() => setUserType('student')}
                     >
-                        <CardHeader className="p-0">
+                        <CardHeader className="p-0 items-center">
                             <GraduationCap className="h-10 w-10 mx-auto text-accent"/>
-                            <h3 className="font-semibold mt-2">Student</h3>
+                            <h3 className="font-semibold mt-2 text-lg">Student</h3>
                         </CardHeader>
+                        <CardContent className="p-0 mt-4">
+                            <FeatureList features={studentFeatures} />
+                        </CardContent>
                     </Card>
                     <Card
-                        className={cn("text-center p-4 cursor-pointer transition-all", userType === 'professional' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
+                        className={cn("text-center p-4 cursor-pointer transition-all bg-card/50", userType === 'professional' ? 'border-accent ring-2 ring-accent' : 'hover:border-accent/50')}
                         onClick={() => setUserType('professional')}
                     >
-                        <CardHeader className="p-0">
+                        <CardHeader className="p-0 items-center">
                             <Briefcase className="h-10 w-10 mx-auto text-accent"/>
-                            <h3 className="font-semibold mt-2">Professional</h3>
+                            <h3 className="font-semibold mt-2 text-lg">Professional</h3>
                         </CardHeader>
+                         <CardContent className="p-0 mt-4">
+                            <FeatureList features={professionalFeatures} />
+                        </CardContent>
                     </Card>
                 </div>
-                <div className="mt-6">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Feature</TableHead>
-                                <TableHead className="text-center">Student</TableHead>
-                                <TableHead className="text-center">Professional</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {featureComparison.map(item => (
-                                <TableRow key={item.feature}>
-                                    <TableCell className="font-medium text-xs">{item.feature}</TableCell>
-                                    <TableCell className="text-center">{item.student ? <Check className="h-4 w-4 mx-auto text-green-500"/> : <X className="h-4 w-4 mx-auto text-muted-foreground"/>}</TableCell>
-                                    <TableCell className="text-center">{item.professional ? <Check className="h-4 w-4 mx-auto text-green-500"/> : <X className="h-4 w-4 mx-auto text-muted-foreground"/>}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-              <Button onClick={handleNextStep} disabled={isSaving || !userType} className="w-full mt-6 h-11 text-base">
+              <Button onClick={handleNextStep} disabled={isSaving || !userType} className="w-full mt-8 h-11 text-base">
                 {isSaving ? <LoadingSpinner size="sm" className="mr-2"/> : null}
                 Next
               </Button>
             </motion.div>
           )}
           {currentStep === 2 && (
-            <motion.div key="step2" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
+            <motion.div key="step2" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8 max-w-lg mx-auto">
               <h2 className="font-headline text-xl font-semibold text-primary mb-1">Set up your profile</h2>
               <p className="text-muted-foreground text-sm mb-6">Let's get your account ready.</p>
               <div className="space-y-4">
@@ -295,7 +307,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
           )}
 
           {currentStep === 3 && (
-            <motion.div key="step3" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8">
+            <motion.div key="step3" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-6 md:p-8 max-w-lg mx-auto">
                <h2 className="font-headline text-xl font-semibold text-primary mb-2">Permissions</h2>
                <p className="text-muted-foreground text-sm mb-6">Grant access to enable key features. These are optional and can be changed later.</p>
                <div className="space-y-3">
@@ -308,7 +320,7 @@ export default function OnboardingModal({ onFinish }: OnboardingModalProps) {
           )}
 
            {currentStep === 4 && (
-            <motion.div key="step4" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-8 md:p-12 text-center">
+            <motion.div key="step4" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="p-8 md:p-12 text-center max-w-lg mx-auto">
                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                <h2 className="font-headline text-xl font-semibold text-primary mb-2">Setup Complete!</h2>
                <p className="text-muted-foreground text-sm">Your 30-day free trial has started. Enjoy full access to all features.</p>
