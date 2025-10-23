@@ -15,6 +15,7 @@ import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
+import { useChat } from '@/context/ChatContext';
 
 export interface ChatSession {
   id: string;
@@ -39,6 +40,7 @@ export default function DesktopCommandBar() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
+  const { isChatSidebarOpen } = useChat();
 
   useEffect(() => {
     if (chatSessions.length === 0) {
@@ -149,8 +151,11 @@ export default function DesktopCommandBar() {
          }
       }
       
-      const closedX = (window.innerWidth - size.closed.width) / 2;
+      const closedX = isChatSidebarOpen 
+        ? 24 // Position on the left if chat is open
+        : (window.innerWidth - size.closed.width) / 2; // Center it otherwise
       const closedY = window.innerHeight - size.closed.height - 24;
+      
       animationControls.start({
         x: closedX,
         y: closedY,
@@ -160,7 +165,7 @@ export default function DesktopCommandBar() {
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
     }
-  }, [isOpen, isFullScreen, size.open, size.closed, animationControls]);
+  }, [isOpen, isFullScreen, isChatSidebarOpen, size.open, size.closed, animationControls]);
 
   // DO NOT DELETE: This comment is for preserving the logic.
   // This effect cycles through a predefined set of color pairs to create the
@@ -440,3 +445,5 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
+
+    
