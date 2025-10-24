@@ -45,7 +45,10 @@ const CreateClanView = () => (
 
 export default function ClansPage() {
   return (
-    <div className="space-y-8 bg-gray-900/20 p-6 rounded-lg">
+    <div
+      className="space-y-8 bg-gray-900/20 p-6 rounded-lg frosted-glass"
+      style={{ '--glass-blur': '32px' } as React.CSSProperties}
+    >
       <div>
         <h1 className="font-headline text-3xl font-semibold text-primary flex items-center">
           <Users className="mr-3 h-8 w-8 text-accent" />
