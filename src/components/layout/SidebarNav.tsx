@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -28,6 +29,7 @@ import {
   Trophy,
   GraduationCap,
   Briefcase,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -53,14 +55,13 @@ import { Label } from '../ui/label';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/career-goals', label: 'Career Goals', icon: Target },
-  { href: '/skills', label: 'Skills', icon: Brain },
   { href: '/career-vision', label: 'Career Vision', icon: Eye },
-  { href: '/news', label: 'News', icon: Newspaper },
+  { href: '/clans', label: 'Clans', icon: Users, role: 'student' },
+  { href: '/skills', label: 'Skills', icon: Brain },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
-  { href: '/extension', label: 'Extensions', icon: LayoutGrid },
-  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { href: '/extension', label: 'Extensions', icon: LayoutGrid, role: 'professional' },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Trophy, role: 'student' },
   { href: '/subscription', label: 'Subscription', icon: Crown },
 ];
 
@@ -113,22 +114,11 @@ export default function SidebarNav({
   };
   
   const filteredNavItems = useMemo(() => {
-    let items = [...navItems];
-    const professionalHiddenRoutes = ['/career-goals', '/news', '/leaderboard', '/career-vision'];
-    const studentHiddenRoutes = ['/extension'];
-
-    if (user?.userType === 'professional') {
-        items = items.filter(item => !professionalHiddenRoutes.includes(item.href));
-    } else if (user?.userType === 'student') {
-        items = items.filter(item => !studentHiddenRoutes.includes(item.href));
-    }
-    
-    if (!isSubscribed) {
-      items = items.filter(item => item.href !== '/extension');
-    }
-
-    return items;
-  }, [isSubscribed, user?.userType]);
+    return navItems.filter(item => {
+        if (!item.role) return true; // Show items without a specific role
+        return item.role === user?.userType;
+    });
+  }, [user?.userType]);
 
 
   const handleRoleChange = (isProfessional: boolean) => {
