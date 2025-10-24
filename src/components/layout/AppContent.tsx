@@ -33,6 +33,9 @@ import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
 import MobileBottomNav from './MobileBottomNav';
+import { getToken } from 'firebase/messaging';
+import { messaging } from '@/lib/firebase';
+import { saveUserFCMToken } from '@/services/userService';
 
 
 function ChatAndCallUI() {
@@ -152,9 +155,33 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     }
   }, [user, loading, isSubscribed, router, pathname, onboardingCompleted]);
   
-
   const requestNotificationPermission = async () => {
-    // Logic remains the same
+    if (!messaging || !user) {
+      toast({ title: 'Error', description: 'Push notifications not supported or not signed in.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.error("VAPID key is not set in environment variables.");
+            throw new Error("Push notification setup is incomplete.");
+        }
+        const fcmToken = await getToken(messaging, { vapidKey });
+        if (fcmToken) {
+            await saveUserFCMToken(user.uid, fcmToken);
+            toast({ title: 'Success', description: 'Push notifications enabled! You can now receive reminders.' });
+        } else {
+            throw new Error("Could not retrieve notification token.");
+        }
+      } else {
+        toast({ title: 'Notifications Denied', description: 'You can enable them later in your browser settings.', variant: 'default' });
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
+    }
   };
 
   useEffect(() => {
@@ -342,5 +369,3 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
-
-    
