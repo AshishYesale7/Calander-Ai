@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -116,9 +115,12 @@ export default function SidebarNav({
   const filteredNavItems = useMemo(() => {
     let items = [...navItems];
     const professionalHiddenRoutes = ['/career-goals', '/news', '/leaderboard', '/career-vision'];
+    const studentHiddenRoutes = ['/extension'];
 
     if (user?.userType === 'professional') {
         items = items.filter(item => !professionalHiddenRoutes.includes(item.href));
+    } else if (user?.userType === 'student') {
+        items = items.filter(item => !studentHiddenRoutes.includes(item.href));
     }
     
     if (!isSubscribed) {
@@ -187,9 +189,6 @@ export default function SidebarNav({
 
           {sidebarState === 'expanded' && (
             <div className="px-3 py-2 my-2 rounded-md bg-sidebar-accent/50 animate-in fade-in duration-300">
-              <Label htmlFor="role-switcher" className="text-xs font-semibold text-sidebar-foreground/80">
-                Current Role
-              </Label>
               <div className="flex items-center justify-between mt-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
