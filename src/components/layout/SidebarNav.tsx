@@ -55,9 +55,10 @@ import { Label } from '../ui/label';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/career-vision', label: 'Career Vision', icon: Eye },
+  { href: '/career-vision', label: 'Career Vision', icon: Eye, role: 'student' },
   { href: '/clans', label: 'Clans', icon: Users, role: 'student' },
   { href: '/skills', label: 'Skills', icon: Brain },
+  { href: '/news', label: 'News', icon: Newspaper, role: 'student' },
   { href: '/resources', label: 'Resources', icon: Lightbulb },
   { href: '/tasks', label: 'Tasks', icon: ClipboardCheck },
   { href: '/extension', label: 'Extensions', icon: LayoutGrid, role: 'professional' },
@@ -182,7 +183,9 @@ export default function SidebarNav({
               <div className="flex items-center justify-between mt-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <GraduationCap className={cn("h-5 w-5", user?.userType === 'student' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                        <button className="p-1" onClick={() => handleRoleChange(false)}>
+                            <GraduationCap className={cn("h-5 w-5", user?.userType === 'student' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent><p>Student Mode</p></TooltipContent>
                 </Tooltip>
@@ -193,7 +196,9 @@ export default function SidebarNav({
                 />
                  <Tooltip>
                     <TooltipTrigger asChild>
-                        <Briefcase className={cn("h-5 w-5", user?.userType === 'professional' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                        <button className="p-1" onClick={() => handleRoleChange(true)}>
+                            <Briefcase className={cn("h-5 w-5", user?.userType === 'professional' ? 'text-accent' : 'text-sidebar-foreground/50')} />
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent><p>Professional Mode</p></TooltipContent>
                 </Tooltip>
