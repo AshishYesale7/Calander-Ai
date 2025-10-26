@@ -72,7 +72,7 @@ const FeatureCard = ({
         <motion.div
             style={{ opacity }}
             className={cn(
-            "relative w-full max-w-6xl h-[75vh] rounded-3xl border border-white/10 bg-gray-900/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
+            "relative w-full max-w-6xl h-[75vh] rounded-3xl border border-white/10 bg-gray-900/90 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
             feature.gradient
         )}>
             {/* Decorative Gradient */}
