@@ -60,22 +60,10 @@ const FeatureCard = ({
   range: [number, number];
 }) => {
     
-    // As the user scrolls, the card in the background will scale down.
-    // We are mapping the scroll progress to a scale value.
-    // The card is at full size (1) when it's at the center of its range,
-    // and shrinks to 0.9 as it moves to the top or bottom of its range.
-    const scale = useTransform(
-      progress,
-      [range[0], (range[0] + range[1]) / 2, range[1]],
-      [0.9, 1, 0.9]
-    );
-
-    // The content inside the card will fade out as it moves away from the center.
-    const contentOpacity = useTransform(
-        progress,
-        [range[0], (range[0] + range[1]) / 2.1, range[1]],
-        [0, 1, 0]
-    );
+    const midpoint = (range[0] + range[1]) / 2;
+    const scale = useTransform(progress, [range[0], midpoint, range[1]], [0.9, 1, 0.9]);
+    const contentOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0, 1, 0]);
+    const glowOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0, 1, 0]);
   
     return (
       <motion.div
@@ -87,7 +75,12 @@ const FeatureCard = ({
       >
         <div 
           className="glow-card" 
-          style={{ width: '70vw', height: '75vh' }}
+          style={{ 
+            width: '70vw', 
+            height: '75vh',
+            // @ts-ignore
+            '--glow-opacity': glowOpacity 
+          }}
         >
           <div className="glow-card-border" />
           <div className="glow-card-content">

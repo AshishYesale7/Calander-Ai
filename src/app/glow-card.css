@@ -26,19 +26,18 @@
   border-radius: 24px; /* Matches the parent's rounded-3xl */
   padding: 2px; /* Border width */
   background: conic-gradient(
-    from 0deg at 50% 50%,
-    hsla(calc(var(--hue) * 1), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1 + 60), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1 + 120), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1 + 180), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1 + 240), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1 + 300), 100%, 70%, 1),
-    hsla(calc(var(--hue) * 1), 100%, 70%, 1)
+    from calc(var(--hue) * 1deg),
+    transparent 0%,      /* Start transparent */
+    hsl(calc(var(--hue) + 45), 100%, 70%) 5%, /* Comet tail starts */
+    hsl(var(--hue), 100%, 70%) 10%,          /* Comet head */
+    transparent 15%     /* End transparent, creating a small comet */
   );
   animation: hue-animation 4s linear infinite;
   z-index: 0;
   filter: blur(8px);
+  opacity: var(--glow-opacity, 0); /* Controlled by Framer Motion */
 }
+
 
 .glow-card-content {
   position: relative;
