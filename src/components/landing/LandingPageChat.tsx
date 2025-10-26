@@ -2,14 +2,22 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Mic } from 'lucide-react';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Sparkles, X, Mic, Paperclip, ArrowUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { useApiKey } from '@/hooks/use-api-key';
 import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
 import { answerWebAppQuestions, type WebAppQaInput, type WebAppQaOutput } from '@/ai/flows/webapp-qa-flow';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Button } from '../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -57,7 +65,12 @@ export default function LandingPageChat() {
 
   const dragControls = useDragControls();
   const containerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
+  const [selectedMcpServer, setSelectedMcpServer] = useState('Calendar ai');
+  const mcpServers = ['Calendar ai', 'Google Drive', 'Gmail', 'Slack', 'Notion'];
 
   useEffect(() => {
     generateGreeting({ name: 'there' }).then(res => {
@@ -88,6 +101,7 @@ export default function LandingPageChat() {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
       handleAIResponse(chatHistory);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatHistory]);
 
   const handleSend = () => {
@@ -108,19 +122,50 @@ export default function LandingPageChat() {
         scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [chatHistory, isLoading]);
+  
+  useEffect(() => {
+    if(isOpen) {
+        setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
 
   return (
     <>
-      {/* Main Floating Button */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-        <div className="landing-page-chat-bar" onClick={() => setIsOpen(true)}>
-          <div className="landing-page-chat-glow" />
-          <div className="landing-page-chat-orb-container">
-            <div className="landing-page-chat-orb" />
-          </div>
-          <span className="landing-page-chat-text">Ask Calendar.ai</span>
-          <Mic className="landing-page-chat-mic" />
-        </div>
+        <AnimatePresence>
+          {!isOpen && (
+             <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                transition={{ duration: 0.3 }}
+             >
+                <div 
+                    onClick={() => setIsOpen(true)}
+                    className="desktop-command-bar-glow open w-[400px] h-14"
+                >
+                    <span className="shine"></span>
+                    <span className="glow"></span>
+                    <div className="inner !p-0">
+                        <div className="relative w-full h-full flex items-center text-gray-400 p-2 px-4 cursor-pointer justify-center">
+                            <div className="flex items-center w-full">
+                                <Paperclip className="h-5 w-5 mr-3" />
+                                <span className="flex-1 text-base text-muted-foreground">Ask Calendar.ai...</span>
+                                <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs text-muted-foreground">
+                                    <Sparkles className="h-4 w-4 mr-1.5" />
+                                    Auto
+                                    <ChevronDown className="h-4 w-4 ml-1" />
+                                </Button>
+                                <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                                    <ArrowUp className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Chat Modal */}
@@ -141,26 +186,39 @@ export default function LandingPageChat() {
                 opacity: 1, 
                 y: isFullScreen ? 0 : 'auto', 
                 x: isFullScreen ? 0 : '-50%',
-                width: isFullScreen ? '100vw' : 400,
-                height: isFullScreen ? '100vh' : 600,
+                width: isFullScreen ? '100vw' : 580,
+                height: isFullScreen ? '100vh' : 480,
             }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           >
             {/* Header */}
             <div 
-              className="flex-shrink-0 h-14 flex items-center justify-between px-4 border-b border-white/10 cursor-grab active:cursor-grabbing"
+              className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-center px-1.5 pr-2 cursor-grab active:cursor-grabbing"
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-400" />
-                <h2 className="font-semibold text-white">AI Assistant</h2>
+              <div className="flex-1 text-center">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="frosted-glass bg-gray-700/50 border-white/10 h-7 text-xs">
+                            {selectedModel} <ChevronDown className="ml-1.5 h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="frosted-glass">
+                        <DropdownMenuLabel>AI Model</DropdownMenuLabel>
+                        {['Gemini 2.5 Pro', 'Gemini 2.0 Flash', 'Gemini 2.0 Nano'].map(model => (
+                            <DropdownMenuItem key={model} onSelect={() => setSelectedModel(model)}>
+                                {model}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white">
+              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white absolute right-2 top-1/2 -translate-y-1/2">
                 <X className="h-5 w-5" />
               </button>
             </div>
-
+            
             {/* Chat Body */}
             <div ref={scrollAreaRef} className="flex-1 p-4 space-y-4 overflow-y-auto">
               <ChatBubble message={{ role: 'model', content: greeting }} />
@@ -178,22 +236,22 @@ export default function LandingPageChat() {
 
             {/* Input Footer */}
             <div className="p-3 border-t border-white/10" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="bg-neutral-800 rounded-xl p-2 flex items-end gap-2">
-                <Textarea
-                  placeholder="Ask anything..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none flex-1"
-                  rows={1}
-                />
-                <button 
-                  onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
-                  className="h-8 w-8 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 flex items-center justify-center flex-shrink-0"
-                >
-                  <Sparkles className="h-5 w-5 text-white" />
-                </button>
+              <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg w-full">
+                  <Textarea
+                      ref={textareaRef}
+                      placeholder="Send a message..."
+                      className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-white placeholder:text-gray-400 resize-none"
+                      rows={1}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                  />
+                  <div className="mt-1.5 flex justify-between items-center">
+                      <div className="flex items-center gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
+                      </div>
+                      <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500" onClick={handleSend} disabled={isLoading || !input.trim()}><ArrowUp size={14}/></Button>
+                  </div>
               </div>
             </div>
           </motion.div>
