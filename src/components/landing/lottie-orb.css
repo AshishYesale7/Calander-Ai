@@ -1,7 +1,8 @@
+
 .orb-container {
   position: relative;
-  width: 72px; /* Adjusted size for the FAB */
-  height: 72px;
+  width: 56px; /* Reduced from 72px */
+  height: 56px; /* Reduced from 72px */
   cursor: pointer;
 }
 

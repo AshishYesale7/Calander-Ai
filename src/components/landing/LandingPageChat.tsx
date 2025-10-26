@@ -71,9 +71,6 @@ export default function LandingPageChat() {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
       handleAIResponse(chatHistory);
     }
-  // This dependency array is correct. We only want to trigger this when the chatHistory changes because of a user message.
-  // Adding handleAIResponse would cause an infinite loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatHistory]);
 
 
@@ -118,9 +115,11 @@ export default function LandingPageChat() {
             isOpen ? "max-h-[60vh]" : "max-h-0"
         )}
       >
-        {chatHistory.map((msg, index) => (
-          <ChatBubble key={index} message={msg} />
-        ))}
+        <AnimatePresence>
+            {chatHistory.map((msg, index) => (
+              <ChatBubble key={index} message={msg} />
+            ))}
+        </AnimatePresence>
         {isLoading && (
             <motion.div layout className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
@@ -143,8 +142,14 @@ export default function LandingPageChat() {
              <LottieOrb />
           </motion.div>
           
+          <AnimatePresence>
           {isOpen && (
-            <div className="flex-1 px-3 flex items-center">
+            <motion.div 
+                className="flex-1 px-3 flex items-center"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto', transition: { delay: 0.2 } }}
+                exit={{ opacity: 0, width: 0 }}
+            >
                 <textarea
                     ref={textareaRef}
                     value={input}
@@ -152,13 +157,14 @@ export default function LandingPageChat() {
                     onKeyDown={handleKeyDown}
                     placeholder="Ask Calendar.ai..."
                     rows={1}
-                    className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-lg"
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-base"
                 />
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
 
           <button className="text-gray-400 p-2 hover:text-white">
-            <Mic className="h-6 w-6" />
+            <Mic className="h-5 w-5" />
           </button>
         </div>
       </motion.div>
