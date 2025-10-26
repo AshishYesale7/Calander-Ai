@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin, LayoutGrid, Flame, Apple } from 'lucide-react';
+import { ArrowRight, Bot, Calendar, Brain, Check, Github, Twitter, Linkedin, LayoutGrid, Flame, Apple, GraduationCap, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LandingHeader } from '@/components/layout/LandingHeader';
 import StarryBackground from '@/components/landing/StarryBackground';
@@ -15,6 +15,8 @@ import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
 import FeatureShowcase from '@/components/landing/FeatureShowcase';
 import GravityWellBackground from '@/components/landing/GravityWellBackground';
 import LandingPageChat from '@/components/landing/LandingPageChat';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 // Define a structure for currency data
@@ -32,6 +34,42 @@ const SUPPORTED_CURRENCIES: Currency[] = [
     { code: 'GBP', symbol: '£', rate: 1 / 105 },
 ];
 
+const plans = {
+    student: {
+        monthly: {
+            id: 'student_monthly',
+            title: 'Monthly',
+            priceINR: 59,
+            priceSuffix: '/ month',
+            features: ['All AI Features', 'Timeline & Goal Tracking', 'Codefolio Ally Plugin', 'Community Access'],
+        },
+        yearly: {
+            id: 'student_yearly',
+            title: 'Yearly',
+            priceINR: 599,
+            priceSuffix: '/ year',
+            features: ['Everything in Monthly', 'Save 20% Annually', 'Priority Email Support', 'Early Access to New Plugins'],
+        }
+    },
+    professional: {
+        monthly: {
+            id: 'professional_monthly',
+            title: 'Monthly Pro',
+            priceINR: 149,
+            priceSuffix: '/ month',
+            features: ['All AI Features', 'Advanced Project Sync', 'Team Collaboration (Beta)', 'Priority Email Support'],
+        },
+        yearly: {
+            id: 'professional_yearly',
+            title: 'Yearly Pro',
+            priceINR: 1499,
+            priceSuffix: '/ year',
+            features: ['Everything in Monthly Pro', 'Save 20% Annually', '24/7 Dedicated Support', 'API Access (Coming Soon)'],
+        }
+    }
+};
+
+
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <Card className="frosted-glass text-center p-8 transition-all duration-300 hover:border-accent hover:-translate-y-2 bg-card/60">
         <div className="inline-block p-4 bg-accent/10 rounded-full mb-6">
@@ -48,8 +86,8 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 const PricingCard = ({ title, price, currencySymbol, period, features, popular = false, isLoading = false }: { title: string, price: string, currencySymbol: string, period: string, features: string[], popular?: boolean, isLoading?: boolean }) => (
     <Card className={cn(
-        "frosted-glass w-full max-w-sm p-8 flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-2",
-        popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30"
+        "frosted-glass w-full max-w-sm p-8 flex flex-col transition-all duration-300",
+        popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30 bg-card/70"
     )}>
         {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-sm">Best Value</Badge></div>}
         <CardHeader className="text-center p-0">
@@ -77,11 +115,64 @@ const PricingCard = ({ title, price, currencySymbol, period, features, popular =
         </CardContent>
         <CardFooter className="p-0 mt-8">
             <Button asChild size="lg" className={cn("w-full text-lg", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
-                <Link href="/auth/signup">Get Started</Link>
+                <Link href="/auth/signup">Subscribe</Link>
             </Button>
         </CardFooter>
     </Card>
 );
+
+
+const PlanSection = ({ type, icon: Icon, plans, currency, isLoading }: { type: string, icon: React.ElementType, plans: any, currency: Currency, isLoading: boolean }) => {
+    const [isYearly, setIsYearly] = useState(false);
+    
+    const convertAndFormatPrice = (priceInr: number) => {
+        if (currency.code === 'INR') {
+            return priceInr.toString();
+        }
+        const converted = priceInr * currency.rate;
+        // This logic rounds up to the nearest .99 for non-INR currencies
+        const rounded = Math.ceil(converted) - 0.01;
+        return rounded.toFixed(2);
+    };
+
+    const displayPlan = isYearly ? plans.yearly : plans.monthly;
+
+    return (
+        <Card className="frosted-glass p-6 md:p-8 relative overflow-hidden w-full max-w-lg">
+            <div className="absolute top-4 right-4 h-16 w-16 bg-accent/10 rounded-full flex items-center justify-center">
+                <Icon className="h-8 w-8 text-accent"/>
+            </div>
+            <div className="mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold font-headline text-white">{type}</h2>
+                <p className="text-muted-foreground mt-1">For ambitious {type.toLowerCase().replace('s', '')}s looking to get ahead.</p>
+            </div>
+
+             <div className="flex items-center justify-center gap-4 mb-8">
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</Label>
+                <Switch
+                    id={`${type}-toggle`}
+                    checked={isYearly}
+                    onCheckedChange={setIsYearly}
+                    aria-label="Toggle billing period"
+                />
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</Label>
+            </div>
+            
+            <div className="mx-auto">
+                 <PricingCard
+                    title={displayPlan.title}
+                    price={convertAndFormatPrice(displayPlan.priceINR)}
+                    currencySymbol={currency.symbol}
+                    period={displayPlan.priceSuffix}
+                    features={displayPlan.features}
+                    popular={isYearly}
+                    isLoading={isLoading}
+                />
+            </div>
+        </Card>
+    )
+};
+
 
 const AndroidIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -129,15 +220,6 @@ export default function LandingPage() {
         fetchCurrency();
     }, []);
 
-    const convertAndFormatPrice = (priceInr: number) => {
-        if (currency.code === 'INR') {
-            return priceInr.toString();
-        }
-        const converted = priceInr * currency.rate;
-        const rounded = Math.ceil(converted) - 0.01;
-        return rounded.toFixed(2);
-    };
-
     return (
         <div className="bg-background text-foreground">
             <LandingHeader />
@@ -171,8 +253,6 @@ export default function LandingPage() {
                 >
                     <div className="absolute inset-0 bg-black/30"></div>
                     
-                    <FeatureShowcase />
-                    
                     {/* Features Section */}
                     <section id="features" className="py-20 md:py-32 relative z-10">
                         <div className="container mx-auto px-4">
@@ -182,67 +262,39 @@ export default function LandingPage() {
                                     Calendar.ai combines powerful AI with intuitive planning tools to give you unparalleled clarity on your life.
                                 </p>
                             </div>
-                            <div className="grid md:grid-cols-3 gap-8">
-                                <FeatureCard
-                                    icon={Calendar}
-                                    title="Intelligent Sync"
-                                    description="Connect Google Calendar, Tasks, and Gmail. Calendar.ai processes everything into one unified, smart timeline."
-                                />
-                                <FeatureCard
-                                    icon={Bot}
-                                    title="Smart Daily Planning"
-                                    description="Let our AI analyze your schedule, goals, and even emails to generate the perfect plan for your day."
-                                />
-                                <FeatureCard
-                                    icon={Brain}
-                                    title="AI-Powered Insights"
-                                    description="From summarizing important emails to suggesting resources, get AI assistance that helps you stay ahead."
-                                />
-                            </div>
+                            <FeatureShowcase />
                         </div>
                     </section>
                     
                     {/* Pricing Section */}
                     <section id="pricing" className="py-20 md:py-32 relative z-10">
-                        <div className="container mx-auto px-4">
+                         <div className="container mx-auto px-4">
                             <div className="text-center max-w-3xl mx-auto mb-16">
                                 <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Choose Your Plan</h2>
                                 <p className="mt-4 text-lg text-gray-200">
                                     Start for free, then unlock the full power of Calendar.ai with a plan that fits your journey.
                                 </p>
                             </div>
-                            <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
-                                <PricingCard
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start justify-center">
+                                <PlanSection 
+                                    type="Student Plans" 
+                                    icon={GraduationCap} 
+                                    plans={plans.student} 
+                                    currency={currency}
                                     isLoading={isCurrencyLoading}
-                                    title="Monthly"
-                                    price={convertAndFormatPrice(59)}
-                                    currencySymbol={currency.symbol}
-                                    period="/month"
-                                    features={[
-                                        'Access to all AI features',
-                                        'Unlimited timeline events',
-                                        'Personalized news feed',
-                                        'Email support'
-                                    ]}
                                 />
-                                <PricingCard
+                                <PlanSection 
+                                    type="Professional Plans" 
+                                    icon={Briefcase} 
+                                    plans={plans.professional} 
+                                    currency={currency}
                                     isLoading={isCurrencyLoading}
-                                    popular
-                                    title="Yearly"
-                                    price={convertAndFormatPrice(599)}
-                                    currencySymbol={currency.symbol}
-                                    period="/year"
-                                    features={[
-                                        'All features from Monthly',
-                                        'Save 20% with annual billing',
-                                        'Priority support',
-                                        'Early access to new features'
-                                    ]}
                                 />
                             </div>
                         </div>
                     </section>
-
+                    
+                    {/* Download App Section */}
                     <section className="relative py-24 md:py-40">
                         <GravityWellBackground />
                         <div className="relative z-10 container mx-auto px-4 text-center">
@@ -282,7 +334,7 @@ export default function LandingPage() {
                             </div>
                         </div>
                     </section>
-
+                    
                     {/* Footer */}
                     <footer id="contact" className="relative z-10 bg-transparent border-t border-border/20 text-muted-foreground">
                         <div className="container mx-auto px-4 py-16">
@@ -325,3 +377,5 @@ export default function LandingPage() {
         </div>
     );
 }
+
+  
