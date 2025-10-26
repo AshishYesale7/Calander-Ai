@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
@@ -18,6 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import LottieOrb from './LottieOrb';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -145,15 +145,10 @@ export default function LandingPageChat() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 50 }}
                 transition={{ duration: 0.3 }}
+                onClick={handleBarClick}
+                className="cursor-pointer"
              >
-                <div 
-                    onClick={handleBarClick}
-                    className="particle-orb cursor-pointer"
-                >
-                    <div className="inner">
-                        <Sparkles className="h-6 w-6 text-white/80" />
-                    </div>
-                </div>
+                <LottieOrb />
             </motion.div>
           )}
         </AnimatePresence>
