@@ -134,8 +134,8 @@ export default function FeatureShowcase() {
             <Tabs defaultValue="student">
                 <div className="flex justify-center mb-10">
                     <TabsList className="bg-card/60 p-2 border border-border/30">
-                        <TabsTrigger value="student" className="px-6 py-2">For Students</TabsTrigger>
-                        <TabsTrigger value="professional" className="px-6 py-2">For Professionals</TabsTrigger>
+                        <TabsTrigger value="student" className="px-8 py-3 text-base">For Students</TabsTrigger>
+                        <TabsTrigger value="professional" className="px-8 py-3 text-base">For Professionals</TabsTrigger>
                     </TabsList>
                 </div>
 
