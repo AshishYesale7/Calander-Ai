@@ -132,11 +132,7 @@ export default function LandingPageChat() {
   }, [isOpen]);
 
   const handleBarClick = () => {
-    if (isOrb) {
-        setIsOrb(false);
-    } else {
-        setIsOpen(true);
-    }
+    setIsOpen(true);
   };
 
   return (
@@ -152,24 +148,10 @@ export default function LandingPageChat() {
              >
                 <div 
                     onClick={handleBarClick}
-                    className={cn(
-                        "landing-command-orb transition-all duration-300 ease-in-out",
-                        isOrb ? "is-orb" : "is-bar"
-                    )}
+                    className="particle-orb cursor-pointer"
                 >
-                    <span className="shine"></span>
-                    <span className="glow"></span><span className="glow glow-bottom"></span>
-                    <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
-                    <div className="inner !p-0">
-                        <div className="relative w-full h-full flex items-center text-gray-400 p-2 px-4 cursor-pointer justify-center">
-                            <div className="flex items-center w-full">
-                                <Sparkles className="h-5 w-5 mr-3 shrink-0" />
-                                <span className="flex-1 text-base text-muted-foreground whitespace-nowrap">Ask Calendar.ai...</span>
-                                <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center shrink-0">
-                                    <ArrowUp className="h-5 w-5" />
-                                </Button>
-                            </div>
-                        </div>
+                    <div className="inner">
+                        <Sparkles className="h-6 w-6 text-white/80" />
                     </div>
                 </div>
             </motion.div>

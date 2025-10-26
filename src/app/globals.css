@@ -500,100 +500,7 @@ body {
     animation: scroll-vertical 20s linear infinite;
 }
 
-/* NEW: Styles for the orb/bar command bar */
-.landing-command-orb {
-  --hue1: 320;
-  --hue2: 280;
-  --radius: 28px;
-  --border: 1px;
-  --border-color: hsl(var(--hue2), 12%, 20%);
-  --ease: cubic-bezier(0.5, 1, 0.89, 1);
-  color: #c2c8d2;
-  position: relative;
-  overflow: hidden;
-  border: var(--border) solid var(--border-color);
-  background: linear-gradient(235deg, hsl(var(--hue1) 50% 12% / 0.8), hsl(var(--hue1) 50% 12% / 0) 45%), 
-              linear-gradient(45deg, hsl(var(--hue2) 50% 12% / 0.8), hsl(var(--hue2) 50% 12% / 0) 45%), 
-              hsl(220deg 25% 6% / 0.8);
-  backdrop-filter: blur(12px);
-  box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px;
-  animation: landing-chat-glow-anim 8s infinite alternate;
-}
-
-.landing-command-orb.is-orb {
-  width: 56px; /* h-14 */
-  height: 56px; /* h-14 */
-  border-radius: 9999px;
-}
-
-.landing-command-orb.is-orb .inner span {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-}
-.landing-command-orb.is-orb .inner > div > div {
-  justify-content: center;
-}
-.landing-command-orb.is-orb .inner .mr-3 {
-  margin-right: 0;
-}
-
-.landing-command-orb.is-bar {
-  width: 400px;
-  height: 56px;
-  border-radius: var(--radius);
-}
-
-.landing-command-orb .shine,
-.landing-command-orb .glow {
-  opacity: 0;
-  animation: glow 1s var(--ease) both;
-}
-.landing-command-orb .shine { animation-delay: 0s; animation-duration: 2s; }
-.landing-command-orb .glow { animation-delay: 0.2s; }
-
-.landing-command-orb .shine-bottom,
-.landing-command-orb .shine-bottom::before,
-.landing-command-orb .shine-bottom::after {
-  pointer-events: none;
-  border-radius: 0;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-  border: 1px solid transparent;
-  width: 50%;
-  height: auto;
-  min-height: 0px;
-  aspect-ratio: 1;
-  display: block;
-  position: absolute;
-  left: calc(var(--border) * -1);
-  top: auto;
-  bottom: calc(var(--border) * -1);
-  z-index: -1;
-  --start: 12%;
-  --conic: -45deg;
-  background: conic-gradient(from var(--conic, -45deg) at center in oklch, transparent var(--start, 0%), hsl(var(--hue1), var(--sat, 80%), var(--lit, 60%)), transparent var(--end, 50%)) border-box;
-  mask: linear-gradient(transparent), linear-gradient(black);
-  mask-repeat: no-repeat;
-  mask-clip: padding-box, border-box;
-  mask-composite: subtract;
-}
-
-.landing-command-orb .shine-bottom::before,
-.landing-command-orb .shine-bottom::after {
-  content: "";
-  width: auto;
-  inset: -2px;
-  mask: none;
-}
-
-.landing-command-orb .shine-bottom::after { 
-  z-index: -2;
-  --start: 17%;
-  --end: 33%;
-  background: conic-gradient(from var(--conic, -45deg) at center in oklch, transparent var(--start,0%), hsl( var(--hue1), var(--sat,80%), var(--lit,85%)), transparent var(--end,50%));
-}
-
+/* Styles for the command bar */
 @keyframes landing-chat-glow-anim {
   from {
     --hue1: 320;
@@ -689,6 +596,7 @@ body {
   border-top-right-radius: calc(var(--radius) * 2.5);
   border-bottom-left-radius: calc(var(--radius) * 2.5);
   border: calc(var(--radius) * 1.25) solid transparent;
+  inset: calc(var(--radius) * -2);
   width: 75%;
   height: auto;
   min-height: 0px;
@@ -1091,17 +999,6 @@ body {
   --start: 17%;
   --end: 33%;
   background: conic-gradient(from var(--conic, -45deg) at center in oklch, transparent var(--start,0%), hsl( var(--hue1), var(--sat,80%), var(--lit,85%)), transparent var(--end,50%));
-}
-
-@keyframes landing-chat-glow-anim {
-  from {
-    --hue1: 320;
-    --hue2: 280;
-  }
-  to {
-    --hue1: 280;
-    --hue2: 320;
-  }
 }
 
 .landing-command-bar {
