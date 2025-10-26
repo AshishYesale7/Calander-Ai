@@ -16,6 +16,20 @@ interface ChatMessage {
   content: string;
 }
 
+const parseMarkdown = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*|\[.*?\]\(#\))/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('[') && part.endsWith('](#)')) {
+      const linkText = part.slice(1, part.indexOf(']'));
+      return <a href="#" key={index} className="text-accent underline hover:text-accent/80">{linkText}</a>;
+    }
+    return part;
+  });
+};
+
 const ChatBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user';
   return (
@@ -26,7 +40,7 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
           isUser ? "bg-blue-600 rounded-br-md" : "bg-neutral-700 rounded-bl-md"
         )}
       >
-        <p className="text-sm">{message.content}</p>
+        <p className="text-sm whitespace-pre-wrap">{parseMarkdown(message.content)}</p>
       </div>
     </div>
   );
