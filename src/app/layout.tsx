@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -5,6 +6,7 @@ import './glow-card.css';
 import './electric-border.css';
 import './styles/video-player.css';
 import '@/components/landing/lottie-orb.css';
+import '@/components/landing/bottom-chat.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { SpeedInsights } from "@vercel/speed-insights/next";
