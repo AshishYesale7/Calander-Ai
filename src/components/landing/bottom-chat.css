@@ -9,7 +9,7 @@
 }
 
 .bottom-chat-bar.is-open {
-  width: 100%; /* Expand to full width */
+  width: 200px; /* Expand to 200px width */
   height: 56px; /* Reduced from 64px */
 }
 
