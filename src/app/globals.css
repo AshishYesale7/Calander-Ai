@@ -604,11 +604,6 @@ body {
   z-index: -3;
 }
 
-.desktop-command-bar-glow .glow-bottom {
-  top: auto;
-  right: auto;
-}
-
 .desktop-command-bar-glow .glow-bottom::before,
 .desktop-command-bar-glow .glow-bottom::after {
   content: "";
@@ -927,70 +922,9 @@ body {
 }
 
 /* NEW: Styles for the compact command bar from the image */
-.landing-command-bar {
-  --hue1: 320;
-  --hue2: 280;
-  --radius: 28px;
-  --border: 1px;
-  --border-color: hsl(var(--hue2), 12%, 20%);
-  --ease: cubic-bezier(0.5, 1, 0.89, 1);
-  
-  color: #c2c8d2; /* Adjusted for higher contrast */
-  
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  border: var(--border) solid var(--border-color);
-  padding: 0;
-  background: linear-gradient(235deg, hsl(var(--hue1) 50% 12% / 0.8), hsl(var(--hue1) 50% 12% / 0) 45%), 
-              linear-gradient(45deg, hsl(var(--hue2) 50% 12% / 0.8), hsl(var(--hue2) 50% 12% / 0) 45%), 
-              hsl(220deg 25% 6% / 0.8);
-  backdrop-filter: blur(12px);
-  box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px;
+@keyframes landing-chat-glow-anim {
+  0% { box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px, 0 0 20px -5px hsl(var(--hue1) 80% 70% / 0.5); }
+  50% { box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px, 0 0 30px 0px hsl(var(--hue2) 80% 70% / 0.6); }
+  100% { box-shadow: hsl(var(--hue2) 50% 2%) 0px 10px 16px -8px, hsl(var(--hue2) 50% 4%) 0px 20px 36px -14px, 0 0 20px -5px hsl(var(--hue1) 80% 70% / 0.5); }
 }
 
-.landing-command-bar .shine-bottom,
-.landing-command-bar .shine-bottom::before,
-.landing-command-bar .shine-bottom::after {
-  pointer-events: none;
-  border-radius: 0;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-  border: 1px solid transparent;
-  width: 50%;
-  height: auto;
-  min-height: 0px;
-  aspect-ratio: 1;
-  display: block;
-  position: absolute;
-  left: calc(var(--border) * -1);
-  top: auto;
-  bottom: calc(var(--border) * -1);
-  z-index: -1;
-  --start: 12%;
-  --conic: -45deg;
-  background: conic-gradient(from var(--conic, -45deg) at center in oklch, transparent var(--start, 0%), hsl(var(--hue1), var(--sat, 80%), var(--lit, 60%)), transparent var(--end, 50%)) border-box;
-  mask: linear-gradient(transparent), linear-gradient(black);
-  mask-repeat: no-repeat;
-  mask-clip: padding-box, border-box;
-  mask-composite: subtract;
-}
-
-.landing-command-bar .shine-bottom::before,
-.landing-command-bar .shine-bottom::after {
-  content: "";
-  width: auto;
-  inset: -2px;
-  mask: none;
-}
-
-.landing-command-bar .shine-bottom::after { 
-  z-index: -2;
-  --start: 17%;
-  --end: 33%;
-  background: conic-gradient(from var(--conic, -45deg) at center in oklch, transparent var(--start,0%), hsl( var(--hue1), var(--sat,80%), var(--lit,85%)), transparent var(--end,50%));
-}
-
-.landing-command-bar {
-  animation: landing-chat-glow-anim 8s infinite alternate;
-}
