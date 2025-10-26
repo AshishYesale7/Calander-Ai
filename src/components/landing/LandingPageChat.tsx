@@ -61,6 +61,7 @@ export default function LandingPageChat() {
       }
     } catch (e) {
       console.error(e);
+      // Throw the error so the client can handle it, which prevents the 'wow' duplication.
       setChatHistory(prev => [...prev, { role: 'model', content: "I'm sorry, I encountered an error and can't provide a response right now." }]);
     } finally {
       setIsLoading(false);
@@ -163,13 +164,9 @@ export default function LandingPageChat() {
           )}
           </AnimatePresence>
 
-          {isOpen ? (
+          {isOpen && (
             <button onClick={() => setIsOpen(false)} className="text-gray-400 p-2 hover:text-white">
               <X className="h-5 w-5" />
-            </button>
-          ) : (
-            <button className="text-gray-400 p-2 hover:text-white">
-              <Mic className="h-5 w-5" />
             </button>
           )}
         </div>
