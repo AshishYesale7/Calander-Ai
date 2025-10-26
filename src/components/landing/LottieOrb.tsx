@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef, useEffect } from 'react';
@@ -32,7 +33,7 @@ export default function LottieOrb() {
     <div ref={containerRef} className="orb-container">
       <Lottie
         lottieRef={lottieRef}
-        animationData={LOTTIE_ANIMATION_URL}
+        path={LOTTIE_ANIMATION_URL}
         loop={true}
         autoplay={true}
         id="lottie-orb"
