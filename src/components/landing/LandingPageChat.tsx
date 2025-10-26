@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Mic, Paperclip, ArrowUp, ChevronDown } from 'lucide-react';
+import { Sparkles, X, Paperclip, ArrowUp, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
@@ -56,6 +56,7 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
 
 export default function LandingPageChat() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOrb, setIsOrb] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -69,9 +70,7 @@ export default function LandingPageChat() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
-  const [selectedMcpServer, setSelectedMcpServer] = useState('Calendar ai');
-  const mcpServers = ['Calendar ai', 'Google Drive', 'Gmail', 'Slack', 'Notion'];
-
+  
   useEffect(() => {
     generateGreeting({ name: 'there' }).then(res => {
         setGreeting(`${res.greeting} How can I help?`);
@@ -101,7 +100,6 @@ export default function LandingPageChat() {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
       handleAIResponse(chatHistory);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatHistory]);
 
   const handleSend = () => {
@@ -126,8 +124,20 @@ export default function LandingPageChat() {
   useEffect(() => {
     if(isOpen) {
         setTimeout(() => textareaRef.current?.focus(), 100);
+    } else {
+        // When closing the chat, revert to orb state
+        const timer = setTimeout(() => setIsOrb(true), 300);
+        return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  const handleBarClick = () => {
+    if (isOrb) {
+        setIsOrb(false);
+    } else {
+        setIsOpen(true);
+    }
+  };
 
   return (
     <>
@@ -141,22 +151,21 @@ export default function LandingPageChat() {
                 transition={{ duration: 0.3 }}
              >
                 <div 
-                    onClick={() => setIsOpen(true)}
-                    className="desktop-command-bar-glow open w-[400px] h-14"
+                    onClick={handleBarClick}
+                    className={cn(
+                        "landing-command-orb transition-all duration-300 ease-in-out",
+                        isOrb ? "is-orb" : "is-bar"
+                    )}
                 >
                     <span className="shine"></span>
-                    <span className="glow"></span>
+                    <span className="glow"></span><span className="glow glow-bottom"></span>
+                    <span className="glow glow-bright"></span><span className="glow glow-bright glow-bottom"></span>
                     <div className="inner !p-0">
                         <div className="relative w-full h-full flex items-center text-gray-400 p-2 px-4 cursor-pointer justify-center">
                             <div className="flex items-center w-full">
-                                <Paperclip className="h-5 w-5 mr-3" />
-                                <span className="flex-1 text-base text-muted-foreground">Ask Calendar.ai...</span>
-                                <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs text-muted-foreground">
-                                    <Sparkles className="h-4 w-4 mr-1.5" />
-                                    Auto
-                                    <ChevronDown className="h-4 w-4 ml-1" />
-                                </Button>
-                                <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                                <Sparkles className="h-5 w-5 mr-3 shrink-0" />
+                                <span className="flex-1 text-base text-muted-foreground whitespace-nowrap">Ask Calendar.ai...</span>
+                                <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center shrink-0">
                                     <ArrowUp className="h-5 w-5" />
                                 </Button>
                             </div>
