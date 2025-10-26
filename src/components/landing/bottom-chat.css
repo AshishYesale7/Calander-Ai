@@ -4,13 +4,13 @@
   background-color: #1a1a1a;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
   transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  height: 56px; /* Reduced from 64px */
-  width: 56px; /* Start as orb width, reduced from 64px */
+  height: 56px;
+  width: 56px;
 }
 
 .bottom-chat-bar.is-open {
-  width: 200px; /* Expand to 200px width */
-  height: 56px; /* Reduced from 64px */
+  width: 400px;
+  height: 56px;
 }
 
 .bottom-chat-bar::before {
