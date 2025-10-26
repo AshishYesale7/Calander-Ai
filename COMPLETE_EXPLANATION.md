@@ -1,308 +1,69 @@
-# Complete Repository Explanation: Calendar.ai
-
-## Introduction
-
-You've asked me to explain this repository ("Can you explain this rep"), and I'm excited to provide you with a comprehensive overview of **Calendar.ai** - an innovative AI-powered career planning and calendar management application.
+# Calendar.ai - Your Intelligent Career Co-pilot
 
 ## What is Calendar.ai?
 
-Calendar.ai is not just another calendar application. It's an intelligent digital assistant specifically designed for college students and early-career professionals who struggle with the complexity of managing academic responsibilities, career development, and personal growth simultaneously.
+Calendar.ai is an intelligent digital assistant designed to help ambitious students and early-career professionals manage their academic responsibilities, career development, and personal growth. It's more than just a calendar—it's a proactive planner that uses AI to help you turn your long-term goals into actionable, daily steps.
 
-### The Problem It Solves
-
-Students today face an overwhelming amount of information and choices:
-- Multiple exam preparations (GATE, GRE, CAT, etc.)
-- Skill development in various technologies
-- Internship and job applications
-- Project deadlines and coursework
-- Long-term career planning
-
-Traditional planning tools are passive - they show you what you need to do but don't help you figure out how to do it all effectively.
-
-### The Solution
-
-Calendar.ai transforms planning from reactive to proactive using AI-powered insights that:
-- Generate personalized daily schedules
-- Connect daily tasks to long-term career goals
-- Provide intelligent recommendations and resources
-- Track progress across multiple dimensions
-- Create a gamified, social environment for motivation
-
-## Technology Stack Deep Dive
-
-### Core Technologies
-- **Next.js 15.3.3**: React framework providing server-side rendering, API routes, and optimal performance
-- **React 18.3.1**: Component-based UI with hooks and context for state management
-- **TypeScript 5**: Static typing for enhanced code quality and developer experience
-- **Tailwind CSS 3.4.1**: Utility-first CSS framework for rapid, responsive design
-
-### AI and Intelligence
-- **Google Genkit Framework**: Open-source AI framework for building generative AI features
-- **Gemini Pro & Flash**: Google's advanced language models for complex reasoning and quick responses
-- **Structured Prompt Engineering**: Carefully crafted prompts for consistent, useful AI outputs
-
-### Backend and Data
-- **Firebase Ecosystem**:
-  - **Firestore**: NoSQL database for real-time data synchronization
-  - **Authentication**: Multi-provider auth (email, Google, phone)
-  - **Cloud Messaging**: Browser push notifications
-  - **App Hosting**: Serverless deployment platform
-
-### External Integrations
-- **Google Workspace APIs**: Calendar, Tasks, and Gmail integration
-- **Razorpay**: Payment processing for premium subscriptions
-- **Competitive Programming APIs**: Codeforces, LeetCode, CodeChef integration
-
-## Repository Structure Explained
-
-```
-Calendar.ai/
-├── 📁 src/                          # Source code
-│   ├── 📁 app/                      # Next.js App Router
-│   │   ├── 📁 (app)/               # Protected routes (main application)
-│   │   │   ├── 📁 dashboard/       # Main dashboard with timeline
-│   │   │   ├── 📁 career-goals/    # Goal setting and tracking
-│   │   │   ├── 📁 career-vision/   # AI-powered career planning
-│   │   │   ├── 📁 skills/          # Skill tracking and development
-│   │   │   ├── 📁 news/            # Personalized news and opportunities
-│   │   │   ├── 📁 resources/       # Learning resources and bookmarks
-│   │   │   ├── 📁 leaderboard/     # Gamification and social features
-│   │   │   ├── 📁 profile/         # User profiles and settings
-│   │   │   └── 📁 extensions/      # Plugin marketplace
-│   │   ├── 📁 api/                 # Backend API endpoints
-│   │   ├── 📁 auth/                # Authentication pages
-│   │   └── 📄 page.tsx             # Landing page
-│   ├── 📁 components/              # Reusable UI components
-│   │   ├── 📁 ui/                  # Base UI components (buttons, cards, etc.)
-│   │   ├── 📁 layout/              # Layout components (sidebar, header)
-│   │   ├── 📁 landing/             # Landing page specific components
-│   │   ├── 📁 dashboard/           # Dashboard-specific components
-│   │   └── 📁 timeline/            # Timeline visualization components
-│   ├── 📁 ai/                      # AI integration logic
-│   ├── 📁 services/                # External service integrations
-│   ├── 📁 context/                 # React context providers
-│   ├── 📁 hooks/                   # Custom React hooks
-│   ├── 📁 lib/                     # Utility functions
-│   └── 📁 types/                   # TypeScript type definitions
-├── 📁 docs/                        # Documentation
-├── 📁 public/                      # Static assets
-├── 📄 package.json                 # Dependencies and scripts
-├── 📄 next.config.ts               # Next.js configuration
-├── 📄 tailwind.config.ts           # Tailwind CSS configuration
-├── 📄 tsconfig.json                # TypeScript configuration
-├── 📄 apphosting.yaml              # Firebase hosting configuration
-└── 📄 README.md                    # Project documentation
-```
-
-## Key Features Breakdown
-
-### 1. 🤖 AI-Powered Dashboard
-- **Multiple Views**: Calendar, day timetable, sliding timeline, list view
-- **Smart Synchronization**: Automatic sync with Google Calendar and Tasks
-- **Intelligent Analysis**: AI processes your schedule and suggests optimizations
-
-### 2. 📋 Smart Daily Planning
-Every morning, the AI generates a personalized plan that includes:
-- **Optimized Schedule**: Time blocks arranged for maximum productivity
-- **Micro-Goals**: Daily tasks that contribute to long-term objectives
-- **Focus Areas**: Key areas to concentrate on for the day
-- **Motivational Content**: AI-generated quotes and encouragement
-
-### 3. 🎯 Career Vision Planner
-A standout feature where users describe their career aspirations in natural language, and the AI generates:
-- **Vision Statement**: Clear articulation of career goals
-- **Strengths Analysis**: Identification of current strengths
-- **Development Areas**: Skills and areas needing improvement
-- **Actionable Roadmap**: Step-by-step plan with milestones
-- **Resource Recommendations**: Curated learning materials and opportunities
-
-### 4. 📊 Goal & Skill Tracking
-- **Progress Visualization**: Charts and progress bars for visual feedback
-- **Skill Proficiency Levels**: Track improvement from beginner to expert
-- **Goal Categories**: Career, education, skill development, personal
-- **Milestone Management**: Break down large goals into manageable chunks
-
-### 5. 🎮 Gamification & Social Features
-- **Daily Streaks**: Build habits through consistent engagement
-- **Leaderboard**: Community ranking based on time spent and XP
-- **User Profiles**: Shareable profiles with achievements and bio
-- **Social Following**: Connect with other motivated users
-
-### 6. 🔌 Extension Marketplace
-**Codefolio Ally** - The flagship extension for competitive programmers:
-- **Unified Dashboard**: Combines Codeforces, LeetCode, CodeChef stats
-- **Problem Solving Tracking**: Visual representation of coding activity
-- **Contest Integration**: Automatic contest discovery and calendar addition
-- **GitHub-style Contribution Graph**: Year-long view of coding activity
-
-### 7. 📧 Intelligent Email Analysis
-- **Important Email Detection**: AI scans Gmail for relevant, non-sensitive emails
-- **Smart Summarization**: Key information extracted and displayed
-- **Privacy Protection**: Automatically excludes OTPs, passwords, security alerts
-
-### 8. 🎨 Advanced User Experience
-- **Customization**: Themes, backgrounds, UI effects
-- **Command Palette**: Keyboard shortcuts for power users (Ctrl+K)
-- **Progressive Web App**: Offline capabilities and native app-like experience
-- **Push Notifications**: Timely reminders for important events
-
-## How the AI Works
-
-### Prompt Engineering
-The application uses carefully crafted prompts that provide context about:
-- User's current schedule and commitments
-- Long-term goals and aspirations
-- Past activity patterns
-- Skill development needs
-- Personal preferences
-
-### AI Workflows
-1. **Daily Planning**: Analyzes calendar, goals, and preferences to generate optimal schedules
-2. **Career Analysis**: Processes natural language career descriptions to create comprehensive plans
-3. **Email Processing**: Filters and summarizes important communications
-4. **Resource Suggestion**: Recommends learning materials based on goals and current skills
-
-### Context Management
-The AI maintains context across interactions, allowing for:
-- Personalized recommendations that improve over time
-- Consistent advice aligned with user's goals
-- Intelligent follow-ups and reminders
-
-## Development and Deployment
-
-### Development Workflow
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev        # Main application on :9002
-npm run genkit:dev # AI development server
-
-# Type checking and linting
-npm run typecheck
-npm run lint
-
-# Build for production
-npm run build
-```
-
-### Deployment Options
-1. **Firebase App Hosting** (Recommended)
-   - Automatic builds from GitHub
-   - Integrated with Firebase services
-   - Global CDN distribution
-
-2. **Heroku**
-   - One-click deployment
-   - Environment variable management
-   - Automatic SSL certificates
-
-### Environment Configuration
-The application requires several environment variables:
-- Google AI API keys for Gemini integration
-- Firebase configuration for backend services
-- Google OAuth credentials for calendar/email access
-- Payment processor keys for subscriptions
-
-## Real-World Impact
+## Key Features
 
 ### For Students
-- **Exam Preparation**: Structured study plans for competitive exams
-- **Skill Development**: Guided learning paths for technical skills
-- **Time Management**: AI-optimized schedules that balance study and life
-- **Career Clarity**: Clear roadmaps from current state to career goals
+
+Our student-focused features are designed to help you excel in your studies and launch your career.
+
+- **AI-Powered Daily Planning**: Get a smart, personalized schedule every day that balances your coursework, exam prep (like GATE, GRE, CAT), and skill development.
+- **Career Vision Planner**: Describe your career dreams in your own words, and our AI will generate a step-by-step roadmap to get you there, including skills to learn and resources to use.
+- **Goal & Skill Tracking**: Define your academic and career goals, track your progress with visual timelines, and log the new skills you're acquiring.
+- **Codefolio Ally Extension**: A must-have for competitive programmers! Track your stats from Codeforces, LeetCode, and CodeChef in one place, visualize your progress, and get reminders for upcoming contests.
+- **Gamification & Social Features**: Stay motivated with daily streaks, climb the leaderboard, and connect with other students to build a supportive community.
 
 ### For Professionals
-- **Goal Achievement**: Systematic approach to career advancement
-- **Skill Tracking**: Monitor professional development progress
-- **Networking**: Connect with like-minded professionals
-- **Productivity**: AI-enhanced planning and task management
 
-## Innovation Highlights
+For professionals, Calendar.ai transforms into a powerful productivity hub to accelerate your career growth.
 
-### 1. **AI-Human Collaboration**
-Rather than replacing human planning, Calendar.ai augments human decision-making with AI insights, creating a collaborative planning experience.
+- **AI Meeting Assistant**: Automatically get summaries of important emails and documents before a meeting. After the meeting, the AI can help create action items and follow-ups.
+- **Advanced Project Management**: Sync your tasks from tools like Google Tasks and integrate them into your daily plan. (Full integration with Jira, Notion, etc., is coming soon).
+- **Focus Time Automation**: The AI intelligently analyzes your schedule to find and block out uninterrupted "deep work" sessions for maximum productivity.
+- **Intelligent Document Hub**: Connect your Google Drive to link relevant documents directly to your calendar events, so all your context is in one place.
+- **Team Productivity Dashboards**: (Coming Soon) Visualize team workload, identify bottlenecks, and ensure projects stay on track with insightful analytics.
 
-### 2. **Context-Aware Intelligence**
-The AI doesn't just respond to queries; it understands the user's context, goals, and patterns to provide proactive assistance.
+## AI Assistant Capabilities
 
-### 3. **Gamified Learning**
-By introducing social elements and gamification, the app makes career development engaging and motivating.
+You are currently chatting with the Calendar.ai Assistant! I am here to help you understand what our application can do for you. I can answer questions about:
+- Specific features for students or professionals.
+- How the AI helps with planning and productivity.
+- Pricing and subscription details.
+- The purpose and vision of Calendar.ai.
 
-### 4. **Extensible Architecture**
-The plugin system allows for specialized tools while maintaining a cohesive user experience.
+I cannot access your personal data, help with account issues, or process payments. For that, you will need to contact support.
 
-### 5. **Privacy-First AI**
-The email analysis feature demonstrates how AI can be helpful while respecting user privacy through intelligent content filtering.
+## Pricing
 
-## Technical Innovation
+Calendar.ai offers simple, powerful plans for every stage of your career journey.
 
-### Modern Architecture Patterns
-- **Serverless-First**: Built on Firebase for scalability and reduced infrastructure management
-- **Type-Safe Development**: Comprehensive TypeScript usage for reliability
-- **Component-Based Design**: Modular React architecture for maintainability
-- **API-First Approach**: RESTful APIs enable future mobile and third-party integrations
+-   **Student Plan**: **₹59/month** or **₹599/year** (Save 20%!). Includes all student-focused features like the Career Vision Planner and Codefolio Ally extension.
+-   **Professional Plan**: **₹149/month** or **₹1499/year** (Save 20%!). Includes all professional features like the AI Meeting Assistant and advanced integrations.
 
-### Performance Optimizations
-- **Server-Side Rendering**: Faster initial page loads and better SEO
-- **Code Splitting**: Reduced bundle sizes and faster navigation
-- **Real-Time Updates**: Instant synchronization across devices
-- **Progressive Loading**: Smooth user experience even on slow connections
+All new users receive a **30-day free trial** of their chosen plan to explore all the features.
 
-### Security Implementation
-- **Multi-Factor Authentication**: Email, Google, and phone-based verification
-- **Data Encryption**: Sensitive information protected in transit and at rest
-- **Privacy Controls**: Users control what data is shared and processed
-- **Secure API Design**: Proper authentication and authorization throughout
+## Frequently Asked Questions (FAQ)
 
-## Future Vision
+**Q: How does the AI generate my daily plan?**
+A: The AI analyzes your fixed schedule (from your routine), your long-term goals, upcoming deadlines from your timeline, and the skills you're trying to build. It then intelligently schedules tasks and study blocks into your free time to ensure you're making consistent progress.
 
-### Immediate Roadmap
-- **Mobile Applications**: Native iOS and Android apps in development
-- **Enhanced AI**: More sophisticated reasoning and personalization
-- **Real-Time Collaboration**: Team and study group features
+**Q: Is my data private?**
+A: Yes. Your data is stored securely. AI features like email summaries are designed to be privacy-first, automatically filtering out sensitive information like passwords or OTPs. For more details, please see our [Privacy Policy](#).
 
-### Long-Term Goals
-- **AI Mentorship**: Match users with AI-powered mentors for guidance
-- **Industry Integration**: Partnerships with educational institutions and companies
-- **Global Community**: International user base with localized features
+**Q: Can I sync my existing calendar?**
+A: Absolutely! Calendar.ai seamlessly integrates with Google Calendar and Google Tasks. You can see all your existing events and tasks right within the app.
 
-## Why This Repository Matters
+**Q: What is a "Clan"?**
+A: Clans are a new feature we're developing that will allow you to form teams with friends and colleagues. You'll be able to collaborate on projects, prepare for hackathons, and work on open-source contributions together, all within Calendar.ai.
 
-### For Developers
-- **AI Integration Examples**: Real-world implementation of AI in user applications
-- **Modern Web Development**: Best practices with latest technologies
-- **Scalable Architecture**: Patterns for building applications that grow
-- **Open Source Potential**: Foundation for community-driven development
+**Q: Can I change my plan later?**
+A: Yes, you can switch between the Student and Professional plans at any time from your account settings to match your career stage.
 
-### For Users
-- **Practical Solution**: Addresses real problems faced by students and professionals
-- **Comprehensive Approach**: Holistic view of career development
-- **Intelligent Assistance**: AI that truly helps rather than just responds
-- **Community Building**: Social features that create supportive environments
+## Contact & Legal
 
-### For the Industry
-- **Educational Technology**: Demonstrates the future of learning and development tools
-- **AI Applications**: Shows thoughtful integration of AI in productivity software
-- **User-Centric Design**: Focuses on solving problems rather than showcasing technology
-
-## Live Experience
-
-You can experience Calendar.ai yourself at: **http://futuresight-8ebba4468907.herokuapp.com**
-
-The live demo showcases all the features described above and provides a complete view of how the application helps users manage their career development journey.
-
-## Conclusion
-
-Calendar.ai represents a significant evolution in personal productivity and career planning tools. By combining AI intelligence with thoughtful user experience design, it addresses the real challenges faced by students and young professionals in today's complex world.
-
-The repository demonstrates:
-- **Technical Excellence**: Modern architecture and development practices
-- **AI Innovation**: Practical and helpful AI integration
-- **User Focus**: Solutions designed around real user needs
-- **Scalable Design**: Built to grow and adapt to changing requirements
-
-Whether you're a developer interested in AI integration, a student looking for career guidance, or someone passionate about the intersection of technology and personal development, Calendar.ai offers valuable insights and practical solutions.
-
-The project showcases how technology can be used not just to automate tasks, but to genuinely enhance human potential and help people achieve their aspirations more effectively.
+-   **Support & Inquiries**: For any questions, please contact us at **ashishyesale007@gmail.com**.
+-   **Terms of Service**: For detailed information about using our service, please read our [Terms & Conditions](#).
+-   **Privacy Policy**: To understand how we handle your data, please review our [Privacy Policy](#).
