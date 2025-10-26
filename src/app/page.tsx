@@ -57,7 +57,7 @@ const plans = {
             title: 'Monthly Pro',
             priceINR: 149,
             priceSuffix: '/ month',
-            features: ['All AI Features', 'Advanced Project Sync', 'Team Collaboration (Beta)', 'Priority Email Support'],
+            features: ['AI Meeting Assistant', 'Advanced Project Sync', 'Focus Time Automation', 'Team Collaboration (Beta)'],
         },
         yearly: {
             id: 'professional_yearly',
@@ -86,35 +86,35 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 const PricingCard = ({ title, price, currencySymbol, period, features, popular = false, isLoading = false }: { title: string, price: string, currencySymbol: string, period: string, features: string[], popular?: boolean, isLoading?: boolean }) => (
     <Card className={cn(
-        "frosted-glass w-full max-w-sm p-8 flex flex-col transition-all duration-300",
+        "frosted-glass w-full max-w-xs p-6 flex flex-col transition-all duration-300",
         popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30 bg-card/70"
     )}>
         {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-sm">Best Value</Badge></div>}
         <CardHeader className="text-center p-0">
-            <CardTitle className="text-2xl font-bold text-primary">{title}</CardTitle>
+            <CardTitle className="text-xl font-bold text-primary">{title}</CardTitle>
             <div className="mt-2 h-10 flex items-center justify-center">
                 {isLoading ? (
-                    <div className="h-9 w-28 bg-gray-700/50 animate-pulse rounded-md" />
+                    <div className="h-9 w-24 bg-gray-700/50 animate-pulse rounded-md" />
                 ) : (
                     <p>
-                        <span className="text-4xl font-extrabold text-white">{currencySymbol}{price}</span>
-                        <span className="text-muted-foreground">{period}</span>
+                        <span className="text-3xl font-extrabold text-white">{currencySymbol}{price}</span>
+                        <span className="text-sm text-muted-foreground">{period}</span>
                     </p>
                 )}
             </div>
         </CardHeader>
-        <CardContent className="flex-1 p-0 mt-8">
-            <ul className="space-y-4">
+        <CardContent className="flex-1 p-0 mt-6">
+            <ul className="space-y-3">
                 {features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3 text-left">
                         <Check className="h-5 w-5 text-green-400 shrink-0"/>
-                        <span className="text-foreground/90">{feature}</span>
+                        <span className="text-sm text-foreground/90">{feature}</span>
                     </li>
                 ))}
             </ul>
         </CardContent>
-        <CardFooter className="p-0 mt-8">
-            <Button asChild size="lg" className={cn("w-full text-lg", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
+        <CardFooter className="p-0 mt-6">
+            <Button asChild size="lg" className={cn("w-full", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
                 <Link href="/auth/signup">Subscribe</Link>
             </Button>
         </CardFooter>
@@ -122,7 +122,7 @@ const PricingCard = ({ title, price, currencySymbol, period, features, popular =
 );
 
 
-const PlanSection = ({ type, icon: Icon, plans, currency, isLoading }: { type: string, icon: React.ElementType, plans: any, currency: Currency, isLoading: boolean }) => {
+const PlanSection = ({ type, icon: Icon, description, plans, currency, isLoading }: { type: string, icon: React.ElementType, description: string, plans: any, currency: Currency, isLoading: boolean }) => {
     const [isYearly, setIsYearly] = useState(false);
     
     const convertAndFormatPrice = (priceInr: number) => {
@@ -130,7 +130,6 @@ const PlanSection = ({ type, icon: Icon, plans, currency, isLoading }: { type: s
             return priceInr.toString();
         }
         const converted = priceInr * currency.rate;
-        // This logic rounds up to the nearest .99 for non-INR currencies
         const rounded = Math.ceil(converted) - 0.01;
         return rounded.toFixed(2);
     };
@@ -138,27 +137,27 @@ const PlanSection = ({ type, icon: Icon, plans, currency, isLoading }: { type: s
     const displayPlan = isYearly ? plans.yearly : plans.monthly;
 
     return (
-        <Card className="frosted-glass p-6 md:p-8 relative overflow-hidden w-full max-w-lg">
+        <Card className="frosted-glass p-6 relative overflow-hidden w-full max-w-md">
             <div className="absolute top-4 right-4 h-16 w-16 bg-accent/10 rounded-full flex items-center justify-center">
                 <Icon className="h-8 w-8 text-accent"/>
             </div>
-            <div className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold font-headline text-white">{type}</h2>
-                <p className="text-muted-foreground mt-1">For ambitious {type.toLowerCase().replace('s', '')}s looking to get ahead.</p>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold font-headline text-white">{type}</h2>
+                <p className="text-muted-foreground mt-1 text-sm">{description}</p>
             </div>
 
-             <div className="flex items-center justify-center gap-4 mb-8">
-                <Label htmlFor={`${type}-toggle`} className={cn("font-medium", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</Label>
+             <div className="flex items-center justify-center gap-4 mb-6">
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-sm", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</Label>
                 <Switch
                     id={`${type}-toggle`}
                     checked={isYearly}
                     onCheckedChange={setIsYearly}
                     aria-label="Toggle billing period"
                 />
-                <Label htmlFor={`${type}-toggle`} className={cn("font-medium", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</Label>
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-sm", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</Label>
             </div>
             
-            <div className="mx-auto">
+            <div className="mx-auto flex justify-center">
                  <PricingCard
                     title={displayPlan.title}
                     price={convertAndFormatPrice(displayPlan.priceINR)}
@@ -266,7 +265,7 @@ export default function LandingPage() {
                         </div>
                     </section>
                     
-                    {/* Pricing Section */}
+                     {/* New Pricing Section */}
                     <section id="pricing" className="py-20 md:py-32 relative z-10">
                          <div className="container mx-auto px-4">
                             <div className="text-center max-w-3xl mx-auto mb-16">
@@ -275,10 +274,11 @@ export default function LandingPage() {
                                     Start for free, then unlock the full power of Calendar.ai with a plan that fits your journey.
                                 </p>
                             </div>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start justify-center">
+                            <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
                                 <PlanSection 
                                     type="Student Plans" 
                                     icon={GraduationCap} 
+                                    description="For ambitious students looking to get ahead."
                                     plans={plans.student} 
                                     currency={currency}
                                     isLoading={isCurrencyLoading}
@@ -286,6 +286,7 @@ export default function LandingPage() {
                                 <PlanSection 
                                     type="Professional Plans" 
                                     icon={Briefcase} 
+                                    description="For career-focused individuals and teams."
                                     plans={plans.professional} 
                                     currency={currency}
                                     isLoading={isCurrencyLoading}
@@ -293,7 +294,7 @@ export default function LandingPage() {
                             </div>
                         </div>
                     </section>
-                    
+
                     {/* Download App Section */}
                     <section className="relative py-24 md:py-40">
                         <GravityWellBackground />
@@ -379,3 +380,5 @@ export default function LandingPage() {
 }
 
   
+
+    
