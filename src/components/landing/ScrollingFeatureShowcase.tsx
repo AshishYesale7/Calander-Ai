@@ -80,7 +80,7 @@ const FeatureCard = ({
 }) => {
     
     const scale = useTransform(progress, range, [1, 0.9]);
-    const contentOpacity = useTransform(progress, [range[0] + 0.05, range[1]], [1, 0]);
+    const contentOpacity = useTransform(progress, [range[0], range[1]], [1, 0]);
   
     return (
       <motion.div
