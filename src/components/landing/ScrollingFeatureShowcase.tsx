@@ -60,18 +60,16 @@ const FeatureCard = ({
   range: [number, number];
 }) => {
     
-    // As a card moves towards the center of its scroll range, it scales up to 1.
-    // As it moves away from the center (i.e., the next card is scrolling over it), it scales down.
     const scale = useTransform(
       progress,
       [range[0], (range[0] + range[1]) / 2, range[1]],
       [0.9, 1, 0.9]
     );
 
-    const opacity = useTransform(
+    const contentOpacity = useTransform(
         progress,
         [range[0], (range[0] + range[1]) / 2.1, range[1]],
-        [0.5, 1, 0.5]
+        [0.3, 1, 0.3] // Content fades, background does not
     );
   
     return (
@@ -82,44 +80,49 @@ const FeatureCard = ({
         }}
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
-        <motion.div
-            style={{ opacity, width: '70vw' }}
+        <div
+            style={{ width: '70vw' }}
             className={cn(
-            "relative h-[75vh] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
+            "relative h-[75vh] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden",
             feature.gradient
         )}>
-            {/* Decorative Gradient */}
-            <div className={cn("absolute inset-0 opacity-40", feature.gradient)} />
+            <motion.div 
+                className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16"
+                style={{ opacity: contentOpacity }}
+            >
+                {/* Decorative Gradient */}
+                <div className={cn("absolute inset-0 opacity-40", feature.gradient)} />
 
-            {/* Left Side - Text Content */}
-            <div className="md:w-1/2 text-center md:text-left relative z-10">
-                <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">{feature.icon}</div>
-                <h2 className="text-3xl lg:text-4xl font-bold font-headline text-white mb-4">{feature.title}</h2>
-                <p className="text-base lg:text-lg text-white/70 mb-6">{feature.description}</p>
-                <ul className="space-y-3">
-                    {feature.points.map((point, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
-                            <span className="text-white/80">{point}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            
-            {/* Right Side - Video */}
-            <div className="md:w-1/2 w-full h-full relative z-10 flex items-center justify-center">
-                <div className="w-full aspect-[16/10] bg-black/50 rounded-xl border-2 border-white/10 shadow-2xl overflow-hidden">
-                     <video
-                        className="w-full h-full object-cover"
-                        src={feature.videoUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                     />
+                {/* Left Side - Text Content */}
+                <div className="md:w-1/2 text-center md:text-left relative z-10">
+                    <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">{feature.icon}</div>
+                    <h2 className="text-3xl lg:text-4xl font-bold font-headline text-white mb-4">{feature.title}</h2>
+                    <p className="text-base lg:text-lg text-white/70 mb-6">{feature.description}</p>
+                    <ul className="space-y-3">
+                        {feature.points.map((point, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                                <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
+                                <span className="text-white/80">{point}</span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
-            </div>
-        </motion.div>
+                
+                {/* Right Side - Video */}
+                <div className="md:w-1/2 w-full h-full relative z-10 flex items-center justify-center">
+                    <div className="w-full aspect-[16/10] bg-black/50 rounded-xl border-2 border-white/10 shadow-2xl overflow-hidden">
+                         <video
+                            className="w-full h-full object-cover"
+                            src={feature.videoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                         />
+                    </div>
+                </div>
+            </motion.div>
+        </div>
       </motion.div>
     );
 };
