@@ -62,7 +62,7 @@ const FeatureCard = ({
     
     const midpoint = (range[0] + range[1]) / 2;
     const scale = useTransform(progress, [range[0], midpoint, range[1]], [0.9, 1, 0.9]);
-    const contentOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0, 1, 0]);
+    const contentOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0.5, 1, 0.5]);
     const glowOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0, 1, 0]);
   
     return (
@@ -85,7 +85,7 @@ const FeatureCard = ({
           <div className="glow-card-border" />
           <div className="glow-card-content">
             <motion.div 
-                className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16"
+                className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
                 style={{ opacity: contentOpacity }}
             >
                 {/* Left Side - Text Content */}
