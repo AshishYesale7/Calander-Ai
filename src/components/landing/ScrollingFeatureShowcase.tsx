@@ -124,6 +124,7 @@ const FeatureCard = ({
                             loop
                             muted
                             playsInline
+                            controls
                          />
                     </div>
                 </div>
