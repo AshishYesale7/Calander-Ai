@@ -88,6 +88,7 @@ const StreakShowcase = () => {
         <div className="relative h-64 w-full flex items-center justify-center">
             <TrophyFlameIcon isComplete={true} className="absolute inset-0 h-full w-full opacity-10" />
             <div className="relative flex flex-col items-center gap-4">
+                 <DailyFlameIcon isComplete={true} className="h-20 w-20" />
                 <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
                 <div className="flex justify-center gap-1 p-2 bg-black/25 rounded-xl border border-white/10">
                     {weekDays.map((dayChar, index) => (
@@ -99,8 +100,6 @@ const StreakShowcase = () => {
                         </div>
                     ))}
                 </div>
-                {/* New, more prominent flame icon */}
-                <TrophyFlameIcon isComplete={true} className="h-20 w-20 opacity-80 mt-2" />
             </div>
         </div>
     );
@@ -137,4 +136,6 @@ export default function FeatureShowcase() {
     </section>
   );
 }
+    
+
     
