@@ -1,3 +1,4 @@
+
 'use client';
 
 import { allPlugins } from "@/data/plugins";
@@ -88,7 +89,7 @@ const StreakShowcase = () => {
             <TrophyFlameIcon isComplete={true} className="absolute inset-0 h-full w-full opacity-10" />
             <div className="relative flex flex-col items-center gap-4">
                 <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
-                <div className="flex justify-center gap-2 p-2 bg-black/25 rounded-xl border border-white/10">
+                <div className="flex justify-center gap-1 p-2 bg-black/25 rounded-xl border border-white/10">
                     {weekDays.map((dayChar, index) => (
                         <div key={index} className="flex flex-col items-center gap-1">
                             <span className="text-xs font-semibold text-white/70">{dayChar}</span>
@@ -98,6 +99,8 @@ const StreakShowcase = () => {
                         </div>
                     ))}
                 </div>
+                {/* New, more prominent flame icon */}
+                <TrophyFlameIcon isComplete={true} className="h-20 w-20 opacity-80 mt-2" />
             </div>
         </div>
     );
