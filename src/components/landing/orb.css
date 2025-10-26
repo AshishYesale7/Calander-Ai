@@ -22,6 +22,30 @@
   100% { transform: rotate(-360deg); }
 }
 
+@keyframes hue-cycle {
+  0% {
+    --hue1: 280;
+    --hue2: 320;
+  }
+  25% {
+    --hue1: 180;
+    --hue2: 220;
+  }
+  50% {
+    --hue1: 40;
+    --hue2: 80;
+  }
+  75% {
+    --hue1: 120;
+    --hue2: 160;
+  }
+  100% {
+    --hue1: 280;
+    --hue2: 320;
+  }
+}
+
+
 .particle-orb {
   --hue1: 280;
   --hue2: 320;
@@ -31,6 +55,7 @@
   border-radius: 9999px;
   background: radial-gradient(circle at 30% 30%, hsl(var(--hue1), 50%, 20%), hsl(var(--hue2), 50%, 8%) 80%);
   transition: all 0.3s ease-in-out;
+  animation: orb-glow 4s infinite ease-in-out, hue-cycle 10s infinite linear;
 }
 
 .particle-orb:hover {
