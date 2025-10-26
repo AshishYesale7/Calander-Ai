@@ -927,4 +927,46 @@ body {
   color: #8c6a4d !important;
 }
 
-  
+/* NEW: Styles for landing page chat bar */
+.landing-page-chat-bar {
+  @apply relative flex items-center justify-between h-16 w-80 cursor-pointer;
+  background-color: #1a1a1a;
+  border-radius: 9999px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.landing-page-chat-glow {
+  @apply absolute top-0 left-0 w-full h-full;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.5), transparent 40%);
+  animation: landing-chat-glow-anim 8s infinite alternate;
+}
+
+@keyframes landing-chat-glow-anim {
+  from {
+    background: radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.5), transparent 40%);
+  }
+  to {
+    background: radial-gradient(circle at 80% 50%, rgba(219, 39, 119, 0.5), transparent 40%);
+  }
+}
+
+.landing-page-chat-orb-container {
+  @apply absolute left-2 top-2 bottom-2 w-12 flex items-center justify-center;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.landing-page-chat-orb {
+  @apply w-8 h-8 rounded-full relative;
+  background: radial-gradient(circle, #d845f2, #a855f7);
+  box-shadow: 0 0 15px #a855f7, 0 0 25px #d845f2;
+}
+
+.landing-page-chat-text {
+  @apply flex-1 text-center text-white font-medium text-lg pl-8;
+}
+
+.landing-page-chat-mic {
+  @apply text-gray-400 h-6 w-6 mr-6;
+}

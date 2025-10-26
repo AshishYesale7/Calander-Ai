@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -14,6 +13,7 @@ import CursorArrow from '@/components/landing/CursorArrow';
 import { CalendarAiLogo } from '@/components/logo/CalendarAiLogo';
 import FeatureShowcase from '@/components/landing/FeatureShowcase';
 import GravityWellBackground from '@/components/landing/GravityWellBackground';
+import LandingPageChat from '@/components/landing/LandingPageChat';
 
 
 // Define a structure for currency data
@@ -141,6 +141,7 @@ export default function LandingPage() {
         <div className="bg-background text-foreground">
             <LandingHeader />
             <CursorArrow targetRef={ctaButtonRef} />
+            <LandingPageChat />
 
             <main>
                 {/* Hero Section */}
