@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -58,7 +59,8 @@ const FeatureCard = ({
   progress: any;
   range: [number, number];
 }) => {
-    const scale = useTransform(progress, range, [1 - (total - index) * 0.05, 1]);
+    // Scale from 1 down to 0.7, with more reduction for cards further back
+    const scale = useTransform(progress, range, [1 - (total - index) * 0.1, 1]);
     const opacity = useTransform(progress, range, [0.5, 1]);
   
     return (
@@ -70,9 +72,9 @@ const FeatureCard = ({
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
         <motion.div
-            style={{ opacity }}
+            style={{ opacity, width: '70vw' }} // Set base width to 70vw
             className={cn(
-            "relative w-full max-w-6xl h-[75vh] rounded-3xl border border-white/10 bg-gray-900/90 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
+            "relative h-[75vh] rounded-3xl border border-white/10 bg-gray-900/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
             feature.gradient
         )}>
             {/* Decorative Gradient */}
