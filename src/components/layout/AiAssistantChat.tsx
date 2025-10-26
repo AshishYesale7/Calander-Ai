@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
-import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -188,23 +187,15 @@ const ChatHeader = ({
 
 const ChatBody = ({ chatHistory, isLoading }: { chatHistory: ChatMessage[], isLoading: boolean }) => {
     const { user } = useAuth();
-    const [greeting, setGreeting] = useState('');
+    const [greeting, setGreeting] = useState('Hello!');
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const fetchGreeting = async () => {
-            if (user?.displayName) {
-                try {
-                    const result = await generateGreeting({ name: user.displayName });
-                    setGreeting(`${result.greeting} ${user.displayName}`);
-                } catch (e) {
-                    setGreeting(`Hello, ${user.displayName}`);
-                }
-            } else {
-                setGreeting('Hello!');
-            }
-        };
-        fetchGreeting();
+        if (user?.displayName) {
+            setGreeting(`Hello, ${user.displayName}`);
+        } else {
+            setGreeting('Hello!');
+        }
     }, [user]);
 
     useEffect(() => {
