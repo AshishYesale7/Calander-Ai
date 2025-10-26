@@ -90,7 +90,7 @@ const StreakShowcase = () => {
             <TrophyFlameIcon isComplete={true} className="absolute inset-0 h-full w-full opacity-10" />
             <div className="relative flex flex-col items-center gap-4">
                 <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
-                <div className="flex justify-around gap-2 sm:gap-4 p-4 bg-black/25 rounded-2xl border border-white/10">
+                <div className="flex justify-center gap-2 sm:gap-3 p-3 bg-black/25 rounded-2xl border border-white/10">
                     {weekDays.map((dayChar, index) => (
                         <div key={index} className="flex flex-col items-center gap-2">
                             <span className="text-sm font-semibold text-white/70">{dayChar}</span>
