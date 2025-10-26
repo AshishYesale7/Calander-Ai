@@ -80,7 +80,6 @@ const FeatureCard = ({
 }) => {
     
     const scale = useTransform(progress, range, [1, 0.9]);
-    const contentOpacity = useTransform(progress, [range[0], range[1]], [1, 0]);
   
     return (
       <motion.div
@@ -99,7 +98,6 @@ const FeatureCard = ({
           
           <motion.div 
             className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
-            style={{ opacity: contentOpacity }}
           >
                 {/* Left Side - Text Content */}
                 <div className="md:w-1/2 text-center md:text-left relative z-10">
