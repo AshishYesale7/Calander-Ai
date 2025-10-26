@@ -1,7 +1,7 @@
 
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Mic } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -61,7 +61,7 @@ export default function LandingPageChat() {
       }
     } catch (e) {
       console.error(e);
-      setChatHistory(prev => [...prev, { role: 'model', content: "Sorry, I encountered an error." }]);
+      setChatHistory(prev => [...prev, { role: 'model', content: "I'm sorry, I encountered an error and can't provide a response right now." }]);
     } finally {
       setIsLoading(false);
     }
