@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -59,8 +58,6 @@ const FeatureCard = ({
   progress: any;
   range: [number, number];
 }) => {
-    // Each card's scale will be transformed based on its position in the stack.
-    // The card at the top (index 0) will be full size, and others will be smaller.
     const scale = useTransform(progress, range, [1 - (total - index) * 0.05, 1]);
     const opacity = useTransform(progress, range, [0.5, 1]);
   
@@ -68,13 +65,14 @@ const FeatureCard = ({
       <motion.div
         style={{
             scale,
-            opacity,
-            top: `calc(${index * 4}rem)`, // Stagger the cards vertically
+            top: `calc(-5% + ${index * 5}rem)`,
         }}
-        className="sticky w-full h-full flex items-center justify-center p-4"
+        className="sticky w-full h-screen flex items-center justify-center p-4"
       >
-        <div className={cn(
-            "relative w-full max-w-6xl h-full rounded-3xl border border-white/10 bg-gray-900/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
+        <motion.div
+            style={{ opacity }}
+            className={cn(
+            "relative w-full max-w-6xl h-[75vh] rounded-3xl border border-white/10 bg-gray-900/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
             feature.gradient
         )}>
             {/* Decorative Gradient */}
@@ -108,7 +106,7 @@ const FeatureCard = ({
                      />
                 </div>
             </div>
-        </div>
+        </motion.div>
       </motion.div>
     );
 };
@@ -123,11 +121,10 @@ export default function ScrollingFeatureShowcase() {
 
   return (
     <div ref={containerRef} className="relative h-[300vh] my-24">
-        <div className="sticky top-0 h-screen">
         {features.map((feature, i) => {
             const total = features.length;
             const start = i / total;
-            const end = (i + 1) / total;
+            const end = start + (1 / total);
           
             return (
                 <FeatureCard
@@ -140,7 +137,6 @@ export default function ScrollingFeatureShowcase() {
                 />
             );
         })}
-        </div>
     </div>
   );
 }
