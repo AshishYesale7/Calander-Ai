@@ -2,14 +2,15 @@
 'use client';
 
 import { allPlugins } from "@/data/plugins";
-import { Flame, LayoutGrid, Brain, Target, Users } from "lucide-react";
+import { Flame, LayoutGrid, Brain, Target, Users, Bot, Briefcase, BarChart, Shield } from "lucide-react";
 import Image from "next/image";
 import { Card } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ShowcaseCard = ({ icon: Icon, title, description, children }: { icon: React.ElementType, title: string, description: string, children: React.ReactNode }) => (
-    <div className="relative p-8 rounded-2xl overflow-hidden bg-gradient-to-br from-card/80 to-card/60 border border-border/30 shadow-2xl">
+    <div className="relative p-8 rounded-2xl overflow-hidden bg-gradient-to-br from-card/80 to-card/60 border border-border/30 shadow-2xl h-full flex flex-col">
         <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-accent/10 rounded-lg">
                 <Icon className="h-6 w-6 text-accent" />
@@ -19,7 +20,9 @@ const ShowcaseCard = ({ icon: Icon, title, description, children }: { icon: Reac
                 <p className="text-foreground/70">{description}</p>
             </div>
         </div>
-        {children}
+        <div className="flex-1 flex items-center justify-center">
+            {children}
+        </div>
     </div>
 );
 
@@ -47,7 +50,7 @@ const AnimatedPluginGrid = () => (
 );
 
 const DailyFlameIcon = ({ isComplete, className }: { isComplete: boolean, className?: string }) => (
-    <svg height="28px" width="28px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388.219 388.219" xmlSpace="preserve" className={cn("h-7 w-7", className)}>
+    <svg viewBox="0 0 388.219 388.219" xmlns="http://www.w3.org/2000/svg" className={cn("h-7 w-7", className)}>
         <g style={{ filter: isComplete ? 'none' : 'grayscale(80%) opacity(60%)' }}>
             <path style={{fill: '#FF793B'}} d="M160.109,182.619c0.8,6.8-6,11.6-12,8c-22-12.8-32.8-36.4-47.2-56.8c-23.2,36.8-40.8,72.4-40.8,110.4 c0,77.2,54.8,136,132,136s136-58.8,136-136c0-96.8-101.2-113.6-100-236C187.309,37.019,148.909,101.419,160.109,182.619z"></path>
             <path style={{fill: '#C6490F'}} d="M192.109,388.219c-81.2,0-140-60.4-140-144c0-42,20.4-80,42-114.8c1.6-2.4,4-3.6,6.4-3.6 c2.8,0,5.2,1.2,6.8,3.2c3.6,4.8,6.8,10,10,15.2c10,15.6,19.6,30.4,34.8,39.2l0,0c-11.6-82.8,27.6-151.2,71.2-182 c2.4-1.6,5.6-2,8.4-0.4c2.8,1.2,4.4,4,4.4,7.2c-0.8,62,26.4,96,52.4,128.4c23.6,29.2,47.6,59.2,47.6,107.6 C336.109,326.219,274.109,388.219,192.109,388.219z M101.309,148.619c-18,29.6-33.2,61.6-33.2,95.6c0,74,52,128,124,128 c72.8,0,128-55.2,128-128c0-42.8-20.4-68-44-97.6c-24.4-30.4-51.6-64.4-55.6-122c-34.4,31.2-62,88.4-52.4,156.8l0,0 c0.8,6.4-2,12.4-7.2,15.6c-5.2,3.2-11.6,3.2-16.8,0c-18.4-10.8-29.2-28-40-44.4C102.909,151.419,102.109,150.219,101.309,148.619z"></path>
@@ -58,7 +61,6 @@ const DailyFlameIcon = ({ isComplete, className }: { isComplete: boolean, classN
         </g>
     </svg>
 );
-
 
 const StreakShowcase = () => {
     const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -72,7 +74,7 @@ const StreakShowcase = () => {
                 <Flame className="relative h-12 w-12 text-amber-500" strokeWidth={1} />
             </div>
             <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
-            <div className="flex justify-center gap-1 p-2 bg-black/25 rounded-xl border border-white/10">
+            <div className="flex justify-center gap-2 p-2 bg-black/25 rounded-xl border border-white/10">
                 {weekDays.map((dayChar, index) => (
                     <div key={index} className="flex flex-col items-center gap-1">
                         <span className="text-xs font-semibold text-white/70">{dayChar}</span>
@@ -129,45 +131,101 @@ export default function FeatureShowcase() {
   return (
     <section id="showcase" className="py-20 md:py-32 relative z-10">
         <div className="container mx-auto px-4">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">Extend Your Workflow</h2>
-                <p className="mt-4 text-lg text-foreground/80">
-                    Integrate your favorite tools with our plugin marketplace and build powerful habits with streak tracking.
-                </p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8">
-                <ShowcaseCard
-                    icon={LayoutGrid}
-                    title="Plugin Marketplace"
-                    description="Connect with the tools you already use."
-                >
-                    <AnimatedPluginGrid />
-                </ShowcaseCard>
-                <ShowcaseCard
-                    icon={Flame}
-                    title="Daily Streaks"
-                    description="Stay motivated and build consistency."
-                >
-                    <StreakShowcase />
-                </ShowcaseCard>
-                 <ShowcaseCard
-                    icon={Users}
-                    title="Form Your Clan"
-                    description="Collaborate on projects, startups, and hackathons."
-                >
-                    <ClanShowcase />
-                </ShowcaseCard>
-                <ShowcaseCard
-                    icon={Target}
-                    title="Career Goal Tracking"
-                    description="Set goals and monitor your progress."
-                >
-                    <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
-                         {/* Placeholder for Goal Tracking visualization */}
-                        <p>Goal Tracking Visualization Here</p>
+            <Tabs defaultValue="student">
+                <div className="flex justify-center mb-10">
+                    <TabsList className="bg-card/60 p-2 border border-border/30">
+                        <TabsTrigger value="student" className="px-6 py-2">For Students</TabsTrigger>
+                        <TabsTrigger value="professional" className="px-6 py-2">For Professionals</TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="student">
+                    <div className="text-center max-w-3xl mx-auto mb-16">
+                        <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">Accelerate Your Student Journey</h2>
+                        <p className="mt-4 text-lg text-foreground/80">
+                            Tools designed to help you excel in your studies, build skills, and launch your career.
+                        </p>
                     </div>
-                </ShowcaseCard>
-            </div>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <ShowcaseCard
+                            icon={LayoutGrid}
+                            title="Plugin Marketplace"
+                            description="Connect with the tools you already use."
+                        >
+                            <AnimatedPluginGrid />
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={Flame}
+                            title="Daily Streaks"
+                            description="Stay motivated and build consistency."
+                        >
+                            <StreakShowcase />
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={Users}
+                            title="Form Your Clan"
+                            description="Collaborate on projects, startups, and hackathons."
+                        >
+                            <ClanShowcase />
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={Target}
+                            title="Career Goal Tracking"
+                            description="Set goals and monitor your progress."
+                        >
+                            <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                                <p>Goal Tracking Visualization Here</p>
+                            </div>
+                        </ShowcaseCard>
+                    </div>
+                </TabsContent>
+                <TabsContent value="professional">
+                     <div className="text-center max-w-3xl mx-auto mb-16">
+                        <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">Supercharge Your Professional Workflow</h2>
+                        <p className="mt-4 text-lg text-foreground/80">
+                           Advanced features to boost productivity, enhance team collaboration, and automate your work life.
+                        </p>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <ShowcaseCard
+                            icon={Bot}
+                            title="AI Meeting Assistant"
+                            description="Automated summaries, action items, and follow-ups."
+                        >
+                             <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                                <p>Meeting Assistant Visualization Here</p>
+                            </div>
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={BarChart}
+                            title="Team Productivity Dashboards"
+                            description="Visualize team workload and project progress."
+                        >
+                            <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                                <p>Dashboard Visualization Here</p>
+                            </div>
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={Shield}
+                            title="Focus Time Automation"
+                            description="Intelligently block out deep work sessions."
+                        >
+                            <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                                <p>Focus Time Visualization Here</p>
+                            </div>
+                        </ShowcaseCard>
+                        <ShowcaseCard
+                            icon={Brain}
+                            title="Intelligent Document Hub"
+                            description="Connects Drive, Notion, and Slack to your calendar."
+                        >
+                             <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                                <p>Document Hub Visualization Here</p>
+                            </div>
+                        </ShowcaseCard>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     </section>
   );
