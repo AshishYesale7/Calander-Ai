@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -6,25 +7,29 @@ import { cn } from '@/lib/utils';
 
 interface CustomVideoPlayerProps {
   src: string;
+  title?: string;
+  description?: string;
+  logoUrl?: string;
+  previewImageUrl?: string;
 }
 
-export default function CustomVideoPlayer({ src }: CustomVideoPlayerProps) {
+export default function CustomVideoPlayer({ src, title, description, logoUrl, previewImageUrl }: CustomVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true); // Start muted for autoplay
+  const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [showControls, setShowControls] = useState(false);
 
   useEffect(() => {
     if (videoRef.current) {
-        videoRef.current.muted = true; // Ensure video is muted on mount for autoplay
+        videoRef.current.muted = true;
     }
   }, []);
-
+  
   const handlePlayPause = useCallback(() => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play();
+        videoRef.current.play().catch(e => console.error("Play error:", e));
         setIsPlaying(true);
       } else {
         videoRef.current.pause();
@@ -50,7 +55,9 @@ export default function CustomVideoPlayer({ src }: CustomVideoPlayerProps) {
     if (videoRef.current) {
       const duration = videoRef.current.duration;
       const currentTime = videoRef.current.currentTime;
-      setProgress((currentTime / duration) * 100);
+      if (duration > 0) {
+        setProgress((currentTime / duration) * 100);
+      }
     }
   }, []);
   
@@ -74,13 +81,33 @@ export default function CustomVideoPlayer({ src }: CustomVideoPlayerProps) {
         ref={videoRef}
         src={src}
         loop
-        muted
         playsInline
         className="video-element"
         onTimeUpdate={handleProgress}
         onClick={handlePlayPause}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
       />
-      <div className={cn("controls-overlay", showControls ? 'active' : '')}>
+
+      <div className={cn("preview-overlay", isPlaying && "hidden")}>
+        {previewImageUrl && (
+          <img src={previewImageUrl} alt="Preview" className="preview-image" />
+        )}
+        <button onClick={handlePlayPause} className="play-button-center">
+            <Play size={32} />
+        </button>
+      </div>
+
+      <div className="title-overlay">
+        {description && <p className="title-description">{description}</p>}
+        {title && <h2 className="title-main">{title}</h2>}
+      </div>
+
+      {logoUrl && (
+          <img src={logoUrl} alt="Logo" className="logo-overlay" />
+      )}
+
+      <div className={cn("controls-overlay", showControls && "active")}>
         <div className="timeline-container" onClick={handleScrub}>
             <div className="timeline-progress" style={{ width: `${progress}%` }}></div>
             <div className="timeline-knob" style={{ left: `${progress}%` }}></div>
