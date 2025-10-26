@@ -17,6 +17,7 @@ import GravityWellBackground from '@/components/landing/GravityWellBackground';
 import LandingPageChat from '@/components/landing/LandingPageChat';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import ScrollingFeatureShowcase from '@/components/landing/ScrollingFeatureShowcase';
 
 
 // Define a structure for currency data
@@ -72,18 +73,18 @@ const plans = {
 
 const PricingCard = ({ title, price, currencySymbol, period, features, popular = false, isLoading = false }: { title: string, price: string, currencySymbol: string, period: string, features: string[], popular?: boolean, isLoading?: boolean }) => (
     <Card className={cn(
-        "frosted-glass w-full max-w-xs p-4 flex flex-col transition-all duration-300",
+        "frosted-glass w-full max-w-sm p-4 flex flex-col transition-all duration-300",
         popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30 bg-card/70"
     )}>
         {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-xs">Best Value</Badge></div>}
         <CardHeader className="text-center p-0">
-            <CardTitle className="text-lg font-bold text-primary">{title}</CardTitle>
+            <CardTitle className="text-md font-bold text-primary">{title}</CardTitle>
             <div className="mt-2 h-8 flex items-center justify-center">
                 {isLoading ? (
                     <div className="h-8 w-20 bg-gray-700/50 animate-pulse rounded-md" />
                 ) : (
                     <p>
-                        <span className="text-2xl font-extrabold text-white">{currencySymbol}{price}</span>
+                        <span className="text-xl font-extrabold text-white">{currencySymbol}{price}</span>
                         <span className="text-xs text-muted-foreground">{period}</span>
                     </p>
                 )}
@@ -100,7 +101,7 @@ const PricingCard = ({ title, price, currencySymbol, period, features, popular =
             </ul>
         </CardContent>
         <CardFooter className="p-0 mt-4">
-            <Button asChild size="sm" className={cn("w-full h-9", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
+            <Button asChild size="sm" className={cn("w-full h-8", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
                 <Link href="/auth/signup">Subscribe</Link>
             </Button>
         </CardFooter>
@@ -238,18 +239,9 @@ export default function LandingPage() {
                 >
                     <div className="absolute inset-0 bg-black/30"></div>
                     
-                    {/* Features Section */}
-                    <section id="features" className="py-20 md:py-32 relative z-10">
-                        <div className="container mx-auto px-4">
-                            <div className="text-center max-w-3xl mx-auto mb-16">
-                                <h2 className="text-4xl md:text-5xl font-bold font-headline text-primary">A Glimpse Into Your Future</h2>
-                                <p className="mt-4 text-lg text-foreground/80">
-                                    Calendar.ai combines powerful AI with intuitive planning tools to give you unparalleled clarity on your life.
-                                </p>
-                            </div>
-                            <FeatureShowcase />
-                        </div>
-                    </section>
+                    <FeatureShowcase />
+
+                    <ScrollingFeatureShowcase />
                     
                      {/* New Pricing Section */}
                     <section id="pricing" className="py-20 md:py-32 relative z-10">
@@ -261,7 +253,7 @@ export default function LandingPage() {
                                 </p>
                             </div>
                             <div className="flex flex-col lg:flex-row justify-center items-center gap-8">
-                                <PlanSection 
+                               <PlanSection 
                                     type="Student Plans" 
                                     icon={GraduationCap} 
                                     description="For ambitious students looking to get ahead."
