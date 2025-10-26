@@ -70,51 +70,37 @@ const plans = {
 };
 
 
-const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
-    <Card className="frosted-glass text-center p-8 transition-all duration-300 hover:border-accent hover:-translate-y-2 bg-card/60">
-        <div className="inline-block p-4 bg-accent/10 rounded-full mb-6">
-            <Icon className="h-10 w-10 text-accent"/>
-        </div>
-        <CardHeader className="p-0">
-            <CardTitle className="text-2xl font-bold text-primary mb-3">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-            <p className="text-foreground/80">{description}</p>
-        </CardContent>
-    </Card>
-);
-
 const PricingCard = ({ title, price, currencySymbol, period, features, popular = false, isLoading = false }: { title: string, price: string, currencySymbol: string, period: string, features: string[], popular?: boolean, isLoading?: boolean }) => (
     <Card className={cn(
-        "frosted-glass w-full max-w-xs p-6 flex flex-col transition-all duration-300",
+        "frosted-glass w-full max-w-xs p-4 flex flex-col transition-all duration-300",
         popular ? "border-2 border-accent shadow-accent/20 shadow-lg" : "border-border/30 bg-card/70"
     )}>
-        {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-sm">Best Value</Badge></div>}
+        {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2"><Badge className="bg-accent text-accent-foreground text-xs">Best Value</Badge></div>}
         <CardHeader className="text-center p-0">
-            <CardTitle className="text-xl font-bold text-primary">{title}</CardTitle>
-            <div className="mt-2 h-10 flex items-center justify-center">
+            <CardTitle className="text-lg font-bold text-primary">{title}</CardTitle>
+            <div className="mt-2 h-8 flex items-center justify-center">
                 {isLoading ? (
-                    <div className="h-9 w-24 bg-gray-700/50 animate-pulse rounded-md" />
+                    <div className="h-8 w-20 bg-gray-700/50 animate-pulse rounded-md" />
                 ) : (
                     <p>
-                        <span className="text-3xl font-extrabold text-white">{currencySymbol}{price}</span>
-                        <span className="text-sm text-muted-foreground">{period}</span>
+                        <span className="text-2xl font-extrabold text-white">{currencySymbol}{price}</span>
+                        <span className="text-xs text-muted-foreground">{period}</span>
                     </p>
                 )}
             </div>
         </CardHeader>
-        <CardContent className="flex-1 p-0 mt-6">
-            <ul className="space-y-3">
+        <CardContent className="flex-1 p-0 mt-4">
+            <ul className="space-y-2">
                 {features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3 text-left">
-                        <Check className="h-5 w-5 text-green-400 shrink-0"/>
-                        <span className="text-sm text-foreground/90">{feature}</span>
+                    <li key={i} className="flex items-center gap-2 text-left">
+                        <Check className="h-4 w-4 text-green-400 shrink-0"/>
+                        <span className="text-xs text-foreground/90">{feature}</span>
                     </li>
                 ))}
             </ul>
         </CardContent>
-        <CardFooter className="p-0 mt-6">
-            <Button asChild size="lg" className={cn("w-full", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
+        <CardFooter className="p-0 mt-4">
+            <Button asChild size="sm" className={cn("w-full h-9", popular ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90")}>
                 <Link href="/auth/signup">Subscribe</Link>
             </Button>
         </CardFooter>
@@ -137,24 +123,24 @@ const PlanSection = ({ type, icon: Icon, description, plans, currency, isLoading
     const displayPlan = isYearly ? plans.yearly : plans.monthly;
 
     return (
-        <Card className="frosted-glass p-6 relative overflow-hidden w-full max-w-md">
-            <div className="absolute top-4 right-4 h-16 w-16 bg-accent/10 rounded-full flex items-center justify-center">
-                <Icon className="h-8 w-8 text-accent"/>
+         <Card className="frosted-glass p-4 md:p-6 relative overflow-hidden w-full max-w-md">
+            <div className="absolute top-4 right-4 h-12 w-12 bg-accent/10 rounded-full flex items-center justify-center">
+                <Icon className="h-6 w-6 text-accent"/>
             </div>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold font-headline text-white">{type}</h2>
+            <div className="mb-4">
+                <h2 className="text-xl font-bold font-headline text-white">{type}</h2>
                 <p className="text-muted-foreground mt-1 text-sm">{description}</p>
             </div>
 
-             <div className="flex items-center justify-center gap-4 mb-6">
-                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-sm", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</Label>
+             <div className="flex items-center justify-center gap-3 mb-4">
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-xs", !isYearly ? "text-primary" : "text-muted-foreground")}>Monthly</Label>
                 <Switch
                     id={`${type}-toggle`}
                     checked={isYearly}
                     onCheckedChange={setIsYearly}
                     aria-label="Toggle billing period"
                 />
-                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-sm", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</Label>
+                <Label htmlFor={`${type}-toggle`} className={cn("font-medium text-xs", isYearly ? "text-primary" : "text-muted-foreground")}>Yearly</Label>
             </div>
             
             <div className="mx-auto flex justify-center">
