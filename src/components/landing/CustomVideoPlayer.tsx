@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Rewind } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Rewind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CustomVideoPlayerProps {
@@ -13,6 +13,7 @@ interface CustomVideoPlayerProps {
 }
 
 export default function CustomVideoPlayer({ src, title, description, logoComponent }: CustomVideoPlayerProps) {
+  const playerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -70,8 +71,21 @@ export default function CustomVideoPlayer({ src, title, description, logoCompone
     }
   };
 
+  const handleFullscreen = () => {
+    if (!playerRef.current) return;
+
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        playerRef.current.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+    }
+  };
+
   return (
     <div 
+        ref={playerRef}
         className="custom-video-player-container"
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
@@ -115,7 +129,7 @@ export default function CustomVideoPlayer({ src, title, description, logoCompone
             <button onClick={handleMuteToggle}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
           </div>
           <div className="controls-right">
-            <button><Maximize size={20}/></button>
+            <button onClick={handleFullscreen}><Maximize size={20}/></button>
           </div>
         </div>
       </div>
