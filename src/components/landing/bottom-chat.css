@@ -3,11 +3,13 @@
   position: relative;
   background-color: #1a1a1a;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  transition: height 0.3s ease-out;
-  height: 72px; /* Corresponds to LottieOrb size */
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  height: 72px; /* Orb height */
+  width: 72px; /* Start as orb width */
 }
 
 .bottom-chat-bar.is-open {
+  width: 100%; /* Expand to full width */
   height: 80px;
 }
 
@@ -23,7 +25,7 @@
     #22d3ee,
     #a855f7
   );
-  filter: blur(10px) opacity(0.6);
+  filter: blur(10px);
   animation: spin 5s linear infinite;
   z-index: -1;
   opacity: 0;

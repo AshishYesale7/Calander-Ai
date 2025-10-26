@@ -104,7 +104,6 @@ export default function LandingPageChat() {
 
   const handleOrbClick = () => {
     setIsOpen(prev => !prev);
-    // Add an initial greeting if opening and chat is empty
     if (!isOpen && chatHistory.length === 0) {
         setChatHistory([{ role: 'model', content: "Hello! How can I help you understand Calendar.ai?"}])
     }
@@ -112,7 +111,6 @@ export default function LandingPageChat() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col items-center">
-      {/* Chat History Area */}
       <div 
         ref={scrollAreaRef}
         className={cn(
@@ -132,7 +130,6 @@ export default function LandingPageChat() {
         )}
       </div>
 
-      {/* Bottom Bar */}
       <motion.div
         layout
         transition={{ type: 'spring', stiffness: 400, damping: 35 }}
@@ -146,14 +143,8 @@ export default function LandingPageChat() {
              <LottieOrb />
           </motion.div>
           
-          <AnimatePresence>
           {isOpen && (
-            <motion.div 
-                className="flex-1 px-3 flex items-center"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-            >
+            <div className="flex-1 px-3 flex items-center">
                 <textarea
                     ref={textareaRef}
                     value={input}
@@ -163,9 +154,8 @@ export default function LandingPageChat() {
                     rows={1}
                     className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-lg"
                 />
-            </motion.div>
+            </div>
           )}
-          </AnimatePresence>
 
           <button className="text-gray-400 p-2 hover:text-white">
             <Mic className="h-6 w-6" />
