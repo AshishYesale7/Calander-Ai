@@ -2,7 +2,7 @@
 'use client';
 
 import { allPlugins } from "@/data/plugins";
-import { Flame, LayoutGrid } from "lucide-react";
+import { Flame, LayoutGrid, Brain, Target } from "lucide-react";
 import Image from "next/image";
 import { Card } from "../ui/card";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ const AnimatedPluginGrid = () => (
 );
 
 const DailyFlameIcon = ({ isComplete, className }: { isComplete: boolean, className?: string }) => (
-    <svg height="28px" width="28px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388.219 388.219" xmlSpace="preserve" className={className}>
+    <svg height="28px" width="28px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 388.219 388.219" xmlSpace="preserve" className={cn("h-7 w-7", className)}>
         <g style={{ filter: isComplete ? 'none' : 'grayscale(80%) opacity(60%)' }}>
             <path style={{fill: '#FF793B'}} d="M160.109,182.619c0.8,6.8-6,11.6-12,8c-22-12.8-32.8-36.4-47.2-56.8c-23.2,36.8-40.8,72.4-40.8,110.4 c0,77.2,54.8,136,132,136s136-58.8,136-136c0-96.8-101.2-113.6-100-236C187.309,37.019,148.909,101.419,160.109,182.619z"></path>
             <path style={{fill: '#C6490F'}} d="M192.109,388.219c-81.2,0-140-60.4-140-144c0-42,20.4-80,42-114.8c1.6-2.4,4-3.6,6.4-3.6 c2.8,0,5.2,1.2,6.8,3.2c3.6,4.8,6.8,10,10,15.2c10,15.6,19.6,30.4,34.8,39.2l0,0c-11.6-82.8,27.6-151.2,71.2-182 c2.4-1.6,5.6-2,8.4-0.4c2.8,1.2,4.4,4,4.4,7.2c-0.8,62,26.4,96,52.4,128.4c23.6,29.2,47.6,59.2,47.6,107.6 C336.109,326.219,274.109,388.219,192.109,388.219z M101.309,148.619c-18,29.6-33.2,61.6-33.2,95.6c0,74,52,128,124,128 c72.8,0,128-55.2,128-128c0-42.8-20.4-68-44-97.6c-24.4-30.4-51.6-64.4-55.6-122c-34.4,31.2-62,88.4-52.4,156.8l0,0 c0.8,6.4-2,12.4-7.2,15.6c-5.2,3.2-11.6,3.2-16.8,0c-18.4-10.8-29.2-28-40-44.4C102.909,151.419,102.109,150.219,101.309,148.619z"></path>
@@ -66,9 +66,9 @@ const StreakShowcase = () => {
     return (
     <div className="relative h-64 w-full flex items-center justify-center">
         <div className="relative flex flex-col items-center gap-4">
-            <div className="relative">
+             <div className="relative">
                 <div className="absolute -inset-2 bg-amber-500/20 blur-xl rounded-full"></div>
-                <Flame className="relative h-24 w-24 text-amber-500" strokeWidth={1} />
+                <Flame className="relative h-20 w-20 text-amber-500" strokeWidth={1} />
             </div>
             <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
             <div className="flex justify-center gap-1 p-2 bg-black/25 rounded-xl border border-white/10">
@@ -112,11 +112,28 @@ export default function FeatureShowcase() {
                 >
                     <StreakShowcase />
                 </ShowcaseCard>
+                <ShowcaseCard
+                    icon={Brain}
+                    title="AI-Powered Insights"
+                    description="Get smart suggestions and summaries."
+                >
+                    <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                        {/* Placeholder for AI Insights visualization */}
+                        <p>AI Insights Visualization Here</p>
+                    </div>
+                </ShowcaseCard>
+                <ShowcaseCard
+                    icon={Target}
+                    title="Career Goal Tracking"
+                    description="Set goals and monitor your progress."
+                >
+                    <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
+                         {/* Placeholder for Goal Tracking visualization */}
+                        <p>Goal Tracking Visualization Here</p>
+                    </div>
+                </ShowcaseCard>
             </div>
         </div>
     </section>
   );
 }
-    
-
-    
