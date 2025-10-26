@@ -2,10 +2,11 @@
 'use client';
 
 import { allPlugins } from "@/data/plugins";
-import { Flame, LayoutGrid, Brain, Target } from "lucide-react";
+import { Flame, LayoutGrid, Brain, Target, Users } from "lucide-react";
 import Image from "next/image";
 import { Card } from "../ui/card";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const ShowcaseCard = ({ icon: Icon, title, description, children }: { icon: React.ElementType, title: string, description: string, children: React.ReactNode }) => (
     <div className="relative p-8 rounded-2xl overflow-hidden bg-gradient-to-br from-card/80 to-card/60 border border-border/30 shadow-2xl">
@@ -66,9 +67,9 @@ const StreakShowcase = () => {
     return (
     <div className="relative h-64 w-full flex items-center justify-center">
         <div className="relative flex flex-col items-center gap-4">
-             <div className="relative">
+            <div className="relative">
                 <div className="absolute -inset-2 bg-amber-500/20 blur-xl rounded-full"></div>
-                <Flame className="relative h-20 w-20 text-amber-500" strokeWidth={1} />
+                <Flame className="relative h-12 w-12 text-amber-500" strokeWidth={1} />
             </div>
             <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
             <div className="flex justify-center gap-1 p-2 bg-black/25 rounded-xl border border-white/10">
@@ -84,6 +85,43 @@ const StreakShowcase = () => {
         </div>
     </div>
     );
+};
+
+const ClanShowcase = () => {
+  const memberPositions = [
+    { angle: 30, distance: 80, size: 32 },
+    { angle: 90, distance: 90, size: 40 },
+    { angle: 150, distance: 80, size: 32 },
+    { angle: 210, distance: 80, size: 32 },
+    { angle: 270, distance: 90, size: 40 },
+    { angle: 330, distance: 80, size: 32 },
+  ];
+  return (
+    <div className="relative h-64 w-full flex items-center justify-center">
+      <div className="relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-40 w-40 bg-accent/10 rounded-full blur-2xl"></div>
+        <div className="relative h-28 w-28 bg-card/80 rounded-full flex items-center justify-center border-2 border-accent/30 shadow-lg">
+          <Users className="h-14 w-14 text-accent" />
+        </div>
+        {memberPositions.map((pos, index) => (
+          <Avatar
+            key={index}
+            className="absolute border-2 border-background"
+            style={{
+              width: pos.size,
+              height: pos.size,
+              top: '50%',
+              left: '50%',
+              transform: `translate(-50%, -50%) translate(${pos.distance * Math.cos(pos.angle * Math.PI / 180)}px, ${pos.distance * Math.sin(pos.angle * Math.PI / 180)}px)`,
+            }}
+          >
+            <AvatarImage src={`https://placehold.co/64x64/7e22ce/FFFFFF/png?text=${"U" + (index+1)}`} alt={`Member ${index + 1}`} />
+            <AvatarFallback>U{index + 1}</AvatarFallback>
+          </Avatar>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 
@@ -112,15 +150,12 @@ export default function FeatureShowcase() {
                 >
                     <StreakShowcase />
                 </ShowcaseCard>
-                <ShowcaseCard
-                    icon={Brain}
-                    title="AI-Powered Insights"
-                    description="Get smart suggestions and summaries."
+                 <ShowcaseCard
+                    icon={Users}
+                    title="Form Your Clan"
+                    description="Collaborate on projects, startups, and hackathons."
                 >
-                    <div className="relative h-64 w-full flex items-center justify-center text-foreground/50">
-                        {/* Placeholder for AI Insights visualization */}
-                        <p>AI Insights Visualization Here</p>
-                    </div>
+                    <ClanShowcase />
                 </ShowcaseCard>
                 <ShowcaseCard
                     icon={Target}
