@@ -60,16 +60,21 @@ const FeatureCard = ({
   range: [number, number];
 }) => {
     
+    // As the user scrolls, the card in the background will scale down.
+    // We are mapping the scroll progress to a scale value.
+    // The card is at full size (1) when it's at the center of its range,
+    // and shrinks to 0.9 as it moves to the top or bottom of its range.
     const scale = useTransform(
       progress,
       [range[0], (range[0] + range[1]) / 2, range[1]],
       [0.9, 1, 0.9]
     );
 
+    // The content inside the card will fade out as it moves away from the center.
     const contentOpacity = useTransform(
         progress,
         [range[0], (range[0] + range[1]) / 2.1, range[1]],
-        [0.3, 1, 0.3] // Content fades, background does not
+        [0, 1, 0]
     );
   
     return (
@@ -80,19 +85,16 @@ const FeatureCard = ({
         }}
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
-        <div
-            style={{ width: '70vw' }}
-            className={cn(
-            "relative h-[75vh] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden",
-            feature.gradient
-        )}>
+        <div 
+          className="glow-card" 
+          style={{ width: '70vw', height: '75vh' }}
+        >
+          <div className="glow-card-border" />
+          <div className="glow-card-content">
             <motion.div 
                 className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16"
                 style={{ opacity: contentOpacity }}
             >
-                {/* Decorative Gradient */}
-                <div className={cn("absolute inset-0 opacity-40", feature.gradient)} />
-
                 {/* Left Side - Text Content */}
                 <div className="md:w-1/2 text-center md:text-left relative z-10">
                     <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">{feature.icon}</div>
@@ -122,6 +124,7 @@ const FeatureCard = ({
                     </div>
                 </div>
             </motion.div>
+          </div>
         </div>
       </motion.div>
     );
