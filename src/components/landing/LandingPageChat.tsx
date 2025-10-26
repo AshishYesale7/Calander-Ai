@@ -66,12 +66,16 @@ export default function LandingPageChat() {
       setIsLoading(false);
     }
   };
-
+  
   useEffect(() => {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
       handleAIResponse(chatHistory);
     }
+  // This dependency array is correct. We only want to trigger this when the chatHistory changes because of a user message.
+  // Adding handleAIResponse would cause an infinite loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatHistory]);
+
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -142,22 +146,26 @@ export default function LandingPageChat() {
              <LottieOrb />
           </motion.div>
           
-          <div className="flex-1 px-3">
-             <motion.textarea
-                key={isOpen ? 'textarea-open' : 'textarea-closed'}
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isOpen ? '' : "Ask Calendar.ai..."}
-                rows={1}
-                className={cn(
-                    "w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-lg",
-                    !isOpen && "cursor-pointer"
-                )}
-                onFocus={() => { if (!isOpen) setIsOpen(true); }}
-            />
-          </div>
+          <AnimatePresence>
+          {isOpen && (
+            <motion.div 
+                className="flex-1 px-3 flex items-center"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+            >
+                <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask Calendar.ai..."
+                    rows={1}
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-lg"
+                />
+            </motion.div>
+          )}
+          </AnimatePresence>
 
           <button className="text-gray-400 p-2 hover:text-white">
             <Mic className="h-6 w-6" />

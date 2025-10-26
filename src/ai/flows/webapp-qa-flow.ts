@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A conversational AI agent that can answer questions about the Calendar.ai web application.
@@ -149,9 +150,8 @@ const answerWebAppQuestionsFlow = ai.defineFlow({
             };
         }
         console.error("Error in WebApp QA flow:", e);
-        return {
-            response: "I'm sorry, I encountered an error and can't provide a response right now.",
-        };
+        // Throw the error so the client can handle it, which prevents the 'wow' duplication.
+        throw new Error("I'm sorry, I encountered an error and can't provide a response right now.");
     }
 });
 
