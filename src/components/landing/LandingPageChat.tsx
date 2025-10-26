@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -61,7 +61,6 @@ export default function LandingPageChat() {
       }
     } catch (e) {
       console.error(e);
-      // Throw the error so the client can handle it, which prevents the 'wow' duplication.
       setChatHistory(prev => [...prev, { role: 'model', content: "I'm sorry, I encountered an error and can't provide a response right now." }]);
     } finally {
       setIsLoading(false);
@@ -144,24 +143,24 @@ export default function LandingPageChat() {
           </motion.div>
           
           <AnimatePresence>
-          {isOpen && (
-            <motion.div 
-                className="flex-1 px-3 flex items-center"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto', transition: { delay: 0.2 } }}
-                exit={{ opacity: 0, width: 0 }}
-            >
-                <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask Calendar.ai..."
-                    rows={1}
-                    className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-base"
-                />
-            </motion.div>
-          )}
+            {isOpen && (
+              <motion.div 
+                  className="flex-1 px-3 flex items-center"
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto', transition: { delay: 0.2 } }}
+                  exit={{ opacity: 0, width: 0 }}
+              >
+                  <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Ask Calendar.ai..."
+                      rows={1}
+                      className="w-full bg-transparent border-none outline-none focus:ring-0 resize-none text-white placeholder:text-gray-400 text-base"
+                  />
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {isOpen && (
