@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
@@ -7,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { useApiKey } from '@/hooks/use-api-key';
 import { generateGreeting } from '@/ai/flows/generate-greeting-flow';
-import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
+import { answerWebAppQuestions, type WebAppQaInput, type WebAppQaOutput } from '@/ai/flows/webapp-qa-flow';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface ChatMessage {
@@ -53,10 +54,9 @@ export default function LandingPageChat() {
   const handleAIResponse = async (history: ChatMessage[]) => {
     setIsLoading(true);
     try {
-      const result: ConversationalEventOutput = await createConversationalEvent({
+      const result: WebAppQaOutput = await answerWebAppQuestions({
         chatHistory: history.map(m => ({ role: m.role, content: m.content })),
         apiKey,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
       if (result.response) {
