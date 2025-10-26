@@ -3,6 +3,7 @@
 import './globals.css';
 import './glow-card.css';
 import './electric-border.css';
+import './styles/video-player.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { SpeedInsights } from "@vercel/speed-insights/next";

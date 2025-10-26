@@ -1,10 +1,10 @@
-
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
+import CustomVideoPlayer from './CustomVideoPlayer';
 
 const features = [
   {
@@ -80,7 +80,8 @@ const FeatureCard = ({
 }) => {
     
     const scale = useTransform(progress, range, [1, 0.9]);
-  
+    const contentOpacity = useTransform(progress, range, [1, 0.1]);
+
     return (
       <motion.div
         style={{
@@ -97,6 +98,7 @@ const FeatureCard = ({
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl"></div>
           
           <motion.div 
+            style={{ opacity: contentOpacity }}
             className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
           >
                 {/* Left Side - Text Content */}
@@ -117,15 +119,7 @@ const FeatureCard = ({
                 {/* Right Side - Video */}
                 <div className="md:w-1/2 w-full h-full relative z-10 flex items-center justify-center">
                     <div className="w-full aspect-[16/10] bg-black/50 rounded-xl border-2 border-white/10 shadow-2xl overflow-hidden">
-                         <video
-                            className="w-full h-full object-cover"
-                            src={feature.videoUrl}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            controls
-                         />
+                         <CustomVideoPlayer src={feature.videoUrl} />
                     </div>
                 </div>
             </motion.div>
