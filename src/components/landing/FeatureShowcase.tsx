@@ -1,4 +1,3 @@
-
 'use client';
 
 import { allPlugins } from "@/data/plugins";
@@ -80,7 +79,6 @@ const TrophyFlameIcon = ({ isComplete, className }: { isComplete: boolean, class
     </svg>
 );
 
-
 const StreakShowcase = () => {
     const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const progress = [true, true, true, true, false, true, false]; // Example progress
@@ -90,11 +88,11 @@ const StreakShowcase = () => {
             <TrophyFlameIcon isComplete={true} className="absolute inset-0 h-full w-full opacity-10" />
             <div className="relative flex flex-col items-center gap-4">
                 <h4 className="text-xl font-bold text-white">Build Your Streak</h4>
-                <div className="flex justify-center gap-2 sm:gap-3 p-3 bg-black/25 rounded-2xl border border-white/10">
+                <div className="flex justify-center gap-2 p-2 bg-black/25 rounded-xl border border-white/10">
                     {weekDays.map((dayChar, index) => (
-                        <div key={index} className="flex flex-col items-center gap-2">
-                            <span className="text-sm font-semibold text-white/70">{dayChar}</span>
-                            <div className="h-9 w-9 flex items-center justify-center">
+                        <div key={index} className="flex flex-col items-center gap-1">
+                            <span className="text-xs font-semibold text-white/70">{dayChar}</span>
+                            <div className="h-8 w-8 flex items-center justify-center">
                                 <DailyFlameIcon isComplete={progress[index]} />
                             </div>
                         </div>
@@ -136,3 +134,4 @@ export default function FeatureShowcase() {
     </section>
   );
 }
+    
