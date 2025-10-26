@@ -60,10 +60,8 @@ const FeatureCard = ({
   range: [number, number];
 }) => {
     
-    const midpoint = (range[0] + range[1]) / 2;
-    const scale = useTransform(progress, [range[0], midpoint, range[1]], [0.9, 1, 0.9]);
-    const contentOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0.5, 1, 0.5]);
-    const glowOpacity = useTransform(progress, [range[0], midpoint, range[1]], [0, 1, 0]);
+    const scale = useTransform(progress, range, [1, 0.9]);
+    const opacity = useTransform(progress, range, [1, 0.5]);
   
     return (
       <motion.div
@@ -74,30 +72,25 @@ const FeatureCard = ({
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
         <div 
-          className="glow-card" 
-          style={{ 
-            width: '70vw', 
-            height: '75vh',
-            // @ts-ignore
-            '--glow-opacity': glowOpacity 
-          }}
+          className="relative w-full max-w-4xl h-[75vh] rounded-3xl overflow-hidden"
         >
-          <div className="glow-card-border" />
-          <div className="glow-card-content">
-            <motion.div 
-                className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
-                style={{ opacity: contentOpacity }}
-            >
+          {/* This div will hold the consistent background and blur */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl"></div>
+          
+          <motion.div 
+            className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
+            style={{ opacity }}
+          >
                 {/* Left Side - Text Content */}
                 <div className="md:w-1/2 text-center md:text-left relative z-10">
                     <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">{feature.icon}</div>
-                    <h2 className="text-3xl lg:text-4xl font-bold font-headline text-white mb-4">{feature.title}</h2>
-                    <p className="text-base lg:text-lg text-white/70 mb-6">{feature.description}</p>
+                    <h2 className="text-2xl lg:text-3xl font-bold font-headline text-white mb-4">{feature.title}</h2>
+                    <p className="text-sm lg:text-base text-white/70 mb-6">{feature.description}</p>
                     <ul className="space-y-3">
                         {feature.points.map((point, i) => (
                             <li key={i} className="flex items-start gap-3">
                                 <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
-                                <span className="text-white/80">{point}</span>
+                                <span className="text-sm text-white/80">{point}</span>
                             </li>
                         ))}
                     </ul>
@@ -117,7 +110,6 @@ const FeatureCard = ({
                     </div>
                 </div>
             </motion.div>
-          </div>
         </div>
       </motion.div>
     );
