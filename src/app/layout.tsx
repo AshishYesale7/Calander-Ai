@@ -1,8 +1,8 @@
-
 'use client';
 
 import './globals.css';
 import './glow-card.css';
+import './electric-border.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { SpeedInsights } from "@vercel/speed-insights/next";

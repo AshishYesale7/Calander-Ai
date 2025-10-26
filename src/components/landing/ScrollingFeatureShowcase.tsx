@@ -60,8 +60,12 @@ const FeatureCard = ({
   range: [number, number];
 }) => {
     
+    // Animate scale from 1 down to 0.9 as it moves into the background
     const scale = useTransform(progress, range, [1, 0.9]);
-    const opacity = useTransform(progress, range, [1, 0.5]);
+    
+    // Animate opacity from 1 down to 0 as it recedes.
+    // The range is adjusted so fading starts *after* the card is fully in view.
+    const contentOpacity = useTransform(progress, [range[0] + 0.05, range[1]], [1, 0]);
   
     return (
       <motion.div
@@ -72,14 +76,14 @@ const FeatureCard = ({
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
         <div 
-          className="relative w-full max-w-4xl h-[75vh] rounded-3xl overflow-hidden"
+          className="relative w-full max-w-4xl h-[75vh] rounded-3xl overflow-hidden electric-card"
         >
-          {/* This div will hold the consistent background and blur */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl"></div>
+          {/* This div holds the consistent background and blur */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl"></div>
           
           <motion.div 
             className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
-            style={{ opacity }}
+            style={{ opacity: contentOpacity }}
           >
                 {/* Left Side - Text Content */}
                 <div className="md:w-1/2 text-center md:text-left relative z-10">
