@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -169,46 +170,6 @@ export default function LandingPage() {
                     data-ai-hint="fantasy landscape"
                 >
                     <div className="absolute inset-0 bg-black/30"></div>
-
-                    <section className="relative py-24 md:py-40">
-                        <GravityWellBackground />
-                        <div className="relative z-10 container mx-auto px-4 text-center">
-                             <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Download our app</h2>
-                             <p className="mt-4 text-lg text-gray-200 max-w-2xl mx-auto">
-                                Get the full Calendar.ai experience on your mobile device. Stay organized on the go.
-                             </p>
-                            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
-                                     <div className="flex flex-col items-center gap-4">
-                                         <Apple className="h-16 w-16 text-white"/>
-                                         <div className="flex items-center gap-4">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black"><p className="text-xl font-bold">A</p></div>
-                                            <p className="text-lg font-semibold text-white">iOS</p>
-                                         </div>
-                                     </div>
-                                     <div className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500">
-                                        <div className="px-8 py-2 bg-gray-900 rounded-sm">
-                                             <span className="text-white">Coming Soon...</span>
-                                        </div>
-                                     </div>
-                                 </div>
-                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
-                                     <div className="flex flex-col items-center gap-4">
-                                         <AndroidIcon className="h-16 w-16 text-green-400" />
-                                         <div className="flex items-center gap-3">
-                                             <GooglePlayIcon className="h-8 w-8"/>
-                                             <span className="text-2xl font-semibold text-white">android</span>
-                                         </div>
-                                     </div>
-                                      <a href="#" className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500 hover:opacity-90 transition-opacity">
-                                        <div className="px-6 py-2 bg-gray-900 rounded-sm">
-                                             <span className="text-white font-medium">Download For Android</span>
-                                        </div>
-                                     </a>
-                                 </div>
-                            </div>
-                        </div>
-                    </section>
                     
                     <FeatureShowcase />
                     
@@ -278,6 +239,46 @@ export default function LandingPage() {
                                         'Early access to new features'
                                     ]}
                                 />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="relative py-24 md:py-40">
+                        <GravityWellBackground />
+                        <div className="relative z-10 container mx-auto px-4 text-center">
+                             <h2 className="text-4xl md:text-5xl font-bold font-headline text-white">Download our app</h2>
+                             <p className="mt-4 text-lg text-gray-200 max-w-2xl mx-auto">
+                                Get the full Calendar.ai experience on your mobile device. Stay organized on the go.
+                             </p>
+                            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
+                                     <div className="flex flex-col items-center gap-4">
+                                         <Apple className="h-16 w-16 text-white"/>
+                                         <div className="flex items-center gap-4">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black"><p className="text-xl font-bold">A</p></div>
+                                            <p className="text-lg font-semibold text-white">iOS</p>
+                                         </div>
+                                     </div>
+                                     <div className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500">
+                                        <div className="px-8 py-2 bg-gray-900 rounded-sm">
+                                             <span className="text-white">Coming Soon...</span>
+                                        </div>
+                                     </div>
+                                 </div>
+                                 <div className="flex flex-col items-center justify-between gap-6 p-8 bg-black/20 rounded-2xl border border-white/10">
+                                     <div className="flex flex-col items-center gap-4">
+                                         <AndroidIcon className="h-16 w-16 text-green-400" />
+                                         <div className="flex items-center gap-3">
+                                             <GooglePlayIcon className="h-8 w-8"/>
+                                             <span className="text-2xl font-semibold text-white">android</span>
+                                         </div>
+                                     </div>
+                                      <a href="#" className="p-1 rounded-md bg-gradient-to-r from-green-400 to-blue-500 hover:opacity-90 transition-opacity">
+                                        <div className="px-6 py-2 bg-gray-900 rounded-sm">
+                                             <span className="text-white font-medium">Download For Android</span>
+                                        </div>
+                                     </a>
+                                 </div>
                             </div>
                         </div>
                     </section>
