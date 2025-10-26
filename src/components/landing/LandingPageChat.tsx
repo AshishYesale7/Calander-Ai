@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic } from 'lucide-react';
+import { Mic, X } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -71,7 +71,7 @@ export default function LandingPageChat() {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
       handleAIResponse(chatHistory);
     }
-  }, [chatHistory]);
+  }, [chatHistory, apiKey]);
 
 
   const handleSend = () => {
@@ -163,9 +163,15 @@ export default function LandingPageChat() {
           )}
           </AnimatePresence>
 
-          <button className="text-gray-400 p-2 hover:text-white">
-            <Mic className="h-5 w-5" />
-          </button>
+          {isOpen ? (
+            <button onClick={() => setIsOpen(false)} className="text-gray-400 p-2 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+          ) : (
+            <button className="text-gray-400 p-2 hover:text-white">
+              <Mic className="h-5 w-5" />
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
