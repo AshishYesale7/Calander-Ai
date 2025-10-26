@@ -59,22 +59,33 @@ const FeatureCard = ({
   progress: any;
   range: [number, number];
 }) => {
-    // Scale from 1 down to 0.7, with more reduction for cards further back
-    const scale = useTransform(progress, range, [1 - (total - index) * 0.1, 1]);
-    const opacity = useTransform(progress, range, [0.5, 1]);
+    
+    // As a card moves towards the center of its scroll range, it scales up to 1.
+    // As it moves away from the center (i.e., the next card is scrolling over it), it scales down.
+    const scale = useTransform(
+      progress,
+      [range[0], (range[0] + range[1]) / 2, range[1]],
+      [0.9, 1, 0.9]
+    );
+
+    const opacity = useTransform(
+        progress,
+        [range[0], (range[0] + range[1]) / 2.1, range[1]],
+        [0.5, 1, 0.5]
+    );
   
     return (
       <motion.div
         style={{
             scale,
-            top: `calc(-5% + ${index * 5}rem)`,
+            top: `calc(5% + ${index * 5}rem)`,
         }}
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
         <motion.div
-            style={{ opacity, width: '70vw' }} // Set base width to 70vw
+            style={{ opacity, width: '70vw' }}
             className={cn(
-            "relative h-[75vh] rounded-3xl border border-white/10 bg-gray-900/40 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
+            "relative h-[75vh] rounded-3xl border border-white/10 bg-gray-900/90 backdrop-blur-xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-8 lg:gap-16 overflow-hidden",
             feature.gradient
         )}>
             {/* Decorative Gradient */}
