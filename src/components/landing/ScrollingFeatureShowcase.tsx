@@ -59,6 +59,8 @@ const FeatureCard = ({
   progress: any;
   range: [number, number];
 }) => {
+    // Each card's scale will be transformed based on its position in the stack.
+    // The card at the top (index 0) will be full size, and others will be smaller.
     const scale = useTransform(progress, range, [1 - (total - index) * 0.05, 1]);
     const opacity = useTransform(progress, range, [0.5, 1]);
   
@@ -67,7 +69,7 @@ const FeatureCard = ({
         style={{
             scale,
             opacity,
-            top: `calc(${index * 4}rem)`,
+            top: `calc(${index * 4}rem)`, // Stagger the cards vertically
         }}
         className="sticky w-full h-full flex items-center justify-center p-4"
       >
@@ -142,4 +144,3 @@ export default function ScrollingFeatureShowcase() {
     </div>
   );
 }
-
