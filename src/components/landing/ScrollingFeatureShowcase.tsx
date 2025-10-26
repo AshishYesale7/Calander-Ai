@@ -6,6 +6,7 @@ import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 import CustomVideoPlayer from './CustomVideoPlayer';
+import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
 const features = [
   {
@@ -16,7 +17,7 @@ const features = [
       'Adapts to your fixed classes and appointments.',
       'Ensures consistent progress on long-term objectives.',
     ],
-    videoUrl: 'https://cdn.dribbble.com/userupload/12044293/file/original-e8a7ea5949b2d36c2a47547164293521.mp4',
+    videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
     icon: '🚀',
     colors: {
         '--border-color': '#c084fc',
@@ -35,7 +36,7 @@ const features = [
       'Identifies key skills for your desired industry.',
       'Suggests relevant courses, books, and communities.',
     ],
-    videoUrl: 'https://cdn.dribbble.com/userupload/11181559/file/original-27b4931a750965319e6d598585c575d3.mp4',
+    videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
     icon: '🗺️',
     colors: {
         '--border-color': '#FBBF24',
@@ -54,7 +55,7 @@ const features = [
       'Visualizes progress with graphs and charts.',
       'Automatic reminders for upcoming contests.',
     ],
-    videoUrl: 'https://cdn.dribbble.com/userupload/11153639/file/original-1945a7b60735398285d693963289a063.mp4',
+    videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
     icon: '🧩',
     colors: {
         '--border-color': '#22D3EE',
@@ -81,6 +82,7 @@ const FeatureCard = ({
 }) => {
     
     const scale = useTransform(progress, range, [1, 0.9]);
+    const glowOpacity = useTransform(progress, range, [1, 0]);
 
     return (
       <motion.div
@@ -96,7 +98,10 @@ const FeatureCard = ({
         >
           {/* This div holds the consistent background and blur */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl"></div>
-          
+           <motion.div
+            className="glow-card-border"
+            style={{ '--glow-opacity': glowOpacity } as any}
+          />
           <div 
             className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
           >
@@ -120,10 +125,10 @@ const FeatureCard = ({
                     <div className="w-full aspect-[16/10] bg-black/50 rounded-xl border-2 border-white/10 shadow-2xl overflow-hidden">
                          <CustomVideoPlayer 
                             src={feature.videoUrl} 
-                            title="SPRITE FRIGHT"
-                            description="You're Watching"
-                            logoUrl="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
-                            previewImageUrl="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png"
+                            title="Calendar.ai"
+                            description="Feature Preview"
+                            logoComponent={<CalendarAiLogo className="w-20 h-auto" />}
+                            previewImageUrl="https://img.freepik.com/free-vector/new-2023-twitter-logo-x-icon-design_1017-45418.jpg"
                           />
                     </div>
                 </div>
@@ -161,4 +166,3 @@ export default function ScrollingFeatureShowcase() {
     </div>
   );
 }
-
