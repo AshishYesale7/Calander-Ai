@@ -17,7 +17,14 @@ const features = [
     ],
     videoUrl: 'https://cdn.dribbble.com/userupload/12044293/file/original-e8a7ea5949b2d36c2a47547164293521.mp4',
     icon: '🚀',
-    gradient: 'from-blue-500/20 to-transparent',
+    colors: {
+        '--border-color': '#c084fc',
+        '--box-shadow-color': '#a855f7',
+        '--glow-color-1': '#9333ea',
+        '--glow-color-2': '#a855f7',
+        '--glow-color-3': '#d8b4fe',
+        '--glow-color-4': '#c084fc',
+    }
   },
   {
     title: 'Career Vision Roadmap',
@@ -29,7 +36,14 @@ const features = [
     ],
     videoUrl: 'https://cdn.dribbble.com/userupload/11181559/file/original-27b4931a750965319e6d598585c575d3.mp4',
     icon: '🗺️',
-    gradient: 'from-purple-500/20 to-transparent',
+    colors: {
+        '--border-color': '#FBBF24',
+        '--box-shadow-color': '#F59E0B',
+        '--glow-color-1': '#D97706',
+        '--glow-color-2': '#F59E0B',
+        '--glow-color-3': '#FDE68A',
+        '--glow-color-4': '#FBBF24',
+    }
   },
   {
     title: 'Integrated Extension Marketplace',
@@ -41,7 +55,14 @@ const features = [
     ],
     videoUrl: 'https://cdn.dribbble.com/userupload/11153639/file/original-1945a7b60735398285d693963289a063.mp4',
     icon: '🧩',
-    gradient: 'from-teal-500/20 to-transparent',
+    colors: {
+        '--border-color': '#22D3EE',
+        '--box-shadow-color': '#06B6D4',
+        '--glow-color-1': '#0891B2',
+        '--glow-color-2': '#06B6D4',
+        '--glow-color-3': '#A5F3FC',
+        '--glow-color-4': '#67E8F9',
+    }
   },
 ];
 
@@ -49,22 +70,16 @@ const features = [
 const FeatureCard = ({
   feature,
   index,
-  total,
   progress,
   range,
 }: {
   feature: (typeof features)[0];
   index: number;
-  total: number;
   progress: any;
   range: [number, number];
 }) => {
     
-    // Animate scale from 1 down to 0.9 as it moves into the background
     const scale = useTransform(progress, range, [1, 0.9]);
-    
-    // Animate opacity from 1 down to 0 as it recedes.
-    // The range is adjusted so fading starts *after* the card is fully in view.
     const contentOpacity = useTransform(progress, [range[0] + 0.05, range[1]], [1, 0]);
   
     return (
@@ -77,6 +92,7 @@ const FeatureCard = ({
       >
         <div 
           className="relative w-full max-w-4xl h-[75vh] rounded-3xl overflow-hidden electric-card"
+          style={feature.colors as React.CSSProperties}
         >
           {/* This div holds the consistent background and blur */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl"></div>
@@ -138,7 +154,6 @@ export default function ScrollingFeatureShowcase() {
                 <FeatureCard
                     key={i}
                     index={i}
-                    total={total}
                     feature={feature}
                     progress={scrollYProgress}
                     range={[start, end]}

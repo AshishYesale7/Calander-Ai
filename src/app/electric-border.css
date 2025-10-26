@@ -1,24 +1,24 @@
 
 @keyframes electric-fringe {
   0% {
-    box-shadow: 0 0 10px 2px #9333ea, 0 0 5px 1px #a855f7 inset,
-      -2px 0 15px 0 #d8b4fe, 2px 0 15px 0 #c084fc;
+    box-shadow: 0 0 10px 2px var(--glow-color-1), 0 0 5px 1px var(--glow-color-2) inset,
+      -2px 0 15px 0 var(--glow-color-3), 2px 0 15px 0 var(--glow-color-4);
   }
   25% {
-    box-shadow: 0 0 12px 3px #9333ea, 0 0 6px 2px #a855f7 inset,
-      -3px 0 18px 0 #d8b4fe, 3px 0 18px 0 #c084fc;
+    box-shadow: 0 0 12px 3px var(--glow-color-1), 0 0 6px 2px var(--glow-color-2) inset,
+      -3px 0 18px 0 var(--glow-color-3), 3px 0 18px 0 var(--glow-color-4);
   }
   50% {
-    box-shadow: 0 0 10px 2px #9333ea, 0 0 5px 1px #a855f7 inset,
-      2px 0 15px 0 #d8b4fe, -2px 0 15px 0 #c084fc;
+    box-shadow: 0 0 10px 2px var(--glow-color-1), 0 0 5px 1px var(--glow-color-2) inset,
+      2px 0 15px 0 var(--glow-color-3), -2px 0 15px 0 var(--glow-color-4);
   }
   75% {
-    box-shadow: 0 0 14px 4px #9333ea, 0 0 7px 2px #a855f7 inset,
-      3px 0 20px 0 #d8b4fe, -3px 0 20px 0 #c084fc;
+    box-shadow: 0 0 14px 4px var(--glow-color-1), 0 0 7px 2px var(--glow-color-2) inset,
+      3px 0 20px 0 var(--glow-color-3), -3px 0 20px 0 var(--glow-color-4);
   }
   100% {
-    box-shadow: 0 0 10px 2px #9333ea, 0 0 5px 1px #a855f7 inset,
-      -2px 0 15px 0 #d8b4fe, 2px 0 15px 0 #c084fc;
+    box-shadow: 0 0 10px 2px var(--glow-color-1), 0 0 5px 1px var(--glow-color-2) inset,
+      -2px 0 15px 0 var(--glow-color-3), 2px 0 15px 0 var(--glow-color-4);
   }
 }
 
@@ -38,8 +38,8 @@
 
 /* Inner sharp glow */
 .electric-card::before {
-  border: 1px solid #c084fc; /* purple-400 */
-  box-shadow: 0 0 5px 1px #a855f7; /* purple-600 */
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0 5px 1px var(--box-shadow-color);
   z-index: 1;
 }
 
