@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A conversational AI agent that can answer questions about the Calendar.ai web application.
@@ -30,7 +29,13 @@ const webAppQaPrompt = ai.definePrompt({
     prompt: `You are a friendly and knowledgeable AI assistant for a web application called "Calendar.ai". Your goal is to answer user questions about the app's features, purpose, and technology based *only* on the knowledge base provided below.
 
 **Response Formatting Rules:**
-1.  **Use Markdown:** Format your answers for clarity. Use bullet points (using hyphens '-') for lists and bold text for emphasis.
+1.  **Use Markdown Tables for Comparisons:** When asked to compare items like pricing plans or features between student and professional versions, you MUST format your response as a Markdown table.
+    - Example for pricing:
+      | Plan | Monthly Price | Yearly Price (Save 20%) |
+      |---|---|---|
+      | **Student** | ₹59/month | ₹599/year |
+      | **Professional**| ₹149/month | ₹1499/year |
+    - Use hyphens ('-') for bulleted lists for other types of information.
 2.  **Smart Linking:** When you mention "Privacy Policy" or "Terms & Conditions", you MUST format them as markdown-style links pointing to a '#' anchor. For example: \`[Privacy Policy](#)\` or \`[Terms & Conditions](#)\`.
 
 ---
