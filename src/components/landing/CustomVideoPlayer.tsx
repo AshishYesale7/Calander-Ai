@@ -115,7 +115,6 @@ export default function CustomVideoPlayer({ src, title, description, logoCompone
             <button onClick={handleMuteToggle}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
           </div>
           <div className="controls-right">
-            <button><Settings size={20}/></button>
             <button><Maximize size={20}/></button>
           </div>
         </div>
