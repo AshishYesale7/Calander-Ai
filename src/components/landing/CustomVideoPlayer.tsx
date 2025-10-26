@@ -10,10 +10,9 @@ interface CustomVideoPlayerProps {
   title?: string;
   description?: string;
   logoComponent?: React.ReactNode;
-  previewImageUrl?: string;
 }
 
-export default function CustomVideoPlayer({ src, title, description, logoComponent, previewImageUrl }: CustomVideoPlayerProps) {
+export default function CustomVideoPlayer({ src, title, description, logoComponent }: CustomVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -90,9 +89,6 @@ export default function CustomVideoPlayer({ src, title, description, logoCompone
       />
 
       <div className={cn("preview-overlay", isPlaying && "hidden")}>
-        {previewImageUrl && (
-          <img src={previewImageUrl} alt="Preview" className="preview-image" />
-        )}
         <button onClick={handlePlayPause} className="play-button-center">
             <Play size={32} />
         </button>

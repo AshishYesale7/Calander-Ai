@@ -98,10 +98,6 @@ const FeatureCard = ({
         >
           {/* This div holds the consistent background and blur */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl"></div>
-           <motion.div
-            className="glow-card-border"
-            style={{ '--glow-opacity': glowOpacity } as any}
-          />
           <div 
             className="w-full h-full p-8 md:p-12 lg:p-16 flex flex-col md:flex-row md:items-start md:pt-20 gap-8 lg:gap-16"
           >
@@ -128,7 +124,6 @@ const FeatureCard = ({
                             title="Calendar.ai"
                             description="Feature Preview"
                             logoComponent={<CalendarAiLogo className="w-20 h-auto" />}
-                            previewImageUrl="https://img.freepik.com/free-vector/new-2023-twitter-logo-x-icon-design_1017-45418.jpg"
                           />
                     </div>
                 </div>
