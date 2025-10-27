@@ -2,15 +2,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { CardContent, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { generateDailyPlan } from '@/ai/flows/generate-daily-plan-flow';
 import type { DailyPlan } from '@/types';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -23,6 +22,8 @@ import { TodaysPlanContent } from './TodaysPlanContent';
 import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay, differenceInDays } from 'date-fns';
 import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
+import { CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { ScrollArea } from '../ui/scroll-area';
 
 export default function TodaysPlanCard() {
   const { user } = useAuth();
@@ -59,12 +60,11 @@ export default function TodaysPlanCard() {
         }
       }
 
-      // Explicitly check for user preferences before attempting to generate.
       const userPrefs = await getUserPreferences(user.uid);
       if (!userPrefs) {
         setIsRoutineSetupNeeded(true);
         setIsLoading(false);
-        return; // Stop here and prompt user to set up their routine.
+        return; 
       }
 
       const result = await generateDailyPlan({
@@ -101,17 +101,6 @@ export default function TodaysPlanCard() {
     }
   };
   
-  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) {
-      return; // It was a button click, don't toggle accordion.
-    }
-    if (isRoutineSetupNeeded) {
-        e.preventDefault();
-        setIsRoutineModalOpen(true);
-    }
-  };
-
   const handleStatusChange = (itemIndex: number, newStatus: 'completed' | 'missed') => {
     if (!plan || !user) return;
     
@@ -121,7 +110,6 @@ export default function TodaysPlanCard() {
     const updatedPlan = { ...plan, schedule: updatedSchedule };
     setPlan(updatedPlan);
 
-    // Log activity if an item is completed
     if (newStatus === 'completed' && user) {
       logUserActivity(user.uid, 'task_completed', { title: updatedPlan.schedule[itemIndex].activity });
     }
@@ -169,10 +157,7 @@ export default function TodaysPlanCard() {
         <div className="flex flex-col items-center justify-center h-48 text-center">
           <Edit className="h-10 w-10 mb-4 text-accent" />
           <p className="font-semibold text-lg">Set Up Your Weekly Routine</p>
-          <p className="text-sm text-muted-foreground my-2">Click the header above or the button below to define your schedule so the AI can generate your plan.</p>
-          <Button onClick={() => setIsRoutineModalOpen(true)} className="mt-2">
-            <Edit className="mr-2 h-4 w-4" /> Edit Routine
-          </Button>
+          <p className="text-sm text-muted-foreground my-2">Click the edit button in the header to define your schedule so the AI can generate your plan.</p>
         </div>
       );
     }
@@ -202,86 +187,85 @@ export default function TodaysPlanCard() {
   return (
     <>
       <div className="w-full h-full flex flex-col rounded-lg">
-        <Accordion type="single" collapsible className="w-full flex flex-col h-full">
+        <Accordion type="single" collapsible defaultValue="item-1" className="w-full flex flex-col h-full">
           <AccordionItem value="item-1" className="border-b-0 flex flex-col h-full">
-            <AccordionPrimitive.Header className="w-full flex-shrink-0">
-              <AccordionPrimitive.Trigger asChild disabled={isRoutineSetupNeeded}>
-                <div className="w-full cursor-pointer group" onClick={handleHeaderClick}>
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => { e.stopPropagation(); handlePrevDay(); }}
-                            disabled={!canGoBack || isLoading}
-                            className="h-8 w-8 shrink-0"
-                            aria-label="Previous day"
-                        >
-                            <ChevronLeft className="h-5 w-5" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
-                            disabled={!canGoForward || isLoading}
-                            className="h-8 w-8 shrink-0"
-                            aria-label="Next day"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </Button>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
-                            <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
-                            <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
-                          </CardTitle>
-                           <CardDescription className="mt-1 truncate">
-                              {isRoutineSetupNeeded
-                              ? 'Set your weekly routine to get started'
-                              : (
-                                <>
-                                  <span className="hidden md:inline">Your personalized schedule for </span>
-                                  <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
-                                </>
-                              )}
-                          </CardDescription>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 md:pl-0">
-                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fetchAndGeneratePlan(displayDate, true);
-                        }}
-                        className="h-8 w-8 p-0 shrink-0"
-                        aria-label="Refresh plan"
-                        disabled={isLoading}
+            <AccordionTrigger className="w-full flex-shrink-0 p-4 hover:no-underline group">
+              <div className="w-full">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handlePrevDay(); }}
+                          disabled={!canGoBack || isLoading}
+                          className="h-8 w-8 shrink-0"
+                          aria-label="Previous day"
                       >
-                        <RefreshCw className={`h-5 w-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+                          <ChevronLeft className="h-5 w-5" />
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsRoutineModalOpen(true);
-                        }}
-                        className="h-8 w-8 p-0 shrink-0"
-                        aria-label="Edit routine"
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
+                          disabled={!canGoForward || isLoading}
+                          className="h-8 w-8 shrink-0"
+                          aria-label="Next day"
                       >
-                        <Edit className="h-5 w-5 text-muted-foreground" />
+                          <ChevronRight className="h-5 w-5" />
                       </Button>
-                      {!isRoutineSetupNeeded && (
-                        <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                      )}
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
+                          <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
+                          <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
+                        </CardTitle>
+                        <CardDescription className="mt-1 truncate">
+                            {isRoutineSetupNeeded
+                            ? 'Set your weekly routine to get started'
+                            : (
+                              <>
+                                <span className="hidden md:inline">Your personalized schedule for </span>
+                                <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
+                              </>
+                            )}
+                        </CardDescription>
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-1 md:pl-0">
+                      <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fetchAndGeneratePlan(displayDate, true);
+                      }}
+                      className="h-8 w-8 p-0 shrink-0"
+                      aria-label="Refresh plan"
+                      disabled={isLoading}
+                    >
+                      <RefreshCw className={`h-5 w-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRoutineModalOpen(true);
+                      }}
+                      className="h-8 w-8 p-0 shrink-0"
+                      aria-label="Edit routine"
+                    >
+                      <Edit className="h-5 w-5 text-muted-foreground" />
+                    </Button>
                   </div>
                 </div>
-              </AccordionPrimitive.Trigger>
-            </AccordionPrimitive.Header>
-            <AccordionContent className="flex-1 min-h-0">
-                {renderContent()}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="flex-1 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="px-4 pb-4">
+                    {renderContent()}
+                  </div>
+                </ScrollArea>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
