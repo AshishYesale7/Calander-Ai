@@ -33,6 +33,9 @@ import { saveAs } from 'file-saver';
 import TrashPanel from '@/components/timeline/TrashPanel';
 import { useTimezone } from '@/hooks/use-timezone';
 import DailyStreakCard from '@/components/dashboard/DailyStreakCard';
+import { useIsMobile } from '@/hooks/use-mobile';
+import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
+
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -146,6 +149,7 @@ export default function DashboardPage() {
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -624,163 +628,51 @@ export default function DashboardPage() {
     reader.readAsText(file);
   };
 
-
-  return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+  if (isMobile) {
+    return (
+      <div className="space-y-8">
         <div className="md:col-span-2">
-            <TodaysPlanCard />
+          <TodaysPlanCard />
         </div>
         {user?.userType !== 'professional' && <DailyStreakCard />}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-        <div className="xl:col-span-2 space-y-8">
-          <Tabs defaultValue="calendar" className="relative">
-            <div className="flex justify-between items-center mb-4 gap-2">
-              <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
-                <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                  <Calendar className="mr-2 h-4 w-4" /> Calendar
-                </TabsTrigger>
-                <div className="w-px h-6 bg-border/50 self-center" />
-                <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                  <List className="mr-2 h-4 w-4" /> List
-                </TabsTrigger>
-              </TabsList>
-              
-              <Button 
-                onClick={() => handleOpenEditModal()} 
-                className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full md:w-auto md:px-4 md:rounded-md"
-              >
-                <PlusCircle className="h-5 w-5" />
-                <span className="hidden md:inline md:ml-2">Add New Event</span>
-              </Button>
+        <Tabs defaultValue="calendar" className="relative">
+          <div className="flex justify-between items-center mb-4 gap-2">
+            <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
+              <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                <Calendar className="mr-2 h-4 w-4" /> Calendar
+              </TabsTrigger>
+              <div className="w-px h-6 bg-border/50 self-center" />
+              <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                <List className="mr-2 h-4 w-4" /> List
+              </TabsTrigger>
+            </TabsList>
+            <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
+              <PlusCircle className="h-5 w-5" />
+              <span className="sr-only">Add New Event</span>
+            </Button>
+          </div>
+          <TabsContent value="calendar">
+            <div className={cn("transition-all duration-300", isTrashPanelOpen && "pr-[24rem]")}>
+              <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={setActiveDisplayMonth} onDayClick={handleDayClickFromCalendar} onSync={handleSyncCalendarData} isSyncing={isLoading} onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)} isTrashOpen={isTrashPanelOpen} />
             </div>
-            
-            <TabsContent value="calendar" className="mt-0">
-              <div className="relative">
-                <div className={cn("transition-all duration-300", isTrashPanelOpen && "pr-0 md:pr-[24rem]")}>
-                  <EventCalendarView
-                      events={activeEvents}
-                      month={activeDisplayMonth}
-                      onMonthChange={setActiveDisplayMonth}
-                      onDayClick={handleDayClickFromCalendar}
-                      onSync={handleSyncCalendarData}
-                      isSyncing={isLoading}
-                      onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
-                      isTrashOpen={isTrashPanelOpen}
-                  />
-                </div>
-                {isTrashPanelOpen && (
-                  <div className="absolute right-0 top-0 h-full w-full md:w-96">
-                      <TrashPanel
-                        deletedEvents={recentlyDeletedEvents}
-                        onRestore={handleRestoreEvent}
-                        onPermanentDelete={handlePermanentDelete}
-                        onClose={() => setIsTrashPanelOpen(false)}
-                      />
-                  </div>
-                )}
+            {isTrashPanelOpen && (
+              <div className="absolute right-0 top-0 h-full w-96">
+                  <TrashPanel deletedEvents={recentlyDeletedEvents} onRestore={handleRestoreEvent} onPermanentDelete={handlePermanentDelete} onClose={() => setIsTrashPanelOpen(false)} />
               </div>
-              <div className={cn(selectedDateForDayView ? "mt-8" : "mt-0")}>
-                {selectedDateForDayView ? (
-                    <DayTimetableView
-                        date={selectedDateForDayView}
-                        events={activeEvents}
-                        onClose={closeDayTimetableView}
-                        onDeleteEvent={handleDeleteTimelineEvent}
-                        onEditEvent={handleOpenEditModal}
-                        onEventStatusChange={handleEventStatusUpdate}
-                    />
-                ) : (
-                    <SlidingTimelineView
-                        events={activeEvents}
-                        onDeleteEvent={handleDeleteTimelineEvent}
-                        onEditEvent={handleOpenEditModal}
-                        currentDisplayMonth={activeDisplayMonth}
-                        onNavigateMonth={handleMonthNavigationForSharedViews}
-                    />
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="list" className="mt-0">
-              <TimelineListView
-                events={activeEvents}
-                onDeleteEvent={handleDeleteTimelineEvent}
-                onEditEvent={handleOpenEditModal}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <div className="xl:col-span-1 space-y-8">
-          <ImportantEmailsCard />
-          <NextMonthHighlightsCard events={activeEvents} />
-        </div>
+            )}
+            {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
+            <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
+          </TabsContent>
+          <TabsContent value="list">
+            <TimelineListView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} />
+          </TabsContent>
+        </Tabs>
+        <ImportantEmailsCard />
+        <NextMonthHighlightsCard events={activeEvents} />
+        {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
       </div>
+    );
+  }
 
-      <Card className="frosted-glass shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary flex items-center">
-            <Bot className="mr-2 h-5 w-5 text-accent" /> AI-Powered Sync & Data Management
-          </CardTitle>
-          <CardDescription>
-            Sync your Google data, or export your calendar in .ics format.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-            <Button onClick={handleSyncCalendarData} disabled={isLoading} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                {isLoading ? (
-                <>
-                    <LoadingSpinner size="sm" className="mr-2" /> Syncing from Google...
-                </>
-                ) : (
-                'Sync Google Calendar & Tasks'
-                )}
-            </Button>
-            <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-                {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
-                Import (.ics)
-            </Button>
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept=".ics,text/calendar"
-                className="hidden"
-            />
-            <Button onClick={handleExportEvents} variant="outline">
-                <Download className="mr-2 h-4 w-4" /> Export (.ics)
-            </Button>
-        </CardContent>
-      </Card>
-
-      {syncError && (
-        <Card className="frosted-glass border-destructive/50">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center">
-              <AlertCircle className="mr-2 h-5 w-5" /> Error Syncing Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive/90">{syncError}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {eventBeingEdited && (
-        <EditEventModal
-          isOpen={isEditModalOpen}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) handleCloseEditModal();
-          }}
-          eventToEdit={eventBeingEdited}
-          onSubmit={handleSaveEditedEvent}
-          isAddingNewEvent={isAddingNewEvent}
-          isGoogleConnected={!!isGoogleConnected}
-        />
-      )}
-    </div>
-  );
+  return <WidgetDashboard />;
 }
