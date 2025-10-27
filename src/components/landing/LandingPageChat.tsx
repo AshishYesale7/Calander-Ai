@@ -107,7 +107,7 @@ export default function LandingPageChat() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col items-center">
+    <div className="fixed bottom-4 left-0 right-0 z-40 flex flex-col items-center">
       <AnimatePresence>
         {isOpen && (
           <motion.div
