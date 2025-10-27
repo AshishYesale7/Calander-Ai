@@ -116,11 +116,11 @@ export default function LandingPageChat() {
         )}
       >
         <AnimatePresence>
-            {chatHistory.map((msg, index) => (
+            {isOpen && chatHistory.map((msg, index) => (
               <ChatBubble key={index} message={msg} />
             ))}
         </AnimatePresence>
-        {isLoading && (
+        {isOpen && isLoading && (
             <motion.div layout className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
                     <LoadingSpinner size="sm" />
@@ -163,11 +163,19 @@ export default function LandingPageChat() {
             )}
           </AnimatePresence>
 
-          {isOpen && (
-            <button onClick={() => setIsOpen(false)} className="text-gray-400 p-2 hover:text-white">
-              <X className="h-5 w-5" />
-            </button>
-          )}
+          <AnimatePresence>
+            {isOpen && (
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1, transition: { delay: 0.3 } }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                onClick={() => setIsOpen(false)} 
+                className="text-gray-400 p-2 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>
