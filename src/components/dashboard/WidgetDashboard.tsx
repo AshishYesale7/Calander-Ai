@@ -11,6 +11,7 @@ import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -20,11 +21,9 @@ export default function WidgetDashboard({
     onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
     children
 }: any) {
+  const { user } = useAuth();
   
-  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
-  const longPressTimer = React.useRef<NodeJS.Timeout>();
-
-  const layout = [
+  const defaultLayout = [
     { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
     { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
@@ -32,6 +31,11 @@ export default function WidgetDashboard({
     { i: 'emails', x: 8, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
     { i: 'next-month', x: 0, y: 7, w: 12, h: 3, minW: 6, minH: 3 },
   ];
+
+  const layout = user?.userType === 'professional'
+    ? defaultLayout.filter(item => item.i !== 'streak')
+    : defaultLayout;
+
 
   const components: { [key: string]: React.ReactNode } = {
     plan: <TodaysPlanCard />,
@@ -42,46 +46,6 @@ export default function WidgetDashboard({
     'next-month': <NextMonthHighlightsCard events={activeEvents} />,
   };
   
-  const handlePointerDown = (id: string) => {
-    longPressTimer.current = setTimeout(() => {
-        setEditingWidgetId(id);
-    }, 500); // 500ms for long press
-  };
-
-  const handlePointerUp = () => {
-    if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-    }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent, id: string) => {
-      e.preventDefault();
-      setEditingWidgetId(id);
-  };
-  
-  useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-          const target = event.target as HTMLElement;
-          // If the click is outside any widget's content area, exit edit mode.
-          if (!target.closest('.react-grid-item')) {
-              setEditingWidgetId(null);
-          }
-      };
-
-      const handleEscapeKey = (event: KeyboardEvent) => {
-          if (event.key === 'Escape') {
-              setEditingWidgetId(null);
-          }
-      };
-
-      document.addEventListener('click', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
-      return () => {
-          document.removeEventListener('click', handleClickOutside);
-          document.removeEventListener('keydown', handleEscapeKey);
-      };
-  }, []);
-
   return (
     <div className="relative">
       <ReactGridLayout
@@ -90,42 +54,20 @@ export default function WidgetDashboard({
         cols={12}
         rowHeight={100}
         isDraggable={true}
-        isResizable={true}
+        isResizable={true} // Enable built-in resizing
         compactType="vertical"
         draggableHandle=".drag-handle"
-        onDragStart={() => setEditingWidgetId(null)}
-        onResizeStart={() => setEditingWidgetId(null)}
       >
         {layout.map(item => {
-          const isEditing = editingWidgetId === item.i;
           return (
             <div
               key={item.i}
-              className={cn(
-                "frosted-glass overflow-hidden rounded-lg relative group transition-all duration-300",
-                isEditing && "ring-2 ring-blue-500 shadow-2xl"
-              )}
-              onPointerDown={() => handlePointerDown(item.i)}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp} // Clear timer if pointer leaves
-              onContextMenu={(e) => handleContextMenu(e, item.i)}
+              className="frosted-glass overflow-hidden rounded-lg relative group transition-all duration-300"
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="w-full h-full pt-4">
                 {components[item.i]}
               </div>
-              {isEditing && (
-                 <div className="widget-resize-handles">
-                    <div className="widget-resize-handle nw"></div>
-                    <div className="widget-resize-handle n"></div>
-                    <div className="widget-resize-handle ne"></div>
-                    <div className="widget-resize-handle w"></div>
-                    <div className="widget-resize-handle e"></div>
-                    <div className="widget-resize-handle sw"></div>
-                    <div className="widget-resize-handle s"></div>
-                    <div className="widget-resize-handle se"></div>
-                </div>
-              )}
             </div>
           )
         })}
@@ -134,3 +76,4 @@ export default function WidgetDashboard({
     </div>
   );
 }
+

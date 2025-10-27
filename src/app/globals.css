@@ -927,29 +927,54 @@ body {
   color: #8c6a4d !important;
 }
 
-/* NEW: Widget Dashboard Resize Handles */
-.widget-resize-handles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+/* react-grid-layout styles */
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
 }
-.widget-resize-handle {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background-color: rgba(99, 102, 241, 0.7); /* bg-blue-500 */
-  border: 2px solid white;
-  border-radius: 9999px;
-  pointer-events: all; /* Make handles interactive */
-  transform: translate(-50%, -50%);
-  z-index: 30; /* Ensure they are on top */
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top;
 }
-
-.widget-resize-handle.n { top: 0; left: 50%; cursor: ns-resize; }
-.widget-resize-handle.s { top: 100%; left: 50%; cursor: ns-resize; }
-.widget-resize-handle.e { top: 50%; left: 100%; cursor: ew-resize; }
-.widget-resize-handle.w { top: 50%; left: 0; cursor: ew-resize; }
-.widget-resize-handle.nw { top: 0; left: 0; cursor: nwse-resize; }
-.widget-resize-handle.ne { top: 0; left: 100%; cursor: nesw-resize; }
-.widget-resize-handle.sw { top: 100%; left: 0; cursor: nesw-resize; }
-.widget-resize-handle.se { top: 100%; left: 100%; cursor: nwse-resize; }
+.react-grid-item.cssTransforms {
+  transition-property: transform;
+}
+.react-grid-item.resizing {
+  z-index: 1;
+  will-change: width, height;
+}
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 3;
+  will-change: transform;
+}
+.react-grid-item.react-grid-placeholder {
+  background: hsl(var(--accent));
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+  border-radius: var(--radius);
+}
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(255, 255, 255, 0.4);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+}
