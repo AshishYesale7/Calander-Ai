@@ -215,7 +215,7 @@ export default function DesktopCommandBar() {
   // Effect for keyboard shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setIsOpen((open) => {
             if (!open) {
@@ -343,6 +343,24 @@ export default function DesktopCommandBar() {
     if(event.target) event.target.value = '';
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    if (isFullScreen) {
+      setIsFullScreen(false);
+    }
+  };
+
+  const chatHeaderDragControls = {
+      start: (e: React.PointerEvent) => {
+        if (dragControls && typeof dragControls.start === 'function') {
+            dragControls.start(e);
+        }
+      },
+      onBack: handleClose,
+      handleToggleFullScreen: handleToggleFullScreen,
+      isFullScreen: isFullScreen
+  }
+
   return (
     <motion.div
       ref={containerRef}
@@ -381,7 +399,7 @@ export default function DesktopCommandBar() {
             >
               <AiAssistantChat 
                 initialPrompt={search} 
-                onBack={() => setIsOpen(false)}
+                onBack={handleClose}
                 dragControls={dragControls}
                 handleToggleFullScreen={handleToggleFullScreen}
                 isFullScreen={isFullScreen}
