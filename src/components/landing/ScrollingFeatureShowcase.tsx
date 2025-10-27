@@ -4,10 +4,11 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Zap } from 'lucide-react';
 import CustomVideoPlayer from './CustomVideoPlayer';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { LayoutGrid } from 'lucide-react';
 
 
 const studentFeatures = [
@@ -47,6 +48,25 @@ const studentFeatures = [
         '--glow-color-2': '#F59E0B',
         '--glow-color-3': '#FDE68A',
         '--glow-color-4': '#FBBF24',
+    }
+  },
+  {
+    title: 'Plugin Marketplace',
+    description: 'Extend Calendar.ai with powerful plugins like Codefolio Ally to track your competitive programming stats from LeetCode, Codeforces, and more.',
+    points: [
+      'Centralize your progress from multiple platforms.',
+      'Visualize your coding activity and streaks.',
+      'Get automatic reminders for upcoming contests.',
+    ],
+    videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
+    icon: <LayoutGrid />,
+     colors: {
+        '--border-color': '#22D3EE',
+        '--box-shadow-color': '#06B6D4',
+        '--glow-color-1': '#0891B2',
+        '--glow-color-2': '#06B6D4',
+        '--glow-color-3': '#67E8F9',
+        '--glow-color-4': '#22D3EE',
     }
   },
 ];
@@ -90,6 +110,25 @@ const professionalFeatures = [
             '--glow-color-4': '#6EE7B7',
         }
     },
+    {
+        title: 'Focus Time Automation',
+        description: 'The AI intelligently analyzes your schedule to find and block out uninterrupted "deep work" sessions for maximum productivity.',
+        points: [
+            'Protects your most productive hours automatically.',
+            'Reduces context switching and meeting fatigue.',
+            'Helps you make meaningful progress on important tasks.',
+        ],
+        videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
+        icon: <Zap />,
+        colors: {
+            '--border-color': '#F472B6',
+            '--box-shadow-color': '#EC4899',
+            '--glow-color-1': '#DB2777',
+            '--glow-color-2': '#EC4899',
+            '--glow-color-3': '#FBCFE8',
+            '--glow-color-4': '#F9A8D4',
+        }
+    },
 ];
 
 
@@ -130,7 +169,9 @@ const FeatureCard = ({
           >
                 {/* Left Side - Text Content */}
                 <div className="md:w-1/2 text-center md:text-left relative z-10">
-                    <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">{feature.icon}</div>
+                    <div className="inline-block bg-white/10 p-3 rounded-xl mb-4 text-2xl">
+                        {typeof feature.icon === 'string' ? feature.icon : React.cloneElement(feature.icon, { className: 'h-6 w-6 text-accent' })}
+                    </div>
                     <h2 className="text-2xl lg:text-3xl font-bold font-headline text-white mb-4">{feature.title}</h2>
                     <p className="text-sm lg:text-base text-white/70 mb-6">{feature.description}</p>
                     <ul className="space-y-3">
@@ -178,7 +219,7 @@ const FeatureList = ({ features }: { features: typeof studentFeatures | typeof p
                     <FeatureCard
                         key={i}
                         index={i}
-                        feature={feature}
+                        feature={feature as any}
                         progress={scrollYProgress}
                         range={[start, end]}
                         total={total}
