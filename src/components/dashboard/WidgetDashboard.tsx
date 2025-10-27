@@ -34,7 +34,7 @@ export default function WidgetDashboard({
     calendar: <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={onMonthChange} onDayClick={onDayClick} onSync={onSync} isSyncing={isSyncing} onToggleTrash={onToggleTrash} isTrashOpen={isTrashOpen} />,
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
     emails: <ImportantEmailsCard />,
-    next-month: <NextMonthHighlightsCard events={activeEvents} />,
+    'next-month': <NextMonthHighlightsCard events={activeEvents} />,
   };
 
   return (
