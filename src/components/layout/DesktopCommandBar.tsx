@@ -430,7 +430,10 @@ export default function DesktopCommandBar() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="frosted-glass">
-                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => fileInputRef.current?.click(), 0); }}>
+                                    <DropdownMenuItem onSelect={(e) => {
+                                      e.preventDefault();
+                                      setTimeout(() => fileInputRef.current?.click(), 0);
+                                    }}>
                                         <ImageIcon className="mr-2 h-4 w-4" />
                                         <span>Add photos & files</span>
                                     </DropdownMenuItem>
@@ -524,7 +527,10 @@ export default function DesktopCommandBar() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="frosted-glass">
-                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => { fileInputRef.current?.click(); }, 0); }}>
+                            <DropdownMenuItem onSelect={(e) => {
+                              e.preventDefault();
+                              setTimeout(() => fileInputRef.current?.click(), 0);
+                            }}>
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Add photos & files</span>
                             </DropdownMenuItem>
