@@ -122,6 +122,12 @@ export default function DesktopCommandBar() {
     };
     
     if (isFullScreen) {
+        if (containerRef.current) {
+          const { x, y } = containerRef.current.getBoundingClientRect();
+          if (x !== 0 || y !== 0) { // Store position only if it's not already at the top-left
+            lastOpenPosition.current = { x, y };
+          }
+        }
         animationControls.start({
             x: 0,
             y: 0,
@@ -349,6 +355,10 @@ export default function DesktopCommandBar() {
       setIsFullScreen(false);
     }
   };
+  
+  const handleMinimize = () => {
+    setIsFullScreen(false);
+  };
 
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
@@ -546,8 +556,8 @@ export default function DesktopCommandBar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="frosted-glass">
                             <DropdownMenuItem onSelect={(e) => {
-                              e.preventDefault();
-                              setTimeout(() => fileInputRef.current?.click(), 0);
+                                e.preventDefault();
+                                setTimeout(() => fileInputRef.current?.click(), 0);
                             }}>
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Add photos & files</span>
