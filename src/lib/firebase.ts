@@ -1,6 +1,6 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, type Auth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getMessaging, type Messaging } from 'firebase/messaging';
 
@@ -28,6 +28,8 @@ if (isFirebaseConfigured) {
     try {
         app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         auth = getAuth(app);
+        // Explicitly set persistence to 'local'
+        setPersistence(auth, browserLocalPersistence);
         db = getFirestore(app);
         if (typeof window !== 'undefined') {
           messaging = getMessaging(app);
