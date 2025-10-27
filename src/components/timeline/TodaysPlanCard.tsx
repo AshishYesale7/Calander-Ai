@@ -186,52 +186,52 @@ export default function TodaysPlanCard() {
 
   return (
     <>
-      <div className="w-full h-full flex flex-col rounded-lg">
+      <div className="w-full h-full pt-4">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full flex flex-col h-full">
           <AccordionItem value="item-1" className="border-b-0 flex flex-col h-full">
-            <AccordionTrigger className="w-full flex-shrink-0 p-4 hover:no-underline group">
-              <div className="w-full">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handlePrevDay(); }}
-                          disabled={!canGoBack || isLoading}
-                          className="h-8 w-8 shrink-0"
-                          aria-label="Previous day"
-                      >
-                          <ChevronLeft className="h-5 w-5" />
-                      </Button>
-                      <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
-                          disabled={!canGoForward || isLoading}
-                          className="h-8 w-8 shrink-0"
-                          aria-label="Next day"
-                      >
-                          <ChevronRight className="h-5 w-5" />
-                      </Button>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
-                          <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
-                          <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
-                        </CardTitle>
-                        <CardDescription className="mt-1 truncate">
-                            {isRoutineSetupNeeded
-                            ? 'Set your weekly routine to get started'
-                            : (
-                              <>
-                                <span className="hidden md:inline">Your personalized schedule for </span>
-                                <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
-                              </>
-                            )}
-                        </CardDescription>
-                      </div>
-                  </div>
-                  <div className="flex items-center gap-1 md:pl-0">
-                      <Button
+             <div className="flex items-center justify-between gap-2 p-4 pt-0">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); handlePrevDay(); }}
+                        disabled={!canGoBack || isLoading}
+                        className="h-8 w-8 shrink-0"
+                        aria-label="Previous day"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
+                        disabled={!canGoForward || isLoading}
+                        className="h-8 w-8 shrink-0"
+                        aria-label="Next day"
+                    >
+                        <ChevronRight className="h-5 w-5" />
+                    </Button>
+                    <AccordionTrigger className="flex-1 p-0 hover:no-underline group min-w-0">
+                         <div className="flex-1 min-w-0">
+                            <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
+                            <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
+                            <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
+                            </CardTitle>
+                            <CardDescription className="mt-1 truncate">
+                                {isRoutineSetupNeeded
+                                ? 'Set your weekly routine to get started'
+                                : (
+                                <>
+                                    <span className="hidden md:inline">Your personalized schedule for </span>
+                                    <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
+                                </>
+                                )}
+                            </CardDescription>
+                        </div>
+                    </AccordionTrigger>
+                </div>
+                 <div className="flex items-center gap-1">
+                    <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => {
@@ -257,9 +257,7 @@ export default function TodaysPlanCard() {
                       <Edit className="h-5 w-5 text-muted-foreground" />
                     </Button>
                   </div>
-                </div>
-              </div>
-            </AccordionTrigger>
+            </div>
             <AccordionContent className="flex-1 min-h-0 overflow-hidden">
                 <ScrollArea className="h-full">
                   <div className="px-4 pb-4">
