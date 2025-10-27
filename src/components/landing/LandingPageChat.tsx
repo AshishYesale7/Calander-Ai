@@ -111,7 +111,7 @@ export default function LandingPageChat() {
       <div 
         ref={scrollAreaRef}
         className={cn(
-            "w-full max-w-2xl p-4 space-y-4 overflow-y-auto transition-all duration-300",
+            "w-[400px] p-4 space-y-4 overflow-y-auto transition-all duration-300",
             isOpen ? "max-h-[60vh]" : "max-h-0"
         )}
       >
@@ -133,7 +133,7 @@ export default function LandingPageChat() {
         layout
         transition={{ type: 'spring', stiffness: 400, damping: 35 }}
         className={cn(
-          "w-[95%] max-w-2xl mb-6 rounded-full bottom-chat-bar",
+          "relative bottom-chat-bar",
           isOpen && "is-open"
         )}
       >
