@@ -186,8 +186,8 @@ export default function TodaysPlanCard() {
 
   return (
     <>
-      <Card className="w-full h-full flex flex-col frosted-glass">
-        <Accordion type="single" collapsible defaultValue="item-1" className="w-full flex flex-col h-full">
+      <Card className="w-full h-full flex flex-col">
+        <Accordion type="single" collapsible className="w-full flex flex-col h-full">
           <AccordionItem value="item-1" className="border-b-0 flex flex-col h-full">
              <div className="flex items-center justify-between gap-2 p-4">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
