@@ -139,6 +139,26 @@ const fallbackResponses: Record<string, string> = {
 - Yearly: ₹1499/year (Save 20%)
 
 All new users get a 30-day free trial to explore all features!`,
+    "price": `We have two main plans:
+**Student Plan:**
+- Monthly: ₹59/month
+- Yearly: ₹599/year (Save 20%)
+
+**Professional Plan:**
+- Monthly: ₹149/month
+- Yearly: ₹1499/year (Save 20%)
+
+All new users get a 30-day free trial to explore all features!`,
+     "plans": `We have two main plans:
+**Student Plan:**
+- Monthly: ₹59/month
+- Yearly: ₹599/year (Save 20%)
+
+**Professional Plan:**
+- Monthly: ₹149/month
+- Yearly: ₹1499/year (Save 20%)
+
+All new users get a 30-day free trial to explore all features!`,
 
     "privacy": "Your data is stored securely. AI features like email summaries are designed to be privacy-first, automatically filtering out sensitive information like passwords or OTPs. For more details, please see our [Privacy Policy](#).",
     "sync": "Absolutely! Calendar.ai seamlessly integrates with Google Calendar and Google Tasks. You can see all your existing events and tasks right within the app.",
