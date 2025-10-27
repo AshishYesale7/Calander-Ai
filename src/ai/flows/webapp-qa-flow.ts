@@ -127,6 +127,35 @@ Analyze the user's latest question from the chat history and provide a helpful, 
 `,
 });
 
+// Fallback logic for when AI fails
+const fallbackResponses: Record<string, string> = {
+    "pricing": `We have two main plans:
+**Student Plan:**
+- Monthly: ₹59/month
+- Yearly: ₹599/year (Save 20%)
+
+**Professional Plan:**
+- Monthly: ₹149/month
+- Yearly: ₹1499/year (Save 20%)
+
+All new users get a 30-day free trial to explore all features!`,
+
+    "privacy": "Your data is stored securely. AI features like email summaries are designed to be privacy-first, automatically filtering out sensitive information like passwords or OTPs. For more details, please see our [Privacy Policy](#).",
+    "sync": "Absolutely! Calendar.ai seamlessly integrates with Google Calendar and Google Tasks. You can see all your existing events and tasks right within the app.",
+    "clan": "Clans are a new feature we're developing that will allow you to form teams with friends and colleagues. You'll be able to collaborate on projects, prepare for hackathons, and work on open-source contributions together, all within Calendar.ai.",
+};
+
+const getFallbackResponse = (userInput: string): string | null => {
+    const lowerInput = userInput.toLowerCase();
+    for (const key in fallbackResponses) {
+        if (lowerInput.includes(key)) {
+            return fallbackResponses[key];
+        }
+    }
+    return null;
+};
+
+
 const answerWebAppQuestionsFlow = ai.defineFlow({
     name: 'answerWebAppQuestionsFlow',
     inputSchema: WebAppQaInputSchema,
@@ -144,15 +173,20 @@ const answerWebAppQuestionsFlow = ai.defineFlow({
         }
         return output;
     } catch (e: any) {
-        if (e.message && e.message.includes('503')) {
-            return {
-                response: "I'm sorry, I'm currently unavailable as the service is overloaded. Please try again in a moment.",
-            };
+        console.error("Error in WebApp QA flow, attempting fallback:", e);
+        
+        // Fallback Logic
+        const lastUserMessage = input.chatHistory.filter(m => m.role === 'user').pop();
+        if (lastUserMessage) {
+            const fallback = getFallbackResponse(lastUserMessage.content);
+            if (fallback) {
+                return { response: fallback };
+            }
         }
-        console.error("Error in WebApp QA flow:", e);
-        // Instead of throwing, return a friendly error message to the user.
+        
+        // If no fallback matches, return a generic but helpful error
         return {
-            response: "I'm sorry, I encountered an error and can't provide a response right now.",
+            response: "I'm sorry, I'm having trouble connecting to my AI brain right now. I can answer questions about pricing, privacy, calendar sync, and clans.",
         };
     }
 });
