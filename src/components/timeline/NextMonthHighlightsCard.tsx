@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import type { TimelineEvent } from '@/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 
@@ -52,8 +52,8 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
     }, [events]);
 
     return (
-        <Card className={cn("frosted-glass shadow-lg w-full", className)}>
-            <CardContent className="p-4 space-y-4">
+        <div className={cn("w-full h-full flex flex-col", className)}>
+            <CardContent className="p-4 space-y-4 flex-1">
                 <div className="flex items-center">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>
                     <h3 className="font-headline text-xl text-primary">Next month</h3>
@@ -96,6 +96,6 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
                     </div>
                 )}
             </CardContent>
-        </Card>
+        </div>
     );
 }

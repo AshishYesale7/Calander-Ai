@@ -201,12 +201,12 @@ export default function TodaysPlanCard() {
 
   return (
     <>
-      <div className="w-full frosted-glass shadow-lg rounded-lg">
+      <div className="w-full h-full flex flex-col">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
-            <AccordionPrimitive.Header className="w-full">
+            <AccordionPrimitive.Header className="w-full p-4 md:p-6 pb-0">
               <AccordionPrimitive.Trigger asChild disabled={isRoutineSetupNeeded}>
-                <div className="p-4 md:p-6 w-full cursor-pointer group" onClick={handleHeaderClick}>
+                <div className="w-full cursor-pointer group" onClick={handleHeaderClick}>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Button

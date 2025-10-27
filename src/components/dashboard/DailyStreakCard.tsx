@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
@@ -220,12 +220,10 @@ export default function DailyStreakCard() {
     }
 
     return (
-        <div className="relative">
-            <Card className="bg-amber-600 border-amber-700 shadow-lg overflow-hidden">
-                <CardContent className="p-0">
-                    {renderContent()}
-                </CardContent>
-            </Card>
+        <div className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col">
+            <CardContent className="p-0 flex-1 flex flex-col justify-center">
+                {renderContent()}
+            </CardContent>
             {streakData && (
                 <TrophyFlameIcon 
                     isComplete={streakData.todayStreakCompleted} 

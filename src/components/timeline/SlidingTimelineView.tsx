@@ -157,8 +157,8 @@ export default function SlidingTimelineView({
       </div>
       
       <div className="ml-6 flex-1"> 
-          <Card className="bg-card/60 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <CardHeader className="p-3 pb-2">
+          <div className="bg-card/60 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-lg">
+          <div className="p-3 pb-2">
             <div className="flex justify-between items-start gap-2">
               <h4 className="font-semibold text-md text-primary flex items-center">
                 {getEventTypeIcon(event)}
@@ -219,8 +219,8 @@ export default function SlidingTimelineView({
                   )}
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-3 pt-1 text-sm space-y-2">
+          </div>
+          <div className="p-3 pt-1 text-sm space-y-2">
             {event.notes && <p className="text-foreground/80 line-clamp-3">{event.notes}</p>}
             
             <div className="space-y-1">
@@ -239,7 +239,7 @@ export default function SlidingTimelineView({
                 </div>
               )}
               {event.url && (
-                <div className="text-xs text-primary/90 flex items-center gap-1.5">
+                <div className="text-xs flex items-center gap-1.5">
                   <a href={event.url} target="_blank" rel="noopener noreferrer" title={event.url} className="text-accent hover:text-accent/80 flex items-center gap-1.5 hover:underline">
                     <LinkIcon size={12} />
                     <span>Link</span>
@@ -247,16 +247,16 @@ export default function SlidingTimelineView({
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
     );
   };
 
   return (
-    <Card className="frosted-glass w-full shadow-xl flex flex-col max-h-[500px]">
-      <CardHeader className="p-4 border-b border-border/30">
+    <div className="w-full h-full flex flex-col">
+      <div className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
           <Button variant="ghost" size="icon" onClick={() => onNavigateMonth('prev')} aria-label="Previous month">
             <ChevronLeft className="h-5 w-5" />
@@ -268,8 +268,8 @@ export default function SlidingTimelineView({
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="p-4 flex-1 min-h-0 overflow-y-auto">
+      </div>
+      <div className="p-4 flex-1 min-h-0 overflow-y-auto">
         {(upcomingEvents.length === 0 && pastEvents.length === 0) ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-foreground/70">No events for {format(currentDisplayMonth, 'MMMM yyyy')}.</p>
@@ -305,7 +305,7 @@ export default function SlidingTimelineView({
               </div>
             </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
