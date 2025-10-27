@@ -119,7 +119,7 @@ export default function LandingPageChat() {
           >
             <div
                 ref={scrollAreaRef}
-                className="w-[360px] p-4 space-y-4 overflow-y-auto transition-all duration-300 max-h-[60vh] frosted-glass rounded-t-2xl"
+                className="w-[320px] p-4 space-y-4 overflow-y-auto transition-all duration-300 max-h-[60vh] frosted-glass rounded-t-2xl"
               >
               <AnimatePresence>
                 {chatHistory.map((msg, index) => (
