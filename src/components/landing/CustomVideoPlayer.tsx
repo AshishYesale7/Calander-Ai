@@ -9,10 +9,9 @@ interface CustomVideoPlayerProps {
   src: string;
   title?: string;
   description?: string;
-  logoComponent?: React.ReactNode;
 }
 
-export default function CustomVideoPlayer({ src, title, description, logoComponent }: CustomVideoPlayerProps) {
+export default function CustomVideoPlayer({ src, title, description }: CustomVideoPlayerProps) {
   const playerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -112,10 +111,6 @@ export default function CustomVideoPlayer({ src, title, description, logoCompone
         {description && <p className="title-description">{description}</p>}
         {title && <h2 className="title-main">{title}</h2>}
       </div>
-
-      {logoComponent && (
-          <div className="logo-overlay">{logoComponent}</div>
-      )}
 
       <div className={cn("controls-overlay", showControls && "active")}>
         <div className="timeline-container" onClick={handleScrub}>

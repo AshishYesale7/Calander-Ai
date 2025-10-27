@@ -191,7 +191,6 @@ const FeatureCard = ({
                             src={feature.videoUrl} 
                             title="Calendar.ai"
                             description="Feature Preview"
-                            logoComponent={<CalendarAiLogo className="w-20 h-auto" />}
                           />
                     </div>
                 </div>
