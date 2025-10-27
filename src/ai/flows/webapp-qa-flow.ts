@@ -149,6 +149,16 @@ All new users get a 30-day free trial to explore all features!`,
 - Yearly: ₹1499/year (Save 20%)
 
 All new users get a 30-day free trial to explore all features!`,
+     "plan": `We have two main plans:
+**Student Plan:**
+- Monthly: ₹59/month
+- Yearly: ₹599/year (Save 20%)
+
+**Professional Plan:**
+- Monthly: ₹149/month
+- Yearly: ₹1499/year (Save 20%)
+
+All new users get a 30-day free trial to explore all features!`,
      "plans": `We have two main plans:
 **Student Plan:**
 - Monthly: ₹59/month
@@ -167,14 +177,9 @@ All new users get a 30-day free trial to explore all features!`,
 
 const getFallbackResponse = (userInput: string): string | null => {
     const lowerInput = userInput.toLowerCase();
-    const inputWords = new Set(lowerInput.split(/\s+/)); // Split user input into unique words
+    const inputWords = new Set(lowerInput.split(/\s+/));
 
     for (const key in fallbackResponses) {
-        // Check if the input contains a key (e.g., "what is pricing" contains "pricing")
-        if (lowerInput.includes(key)) {
-            return fallbackResponses[key];
-        }
-        // Check if any word from the input is a key (e.g., "plans" is a key)
         if (inputWords.has(key)) {
             return fallbackResponses[key];
         }
