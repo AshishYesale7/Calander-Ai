@@ -56,14 +56,14 @@ const plans = {
         monthly: {
             id: 'professional_monthly',
             title: 'Monthly Pro',
-            priceINR: 149,
+            priceINR: 999,
             priceSuffix: '/ month',
             features: ['AI Meeting Assistant', 'Advanced Project Sync', 'Focus Time Automation', 'Team Collaboration (Beta)'],
         },
         yearly: {
             id: 'professional_yearly',
             title: 'Yearly Pro',
-            priceINR: 1499,
+            priceINR: 6999,
             priceSuffix: '/ year',
             features: ['Everything in Monthly Pro', 'Save 20% Annually', '24/7 Dedicated Support', 'API Access (Coming Soon)'],
         }
