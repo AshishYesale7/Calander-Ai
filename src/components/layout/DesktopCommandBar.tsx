@@ -98,11 +98,9 @@ export default function DesktopCommandBar() {
     };
     
     if (isFullScreen) {
-        if (containerRef.current) {
+        if (containerRef.current && !lastOpenPosition.current) {
           const { x, y } = containerRef.current.getBoundingClientRect();
-          if (!lastOpenPosition.current) { // Only save position if it's not already saved
-             lastOpenPosition.current = { x, y };
-          }
+          lastOpenPosition.current = { x, y };
         }
         animationControls.start({
             x: 0,
@@ -142,9 +140,13 @@ export default function DesktopCommandBar() {
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
-      if (containerRef.current) {
+      // If the bar is currently open and not in full-screen, save its position before closing.
+      if (containerRef.current && !isFullScreen) {
          const { x, y } = containerRef.current.getBoundingClientRect();
-         lastOpenPosition.current = { x, y };
+         // Only update if it's a significant move, not just the initial render.
+         if (x !== 0 || y !== 0) {
+           lastOpenPosition.current = { x, y };
+         }
       }
       
       const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
@@ -152,10 +154,6 @@ export default function DesktopCommandBar() {
         ? 80 
         : (window.innerWidth - size.closed.width) / 2;
       const closedY = window.innerHeight - size.closed.height - 24;
-      
-      // When closing, always animate to the default bottom position.
-      // And clear the last open position so it re-centers next time.
-      lastOpenPosition.current = null;
       
       animationControls.start({
         x: closedX,
@@ -165,6 +163,11 @@ export default function DesktopCommandBar() {
         borderRadius: '1.375rem',
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
+
+      // Clear the last position only when minimizing from fullscreen
+      if (lastOpenPosition.current && isFullScreen) {
+          lastOpenPosition.current = null;
+      }
     }
   }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls]);
 
