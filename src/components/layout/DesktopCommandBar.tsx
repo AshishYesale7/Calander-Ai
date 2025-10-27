@@ -10,7 +10,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator, DropdownMenuPortal } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '../ui/dropdown-menu';
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -425,8 +425,8 @@ export default function DesktopCommandBar() {
                           <div className="flex items-center gap-0.5">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white">
-                                    <Paperclip size={14}/>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-white/10 hover:text-white">
+                                    <Paperclip size={16}/>
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="frosted-glass">
