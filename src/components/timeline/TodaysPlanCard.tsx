@@ -201,7 +201,7 @@ export default function TodaysPlanCard() {
 
   return (
     <>
-      <div className="w-full frosted-glass shadow-lg rounded-lg">
+      <div className="w-full h-full frosted-glass shadow-lg rounded-lg">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
             <AccordionPrimitive.Header className="w-full">
