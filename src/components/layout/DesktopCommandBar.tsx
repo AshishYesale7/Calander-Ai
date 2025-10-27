@@ -47,6 +47,7 @@ export default function DesktopCommandBar() {
   const mcpServers = ['Calendar ai', 'Google Drive', 'Gmail', 'Slack', 'Notion'];
   const containerRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -57,6 +58,7 @@ export default function DesktopCommandBar() {
   const { isChatSidebarOpen, chattingWith } = useChat();
 
   const [selectedAction, setSelectedAction] = useState('Auto');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (chatSessions.length === 0) {
@@ -293,9 +295,17 @@ export default function DesktopCommandBar() {
 
   const handleSend = () => {
     const textToSend = input || search;
-    if (!textToSend.trim() || isLoading || !activeChatId) return;
+    if ((!textToSend.trim() && !imagePreview) || isLoading || !activeChatId) return;
 
-    const newUserMessage: ChatMessage = { role: 'user', content: textToSend };
+    // A content string that can include an image and text
+    let content = textToSend;
+    if (imagePreview) {
+      content = `[Image Attached]\n${textToSend}`; // This is a placeholder, actual implementation might vary
+      // You'd typically want to send the image data along with the text.
+      // For the UI, we'll just show the text for now and clear the image.
+    }
+
+    const newUserMessage: ChatMessage = { role: 'user', content: content };
     
     setChatSessions(prevSessions =>
       prevSessions.map(session => {
@@ -310,6 +320,7 @@ export default function DesktopCommandBar() {
 
     setInput('');
     setSearch('');
+    setImagePreview(null);
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -317,6 +328,19 @@ export default function DesktopCommandBar() {
         e.preventDefault();
         handleSend();
     }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+    // Reset file input to allow re-selecting the same file
+    if(event.target) event.target.value = '';
   };
 
   return (
@@ -375,6 +399,19 @@ export default function DesktopCommandBar() {
                   onPointerDown={(e) => e.stopPropagation()}
               >
                   <div className="bg-gray-800/50 rounded-xl p-1.5 border border-white/10 shadow-lg w-full">
+                      {imagePreview && (
+                        <div className="relative p-2">
+                            <img src={imagePreview} alt="Preview" className="max-h-48 rounded-md" />
+                             <Button
+                                size="icon"
+                                variant="destructive"
+                                className="absolute top-0 right-0 h-6 w-6 rounded-full"
+                                onClick={() => setImagePreview(null)}
+                            >
+                                <X size={14} />
+                            </Button>
+                        </div>
+                      )}
                       <Textarea
                           ref={textareaRef}
                           placeholder="Send a message..."
@@ -393,12 +430,19 @@ export default function DesktopCommandBar() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="frosted-glass">
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
                                         <ImageIcon className="mr-2 h-4 w-4" />
                                         <span>Add photos & files</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                              <input
+                                  type="file"
+                                  ref={fileInputRef}
+                                  className="hidden"
+                                  onChange={handleFileSelect}
+                                  accept="image/*"
+                              />
                               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
                               <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
                                   rag-v1 <X size={10} className="ml-1 cursor-pointer" />
@@ -480,12 +524,19 @@ export default function DesktopCommandBar() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="frosted-glass">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Add photos & files</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                     <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileSelect}
+                        accept="image/*"
+                    />
                   <Input
                       placeholder="Ask Calendar.ai..."
                       className={cn(
