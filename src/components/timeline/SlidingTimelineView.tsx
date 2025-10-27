@@ -27,6 +27,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ScrollArea } from '../ui/scroll-area';
 
 const getEventDotColor = (type: TimelineEvent['type']): string => {
   switch (type) {
@@ -269,9 +270,10 @@ export default function SlidingTimelineView({
           </Button>
         </div>
       </div>
-      <div className="p-4 flex-1 min-h-0 overflow-y-auto">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-4">
         {(upcomingEvents.length === 0 && pastEvents.length === 0) ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full pt-16">
             <p className="text-foreground/70">No events for {format(currentDisplayMonth, 'MMMM yyyy')}.</p>
           </div>
         ) : (
@@ -305,7 +307,8 @@ export default function SlidingTimelineView({
               </div>
             </div>
         )}
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 }

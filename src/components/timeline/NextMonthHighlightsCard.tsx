@@ -6,6 +6,7 @@ import type { TimelineEvent } from '@/types';
 import { CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
+import { ScrollArea } from '../ui/scroll-area';
 
 const getPriorityStyles = (priority: TimelineEvent['priority'] = 'None') => {
     switch (priority) {
@@ -53,48 +54,51 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
 
     return (
         <div className={cn("w-full h-full flex flex-col", className)}>
-            <CardContent className="p-4 space-y-4 flex-1">
-                <div className="flex items-center">
+            <CardContent className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center flex-shrink-0">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>
                     <h3 className="font-headline text-xl text-primary">Next month</h3>
                 </div>
-
-                {nextMonthEvents.length > 0 ? (
-                    <div className="space-y-1 text-sm">
-                        {/* Header Row */}
-                        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-2 py-1 text-xs text-muted-foreground font-semibold">
-                            <span className="text-left">TASK</span>
-                            <span className="text-center w-20">PRIORITY</span>
-                            <span className="text-center w-28">STATUS</span>
-                        </div>
-                        {/* Event Rows */}
-                        {nextMonthEvents.map(event => {
-                            const statusInfo = getStatusStyles(event.status);
-                            return (
-                                <div key={event.id} className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-2 rounded-md hover:bg-background/40 border-b border-border/20 last:border-b-0">
-                                    <div className="flex flex-col truncate">
-                                        <span className="font-medium truncate">{event.title}</span>
-                                        <span className="text-xs text-muted-foreground">{format(event.date, 'MMM d')}</span>
-                                    </div>
-                                    <div className="w-20 text-center">
-                                        <div className={cn('text-xs font-bold px-2 py-1 rounded', getPriorityStyles(event.priority))}>
-                                            {event.priority !== 'None' ? event.priority : ''}
-                                        </div>
-                                    </div>
-                                     <div className="w-28 text-center">
-                                        <div className={cn('text-xs font-bold px-2 py-1 rounded', statusInfo.className)}>
-                                            {statusInfo.text}
-                                        </div>
-                                    </div>
+                <div className="flex-1 min-h-0">
+                    {nextMonthEvents.length > 0 ? (
+                        <ScrollArea className="h-full">
+                            <div className="space-y-1 text-sm pr-4">
+                                {/* Header Row */}
+                                <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-2 py-1 text-xs text-muted-foreground font-semibold">
+                                    <span className="text-left">TASK</span>
+                                    <span className="text-center w-20">PRIORITY</span>
+                                    <span className="text-center w-28">STATUS</span>
                                 </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-8">
-                        <p>No important events scheduled for next month yet.</p>
-                    </div>
-                )}
+                                {/* Event Rows */}
+                                {nextMonthEvents.map(event => {
+                                    const statusInfo = getStatusStyles(event.status);
+                                    return (
+                                        <div key={event.id} className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-2 rounded-md hover:bg-background/40 border-b border-border/20 last:border-b-0">
+                                            <div className="flex flex-col truncate">
+                                                <span className="font-medium truncate">{event.title}</span>
+                                                <span className="text-xs text-muted-foreground">{format(event.date, 'MMM d')}</span>
+                                            </div>
+                                            <div className="w-20 text-center">
+                                                <div className={cn('text-xs font-bold px-2 py-1 rounded', getPriorityStyles(event.priority))}>
+                                                    {event.priority !== 'None' ? event.priority : ''}
+                                                </div>
+                                            </div>
+                                            <div className="w-28 text-center">
+                                                <div className={cn('text-xs font-bold px-2 py-1 rounded', statusInfo.className)}>
+                                                    {statusInfo.text}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </ScrollArea>
+                    ) : (
+                        <div className="text-center text-muted-foreground h-full flex items-center justify-center">
+                            <p>No important events scheduled for next month yet.</p>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </div>
     );

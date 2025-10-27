@@ -64,8 +64,7 @@ export default function EventCalendarView({
 
   return (
     <div className={cn(
-        "w-full h-full flex flex-col transition-all duration-300",
-        isTrashOpen ? "rounded-r-none border-r-0" : "rounded-r-lg border-r"
+        "w-full h-full flex flex-col",
     )}>
       <div className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
@@ -84,7 +83,7 @@ export default function EventCalendarView({
           </div>
         </div>
       </div>
-      <div className="p-2 sm:p-4">
+      <div className="p-2 sm:p-4 flex-1 overflow-auto">
         <Calendar
           mode="single"
           onSelect={(day) => handleDayClickInternal(day)}

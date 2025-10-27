@@ -165,25 +165,23 @@ export default function DailyStreakCard() {
         }
 
         return (
-             <div className="relative z-10 p-6 text-white w-full">
+             <div className="relative z-10 p-6 text-white w-full h-full flex flex-col justify-between">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
                   border-l-[10px] border-l-transparent
                   border-b-[10px] border-b-amber-600
                   border-r-[10px] border-r-transparent"
                 />
                 
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                        <h3 className="text-2xl font-bold">
-                            {streakData.currentStreak} day streak
-                        </h3>
-                        <div className="text-white/80 text-sm mt-1 h-5">
-                          {isInsightLoading && !streakData.insight?.text ? (
-                              <LoadingSpinner size="sm" className="text-white/80"/>
-                          ) : (
-                              <p className="animate-in fade-in duration-500">{streakData.insight?.text || 'Consistency is key.'}</p>
-                          )}
-                        </div>
+                <div className="flex-shrink-0">
+                    <h3 className="text-2xl font-bold">
+                        {streakData.currentStreak} day streak
+                    </h3>
+                    <div className="text-white/80 text-sm mt-1 h-5">
+                        {isInsightLoading && !streakData.insight?.text ? (
+                            <LoadingSpinner size="sm" className="text-white/80"/>
+                        ) : (
+                            <p className="animate-in fade-in duration-500">{streakData.insight?.text || 'Consistency is key.'}</p>
+                        )}
                     </div>
                 </div>
 
