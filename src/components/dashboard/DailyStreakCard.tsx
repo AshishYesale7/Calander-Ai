@@ -165,7 +165,7 @@ export default function DailyStreakCard() {
         }
 
         return (
-             <div className="relative z-10 p-6 text-white w-full h-full flex flex-col justify-between">
+             <div className="relative z-10 p-6 text-white w-full h-full flex flex-col justify-between rounded-lg">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
                   border-l-[10px] border-l-transparent
                   border-b-[10px] border-b-amber-600
@@ -218,7 +218,7 @@ export default function DailyStreakCard() {
     }
 
     return (
-        <div className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col">
+        <div className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col rounded-lg">
             <CardContent className="p-0 flex-1 flex flex-col justify-center">
                 {renderContent()}
             </CardContent>

@@ -53,7 +53,7 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
     }, [events]);
 
     return (
-        <div className={cn("w-full h-full flex flex-col", className)}>
+        <div className={cn("w-full h-full flex flex-col rounded-lg", className)}>
             <CardContent className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center flex-shrink-0">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>

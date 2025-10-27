@@ -64,7 +64,7 @@ export default function EventCalendarView({
 
   return (
     <div className={cn(
-        "w-full h-full flex flex-col",
+        "w-full h-full flex flex-col rounded-lg",
     )}>
       <div className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">

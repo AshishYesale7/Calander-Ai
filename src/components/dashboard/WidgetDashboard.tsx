@@ -54,7 +54,7 @@ export default function WidgetDashboard({
         cols={12}
         rowHeight={100}
         isDraggable={true}
-        isResizable={true} 
+        isResizable={true}
         compactType="vertical"
         draggableHandle=".drag-handle"
       >
@@ -62,7 +62,7 @@ export default function WidgetDashboard({
           return (
             <div
               key={item.i}
-              className="frosted-glass overflow-hidden rounded-lg relative group transition-all duration-300"
+              className="frosted-glass rounded-lg relative group transition-all duration-300"
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="w-full h-full pt-4">

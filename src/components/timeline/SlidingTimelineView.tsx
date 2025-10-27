@@ -8,6 +8,7 @@ import { CalendarDays, Bot, Trash2, ChevronLeft, ChevronRight, Clock, ExternalLi
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isToday as dfnsIsToday, formatDistanceToNowStrict, isFuture, isPast, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,7 +28,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ScrollArea } from '../ui/scroll-area';
 
 const getEventDotColor = (type: TimelineEvent['type']): string => {
   switch (type) {
@@ -226,7 +226,7 @@ export default function SlidingTimelineView({
             
             <div className="space-y-1">
               {event.status && (
-                <div className="text-xs flex items-center">
+                <div className="text-xs mb-1 flex items-center">
                     Status:
                     <Badge variant={statusBadge.variant} className={cn("capitalize ml-1.5", statusBadge.className)}>
                     {event.status.replace(/-/g, ' ')}
@@ -256,7 +256,7 @@ export default function SlidingTimelineView({
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col rounded-lg">
       <div className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
           <Button variant="ghost" size="icon" onClick={() => onNavigateMonth('prev')} aria-label="Previous month">
