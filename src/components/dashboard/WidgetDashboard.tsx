@@ -1,48 +1,63 @@
+
 'use client';
 
-import React from 'react';
-import GridLayout from 'react-grid-layout';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import React, { Children } from 'react';
+import RGL, { WidthProvider } from 'react-grid-layout';
+import TodaysPlanCard from '../timeline/TodaysPlanCard';
+import DailyStreakCard from './DailyStreakCard';
+import EventCalendarView from '../timeline/EventCalendarView';
+import SlidingTimelineView from '../timeline/SlidingTimelineView';
+import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
+import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 
-export default function WidgetDashboard() {
+const ReactGridLayout = WidthProvider(RGL);
+
+export default function WidgetDashboard({ 
+    activeEvents, onMonthChange, onDayClick, onSync, 
+    isSyncing, onToggleTrash, isTrashOpen, activeDisplayMonth, 
+    onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
+    children
+}: any) {
+  
   const layout = [
-    { i: 'a', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'b', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'c', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+    { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
+    { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+    { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+    { i: 'emails', x: 8, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+    { i: 'next-month', x: 0, y: 7, w: 12, h: 3, minW: 6, minH: 3 },
   ];
 
+  const components: { [key: string]: React.ReactNode } = {
+    plan: <TodaysPlanCard />,
+    streak: <DailyStreakCard />,
+    calendar: <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={onMonthChange} onDayClick={onDayClick} onSync={onSync} isSyncing={isSyncing} onToggleTrash={onToggleTrash} isTrashOpen={isTrashOpen} />,
+    timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
+    emails: <ImportantEmailsCard />,
+    next-month: <NextMonthHighlightsCard events={activeEvents} />,
+  };
+
   return (
-    <GridLayout className="layout" layout={layout} cols={12} rowHeight={100} width={1200}>
-      <div key="a">
-        <Card className="w-full h-full frosted-glass">
-          <CardHeader>
-            <CardTitle>Widget A</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>This is a draggable and resizable widget.</p>
-          </CardContent>
-        </Card>
-      </div>
-      <div key="b">
-        <Card className="w-full h-full frosted-glass">
-          <CardHeader>
-            <CardTitle>Widget B</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Another widget that you can move around.</p>
-          </CardContent>
-        </Card>
-      </div>
-      <div key="c">
-        <Card className="w-full h-full frosted-glass">
-          <CardHeader>
-            <CardTitle>Widget C</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Customize your dashboard layout.</p>
-          </CardContent>
-        </Card>
-      </div>
-    </GridLayout>
+    <div className="relative">
+      <ReactGridLayout
+        className="layout"
+        layout={layout}
+        cols={12}
+        rowHeight={100}
+        isDraggable={true}
+        isResizable={true}
+        draggableHandle=".drag-handle"
+      >
+        {layout.map(item => (
+          <div key={item.i} className="frosted-glass overflow-hidden rounded-lg relative group">
+            <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="w-full h-full pt-4">
+              {components[item.i]}
+            </div>
+          </div>
+        ))}
+      </ReactGridLayout>
+      {children}
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -136,7 +135,7 @@ export default function DashboardPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeDisplayMonth, setActiveDisplayMonth] = useState<Date>(startOfMonth(new Date()));
-  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
+  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(null);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
@@ -456,8 +455,6 @@ export default function DashboardPage() {
             description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
         });
     } catch (error: any) {
-        // Since the service function no longer throws for sync errors, this catch is for other issues (e.g., Firestore).
-        // A specific error message for sync failure is now passed.
         let description = 'An unknown error occurred while saving the event.';
         if (typeof error.message === 'string') {
             if (error.message.includes('Google Calendar')) {
@@ -467,7 +464,6 @@ export default function DashboardPage() {
             }
         }
         toast({ title: 'Save Error', description, variant: 'destructive', duration: 8000 });
-        // Fetch events again to ensure UI is consistent with the database state.
         await fetchAllEvents();
     }
   }, [handleCloseEditModal, toast, isAddingNewEvent, user, fetchAllEvents, timezone]);
@@ -674,5 +670,26 @@ export default function DashboardPage() {
     );
   }
 
-  return <WidgetDashboard />;
+  return (
+    <WidgetDashboard 
+        activeEvents={activeEvents} 
+        onMonthChange={setActiveDisplayMonth} 
+        onDayClick={handleDayClickFromCalendar}
+        onSync={handleSyncCalendarData}
+        isSyncing={isLoading}
+        onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
+        isTrashOpen={isTrashPanelOpen}
+        activeDisplayMonth={activeDisplayMonth}
+        onNavigateMonth={handleMonthNavigationForSharedViews}
+        onDeleteEvent={handleDeleteTimelineEvent}
+        onEditEvent={handleOpenEditModal}
+        handleOpenEditModal={handleOpenEditModal}
+    >
+      {isTrashPanelOpen && (
+          <TrashPanel deletedEvents={recentlyDeletedEvents} onRestore={handleRestoreEvent} onPermanentDelete={handlePermanentDelete} onClose={() => setIsTrashPanelOpen(false)} />
+      )}
+      {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
+      {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
+    </WidgetDashboard>
+  );
 }
