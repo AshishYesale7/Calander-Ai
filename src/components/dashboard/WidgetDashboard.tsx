@@ -24,7 +24,7 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   
   const defaultLayout = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 1 },
     { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
     { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
