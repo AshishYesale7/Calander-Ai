@@ -213,7 +213,7 @@ export default function TodaysPlanCard() {
                     </Button>
                     <AccordionTrigger className="flex-1 p-0 hover:no-underline group min-w-0">
                          <div className="flex-1 min-w-0">
-                            <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
+                            <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center truncate">
                             <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
                             <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
                             </CardTitle>
