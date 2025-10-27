@@ -425,9 +425,9 @@ export default function DesktopCommandBar() {
                           <div className="flex items-center gap-0.5">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-white/10 hover:text-white">
-                                    <Paperclip size={16}/>
-                                  </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-white/10 hover:text-white">
+                                        <Paperclip size={18}/>
+                                    </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="frosted-glass">
                                     <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
@@ -443,7 +443,7 @@ export default function DesktopCommandBar() {
                                   onChange={handleFileSelect}
                                   accept="image/*"
                               />
-                              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={18}/></Button>
                               <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
                                   rag-v1 <X size={10} className="ml-1 cursor-pointer" />
                               </Badge>
@@ -481,7 +481,7 @@ export default function DesktopCommandBar() {
                                     </DropdownMenuSub>
                                   </DropdownMenuContent>
                               </DropdownMenu>
-                              <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500" onClick={handleSend} disabled={isLoading}><ArrowUp size={14}/></Button>
+                              <Button size="icon" className="h-8 w-8 bg-gray-600 hover:bg-gray-500" onClick={handleSend} disabled={isLoading}><ArrowUp size={18}/></Button>
                           </div>
                       </div>
                   </div>
@@ -519,9 +519,9 @@ export default function DesktopCommandBar() {
                 <div className="flex items-center w-full translate-y-[-2px]">
                    <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white">
-                            <Paperclip size={14}/>
-                          </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-white/10 hover:text-white">
+                                <Paperclip size={18}/>
+                            </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="frosted-glass">
                             <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
