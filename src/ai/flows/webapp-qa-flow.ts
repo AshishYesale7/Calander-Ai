@@ -150,8 +150,10 @@ const answerWebAppQuestionsFlow = ai.defineFlow({
             };
         }
         console.error("Error in WebApp QA flow:", e);
-        // Throw the error so the client can handle it, which prevents the 'wow' duplication.
-        throw new Error("I'm sorry, I encountered an error and can't provide a response right now.");
+        // Instead of throwing, return a friendly error message to the user.
+        return {
+            response: "I'm sorry, I encountered an error and can't provide a response right now.",
+        };
     }
 });
 
