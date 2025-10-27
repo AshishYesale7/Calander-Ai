@@ -54,7 +54,7 @@ export default function WidgetDashboard({
         cols={12}
         rowHeight={100}
         isDraggable={true}
-        isResizable={true} // Enable built-in resizing
+        isResizable={true} 
         compactType="vertical"
         draggableHandle=".drag-handle"
       >
@@ -76,4 +76,3 @@ export default function WidgetDashboard({
     </div>
   );
 }
-
