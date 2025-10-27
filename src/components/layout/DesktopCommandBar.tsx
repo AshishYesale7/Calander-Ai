@@ -82,33 +82,9 @@ export default function DesktopCommandBar() {
   const animationControls = useAnimation();
   const isInitialized = useRef(false);
 
-  // DO NOT DELETE: This comment is for preserving the logic.
-  // The restricted dragging logic is implemented here to keep the component within screen bounds.
-  const getDragConstraints = () => {
-    if (containerRef.current) {
-      const parent = document.body;
-      if (parent) {
-        const parentRect = parent.getBoundingClientRect();
-        const selfRect = containerRef.current.getBoundingClientRect();
-        
-        return {
-          left: 0,
-          right: parentRect.width - selfRect.width,
-          top: 0,
-          bottom: parentRect.height - selfRect.height,
-        };
-      }
-    }
-    return { left: 0, right: 0, top: 0, bottom: 0 };
-  };
-
-  // DO NOT DELETE: This comment is for preserving the logic.
   // This effect handles the opening, closing, and full-screen animations.
-  // It includes "smart re-opening" logic to check screen boundaries and prevent the
-  // command bar from opening partially off-screen.
   useEffect(() => {
-    if (!isInitialized.current) {
-        // Set initial position on first render
+    if (!isInitialized.current && typeof window !== 'undefined') {
         const initialX = (window.innerWidth - size.closed.width) / 2;
         const initialY = window.innerHeight - size.closed.height - 24;
         animationControls.set({
@@ -124,8 +100,8 @@ export default function DesktopCommandBar() {
     if (isFullScreen) {
         if (containerRef.current) {
           const { x, y } = containerRef.current.getBoundingClientRect();
-          if (x !== 0 || y !== 0) { // Store position only if it's not already at the top-left
-            lastOpenPosition.current = { x, y };
+          if (!lastOpenPosition.current) { // Only save position if it's not already saved
+             lastOpenPosition.current = { x, y };
           }
         }
         animationControls.start({
@@ -140,10 +116,9 @@ export default function DesktopCommandBar() {
     }
 
     if (isOpen) {
-      // When opening, focus the textarea
       setTimeout(() => textareaRef.current?.focus(), 100);
-      let targetX, targetY;
       
+      let targetX, targetY;
       if (lastOpenPosition.current) {
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
@@ -152,7 +127,6 @@ export default function DesktopCommandBar() {
         targetY = window.innerHeight - size.open.height - 24;
       }
 
-      // Boundary checks before opening to prevent overflow.
       const rightBoundary = window.innerWidth - size.open.width - 8;
       const bottomBoundary = window.innerHeight - size.open.height - 8;
       
@@ -170,17 +144,18 @@ export default function DesktopCommandBar() {
     } else {
       if (containerRef.current) {
          const { x, y } = containerRef.current.getBoundingClientRect();
-         if (y < window.innerHeight - size.closed.height - 50) {
-            lastOpenPosition.current = { x, y };
-         }
+         lastOpenPosition.current = { x, y };
       }
       
       const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
-      
       const closedX = shouldShiftLeft
-        ? 80 // Position on the left if chat is open, just right of the main sidebar
-        : (window.innerWidth - size.closed.width) / 2; // Center it otherwise
+        ? 80 
+        : (window.innerWidth - size.closed.width) / 2;
       const closedY = window.innerHeight - size.closed.height - 24;
+      
+      // When closing, always animate to the default bottom position.
+      // And clear the last open position so it re-centers next time.
+      lastOpenPosition.current = null;
       
       animationControls.start({
         x: closedX,
@@ -193,10 +168,7 @@ export default function DesktopCommandBar() {
     }
   }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls]);
 
-  // DO NOT DELETE: This comment is for preserving the logic.
-  // This effect cycles through a predefined set of color pairs to create the
-  // animated glowing border effect. It updates CSS variables which are used by the
-  // `desktop-command-bar-glow` classes in `globals.css`.
+  // This effect cycles through a predefined set of color pairs for the border glow.
   useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [
@@ -218,30 +190,32 @@ export default function DesktopCommandBar() {
     return () => clearInterval(colorInterval);
   }, []);
 
-  // Effect for keyboard shortcuts
+  // Effect for keyboard shortcuts (Cmd/Ctrl + K and Escape)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsOpen((open) => {
-            if (!open) {
-              setTimeout(() => textareaRef.current?.focus(), 100);
-            }
-            return !open;
-        });
+        setIsOpen((open) => !open);
       }
       if (e.key === 'Escape') {
-          setIsOpen(false);
-          setIsFullScreen(false);
+          if (isFullScreen) {
+            setIsFullScreen(false);
+          } else if (isOpen) {
+            setIsOpen(false);
+          }
       }
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [isOpen, isFullScreen]);
 
   const handleToggleFullScreen = () => {
     setIsFullScreen(prev => !prev);
   }
+  
+  const handleMinimize = () => {
+    setIsFullScreen(false);
+  };
 
   const { modelName, modelVersion } = useMemo(() => {
     const parts = selectedModel.split(' ');
@@ -289,7 +263,6 @@ export default function DesktopCommandBar() {
     if (lastMessage && lastMessage.role === 'user') {
       handleAIResponse(activeChat.messages);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChat?.messages, activeChatId]);
   
   const handleNewChat = () => {
@@ -303,12 +276,9 @@ export default function DesktopCommandBar() {
     const textToSend = input || search;
     if ((!textToSend.trim() && !imagePreview) || isLoading || !activeChatId) return;
 
-    // A content string that can include an image and text
     let content = textToSend;
     if (imagePreview) {
-      content = `[Image Attached]\n${textToSend}`; // This is a placeholder, actual implementation might vary
-      // You'd typically want to send the image data along with the text.
-      // For the UI, we'll just show the text for now and clear the image.
+      content = `[Image Attached]\n${textToSend}`;
     }
 
     const newUserMessage: ChatMessage = { role: 'user', content: content };
@@ -345,7 +315,6 @@ export default function DesktopCommandBar() {
         };
         reader.readAsDataURL(file);
     }
-    // Reset file input to allow re-selecting the same file
     if(event.target) event.target.value = '';
   };
 
@@ -355,21 +324,6 @@ export default function DesktopCommandBar() {
       setIsFullScreen(false);
     }
   };
-  
-  const handleMinimize = () => {
-    setIsFullScreen(false);
-  };
-
-  const chatHeaderDragControls = {
-      start: (e: React.PointerEvent) => {
-        if (dragControls && typeof dragControls.start === 'function') {
-            dragControls.start(e);
-        }
-      },
-      onBack: handleClose,
-      handleToggleFullScreen: handleToggleFullScreen,
-      isFullScreen: isFullScreen
-  }
 
   return (
     <motion.div
@@ -378,15 +332,24 @@ export default function DesktopCommandBar() {
       dragListener={false} 
       dragControls={dragControls}
       dragMomentum={false}
-      dragConstraints={getDragConstraints()}
+      dragConstraints={{
+        left: 8,
+        right: typeof window !== 'undefined' ? window.innerWidth - size.open.width - 8 : 0,
+        top: 8,
+        bottom: typeof window !== 'undefined' ? window.innerHeight - size.open.height - 8 : 0,
+      }}
       dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
       onDragStart={() => {
-        document.body.style.userSelect = 'none';
+        if (document.body) document.body.style.userSelect = 'none';
       }}
       onDragEnd={() => {
-        document.body.style.userSelect = '';
+        if (document.body) document.body.style.userSelect = '';
+        if (containerRef.current) {
+          const { x, y } = containerRef.current.getBoundingClientRect();
+          lastOpenPosition.current = { x, y };
+        }
       }}
     >
       <motion.div 
@@ -556,8 +519,8 @@ export default function DesktopCommandBar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="frosted-glass">
                             <DropdownMenuItem onSelect={(e) => {
-                                e.preventDefault();
-                                setTimeout(() => fileInputRef.current?.click(), 0);
+                              e.preventDefault();
+                              setTimeout(() => fileInputRef.current?.click(), 0);
                             }}>
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Add photos & files</span>
