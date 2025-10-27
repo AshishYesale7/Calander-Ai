@@ -24,6 +24,20 @@ export interface ChatSession {
   createdAt: Date;
 }
 
+const actionItems = [
+    { id: 'auto', label: 'Auto', icon: Sparkles },
+    { id: 'image', label: 'Create image', icon: ImageIcon },
+    { id: 'thinking', label: 'Thinking', icon: Lightbulb },
+    { id: 'research', label: 'Deep research', icon: Telescope },
+    { id: 'study', label: 'Study and learn', icon: BookOpen },
+];
+
+const moreActionItems = [
+    { id: 'web', label: 'Web search', icon: Globe },
+    { id: 'canvas', label: 'Canvas', icon: Wand2 },
+];
+
+
 export default function DesktopCommandBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -41,6 +55,8 @@ export default function DesktopCommandBar() {
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
   const { isChatSidebarOpen, chattingWith } = useChat();
+
+  const [selectedAction, setSelectedAction] = useState('Auto');
 
   useEffect(() => {
     if (chatSessions.length === 0) {
@@ -390,29 +406,19 @@ export default function DesktopCommandBar() {
                           </div>
                           <div className="flex items-center gap-1">
                               <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
-                              <DropdownMenu>
+                               <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                      <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">
-                                          Auto <ChevronDown className="h-3 w-3 ml-1" />
+                                      <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white capitalize">
+                                          {selectedAction} <ChevronDown className="h-3 w-3 ml-1" />
                                       </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="frosted-glass w-56">
-                                    <DropdownMenuItem>
-                                      <ImageIcon className="mr-2 h-4 w-4" />
-                                      <span>Create image</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <Lightbulb className="mr-2 h-4 w-4" />
-                                      <span>Thinking</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <Telescope className="mr-2 h-4 w-4" />
-                                      <span>Deep research</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <BookOpen className="mr-2 h-4 w-4" />
-                                      <span>Study and learn</span>
-                                    </DropdownMenuItem>
+                                    {actionItems.filter(item => item.label !== selectedAction).map(item => (
+                                        <DropdownMenuItem key={item.id} onSelect={() => setSelectedAction(item.label)}>
+                                          <item.icon className="mr-2 h-4 w-4" />
+                                          <span>{item.label}</span>
+                                        </DropdownMenuItem>
+                                    ))}
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
                                             <MoreHorizontal className="mr-2 h-4 w-4" />
@@ -420,14 +426,12 @@ export default function DesktopCommandBar() {
                                         </DropdownMenuSubTrigger>
                                         <DropdownMenuPortal>
                                           <DropdownMenuSubContent className="frosted-glass">
-                                            <DropdownMenuItem>
-                                              <Globe className="mr-2 h-4 w-4" />
-                                              <span>Web search</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                              <Wand2 className="mr-2 h-4 w-4" />
-                                              <span>Canvas</span>
-                                            </DropdownMenuItem>
+                                            {moreActionItems.map(item => (
+                                                <DropdownMenuItem key={item.id} onSelect={() => setSelectedAction(item.label)}>
+                                                  <item.icon className="mr-2 h-4 w-4" />
+                                                  <span>{item.label}</span>
+                                                </DropdownMenuItem>
+                                            ))}
                                           </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
                                     </DropdownMenuSub>
@@ -469,19 +473,19 @@ export default function DesktopCommandBar() {
                 onPointerDown={(e) => dragControls.start(e)}
               >
                 <div className="flex items-center w-full translate-y-[-2px]">
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                   <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white">
-                              <Paperclip size={14}/>
+                            <Paperclip size={14}/>
                           </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="frosted-glass">
-                          <DropdownMenuItem>
-                              <ImageIcon className="mr-2 h-4 w-4" />
-                              <span>Add photos & files</span>
-                          </DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="frosted-glass">
+                            <DropdownMenuItem>
+                                <ImageIcon className="mr-2 h-4 w-4" />
+                                <span>Add photos & files</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   <Input
                       placeholder="Ask Calendar.ai..."
                       className={cn(
@@ -498,27 +502,17 @@ export default function DesktopCommandBar() {
                   />
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">
-                              Auto <ChevronDown className="h-3 w-3 ml-1" />
+                          <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white capitalize">
+                              {selectedAction} <ChevronDown className="h-3 w-3 ml-1" />
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="frosted-glass w-56">
-                        <DropdownMenuItem>
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          <span>Create image</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Lightbulb className="mr-2 h-4 w-4" />
-                          <span>Thinking</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Telescope className="mr-2 h-4 w-4" />
-                          <span>Deep research</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <BookOpen className="mr-2 h-4 w-4" />
-                          <span>Study and learn</span>
-                        </DropdownMenuItem>
+                        {actionItems.filter(item => item.label !== selectedAction).map(item => (
+                            <DropdownMenuItem key={item.id} onSelect={() => setSelectedAction(item.label)}>
+                              <item.icon className="mr-2 h-4 w-4" />
+                              <span>{item.label}</span>
+                            </DropdownMenuItem>
+                        ))}
                          <DropdownMenuSub>
                             <DropdownMenuSubTrigger>
                                 <MoreHorizontal className="mr-2 h-4 w-4" />
@@ -526,14 +520,12 @@ export default function DesktopCommandBar() {
                             </DropdownMenuSubTrigger>
                              <DropdownMenuPortal>
                                 <DropdownMenuSubContent className="frosted-glass">
-                                <DropdownMenuItem>
-                                    <Globe className="mr-2 h-4 w-4" />
-                                    <span>Web search</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <Wand2 className="mr-2 h-4 w-4" />
-                                    <span>Canvas</span>
-                                </DropdownMenuItem>
+                                   {moreActionItems.map(item => (
+                                        <DropdownMenuItem key={item.id} onSelect={() => setSelectedAction(item.label)}>
+                                          <item.icon className="mr-2 h-4 w-4" />
+                                          <span>{item.label}</span>
+                                        </DropdownMenuItem>
+                                    ))}
                                 </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                         </DropdownMenuSub>
