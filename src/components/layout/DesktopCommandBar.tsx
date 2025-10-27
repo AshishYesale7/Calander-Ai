@@ -370,51 +370,7 @@ export default function DesktopCommandBar() {
                       />
                       <div className="mt-1.5 flex justify-between items-center">
                           <div className="flex items-center gap-0.5">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="frosted-glass w-56">
-                                  <DropdownMenuItem>
-                                    <Paperclip className="mr-2 h-4 w-4" />
-                                    <span>Add photos & files</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem>
-                                    <ImageIcon className="mr-2 h-4 w-4" />
-                                    <span>Create image</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Lightbulb className="mr-2 h-4 w-4" />
-                                    <span>Thinking</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Telescope className="mr-2 h-4 w-4" />
-                                    <span>Deep research</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <BookOpen className="mr-2 h-4 w-4" />
-                                    <span>Study and learn</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSub>
-                                      <DropdownMenuSubTrigger>
-                                          <MoreHorizontal className="mr-2 h-4 w-4" />
-                                          <span>More</span>
-                                      </DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent className="frosted-glass">
-                                        <DropdownMenuItem>
-                                          <Globe className="mr-2 h-4 w-4" />
-                                          <span>Web search</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                          <Wand2 className="mr-2 h-4 w-4" />
-                                          <span>Canvas</span>
-                                        </DropdownMenuItem>
-                                      </DropdownMenuSubContent>
-                                  </DropdownMenuSub>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
                               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
                               <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
                                   rag-v1 <X size={10} className="ml-1 cursor-pointer" />
@@ -422,15 +378,50 @@ export default function DesktopCommandBar() {
                           </div>
                           <div className="flex items-center gap-1">
                               <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
-                               <DropdownMenu>
+                              <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                       <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">
                                           Auto <ChevronDown className="h-3 w-3 ml-1" />
                                       </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="frosted-glass">
-                                      <DropdownMenuItem>Auto</DropdownMenuItem>
-                                      <DropdownMenuItem>Insert</DropdownMenuItem>
+                                  <DropdownMenuContent className="frosted-glass w-56">
+                                    <DropdownMenuItem>
+                                      <Paperclip className="mr-2 h-4 w-4" />
+                                      <span>Add photos & files</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem>
+                                      <ImageIcon className="mr-2 h-4 w-4" />
+                                      <span>Create image</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Lightbulb className="mr-2 h-4 w-4" />
+                                      <span>Thinking</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Telescope className="mr-2 h-4 w-4" />
+                                      <span>Deep research</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <BookOpen className="mr-2 h-4 w-4" />
+                                      <span>Study and learn</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            <MoreHorizontal className="mr-2 h-4 w-4" />
+                                            <span>More</span>
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent className="frosted-glass">
+                                          <DropdownMenuItem>
+                                            <Globe className="mr-2 h-4 w-4" />
+                                            <span>Web search</span>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem>
+                                            <Wand2 className="mr-2 h-4 w-4" />
+                                            <span>Canvas</span>
+                                          </DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
                                   </DropdownMenuContent>
                               </DropdownMenu>
                               <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500" onClick={handleSend} disabled={isLoading}><ArrowUp size={14}/></Button>
