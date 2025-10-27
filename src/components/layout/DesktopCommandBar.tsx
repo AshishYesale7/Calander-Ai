@@ -10,7 +10,7 @@ import AiAssistantChat from './AiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator, DropdownMenuPortal } from '../ui/dropdown-menu';
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -411,16 +411,18 @@ export default function DesktopCommandBar() {
                                             <MoreHorizontal className="mr-2 h-4 w-4" />
                                             <span>More</span>
                                         </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent className="frosted-glass">
-                                          <DropdownMenuItem>
-                                            <Globe className="mr-2 h-4 w-4" />
-                                            <span>Web search</span>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem>
-                                            <Wand2 className="mr-2 h-4 w-4" />
-                                            <span>Canvas</span>
-                                          </DropdownMenuItem>
-                                        </DropdownMenuSubContent>
+                                        <DropdownMenuPortal>
+                                          <DropdownMenuSubContent className="frosted-glass">
+                                            <DropdownMenuItem>
+                                              <Globe className="mr-2 h-4 w-4" />
+                                              <span>Web search</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>
+                                              <Wand2 className="mr-2 h-4 w-4" />
+                                              <span>Canvas</span>
+                                            </DropdownMenuItem>
+                                          </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
                                     </DropdownMenuSub>
                                   </DropdownMenuContent>
                               </DropdownMenu>
@@ -460,7 +462,7 @@ export default function DesktopCommandBar() {
                 onPointerDown={(e) => dragControls.start(e)}
               >
                 <div className="flex items-center w-full translate-y-[-2px]">
-                  <Paperclip className="h-5 w-5 mr-3" />
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
                   <Input
                       placeholder="Ask Calendar.ai..."
                       className={cn(
@@ -475,12 +477,55 @@ export default function DesktopCommandBar() {
                         }
                       }}
                   />
-                  <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs">
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Auto
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                  <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center">
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">
+                              Auto <ChevronDown className="h-3 w-3 ml-1" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="frosted-glass w-56">
+                        <DropdownMenuItem>
+                          <Paperclip className="mr-2 h-4 w-4" />
+                          <span>Add photos & files</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          <span>Create image</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Lightbulb className="mr-2 h-4 w-4" />
+                          <span>Thinking</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Telescope className="mr-2 h-4 w-4" />
+                          <span>Deep research</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          <span>Study and learn</span>
+                        </DropdownMenuItem>
+                         <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <MoreHorizontal className="mr-2 h-4 w-4" />
+                                <span>More</span>
+                            </DropdownMenuSubTrigger>
+                             <DropdownMenuPortal>
+                                <DropdownMenuSubContent className="frosted-glass">
+                                <DropdownMenuItem>
+                                    <Globe className="mr-2 h-4 w-4" />
+                                    <span>Web search</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Wand2 className="mr-2 h-4 w-4" />
+                                    <span>Canvas</span>
+                                </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button size="icon" className="h-8 w-8 rounded-full bg-white text-black flex items-center justify-center ml-2" onClick={handleSend}>
                       <ArrowUp className="h-5 w-5" />
                   </Button>
                 </div>
