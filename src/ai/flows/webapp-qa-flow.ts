@@ -167,8 +167,15 @@ All new users get a 30-day free trial to explore all features!`,
 
 const getFallbackResponse = (userInput: string): string | null => {
     const lowerInput = userInput.toLowerCase();
+    const inputWords = new Set(lowerInput.split(/\s+/)); // Split user input into unique words
+
     for (const key in fallbackResponses) {
+        // Check if the input contains a key (e.g., "what is pricing" contains "pricing")
         if (lowerInput.includes(key)) {
+            return fallbackResponses[key];
+        }
+        // Check if any word from the input is a key (e.g., "plans" is a key)
+        if (inputWords.has(key)) {
             return fallbackResponses[key];
         }
     }
