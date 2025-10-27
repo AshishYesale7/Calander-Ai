@@ -378,7 +378,17 @@ export default function DesktopCommandBar() {
                           </div>
                           <div className="flex items-center gap-1">
                               <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">User</Button>
-                              <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">Insert</Button>
+                               <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="secondary" className="h-6 text-xs bg-white/20 text-white">
+                                          Auto <ChevronDown className="h-3 w-3 ml-1" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="frosted-glass">
+                                      <DropdownMenuItem>Auto</DropdownMenuItem>
+                                      <DropdownMenuItem>Insert</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
                               <Button size="icon" className="h-6 w-6 bg-gray-600 hover:bg-gray-500" onClick={handleSend} disabled={isLoading}><ArrowUp size={14}/></Button>
                           </div>
                       </div>
@@ -447,5 +457,3 @@ export default function DesktopCommandBar() {
     </motion.div>
   );
 }
-
-    
