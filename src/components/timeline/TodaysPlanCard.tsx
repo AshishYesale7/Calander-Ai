@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +26,7 @@ import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
 
 interface TodaysPlanCardProps {
-    onAccordionToggle?: (isOpen: boolean) => void;
+    onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void;
 }
 
 export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProps) {
@@ -40,6 +40,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const [error, setError] = useState<string | null>(null);
   const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
   const [isRoutineSetupNeeded, setIsRoutineSetupNeeded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const fetchAndGeneratePlan = useCallback(async (date: Date, forceRegenerate: boolean = false) => {
     if (!user) {
@@ -64,9 +65,8 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
         }
       }
 
-      // Explicitly check for user preferences before attempting to generate.
       const userPrefs = await getUserPreferences(user.uid);
-      if (!userPrefs) {
+      if (!userPrefs || !userPrefs.routine || userPrefs.routine.length === 0) {
         setIsRoutineSetupNeeded(true);
         setIsLoading(false);
         return; 
@@ -109,7 +109,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest('button')) {
-      return; // It was a button click, don't toggle accordion.
+      return;
     }
     if (isRoutineSetupNeeded) {
         e.preventDefault();
@@ -126,7 +126,6 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     const updatedPlan = { ...plan, schedule: updatedSchedule };
     setPlan(updatedPlan);
 
-    // Log activity if an item is completed
     if (newStatus === 'completed' && user) {
       logUserActivity(user.uid, 'task_completed', { title: updatedPlan.schedule[itemIndex].activity });
     }
@@ -204,6 +203,22 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     );
   };
 
+  const handleAccordionValueChange = (value: string) => {
+    const isOpen = !!value;
+    if (onAccordionToggle) {
+        if (isOpen && contentRef.current) {
+            // Use a timeout to ensure the content has rendered and has a height
+            setTimeout(() => {
+                if (contentRef.current) {
+                    onAccordionToggle(true, contentRef.current.scrollHeight);
+                }
+            }, 50); // A small delay is usually enough
+        } else {
+            onAccordionToggle(false, 0);
+        }
+    }
+  };
+
   return (
     <>
       <div className="w-full h-full frosted-glass shadow-lg rounded-lg">
@@ -211,13 +226,16 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
             type="single" 
             collapsible 
             className="w-full h-full flex flex-col"
-            onValueChange={(value) => onAccordionToggle?.(!!value)}
+            onValueChange={handleAccordionValueChange}
         >
           <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col">
-            <AccordionPrimitive.Header className="w-full">
-              <AccordionPrimitive.Trigger asChild disabled={isRoutineSetupNeeded}>
-                <div className="p-4 md:p-6 w-full cursor-pointer group" onClick={handleHeaderClick}>
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <AccordionPrimitive.Header className="w-full border-b">
+              <AccordionTrigger 
+                  className="w-full p-4 md:p-6 cursor-pointer group hover:no-underline"
+                  onClickCapture={handleHeaderClick}
+                  disabled={isRoutineSetupNeeded}
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Button
                             variant="outline"
@@ -287,12 +305,13 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                       )}
                     </div>
                   </div>
-                </div>
-              </AccordionPrimitive.Trigger>
+              </AccordionTrigger>
             </AccordionPrimitive.Header>
-            <AccordionContent className="px-6 pb-6 pt-0 flex-1">
-              <CardContent className="p-0">
-                {renderContent()}
+            <AccordionContent className="flex-1 min-h-0">
+              <CardContent className="p-6 h-full">
+                 <div ref={contentRef}>
+                   {renderContent()}
+                 </div>
               </CardContent>
             </AccordionContent>
           </AccordionItem>
