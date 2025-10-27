@@ -926,3 +926,30 @@ body {
 [data-theme='wood'] .timetable-event-card .text-accent {
   color: #8c6a4d !important;
 }
+
+/* NEW: Widget Dashboard Resize Handles */
+.widget-resize-handles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.widget-resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background-color: rgba(99, 102, 241, 0.7); /* bg-blue-500 */
+  border: 2px solid white;
+  border-radius: 9999px;
+  pointer-events: all; /* Make handles interactive */
+  transform: translate(-50%, -50%);
+  z-index: 30; /* Ensure they are on top */
+}
+
+.widget-resize-handle.n { top: 0; left: 50%; cursor: ns-resize; }
+.widget-resize-handle.s { top: 100%; left: 50%; cursor: ns-resize; }
+.widget-resize-handle.e { top: 50%; left: 100%; cursor: ew-resize; }
+.widget-resize-handle.w { top: 50%; left: 0; cursor: ew-resize; }
+.widget-resize-handle.nw { top: 0; left: 0; cursor: nwse-resize; }
+.widget-resize-handle.ne { top: 0; left: 100%; cursor: nesw-resize; }
+.widget-resize-handle.sw { top: 100%; left: 0; cursor: nesw-resize; }
+.widget-resize-handle.se { top: 100%; left: 100%; cursor: nwse-resize; }
