@@ -24,7 +24,7 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   
   const layoutConfig = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+    { i: 'plan', x: 0, y: 0, w: 6, h: 'auto', minW: 4, minH: 2 },
     { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
     { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
@@ -57,13 +57,13 @@ export default function WidgetDashboard({
         isResizable={true}
         compactType="vertical"
         draggableHandle=".drag-handle"
+        autoSize={true}
       >
         {layout.map(item => {
           return (
             <div
               key={item.i}
               className="group relative"
-              style={item.i === 'plan' ? { zIndex: 10 } : {}}
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               {/* The widget component itself now provides the full card UI */}
