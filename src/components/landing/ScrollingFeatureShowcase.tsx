@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 import CustomVideoPlayer from './CustomVideoPlayer';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-const features = [
+
+const studentFeatures = [
   {
     title: 'AI-Powered Daily Planning',
     description: 'Calendar.ai intelligently crafts your daily schedule, balancing coursework, career prep, and personal growth to keep you on track.',
@@ -47,25 +49,47 @@ const features = [
         '--glow-color-4': '#FBBF24',
     }
   },
-  {
-    title: 'Integrated Extension Marketplace',
-    description: 'Enhance your productivity with powerful plugins like Codefolio Ally, which tracks your competitive programming stats from multiple platforms.',
-    points: [
-      'Unified dashboard for Codeforces, LeetCode, etc.',
-      'Visualizes progress with graphs and charts.',
-      'Automatic reminders for upcoming contests.',
-    ],
-    videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
-    icon: '🧩',
-    colors: {
-        '--border-color': '#22D3EE',
-        '--box-shadow-color': '#06B6D4',
-        '--glow-color-1': '#0891B2',
-        '--glow-color-2': '#06B6D4',
-        '--glow-color-3': '#A5F3FC',
-        '--glow-color-4': '#67E8F9',
-    }
-  },
+];
+
+const professionalFeatures = [
+    {
+        title: 'AI Meeting Assistant',
+        description: 'Get automated summaries and action items from your meetings, ensuring nothing falls through the cracks.',
+        points: [
+            'Real-time transcription and speaker identification.',
+            'AI-generated summaries focusing on decisions and outcomes.',
+            'Automatic creation of tasks in your project management tools.',
+        ],
+        videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
+        icon: '🤖',
+        colors: {
+            '--border-color': '#60A5FA',
+            '--box-shadow-color': '#3B82F6',
+            '--glow-color-1': '#2563EB',
+            '--glow-color-2': '#3B82F6',
+            '--glow-color-3': '#BFDBFE',
+            '--glow-color-4': '#93C5FD',
+        }
+    },
+    {
+        title: 'Team Productivity Dashboards',
+        description: 'Visualize team workload, identify bottlenecks, and ensure projects stay on track with insightful analytics.',
+        points: [
+            'Track time spent in meetings vs. deep work.',
+            'Analyze project progress against your calendar.',
+            'Get insights to optimize team collaboration.',
+        ],
+        videoUrl: 'https://assets.codepen.io/3364143/7btrrd.mp4',
+        icon: '📊',
+        colors: {
+            '--border-color': '#34D399',
+            '--box-shadow-color': '#10B981',
+            '--glow-color-1': '#059669',
+            '--glow-color-2': '#10B981',
+            '--glow-color-3': '#A7F3D0',
+            '--glow-color-4': '#6EE7B7',
+        }
+    },
 ];
 
 
@@ -74,21 +98,24 @@ const FeatureCard = ({
   index,
   progress,
   range,
+  total,
 }: {
-  feature: (typeof features)[0];
+  feature: (typeof studentFeatures)[0];
   index: number;
   progress: any;
   range: [number, number];
+  total: number;
 }) => {
     
     const scale = useTransform(progress, range, [1, 0.9]);
     const glowOpacity = useTransform(progress, range, [1, 0]);
+    const cardOffset = total > 2 ? 5 : 10;
 
     return (
       <motion.div
         style={{
             scale,
-            top: `calc(5% + ${index * 5}rem)`,
+            top: `calc(5% + ${index * cardOffset}rem)`,
         }}
         className="sticky w-full h-screen flex items-center justify-center p-4"
       >
@@ -133,31 +160,53 @@ const FeatureCard = ({
     );
 };
 
+const FeatureList = ({ features }: { features: typeof studentFeatures | typeof professionalFeatures }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+      target: containerRef,
+      offset: ['start start', 'end end'],
+    });
+
+    return (
+        <div ref={containerRef} className="relative" style={{ height: `${features.length * 100}vh` }}>
+            {features.map((feature, i) => {
+                const total = features.length;
+                const start = i / total;
+                const end = start + (1 / total);
+            
+                return (
+                    <FeatureCard
+                        key={i}
+                        index={i}
+                        feature={feature}
+                        progress={scrollYProgress}
+                        range={[start, end]}
+                        total={total}
+                    />
+                );
+            })}
+        </div>
+    );
+};
 
 export default function ScrollingFeatureShowcase() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
-
   return (
-    <div ref={containerRef} className="relative h-[300vh] my-24">
-        {features.map((feature, i) => {
-            const total = features.length;
-            const start = i / total;
-            const end = start + (1 / total);
-          
-            return (
-                <FeatureCard
-                    key={i}
-                    index={i}
-                    feature={feature}
-                    progress={scrollYProgress}
-                    range={[start, end]}
-                />
-            );
-        })}
-    </div>
+    <section id="features" className="relative z-10 my-24">
+       <Tabs defaultValue="student">
+          <div className="flex justify-center mb-16 sticky top-20 z-20">
+              <TabsList className="bg-muted p-2 border border-border/30 h-auto">
+                  <TabsTrigger value="student" className="px-8 py-2 text-base">For Students</TabsTrigger>
+                  <TabsTrigger value="professional" className="px-8 py-2 text-base">For Professionals</TabsTrigger>
+              </TabsList>
+          </div>
+
+          <TabsContent value="student">
+            <FeatureList features={studentFeatures} />
+          </TabsContent>
+          <TabsContent value="professional">
+             <FeatureList features={professionalFeatures} />
+          </TabsContent>
+      </Tabs>
+    </section>
   );
 }
