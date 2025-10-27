@@ -114,6 +114,7 @@ export default function LandingPageChat() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            className="mb-2"
           >
             <div
               ref={scrollAreaRef}
