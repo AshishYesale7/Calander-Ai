@@ -8,6 +8,7 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
@@ -24,7 +25,11 @@ import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay,
 import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
 
-export default function TodaysPlanCard() {
+interface TodaysPlanCardProps {
+    onAccordionToggle?: (isOpen: boolean) => void;
+}
+
+export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProps) {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -202,8 +207,13 @@ export default function TodaysPlanCard() {
   return (
     <>
       <div className="w-full h-full frosted-glass shadow-lg rounded-lg">
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="item-1" className="border-b-0">
+        <Accordion 
+            type="single" 
+            collapsible 
+            className="w-full h-full flex flex-col"
+            onValueChange={(value) => onAccordionToggle?.(!!value)}
+        >
+          <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col">
             <AccordionPrimitive.Header className="w-full">
               <AccordionPrimitive.Trigger asChild disabled={isRoutineSetupNeeded}>
                 <div className="p-4 md:p-6 w-full cursor-pointer group" onClick={handleHeaderClick}>
@@ -280,7 +290,7 @@ export default function TodaysPlanCard() {
                 </div>
               </AccordionPrimitive.Trigger>
             </AccordionPrimitive.Header>
-            <AccordionContent className="px-6 pb-6 pt-0">
+            <AccordionContent className="px-6 pb-6 pt-0 flex-1">
               <CardContent className="p-0">
                 {renderContent()}
               </CardContent>

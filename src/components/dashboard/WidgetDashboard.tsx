@@ -23,21 +23,40 @@ export default function WidgetDashboard({
 }: any) {
   const { user } = useAuth();
   
-  const layoutConfig = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 'auto', minW: 4, minH: 2 },
-    { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
-    { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
-    { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
-    { i: 'emails', x: 8, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
-    { i: 'next-month', x: 0, y: 7, w: 12, h: 3, minW: 6, minH: 3 },
-  ];
-  
-  const layout = user?.userType === 'professional'
-    ? layoutConfig.filter(item => item.i !== 'streak')
-    : layoutConfig;
+  const initialLayout = user?.userType === 'professional'
+    ? [
+        { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+        { i: 'calendar', x: 6, y: 0, w: 6, h: 5, minW: 3, minH: 4 },
+        { i: 'timeline', x: 0, y: 2, w: 6, h: 3, minW: 3, minH: 3 },
+        { i: 'emails', x: 6, y: 5, w: 6, h: 5, minW: 3, minH: 4 },
+        { i: 'next-month', x: 0, y: 5, w: 6, h: 5, minW: 6, minH: 3 },
+      ]
+    : [
+        { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+        { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
+        { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+        { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+        { i: 'emails', x: 8, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
+        { i: 'next-month', x: 0, y: 7, w: 12, h: 3, minW: 6, minH: 3 },
+      ];
 
+  const [layout, setLayout] = useState(initialLayout);
+
+  const handleAccordionToggle = (isOpen: boolean) => {
+    setLayout(prevLayout => 
+      prevLayout.map(item => {
+        if (item.i === 'plan') {
+          // Adjust height based on whether the accordion is open
+          // These values can be tuned for better visual appearance
+          return { ...item, h: isOpen ? 6 : 2 };
+        }
+        return item;
+      })
+    );
+  };
+  
   const components: { [key: string]: React.ReactNode } = {
-    plan: <TodaysPlanCard />,
+    plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
     streak: <DailyStreakCard />,
     calendar: <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={onMonthChange} onDayClick={onDayClick} onSync={onSync} isSyncing={isSyncing} onToggleTrash={onToggleTrash} isTrashOpen={isTrashOpen} />,
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
@@ -58,6 +77,7 @@ export default function WidgetDashboard({
         compactType="vertical"
         draggableHandle=".drag-handle"
         autoSize={true}
+        onLayoutChange={(newLayout) => setLayout(newLayout)}
       >
         {layout.map(item => {
           return (
@@ -67,7 +87,7 @@ export default function WidgetDashboard({
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               {/* The widget component itself now provides the full card UI */}
-              <div className="w-full h-full">
+              <div className="h-full">
                 {components[item.i]}
               </div>
             </div>
