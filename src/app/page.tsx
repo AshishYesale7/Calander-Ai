@@ -221,11 +221,11 @@ export default function LandingPage() {
                     <div className="absolute inset-0 bg-black/30"></div>
 
                     <div className="relative z-10 max-w-4xl">
-                        <h1 className="text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Your Calendar, Reimagined.</h1>
-                        <p className="mt-6 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold font-headline text-white leading-tight">Your Calendar, Reimagined.</h1>
+                        <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
                             Calendar.ai is your intelligent assistant for perfect organization. Sync your life, generate smart daily plans, and achieve your goals with the power of AI.
                         </p>
-                        <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-7 px-10 rounded-full">
+                        <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90 text-base sm:text-lg py-5 px-8 sm:py-7 sm:px-10 rounded-full">
                             <Link href="/auth/signup" ref={ctaButtonRef}>Get Started For Free <ArrowRight className="ml-2 h-5 w-5"/></Link>
                         </Button>
                         <p className="mt-4 text-sm text-gray-300">More reliable -&gt; less efforts -&gt; within no time.</p>
