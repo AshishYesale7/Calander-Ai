@@ -108,26 +108,31 @@ export default function LandingPageChat() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col items-center">
-      <div 
-        ref={scrollAreaRef}
-        className={cn(
-            "w-[400px] p-4 space-y-4 overflow-y-auto transition-all duration-300",
-            isOpen ? "max-h-[60vh]" : "max-h-0"
-        )}
-      >
-        <AnimatePresence>
-            {isOpen && chatHistory.map((msg, index) => (
-              <ChatBubble key={index} message={msg} />
-            ))}
-        </AnimatePresence>
-        {isOpen && isLoading && (
-            <motion.div layout className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <div
+              ref={scrollAreaRef}
+              className="w-[400px] p-4 space-y-4 overflow-y-auto transition-all duration-300 max-h-[60vh] frosted-glass rounded-t-2xl"
+            >
+              {chatHistory.map((msg, index) => (
+                <ChatBubble key={index} message={msg} />
+              ))}
+              {isLoading && (
+                <motion.div layout className="flex justify-start">
+                  <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
                     <LoadingSpinner size="sm" />
-                </div>
-            </motion.div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
       <motion.div
         layout
