@@ -63,27 +63,27 @@ export default function EventCalendarView({
   };
 
   return (
-    <div className={cn(
-        "w-full h-full flex flex-col rounded-lg",
+    <Card className={cn(
+        "w-full h-full flex flex-col frosted-glass",
     )}>
-      <div className="p-4 border-b border-border/30">
+      <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="font-headline text-2xl text-primary">
-            Event Calendar
-          </CardTitle>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
-                <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-                <span className="sr-only">Sync with Google Calendar</span>
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Open Trash</span>
-            </Button>
-          </div>
+            <CardTitle className="font-headline text-2xl text-primary">
+              Event Calendar
+            </CardTitle>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
+                  <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+                  <span className="sr-only">Sync with Google Calendar</span>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Open Trash</span>
+              </Button>
+            </div>
         </div>
-      </div>
-      <div className="p-2 sm:p-4 flex-1 overflow-auto">
+      </CardHeader>
+      <CardContent className="p-2 sm:p-4 flex-1 overflow-auto">
         <Calendar
           mode="single"
           onSelect={(day) => handleDayClickInternal(day)}
@@ -96,7 +96,7 @@ export default function EventCalendarView({
           components={{ DayContent: DayWithDotRenderer }}
           showOutsideDays={true}
         />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

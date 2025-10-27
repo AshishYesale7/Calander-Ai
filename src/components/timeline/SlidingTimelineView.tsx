@@ -256,8 +256,8 @@ export default function SlidingTimelineView({
   };
 
   return (
-    <div className="w-full h-full flex flex-col rounded-lg">
-      <div className="p-4 border-b border-border/30">
+    <Card className="w-full h-full flex flex-col frosted-glass">
+      <CardHeader>
         <div className="flex justify-between items-center">
           <Button variant="ghost" size="icon" onClick={() => onNavigateMonth('prev')} aria-label="Previous month">
             <ChevronLeft className="h-5 w-5" />
@@ -269,46 +269,48 @@ export default function SlidingTimelineView({
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
-      </div>
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-4">
-        {(upcomingEvents.length === 0 && pastEvents.length === 0) ? (
-          <div className="flex items-center justify-center h-full pt-16">
-            <p className="text-foreground/70">No events for {format(currentDisplayMonth, 'MMMM yyyy')}.</p>
-          </div>
-        ) : (
-            <div className="relative pl-5"> 
-              <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-border/70 z-0" />
-              <div className="space-y-6">
-                {upcomingEvents.map(event => renderEvent(event))}
-                
-                {pastEvents.length > 0 && (
-                  <div className="relative">
-                    <div className="absolute -left-[19px] top-4 flex flex-col items-center z-10">
-                      <History className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="ml-6 flex-1">
-                      <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="past-events" className="border-b-0">
-                          <AccordionTrigger className="flex-no-wrap -ml-1 py-1 text-sm text-muted-foreground hover:no-underline hover:text-primary focus:text-primary">
-                            <span>{pastEvents.length} Past Event(s) in {format(currentDisplayMonth, 'MMMM')}</span>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-6 pt-6 opacity-70 relative">
-                              <div className="absolute left-[-11px] top-6 bottom-0 w-0.5 bg-border/70 z-0" />
-                              {pastEvents.reverse().map(event => renderEvent(event))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </div>
-                  </div>
-                )}
-              </div>
+      </CardHeader>
+      <CardContent className="p-0 flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="p-4">
+          {(upcomingEvents.length === 0 && pastEvents.length === 0) ? (
+            <div className="flex items-center justify-center h-full pt-16">
+              <p className="text-foreground/70">No events for {format(currentDisplayMonth, 'MMMM yyyy')}.</p>
             </div>
-        )}
-        </div>
-      </ScrollArea>
-    </div>
+          ) : (
+              <div className="relative pl-5"> 
+                <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-border/70 z-0" />
+                <div className="space-y-6">
+                  {upcomingEvents.map(event => renderEvent(event))}
+                  
+                  {pastEvents.length > 0 && (
+                    <div className="relative">
+                      <div className="absolute -left-[19px] top-4 flex flex-col items-center z-10">
+                        <History className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="ml-6 flex-1">
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="past-events" className="border-b-0">
+                            <AccordionTrigger className="flex-no-wrap -ml-1 py-1 text-sm text-muted-foreground hover:no-underline hover:text-primary focus:text-primary">
+                              <span>{pastEvents.length} Past Event(s) in {format(currentDisplayMonth, 'MMMM')}</span>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-6 pt-6 opacity-70 relative">
+                                <div className="absolute left-[-11px] top-6 bottom-0 w-0.5 bg-border/70 z-0" />
+                                {pastEvents.reverse().map(event => renderEvent(event))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+          )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

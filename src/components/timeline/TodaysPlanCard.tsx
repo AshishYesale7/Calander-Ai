@@ -22,7 +22,7 @@ import { TodaysPlanContent } from './TodaysPlanContent';
 import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay, differenceInDays } from 'date-fns';
 import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
-import { CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 
 export default function TodaysPlanCard() {
@@ -145,7 +145,7 @@ export default function TodaysPlanCard() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center">
+        <div className="flex flex-col items-center justify-center h-full text-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-muted-foreground">Checking for plan...</p>
         </div>
@@ -154,7 +154,7 @@ export default function TodaysPlanCard() {
     
     if (isRoutineSetupNeeded) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center">
+        <div className="flex flex-col items-center justify-center h-full text-center">
           <Edit className="h-10 w-10 mb-4 text-accent" />
           <p className="font-semibold text-lg">Set Up Your Weekly Routine</p>
           <p className="text-sm text-muted-foreground my-2">Click the edit button in the header to define your schedule so the AI can generate your plan.</p>
@@ -164,7 +164,7 @@ export default function TodaysPlanCard() {
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center text-destructive">
+        <div className="flex flex-col items-center justify-center h-full text-center text-destructive">
           <AlertTriangle className="h-10 w-10 mb-2" />
           <p className="font-semibold">Could not generate plan</p>
           <p className="text-sm">{error}</p>
@@ -177,7 +177,7 @@ export default function TodaysPlanCard() {
     }
 
     return (
-      <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
         <p>No plan available for {format(displayDate, 'MMMM d')}.</p>
         <Button onClick={() => fetchAndGeneratePlan(displayDate, true)} className="mt-4">Generate Plan</Button>
       </div>
@@ -186,10 +186,10 @@ export default function TodaysPlanCard() {
 
   return (
     <>
-      <div className="w-full h-full pt-4">
+      <Card className="w-full h-full flex flex-col frosted-glass">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full flex flex-col h-full">
           <AccordionItem value="item-1" className="border-b-0 flex flex-col h-full">
-             <div className="flex items-center justify-between gap-2 p-4 pt-0">
+             <div className="flex items-center justify-between gap-2 p-4">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Button
                         variant="outline"
@@ -267,7 +267,7 @@ export default function TodaysPlanCard() {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      </div>
+      </Card>
       <EditRoutineModal
         isOpen={isRoutineModalOpen}
         onOpenChange={setIsRoutineModalOpen}

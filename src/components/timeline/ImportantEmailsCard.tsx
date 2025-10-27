@@ -1,7 +1,7 @@
 
 'use client';
 
-import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { RawGmailMessage, GmailLabel } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -180,8 +180,8 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
   }
 
   return (
-    <div className={cn("w-full h-full flex flex-col rounded-lg", className)}>
-      <CardHeader className="p-4 border-b border-border/30">
+    <Card className={cn("w-full h-full flex flex-col frosted-glass", className)}>
+      <CardHeader>
         <div className="flex justify-between items-center">
             <CardTitle className="font-headline text-xl text-primary flex items-center">
               <Inbox className="mr-2 h-5 w-5 text-accent" />
@@ -273,6 +273,6 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
             </div>
         </ScrollArea>
       </CardContent>
-    </div>
+    </Card>
   );
 }

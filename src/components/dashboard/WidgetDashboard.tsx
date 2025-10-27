@@ -11,6 +11,7 @@ import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { GripVertical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -22,8 +23,8 @@ export default function WidgetDashboard({
 }: any) {
   const { user } = useAuth();
   
-  const initialLayout = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 1, minW: 4, minH: 1 },
+  const layoutConfig = [
+    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
     { i: 'streak', x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
     { i: 'timeline', x: 4, y: 2, w: 4, h: 5, minW: 3, minH: 4 },
@@ -32,9 +33,9 @@ export default function WidgetDashboard({
   ];
   
   const layout = user?.userType === 'professional'
-    ? initialLayout.filter(item => item.i !== 'streak')
-    : initialLayout;
-  
+    ? layoutConfig.filter(item => item.i !== 'streak')
+    : layoutConfig;
+
   const components: { [key: string]: React.ReactNode } = {
     plan: <TodaysPlanCard />,
     streak: <DailyStreakCard />,
@@ -61,10 +62,13 @@ export default function WidgetDashboard({
           return (
             <div
               key={item.i}
-              className="frosted-glass rounded-lg relative group transition-all duration-300 overflow-hidden"
+              className="group relative" // Removed frosted-glass and other styles from here
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
-              {components[item.i]}
+              {/* The widget component itself now provides the full card UI */}
+              <div className="w-full h-full">
+                {components[item.i]}
+              </div>
             </div>
           )
         })}

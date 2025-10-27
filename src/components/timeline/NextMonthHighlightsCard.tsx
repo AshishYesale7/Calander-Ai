@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import type { TimelineEvent } from '@/types';
-import { CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { addMonths, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
@@ -53,7 +53,7 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
     }, [events]);
 
     return (
-        <div className={cn("w-full h-full flex flex-col rounded-lg", className)}>
+        <Card className={cn("w-full h-full flex flex-col frosted-glass", className)}>
             <CardContent className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center flex-shrink-0">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>
@@ -100,6 +100,6 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
                     )}
                 </div>
             </CardContent>
-        </div>
+        </Card>
     );
 }

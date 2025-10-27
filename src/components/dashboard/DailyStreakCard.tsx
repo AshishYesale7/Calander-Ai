@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useStreak } from '@/context/StreakContext';
 import { Skeleton } from '../ui/skeleton';
@@ -155,7 +155,7 @@ export default function DailyStreakCard() {
         if (isLoading) {
             return (
                 <div className="flex justify-center items-center h-full p-6">
-                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-full w-full" />
                 </div>
             )
         }
@@ -165,7 +165,7 @@ export default function DailyStreakCard() {
         }
 
         return (
-             <div className="relative z-10 p-6 text-white w-full h-full flex flex-col justify-between rounded-lg">
+             <div className="relative z-10 p-6 text-white w-full h-full flex flex-col justify-between">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
                   border-l-[10px] border-l-transparent
                   border-b-[10px] border-b-amber-600
@@ -218,7 +218,7 @@ export default function DailyStreakCard() {
     }
 
     return (
-        <div className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col rounded-lg">
+        <Card className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col frosted-glass">
             <CardContent className="p-0 flex-1 flex flex-col justify-center">
                 {renderContent()}
             </CardContent>
@@ -228,6 +228,6 @@ export default function DailyStreakCard() {
                     className="absolute top-2 right-2 h-24 w-24 opacity-30 transform -rotate-12 z-20"
                 />
             )}
-        </div>
+        </Card>
     );
 }
