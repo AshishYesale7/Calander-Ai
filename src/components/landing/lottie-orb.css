@@ -4,6 +4,12 @@
   width: 80px;
   height: 80px;
   cursor: pointer;
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.bottom-chat-bar.is-open .orb-container {
+    width: 64px;
+    height: 64px;
 }
 
 #lottie-orb {
