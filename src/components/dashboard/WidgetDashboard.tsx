@@ -62,7 +62,7 @@ export default function WidgetDashboard({
           return (
             <div
               key={item.i}
-              className="group relative frosted-glass"
+              className="group relative"
               style={item.i === 'plan' ? { zIndex: 10 } : {}}
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
