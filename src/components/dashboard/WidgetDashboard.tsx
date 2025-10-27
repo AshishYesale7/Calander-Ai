@@ -9,6 +9,7 @@ import EventCalendarView from '../timeline/EventCalendarView';
 import SlidingTimelineView from '../timeline/SlidingTimelineView';
 import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
+import { GripVertical } from 'lucide-react';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -46,6 +47,7 @@ export default function WidgetDashboard({
         rowHeight={100}
         isDraggable={true}
         isResizable={true}
+        compactType="vertical"
         draggableHandle=".drag-handle"
       >
         {layout.map(item => (
