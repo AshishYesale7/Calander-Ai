@@ -370,7 +370,19 @@ export default function DesktopCommandBar() {
                       />
                       <div className="mt-1.5 flex justify-between items-center">
                           <div className="flex items-center gap-0.5">
-                              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white">
+                                    <Paperclip size={14}/>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="frosted-glass">
+                                    <DropdownMenuItem>
+                                        <ImageIcon className="mr-2 h-4 w-4" />
+                                        <span>Add photos & files</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Sparkles size={14}/></Button>
                               <Badge variant="outline" className="bg-blue-900/50 border-blue-500/50 text-blue-300 text-[10px] py-0 px-1.5">
                                   rag-v1 <X size={10} className="ml-1 cursor-pointer" />
@@ -385,11 +397,6 @@ export default function DesktopCommandBar() {
                                       </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="frosted-glass w-56">
-                                    <DropdownMenuItem>
-                                      <Paperclip className="mr-2 h-4 w-4" />
-                                      <span>Add photos & files</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem>
                                       <ImageIcon className="mr-2 h-4 w-4" />
                                       <span>Create image</span>
@@ -462,7 +469,19 @@ export default function DesktopCommandBar() {
                 onPointerDown={(e) => dragControls.start(e)}
               >
                 <div className="flex items-center w-full translate-y-[-2px]">
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"><Paperclip size={14}/></Button>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white">
+                              <Paperclip size={14}/>
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="frosted-glass">
+                          <DropdownMenuItem>
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              <span>Add photos & files</span>
+                          </DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
                   <Input
                       placeholder="Ask Calendar.ai..."
                       className={cn(
@@ -484,11 +503,6 @@ export default function DesktopCommandBar() {
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="frosted-glass w-56">
-                        <DropdownMenuItem>
-                          <Paperclip className="mr-2 h-4 w-4" />
-                          <span>Add photos & files</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem>
                           <ImageIcon className="mr-2 h-4 w-4" />
                           <span>Create image</span>
