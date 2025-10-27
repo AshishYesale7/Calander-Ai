@@ -9,6 +9,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { answerWebAppQuestions, type WebAppQaInput, type WebAppQaOutput } from '@/ai/flows/webapp-qa-flow';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import LottieOrb from './LottieOrb';
+import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -107,7 +108,7 @@ export default function LandingPageChat() {
   };
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 flex flex-col items-center">
+    <div className="fixed bottom-4 left-0 right-4 z-40 flex flex-col items-end">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -116,20 +117,26 @@ export default function LandingPageChat() {
             exit={{ opacity: 0, height: 0 }}
             className="mb-2"
           >
-            <div
-              ref={scrollAreaRef}
-              className="w-[360px] p-4 space-y-4 overflow-y-auto transition-all duration-300 max-h-[60vh] frosted-glass rounded-t-2xl"
-            >
-              {chatHistory.map((msg, index) => (
-                <ChatBubble key={index} message={msg} />
-              ))}
-              {isLoading && (
-                <motion.div layout className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
-                    <LoadingSpinner size="sm" />
-                  </div>
-                </motion.div>
-              )}
+            <div className="w-[360px] frosted-glass rounded-t-2xl">
+              <div className="p-3 bg-black/20 rounded-t-2xl flex items-center justify-center gap-2">
+                  <CalendarAiLogo className="h-6 w-6" />
+                  <h3 className="text-sm font-semibold text-white">Calendar Ai assistant</h3>
+              </div>
+              <div
+                ref={scrollAreaRef}
+                className="w-full p-4 space-y-4 overflow-y-auto transition-all duration-300 max-h-[60vh]"
+              >
+                {chatHistory.map((msg, index) => (
+                  <ChatBubble key={index} message={msg} />
+                ))}
+                {isLoading && (
+                  <motion.div layout className="flex justify-start">
+                    <div className="max-w-[80%] rounded-2xl px-4 py-2 text-white bg-neutral-700 rounded-bl-md">
+                      <LoadingSpinner size="sm" />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
