@@ -1,8 +1,8 @@
 
 .orb-container {
   position: relative;
-  width: 56px; /* Reduced from 72px */
-  height: 56px; /* Reduced from 72px */
+  width: 72px;
+  height: 72px;
   cursor: pointer;
 }
 
