@@ -11,7 +11,7 @@ import TimelineListView from '@/components/timeline/TimelineListView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AlertCircle, Bot, Calendar, List, CalendarDays as CalendarIconLucide, PlusCircle, Upload, Download } from 'lucide-react';
+import { AlertCircle, Bot, Calendar, List, CalendarDays as CalendarIconLucide, PlusCircle, Upload, Download, Trash2 } from 'lucide-react';
 import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import type { ProcessGoogleDataInput, ActionableInsight } from '@/ai/flows/process-google-data-flow';
 import { mockTimelineEvents } from '@/data/mock';
@@ -626,6 +626,8 @@ export default function DashboardPage() {
   
   const [calendarViewMode, setCalendarViewMode] = useState<'calendar' | 'list'>('calendar');
 
+  const onToggleTrash = () => setIsTrashPanelOpen(!isTrashPanelOpen);
+
   const calendarWidget = (
     <div className="relative h-full flex flex-col">
        <Tabs defaultValue="calendar" value={calendarViewMode} onValueChange={(value) => setCalendarViewMode(value as 'calendar' | 'list')} className="relative flex-shrink-0">
@@ -705,7 +707,16 @@ export default function DashboardPage() {
             </Button>
           </div>
           <TabsContent value="calendar">
-            {calendarWidget}
+            <EventCalendarView
+                events={activeEvents}
+                month={activeDisplayMonth}
+                onMonthChange={setActiveDisplayMonth}
+                onDayClick={handleDayClickFromCalendar}
+                onSync={handleSyncCalendarData}
+                isSyncing={isLoading}
+                onToggleTrash={onToggleTrash}
+                isTrashOpen={isTrashPanelOpen}
+            />
             {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
             <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
           </TabsContent>
@@ -727,7 +738,7 @@ export default function DashboardPage() {
         onDayClick={handleDayClickFromCalendar}
         onSync={handleSyncCalendarData}
         isSyncing={isLoading}
-        onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
+        onToggleTrash={onToggleTrash}
         isTrashOpen={isTrashPanelOpen}
         activeDisplayMonth={activeDisplayMonth}
         onNavigateMonth={handleMonthNavigationForSharedViews}
