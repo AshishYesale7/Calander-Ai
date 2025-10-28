@@ -134,6 +134,10 @@ export default function WidgetDashboard({
             <div
               key={item.i}
               className="group relative"
+              style={{
+                minWidth: item.minW ? `${item.minW * (1200/12)}px` : '400px',
+                minHeight: item.minH ? `${item.minH * 100}px` : '400px',
+              }}
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
