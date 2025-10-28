@@ -337,9 +337,9 @@ export default function DesktopCommandBar() {
       dragMomentum={false}
       dragConstraints={{
         left: 8,
-        right: typeof window !== 'undefined' ? window.innerWidth - size.open.width - 8 : 0,
+        right: typeof window !== 'undefined' ? window.innerWidth - (isOpen ? size.open.width : size.closed.width) - 8 : 0,
         top: 8,
-        bottom: typeof window !== 'undefined' ? window.innerHeight - size.open.height - 8 : 0,
+        bottom: typeof window !== 'undefined' ? window.innerHeight - (isOpen ? size.open.height : size.closed.height) - 8 : 0,
       }}
       dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       style={{ position: 'fixed', zIndex: 40 }}
