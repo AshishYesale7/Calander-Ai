@@ -722,10 +722,6 @@ export default function DashboardPage() {
                 <PlusCircle className="h-5 w-5" />
                 <span className="sr-only">Add New Event</span>
               </Button>
-               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full border border-border/30">
-                  <Trash2 className="h-5 w-5" />
-                  <span className="sr-only">Open Trash</span>
-              </Button>
             </div>
           </div>
           <TabsContent value="calendar">
