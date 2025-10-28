@@ -659,8 +659,8 @@ export default function DashboardPage() {
                 </TabsList>
             </Tabs>
             <div className="flex items-center gap-1">
-              <Button onClick={() => handleOpenEditModal()} className={cn("bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0", calendarWidgetWidth < 400 ? 'w-10 h-10 p-0 rounded-full' : 'h-10')}>
-                  <PlusCircle className="h-5 w-5 md:mr-2" />
+              <Button onClick={() => handleOpenEditModal()} className={cn("bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 h-10", calendarWidgetWidth < 400 ? 'w-10 p-0 rounded-full' : 'px-4')}>
+                  <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'md:mr-2')} />
                   <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
               </Button>
                <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
@@ -672,8 +672,8 @@ export default function DashboardPage() {
        </div>
 
         <div className={cn("transition-all duration-300 flex-1 min-h-0", isTrashPanelOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
-            <Tabs value={calendarViewMode}>
-                <TabsContent value="calendar" className="mt-0 h-full">
+            <Tabs value={calendarViewMode} className="h-full flex flex-col">
+                <TabsContent value="calendar" className="mt-0 h-full flex-1">
                     <EventCalendarView
                         events={activeEvents}
                         month={activeDisplayMonth}
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                         isSyncing={isLoading}
                     />
                 </TabsContent>
-                <TabsContent value="list" className="mt-0 h-full">
+                <TabsContent value="list" className="mt-0 h-full flex-1">
                     <TimelineListView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} />
                 </TabsContent>
             </Tabs>

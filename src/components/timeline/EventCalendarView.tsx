@@ -18,7 +18,6 @@ interface EventCalendarViewProps {
   onDayClick: (day: Date, hasEvents: boolean) => void;
   onSync: () => void;
   isSyncing: boolean;
-  onToggleTrash: () => void;
 }
 
 export default function EventCalendarView({
@@ -28,7 +27,6 @@ export default function EventCalendarView({
   onDayClick,
   onSync,
   isSyncing,
-  onToggleTrash,
 }: EventCalendarViewProps) {
   const processedEvents = useMemo(() => {
     return allEventsFromProps
@@ -64,9 +62,9 @@ export default function EventCalendarView({
     <Card className={cn(
         "w-full h-full flex flex-col frosted-glass",
     )}>
-      <CardHeader className="p-0">
-        <div className="flex justify-between items-center p-4">
-            <CardTitle className="font-headline text-2xl text-primary">
+      <CardHeader>
+        <div className="flex justify-between items-center">
+            <CardTitle className="font-headline text-xl text-primary">
               Event Calendar
             </CardTitle>
             <div className="flex items-center gap-1">
