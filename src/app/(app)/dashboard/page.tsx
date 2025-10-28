@@ -660,10 +660,10 @@ export default function DashboardPage() {
             </Tabs>
             <div className="flex items-center gap-1">
               <Button onClick={() => handleOpenEditModal()} className={cn("bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 h-10", calendarWidgetWidth < 400 ? 'w-10 p-0 rounded-full' : 'px-4')}>
-                  <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'md:mr-2')} />
+                  <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'mr-2')} />
                   <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
               </Button>
-               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+               <Button variant="outline" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
                   <Trash2 className="h-5 w-5" />
                   <span className="sr-only">Open Trash</span>
               </Button>
