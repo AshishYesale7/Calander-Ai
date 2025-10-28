@@ -214,13 +214,12 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     const isOpen = !!value;
     setIsAccordionOpen(isOpen);
     if (onAccordionToggle) {
-        // Use a timeout to allow the DOM to update before measuring height
         if (isOpen) {
             setTimeout(() => {
                 if (contentRef.current) {
                     onAccordionToggle(true, contentRef.current.scrollHeight);
                 }
-            }, 50); // A small delay is usually sufficient
+            }, 50); 
         } else {
             onAccordionToggle(false, 0);
         }
@@ -229,14 +228,14 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
 
   return (
     <>
-      <div className="w-full h-full frosted-glass shadow-lg rounded-lg">
+      <div className="w-full frosted-glass shadow-lg rounded-lg">
         <Accordion 
             type="single" 
             collapsible 
-            className="w-full h-full flex flex-col"
+            className="w-full"
             onValueChange={handleAccordionValueChange}
         >
-          <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col">
+          <AccordionItem value="item-1" className="border-b-0">
             <div className="w-full border-b p-4 md:p-6 flex items-center justify-between gap-2" onClickCapture={handleHeaderClick}>
               <div className="flex items-center gap-2">
                 <Button
@@ -272,7 +271,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                          ? 'Set your weekly routine to get started'
                          : (
                            <>
-                             <span className="hidden md:inline">Your personalized schedule for </span>
+                             <span className="hidden md:inline">Your personalized schedule for </span> 
                              <span>{format(displayDate, 'MMMM d, yyyy')}.</span>
                            </>
                          )}
@@ -311,7 +310,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                 </Button>
               </div>
             </div>
-            <AccordionContent className="flex-1 min-h-0">
+            <AccordionContent>
               <div className="h-full" ref={contentRef}>
                 <ScrollArea className="h-full pr-4">
                     <div className="p-6">
@@ -331,3 +330,5 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     </>
   );
 }
+
+    
