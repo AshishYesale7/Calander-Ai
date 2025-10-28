@@ -26,9 +26,8 @@ import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
 import { ScrollArea } from '../ui/scroll-area';
 
-
 interface TodaysPlanCardProps {
-    onAccordionToggle?: (isOpen: boolean, contentHeight: number, breakpoint: string) => void;
+    onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void;
 }
 
 export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProps) {
@@ -166,15 +165,14 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     setIsAccordionOpen(isOpen);
     if (onAccordionToggle) {
         if (isOpen) {
+            // Use a short delay to allow the content to render before measuring.
             setTimeout(() => {
                 if (contentRef.current) {
-                    const breakpoint = window.innerWidth >= 1200 ? 'lg' : window.innerWidth >= 996 ? 'md' : window.innerWidth >= 768 ? 'sm' : window.innerWidth >= 480 ? 'xs' : 'xxs';
-                    onAccordionToggle(true, contentRef.current.scrollHeight, breakpoint);
+                    onAccordionToggle(true, contentRef.current.scrollHeight);
                 }
-            }, 50); 
+            }, 50); // 50ms delay
         } else {
-             const breakpoint = window.innerWidth >= 1200 ? 'lg' : window.innerWidth >= 996 ? 'md' : window.innerWidth >= 768 ? 'sm' : window.innerWidth >= 480 ? 'xs' : 'xxs';
-            onAccordionToggle(false, 0, breakpoint);
+            onAccordionToggle(false, 0);
         }
     }
   };

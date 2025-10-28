@@ -8,14 +8,15 @@ import DailyStreakCard from './DailyStreakCard';
 import SlidingTimelineView from '../timeline/SlidingTimelineView';
 import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
-import { GripVertical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { defaultLayouts, responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
+import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
+import type { Layout } from 'react-grid-layout';
+
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
-const ROW_HEIGHT = 100; // The height of one grid row in pixels.
+const ROW_HEIGHT = 100;
 
 export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
@@ -34,6 +35,7 @@ export default function WidgetDashboard({
 
   const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
+  const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
 
   useEffect(() => {
     const loadLayouts = () => {
@@ -62,13 +64,12 @@ export default function WidgetDashboard({
     loadLayouts();
   }, [user, getDefaultLayouts]);
 
-  const handleLayoutChange = (currentLayout: RGL.Layout[], allLayouts: Layouts) => {
+  const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     const layoutKey = getLayoutKey();
     if (layoutKey && isLayoutLoaded) {
         try {
-            // We save all breakpoint layouts to preserve responsiveness
             localStorage.setItem(layoutKey, JSON.stringify(allLayouts));
-            setLayouts(allLayouts); // Update state with all layouts
+            setLayouts(allLayouts);
         } catch (error) {
             toast({
               title: "Layout Save Error",
@@ -79,79 +80,33 @@ export default function WidgetDashboard({
     }
   };
 
-  const updatePlanWidgetHeight = useCallback((contentHeight: number, breakpoint: string) => {
-    setLayouts(currentLayouts => {
-        const newLayouts = { ...currentLayouts };
-        const currentBreakpointLayout = newLayouts[breakpoint] || [];
-        
-        const newBreakpointLayout = currentBreakpointLayout.map(item => {
-            if (item.i === 'plan') {
-                const requiredPixels = contentHeight + 80 + 48; // header + padding
-                const newHeightInUnits = Math.ceil(requiredPixels / ROW_HEIGHT);
-                return { ...item, h: Math.max(2, newHeightInUnits) };
-            }
-            return item;
-        });
-
-        newLayouts[breakpoint] = newBreakpointLayout;
-        
-        // Also apply a compact height for other breakpoints to avoid layout shifts on resize
-        for (const bp in newLayouts) {
-            if (bp !== breakpoint) {
-                newLayouts[bp] = newLayouts[bp].map(item => {
-                    if (item.i === 'plan') {
-                        return { ...item, h: 2 }; // Set to collapsed height
-                    }
-                    return item;
-                });
+  const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    const currentLayouts = layouts[currentBreakpoint];
+    if (!currentLayouts) return;
+    
+    const newLayout = currentLayouts.map(item => {
+        if (item.i === 'plan') {
+            if (isOpen) {
+                // Margins (top/bottom) are 16px each. Row height is 100px.
+                const requiredPixels = contentHeight + 80; // Header + padding
+                const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + 16));
+                return { ...item, h: Math.max(2, requiredRows) };
+            } else {
+                // Reset to default collapsed height
+                const defaultH = getDefaultLayouts()[currentBreakpoint as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
+                return { ...item, h: defaultH };
             }
         }
-        
-        // Persist the change
-        const layoutKey = getLayoutKey();
-        if (layoutKey) {
-            localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
-        }
-
-        return newLayouts;
+        return item;
     });
-}, [getLayoutKey]);
+    
+    const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
+    setLayouts(newLayouts);
+    // Persist this change
+    const layoutKey = getLayoutKey();
+    if(layoutKey) localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
+  }, [layouts, currentBreakpoint, getLayoutKey, getDefaultLayouts]);
 
-  const handleAccordionToggle = (isOpen: boolean, contentHeight: number, breakpoint: string) => {
-    if (isOpen) {
-        updatePlanWidgetHeight(contentHeight, breakpoint);
-    } else {
-        // Reset to default collapsed height on all breakpoints
-        setLayouts(currentLayouts => {
-            const newLayouts = { ...currentLayouts };
-            for (const bp in newLayouts) {
-                newLayouts[bp] = newLayouts[bp].map(item => {
-                    if (item.i === 'plan') {
-                        // Use default height from the template
-                        const defaultH = getDefaultLayouts()[bp as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
-                        return { ...item, h: defaultH };
-                    }
-                    return item;
-                });
-            }
-            const layoutKey = getLayoutKey();
-            if (layoutKey) {
-                localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
-            }
-            return newLayouts;
-        });
-    }
-  };
-
-  const components: { [key: string]: React.ReactNode } = useMemo(() => ({
-    plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
-    streak: <DailyStreakCard />,
-    calendar: calendarWidget,
-    timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
-    emails: <ImportantEmailsCard />,
-    'next-month': <NextMonthHighlightsCard events={activeEvents} />,
-  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth]);
-  
   const finalLayouts = useMemo(() => {
     if (user?.userType === 'professional') {
         const newLayouts: Layouts = {};
@@ -162,6 +117,15 @@ export default function WidgetDashboard({
     }
     return layouts;
   }, [layouts, user?.userType]);
+
+  const components: { [key: string]: React.ReactNode } = useMemo(() => ({
+    plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
+    streak: <DailyStreakCard />,
+    calendar: calendarWidget,
+    timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
+    emails: <ImportantEmailsCard />,
+    'next-month': <NextMonthHighlightsCard events={activeEvents} />,
+  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth]);
 
   if (!isLayoutLoaded) {
       return null;
@@ -181,8 +145,9 @@ export default function WidgetDashboard({
         compactType="vertical"
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
+        onBreakpointChange={(newBreakpoint) => setCurrentBreakpoint(newBreakpoint)}
       >
-        {finalLayouts.lg?.map(item => {
+        {(finalLayouts[currentBreakpoint] || []).map(item => {
           if (!components[item.i]) return null;
           return (
             <div
