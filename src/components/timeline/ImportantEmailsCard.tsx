@@ -180,7 +180,10 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
   }
 
   return (
-    <Card className={cn("w-full h-full flex flex-col frosted-glass", className)}>
+    <Card 
+      className={cn("w-full h-full flex flex-col frosted-glass", className)}
+      style={{ minWidth: '320px', minHeight: '400px' }}
+    >
       <CardHeader>
         <div className="flex justify-between items-center">
             <CardTitle className="font-headline text-xl text-primary flex items-center">

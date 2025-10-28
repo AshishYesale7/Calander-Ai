@@ -227,7 +227,10 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
 
   return (
     <>
-      <div className="w-full frosted-glass shadow-lg rounded-lg">
+      <div 
+        className="w-full frosted-glass shadow-lg rounded-lg"
+        style={{ minWidth: '350px', minHeight: '100px' }}
+      >
         <Accordion 
             type="single" 
             collapsible 

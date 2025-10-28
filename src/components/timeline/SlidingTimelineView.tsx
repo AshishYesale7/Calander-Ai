@@ -68,9 +68,9 @@ const getStatusBadgeVariant = (status?: TimelineEvent['status']): { variant: "de
 };
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
-  if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+  if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-5 w-5 text-accent flex-shrink-0" />;
   const Icon = event.icon || CalendarDays;
-  return <Icon className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+  return <Icon className="mr-2 h-5 w-5 text-accent flex-shrink-0" />;
 };
 
 const isMidnight = (date: Date): boolean => {
@@ -256,7 +256,10 @@ export default function SlidingTimelineView({
   };
 
   return (
-    <Card className="w-full h-full flex flex-col frosted-glass">
+    <Card 
+      className="w-full h-full flex flex-col frosted-glass"
+      style={{ minWidth: '320px', minHeight: '400px' }}
+    >
       <CardHeader>
         <div className="flex justify-between items-center">
           <Button variant="ghost" size="icon" onClick={() => onNavigateMonth('prev')} aria-label="Previous month">

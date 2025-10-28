@@ -218,7 +218,10 @@ export default function DailyStreakCard() {
     }
 
     return (
-        <Card className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col frosted-glass">
+        <Card 
+            className="relative bg-amber-600 border-amber-700 shadow-lg overflow-hidden h-full flex flex-col frosted-glass"
+            style={{ minWidth: '320px', minHeight: '280px' }}
+        >
             <CardContent className="p-0 flex-1 flex flex-col justify-center">
                 {renderContent()}
             </CardContent>

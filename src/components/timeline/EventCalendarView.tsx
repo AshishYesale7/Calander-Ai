@@ -59,9 +59,10 @@ export default function EventCalendarView({
   };
 
   return (
-    <Card className={cn(
-        "w-full h-full flex flex-col frosted-glass",
-    )}>
+    <Card 
+      className={cn("w-full h-full flex flex-col frosted-glass")}
+      style={{ minWidth: '320px', minHeight: '400px' }}
+    >
       <CardHeader>
         <div className="flex justify-between items-center">
             <CardTitle className="font-headline text-xl text-primary">

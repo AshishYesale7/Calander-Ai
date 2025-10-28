@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import type { TimelineEvent } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,21 @@ interface NextMonthHighlightsCardProps {
 }
 
 export default function NextMonthHighlightsCard({ events, className }: NextMonthHighlightsCardProps) {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [isCompact, setIsCompact] = useState(false);
+
+    useEffect(() => {
+        const observer = new ResizeObserver(entries => {
+            if (entries[0]) {
+                setIsCompact(entries[0].contentRect.width < 450);
+            }
+        });
+        if (cardRef.current) {
+            observer.observe(cardRef.current);
+        }
+        return () => observer.disconnect();
+    }, []);
+
     const nextMonthEvents = useMemo(() => {
         const now = new Date();
         const nextMonthStart = startOfMonth(addMonths(now, 1));
@@ -52,8 +67,16 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
             .slice(0, 5);
     }, [events]);
 
+    const gridClasses = isCompact 
+        ? 'grid-cols-[1fr_auto]' 
+        : 'grid-cols-[1fr_auto_auto]';
+
     return (
-        <Card className={cn("w-full h-full flex flex-col frosted-glass", className)}>
+        <Card 
+            ref={cardRef}
+            className={cn("w-full h-full flex flex-col frosted-glass", className)}
+            style={{ minWidth: '320px', minHeight: '300px' }}
+        >
             <CardContent className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center flex-shrink-0">
                     <div className="w-1 h-5 bg-primary rounded-full mr-3"></div>
@@ -64,25 +87,27 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
                         <ScrollArea className="h-full">
                             <div className="space-y-1 text-sm pr-4">
                                 {/* Header Row */}
-                                <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-2 py-1 text-xs text-muted-foreground font-semibold">
+                                <div className={cn('grid gap-4 px-2 py-1 text-xs text-muted-foreground font-semibold', gridClasses)}>
                                     <span className="text-left">TASK</span>
-                                    <span className="text-center w-20">PRIORITY</span>
+                                    {!isCompact && <span className="text-center w-20">PRIORITY</span>}
                                     <span className="text-center w-28">STATUS</span>
                                 </div>
                                 {/* Event Rows */}
                                 {nextMonthEvents.map(event => {
                                     const statusInfo = getStatusStyles(event.status);
                                     return (
-                                        <div key={event.id} className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-2 rounded-md hover:bg-background/40 border-b border-border/20 last:border-b-0">
+                                        <div key={event.id} className={cn('grid gap-4 items-center p-2 rounded-md hover:bg-background/40 border-b border-border/20 last:border-b-0', gridClasses)}>
                                             <div className="flex flex-col truncate">
                                                 <span className="font-medium truncate">{event.title}</span>
                                                 <span className="text-xs text-muted-foreground">{format(event.date, 'MMM d')}</span>
                                             </div>
-                                            <div className="w-20 text-center">
-                                                <div className={cn('text-xs font-bold px-2 py-1 rounded', getPriorityStyles(event.priority))}>
-                                                    {event.priority !== 'None' ? event.priority : ''}
+                                            {!isCompact && (
+                                                <div className="w-20 text-center">
+                                                    <div className={cn('text-xs font-bold px-2 py-1 rounded', getPriorityStyles(event.priority))}>
+                                                        {event.priority !== 'None' ? event.priority : ''}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                             <div className="w-28 text-center">
                                                 <div className={cn('text-xs font-bold px-2 py-1 rounded', statusInfo.className)}>
                                                     {statusInfo.text}
