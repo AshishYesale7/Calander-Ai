@@ -153,6 +153,21 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
+  const calendarWidgetRef = useRef<HTMLDivElement>(null);
+  const [calendarWidgetWidth, setCalendarWidgetWidth] = useState(0);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+        if (entries[0]) {
+            setCalendarWidgetWidth(entries[0].contentRect.width);
+        }
+    });
+    if (calendarWidgetRef.current) {
+        observer.observe(calendarWidgetRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
+
   const fetchAllEvents = useCallback(async () => {
       if (user) {
         try {
@@ -629,7 +644,7 @@ export default function DashboardPage() {
   const onToggleTrash = () => setIsTrashPanelOpen(!isTrashPanelOpen);
 
   const calendarWidget = (
-    <div className="relative h-full flex flex-col">
+    <div ref={calendarWidgetRef} className="relative h-full flex flex-col">
        <div className="flex-shrink-0 p-4 pb-0">
          <div className="flex justify-between items-center mb-4 gap-2">
             <Tabs defaultValue="calendar" value={calendarViewMode} onValueChange={(value) => setCalendarViewMode(value as 'calendar' | 'list')} className="relative">
@@ -643,9 +658,16 @@ export default function DashboardPage() {
                 </TabsTrigger>
                 </TabsList>
             </Tabs>
-            <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Event
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button onClick={() => handleOpenEditModal()} className={cn("bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0", calendarWidgetWidth < 400 ? 'w-10 h-10 p-0 rounded-full' : 'h-10')}>
+                  <PlusCircle className="h-5 w-5 md:mr-2" />
+                  <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
+              </Button>
+               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Open Trash</span>
+              </Button>
+            </div>
          </div>
        </div>
 
@@ -659,7 +681,6 @@ export default function DashboardPage() {
                         onDayClick={handleDayClickFromCalendar}
                         onSync={handleSyncCalendarData}
                         isSyncing={isLoading}
-                        onToggleTrash={onToggleTrash}
                     />
                 </TabsContent>
                 <TabsContent value="list" className="mt-0 h-full">
@@ -699,10 +720,16 @@ export default function DashboardPage() {
                 <List className="mr-2 h-4 w-4" /> List
               </TabsTrigger>
             </TabsList>
-            <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
-              <PlusCircle className="h-5 w-5" />
-              <span className="sr-only">Add New Event</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
+                <PlusCircle className="h-5 w-5" />
+                <span className="sr-only">Add New Event</span>
+              </Button>
+               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Open Trash</span>
+              </Button>
+            </div>
           </div>
           <TabsContent value="calendar">
             <EventCalendarView
@@ -712,7 +739,6 @@ export default function DashboardPage() {
                 onDayClick={handleDayClickFromCalendar}
                 onSync={handleSyncCalendarData}
                 isSyncing={isLoading}
-                onToggleTrash={onToggleTrash}
             />
             {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
             <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
@@ -724,6 +750,18 @@ export default function DashboardPage() {
         <ImportantEmailsCard />
         <NextMonthHighlightsCard events={activeEvents} />
         {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
+        {isTrashPanelOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
+                 <div className="absolute right-0 top-0 h-full w-full max-w-sm">
+                    <TrashPanel
+                        deletedEvents={recentlyDeletedEvents}
+                        onRestore={handleRestoreEvent}
+                        onPermanentDelete={handlePermanentDelete}
+                        onClose={() => setIsTrashPanelOpen(false)}
+                    />
+                </div>
+            </div>
+        )}
       </div>
     );
   }
@@ -735,6 +773,7 @@ export default function DashboardPage() {
         onDayClick={handleDayClickFromCalendar}
         onSync={handleSyncCalendarData}
         isSyncing={isLoading}
+        onToggleTrash={onToggleTrash}
         isTrashOpen={isTrashPanelOpen}
         activeDisplayMonth={activeDisplayMonth}
         onNavigateMonth={handleMonthNavigationForSharedViews}
