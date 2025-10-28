@@ -626,7 +626,7 @@ export default function DashboardPage() {
 
   const calendarWidget = (
     <div className="relative h-full">
-        <div className={cn("transition-all duration-300 h-full", isTrashOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
+        <div className={cn("transition-all duration-300 h-full", isTrashPanelOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
             <EventCalendarView
                 events={activeEvents}
                 month={activeDisplayMonth}
