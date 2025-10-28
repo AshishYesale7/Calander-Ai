@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import TodaysPlanCard from '../timeline/TodaysPlanCard';
 import DailyStreakCard from './DailyStreakCard';
