@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -664,7 +663,7 @@ export default function DashboardPage() {
                   <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'mr-2')} />
                   <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
               </Button>
-              <Button variant="secondary" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+              <Button onClick={onToggleTrash} className="bg-accent hover:bg-accent/90 text-accent-foreground h-10 w-10 rounded-full flex-shrink-0 p-0">
                   <Trash2 className="h-5 w-5" />
                   <span className="sr-only">Open Trash</span>
               </Button>
@@ -726,7 +725,7 @@ export default function DashboardPage() {
                 <PlusCircle className="h-5 w-5" />
                 <span className="sr-only">Add New Event</span>
               </Button>
-               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full border border-border/30">
                   <Trash2 className="h-5 w-5" />
                   <span className="sr-only">Open Trash</span>
               </Button>
