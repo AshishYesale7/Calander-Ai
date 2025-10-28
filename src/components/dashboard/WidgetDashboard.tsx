@@ -11,12 +11,12 @@ import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { GripVertical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { saveLayout, getLayout } from '@/services/layoutService';
+import { getLayout, saveLayout } from '@/services/layoutService';
+import { defaultLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 
 const ReactGridLayout = WidthProvider(RGL);
 const ROW_HEIGHT = 100; // The height of one grid row in pixels.
-const LAYOUT_STORAGE_KEY = 'dashboard-layout';
 
 export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
@@ -27,24 +27,11 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const professionalLayout = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minH: 2, minW: 4, },
-    { i: 'calendar', x: 6, y: 0, w: 6, h: 5, minH: 4, minW: 6, },
-    { i: 'timeline', x: 0, y: 2, w: 6, h: 4, minH: 3, minW: 3, },
-    { i: 'emails', x: 6, y: 5, w: 6, h: 5, minH: 4, minW: 3, },
-    { i: 'next-month', x: 0, y: 6, w: 6, h: 5, minH: 3, minW: 4, },
-  ];
-
-  const studentLayout = [
-    { i: 'plan', x: 0, y: 0, w: 6, h: 2, minH: 2, minW: 4, },
-    { i: 'streak', x: 6, y: 0, w: 6, h: 2, minH: 2, minW: 3, },
-    { i: 'calendar', x: 0, y: 2, w: 4, h: 5, minH: 4, minW: 3, },
-    { i: 'timeline', x: 4, y: 2, w: 4, h: 4, minH: 4, minW: 3, },
-    { i: 'emails', x: 8, y: 2, w: 4, h: 5, minH: 4, minW: 3, },
-    { i: 'next-month', x: 0, y: 7, w: 8, h: 3, minH: 3, minW: 4, },
-  ];
-
-  const getDefaultLayout = () => user?.userType === 'professional' ? professionalLayout : studentLayout;
+  const getDefaultLayout = () => {
+    const layout = user?.userType === 'professional' ? defaultLayouts.professional : defaultLayouts.student;
+    // Filter out streak card for professionals
+    return user?.userType === 'professional' ? layout.filter(item => item.i !== 'streak') : layout;
+  };
 
   const [layout, setLayout] = useState(getDefaultLayout());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
@@ -52,52 +39,33 @@ export default function WidgetDashboard({
   useEffect(() => {
     // Load layout from storage on mount
     const loadLayout = async () => {
-      let savedLayout = null;
-      // 1. Try local storage first for speed
-      try {
-        const localLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
-        if (localLayout) {
-          savedLayout = JSON.parse(localLayout);
-        }
-      } catch (e) {
-        console.warn("Could not parse local layout", e);
-      }
-
-      // 2. If user is logged in, try Firestore for cross-device sync
-      if (user) {
-        try {
-          const firestoreLayout = await getLayout(user.uid);
-          if (firestoreLayout) {
-            savedLayout = firestoreLayout;
-          }
-        } catch (e) {
-          console.warn("Could not fetch layout from Firestore.", e);
-        }
+      if (!user) {
+        setLayout(getDefaultLayout());
+        setIsLayoutLoaded(true);
+        return;
       }
       
-      // If we have a saved layout, use it. Otherwise, use the default.
-      if (savedLayout && Array.isArray(savedLayout)) {
-        setLayout(savedLayout);
-      } else {
-        setLayout(getDefaultLayout());
+      try {
+          const firestoreLayout = await getLayout(user.uid);
+          if (firestoreLayout && firestoreLayout.length > 0) {
+            setLayout(firestoreLayout);
+          } else {
+            setLayout(getDefaultLayout());
+          }
+      } catch (e) {
+          console.warn("Could not fetch layout from Firestore. Using default.", e);
+          setLayout(getDefaultLayout());
+      } finally {
+          setIsLayoutLoaded(true);
       }
-      setIsLayoutLoaded(true);
     };
 
     loadLayout();
   }, [user]);
 
   const handleLayoutChange = (newLayout: RGL.Layout[]) => {
-    // This function is called by ReactGridLayout on any change
     setLayout(newLayout);
-    // Save to local storage for immediate persistence
-    try {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(newLayout));
-    } catch (e) {
-      console.warn("Could not save layout to local storage", e);
-    }
-    // Save to Firestore for cross-device sync
-    if (user) {
+    if (user && isLayoutLoaded) { // Only save after initial layout is loaded
       saveLayout(user.uid, newLayout).catch(err => {
         toast({
           title: "Layout Sync Error",
@@ -123,6 +91,7 @@ export default function WidgetDashboard({
       }
       return item;
     });
+    // This state update will trigger onLayoutChange and save to Firestore
     setLayout(newLayout);
   };
   
@@ -139,11 +108,16 @@ export default function WidgetDashboard({
       return null; // Or a loading spinner
   }
 
+  // Filter layout based on user type again to ensure streak card is not shown for professionals
+  const finalLayout = user?.userType === 'professional' 
+    ? layout.filter(item => item.i !== 'streak') 
+    : layout;
+
   return (
     <div className="relative">
       <ReactGridLayout
         className="layout"
-        layout={layout}
+        layout={finalLayout}
         cols={12}
         rowHeight={ROW_HEIGHT}
         margin={[16, 16]}
@@ -153,17 +127,13 @@ export default function WidgetDashboard({
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
       >
-        {layout.map(item => {
+        {finalLayout.map(item => {
           // Only render components that are in the current layout
           if (!components[item.i]) return null;
           return (
             <div
               key={item.i}
               className="group relative"
-              style={{
-                minWidth: item.minW ? `${item.minW * (1200 / 12)}px` : '400px',
-                minHeight: item.minH ? `${item.minH * 100}px` : '400px',
-              }}
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
