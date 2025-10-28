@@ -258,7 +258,6 @@ export default function SlidingTimelineView({
   return (
     <Card 
       className="w-full h-full flex flex-col frosted-glass"
-      style={{ minWidth: '320px', minHeight: '400px' }}
     >
       <CardHeader>
         <div className="flex justify-between items-center">

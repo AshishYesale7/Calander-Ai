@@ -75,7 +75,6 @@ export default function NextMonthHighlightsCard({ events, className }: NextMonth
         <Card 
             ref={cardRef}
             className={cn("w-full h-full flex flex-col frosted-glass", className)}
-            style={{ minWidth: '320px', minHeight: '300px' }}
         >
             <CardContent className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center flex-shrink-0">
