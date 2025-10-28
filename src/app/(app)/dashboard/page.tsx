@@ -639,7 +639,7 @@ export default function DashboardPage() {
             />
         </div>
         {isTrashPanelOpen && (
-            <div className="absolute right-0 top-0 h-full w-96">
+            <div className="absolute right-0 top-0 h-full w-96 min-w-[360px]">
                 <TrashPanel
                     deletedEvents={recentlyDeletedEvents}
                     onRestore={handleRestoreEvent}
