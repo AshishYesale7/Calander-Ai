@@ -626,7 +626,7 @@ export default function DashboardPage() {
 
   const calendarWidget = (
     <div className="relative h-full">
-        <div className={cn("transition-all duration-300 h-full", isTrashPanelOpen && !isMobile && "pr-[24rem]")}>
+        <div className={cn("transition-all duration-300 h-full", isTrashOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
             <EventCalendarView
                 events={activeEvents}
                 month={activeDisplayMonth}
@@ -639,7 +639,7 @@ export default function DashboardPage() {
             />
         </div>
         {isTrashPanelOpen && (
-            <div className="absolute right-0 top-0 h-full w-96 min-w-[360px]">
+            <div className="absolute right-0 top-0 h-full w-[22rem] xl:w-96 min-w-[360px]">
                 <TrashPanel
                     deletedEvents={recentlyDeletedEvents}
                     onRestore={handleRestoreEvent}
