@@ -66,19 +66,15 @@ export default function EventCalendarView({
     <Card className={cn(
         "w-full h-full flex flex-col frosted-glass",
     )}>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-            <CardTitle className="font-headline text-2xl text-primary">
+      <CardHeader className="p-0">
+        <div className="flex justify-between items-center p-4">
+            <CardTitle className="font-headline text-2xl text-primary sr-only">
               Event Calendar
             </CardTitle>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
                   <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
                   <span className="sr-only">Sync with Google Calendar</span>
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Open Trash</span>
               </Button>
             </div>
         </div>

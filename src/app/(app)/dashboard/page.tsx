@@ -623,20 +623,49 @@ export default function DashboardPage() {
     };
     reader.readAsText(file);
   };
+  
+  const [calendarViewMode, setCalendarViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const calendarWidget = (
-    <div className="relative h-full">
-        <div className={cn("transition-all duration-300 h-full", isTrashPanelOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
-            <EventCalendarView
-                events={activeEvents}
-                month={activeDisplayMonth}
-                onMonthChange={setActiveDisplayMonth}
-                onDayClick={handleDayClickFromCalendar}
-                onSync={handleSyncCalendarData}
-                isSyncing={isLoading}
-                onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
-                isTrashOpen={isTrashPanelOpen}
-            />
+    <div className="relative h-full flex flex-col">
+       <Tabs defaultValue="calendar" value={calendarViewMode} onValueChange={(value) => setCalendarViewMode(value as 'calendar' | 'list')} className="relative flex-shrink-0">
+          <div className="flex justify-between items-center mb-4 gap-2 p-4 pb-0">
+            <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
+              <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                <Calendar className="mr-2 h-4 w-4" /> Calendar
+              </TabsTrigger>
+              <div className="w-px h-6 bg-border/50 self-center" />
+              <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                <List className="mr-2 h-4 w-4" /> List
+              </TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-1">
+               <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
+                <PlusCircle className="h-5 w-5" />
+                <span className="sr-only">Add New Event</span>
+              </Button>
+               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Open Trash</span>
+              </Button>
+            </div>
+          </div>
+        </Tabs>
+        <div className={cn("transition-all duration-300 flex-1 min-h-0", isTrashPanelOpen && !isMobile && "pr-[22rem] xl:pr-[24rem]")}>
+            {calendarViewMode === 'calendar' ? (
+                 <EventCalendarView
+                    events={activeEvents}
+                    month={activeDisplayMonth}
+                    onMonthChange={setActiveDisplayMonth}
+                    onDayClick={handleDayClickFromCalendar}
+                    onSync={handleSyncCalendarData}
+                    isSyncing={isLoading}
+                    onToggleTrash={onToggleTrash}
+                    isTrashOpen={isTrashPanelOpen}
+                />
+            ) : (
+                <TimelineListView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} />
+            )}
         </div>
         {isTrashPanelOpen && (
             <div className="absolute right-0 top-0 h-full w-[22rem] xl:w-96 min-w-[360px]">
