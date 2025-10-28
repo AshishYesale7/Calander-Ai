@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -659,11 +660,11 @@ export default function DashboardPage() {
                 </TabsList>
             </Tabs>
             <div className="flex items-center gap-1">
-              <Button onClick={() => handleOpenEditModal()} className={cn("bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 h-10", calendarWidgetWidth < 400 ? 'w-10 p-0 rounded-full' : 'px-4')}>
+              <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 h-10">
                   <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'mr-2')} />
                   <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
               </Button>
-               <Button variant="outline" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full">
+               <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-10 w-10 rounded-full border border-transparent hover:border-border">
                   <Trash2 className="h-5 w-5" />
                   <span className="sr-only">Open Trash</span>
               </Button>
