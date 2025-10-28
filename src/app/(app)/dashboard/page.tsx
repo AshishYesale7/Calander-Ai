@@ -624,6 +624,34 @@ export default function DashboardPage() {
     reader.readAsText(file);
   };
 
+  const calendarWidget = (
+    <div className="relative h-full">
+        <div className={cn("transition-all duration-300 h-full", isTrashPanelOpen && !isMobile && "pr-[24rem]")}>
+            <EventCalendarView
+                events={activeEvents}
+                month={activeDisplayMonth}
+                onMonthChange={setActiveDisplayMonth}
+                onDayClick={handleDayClickFromCalendar}
+                onSync={handleSyncCalendarData}
+                isSyncing={isLoading}
+                onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)}
+                isTrashOpen={isTrashPanelOpen}
+            />
+        </div>
+        {isTrashPanelOpen && (
+            <div className="absolute right-0 top-0 h-full w-96">
+                <TrashPanel
+                    deletedEvents={recentlyDeletedEvents}
+                    onRestore={handleRestoreEvent}
+                    onPermanentDelete={handlePermanentDelete}
+                    onClose={() => setIsTrashPanelOpen(false)}
+                />
+            </div>
+        )}
+    </div>
+  );
+
+
   if (isMobile) {
     return (
       <div className="space-y-8">
@@ -648,14 +676,7 @@ export default function DashboardPage() {
             </Button>
           </div>
           <TabsContent value="calendar">
-            <div className={cn("transition-all duration-300", isTrashPanelOpen && "pr-[24rem]")}>
-              <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={setActiveDisplayMonth} onDayClick={handleDayClickFromCalendar} onSync={handleSyncCalendarData} isSyncing={isLoading} onToggleTrash={() => setIsTrashPanelOpen(!isTrashPanelOpen)} isTrashOpen={isTrashPanelOpen} />
-            </div>
-            {isTrashPanelOpen && (
-              <div className="absolute right-0 top-0 h-full w-96">
-                  <TrashPanel deletedEvents={recentlyDeletedEvents} onRestore={handleRestoreEvent} onPermanentDelete={handlePermanentDelete} onClose={() => setIsTrashPanelOpen(false)} />
-              </div>
-            )}
+            {calendarWidget}
             {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
             <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
           </TabsContent>
@@ -684,10 +705,8 @@ export default function DashboardPage() {
         onDeleteEvent={handleDeleteTimelineEvent}
         onEditEvent={handleOpenEditModal}
         handleOpenEditModal={handleOpenEditModal}
+        calendarWidget={calendarWidget}
     >
-      {isTrashPanelOpen && (
-          <TrashPanel deletedEvents={recentlyDeletedEvents} onRestore={handleRestoreEvent} onPermanentDelete={handlePermanentDelete} onClose={() => setIsTrashPanelOpen(false)} />
-      )}
       {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </WidgetDashboard>

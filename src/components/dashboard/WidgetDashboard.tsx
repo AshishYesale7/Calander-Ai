@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import TodaysPlanCard from '../timeline/TodaysPlanCard';
 import DailyStreakCard from './DailyStreakCard';
-import EventCalendarView from '../timeline/EventCalendarView';
 import SlidingTimelineView from '../timeline/SlidingTimelineView';
 import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
@@ -23,7 +22,7 @@ export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
     isSyncing, onToggleTrash, isTrashOpen, activeDisplayMonth,
     onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
-    children
+    children, calendarWidget
 }: any) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -130,7 +129,7 @@ export default function WidgetDashboard({
   const components: { [key: string]: React.ReactNode } = {
     plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
     streak: <DailyStreakCard />,
-    calendar: <EventCalendarView events={activeEvents} month={activeDisplayMonth} onMonthChange={onMonthChange} onDayClick={onDayClick} onSync={onSync} isSyncing={isSyncing} onToggleTrash={onToggleTrash} isTrashOpen={isTrashOpen} />,
+    calendar: calendarWidget, // Use the passed calendar widget
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
     emails: <ImportantEmailsCard />,
     'next-month': <NextMonthHighlightsCard events={activeEvents} />,
