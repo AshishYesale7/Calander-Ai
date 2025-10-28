@@ -9,7 +9,6 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger as PrimitiveAccordionTrigger,
 } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
@@ -236,7 +235,10 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
             onValueChange={handleAccordionValueChange}
         >
           <AccordionItem value="item-1" className="border-b-0">
-            <div className="w-full border-b p-4 md:p-6 flex items-center justify-between gap-2" onClickCapture={handleHeaderClick}>
+            <AccordionPrimitive.Header
+              className="flex items-center justify-between gap-2 p-4 md:p-6"
+              onClickCapture={handleHeaderClick}
+            >
               <div className="flex items-center gap-2">
                 <Button
                     variant="outline"
@@ -260,7 +262,10 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                 </Button>
               </div>
 
-              <PrimitiveAccordionTrigger className="flex-1 p-0 hover:no-underline group min-w-0" disabled={isRoutineSetupNeeded}>
+              <AccordionPrimitive.Trigger
+                className="flex-1 p-0 hover:no-underline group min-w-0"
+                disabled={isRoutineSetupNeeded}
+              >
                    <div className="flex-1 min-w-0 text-left px-2">
                      <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
                        <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
@@ -280,9 +285,9 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                     {!isRoutineSetupNeeded && (
                         <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 ml-2" />
                     )}
-              </PrimitiveAccordionTrigger>
+              </AccordionPrimitive.Trigger>
               
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 pl-2">
                  <Button
                   variant="ghost"
                   size="icon"
@@ -309,14 +314,12 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                   <Edit className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </div>
-            </div>
+            </AccordionPrimitive.Header>
             <AccordionContent>
               <div className="h-full" ref={contentRef}>
-                <ScrollArea className="h-full pr-4">
-                    <div className="p-6">
-                        {renderContent()}
-                    </div>
-                </ScrollArea>
+                 <div className="p-6 pt-0">
+                    {renderContent()}
+                </div>
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -330,5 +333,3 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     </>
   );
 }
-
-    
