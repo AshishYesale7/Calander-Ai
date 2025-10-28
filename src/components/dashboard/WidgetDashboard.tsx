@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import RGL, { WidthProvider } from 'react-grid-layout';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
 import TodaysPlanCard from '../timeline/TodaysPlanCard';
 import DailyStreakCard from './DailyStreakCard';
 import SlidingTimelineView from '../timeline/SlidingTimelineView';
@@ -11,10 +11,10 @@ import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { GripVertical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { defaultLayouts } from '@/data/layout-data';
+import { defaultLayouts, responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 
-const ReactGridLayout = WidthProvider(RGL);
+const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100; // The height of one grid row in pixels.
 
 export default function WidgetDashboard({
@@ -26,51 +26,49 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const getLayoutKey = () => user ? `dashboard-layout-${user.uid}` : null;
+  const getLayoutKey = () => user ? `dashboard-layouts-${user.uid}` : null;
+  
+  const getDefaultLayouts = useCallback(() => {
+    return user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
+  }, [user?.userType]);
 
-  const getDefaultLayout = () => {
-    const layout = user?.userType === 'professional' ? defaultLayouts.professional : defaultLayouts.student;
-    // Filter out streak card for professionals
-    return user?.userType === 'professional' ? layout.filter(item => item.i !== 'streak') : layout;
-  };
-
-  const [layout, setLayout] = useState(getDefaultLayout());
+  const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
 
   useEffect(() => {
-    // Load layout from storage on mount
-    const loadLayout = () => {
+    const loadLayouts = () => {
       const layoutKey = getLayoutKey();
       if (!layoutKey) {
-        setLayout(getDefaultLayout());
+        setLayouts(getDefaultLayouts());
         setIsLayoutLoaded(true);
         return;
       }
       
       try {
-          const savedLayout = localStorage.getItem(layoutKey);
-          if (savedLayout) {
-            setLayout(JSON.parse(savedLayout));
+          const savedLayouts = localStorage.getItem(layoutKey);
+          if (savedLayouts) {
+            setLayouts(JSON.parse(savedLayouts));
           } else {
-            setLayout(getDefaultLayout());
+            setLayouts(getDefaultLayouts());
           }
       } catch (e) {
-          console.warn("Could not parse layout from localStorage. Using default.", e);
-          setLayout(getDefaultLayout());
+          console.warn("Could not parse layouts from localStorage. Using default.", e);
+          setLayouts(getDefaultLayouts());
       } finally {
           setIsLayoutLoaded(true);
       }
     };
 
-    loadLayout();
-  }, [user]);
+    loadLayouts();
+  }, [user, getDefaultLayouts]);
 
-  const handleLayoutChange = (newLayout: RGL.Layout[]) => {
+  const handleLayoutChange = (currentLayout: RGL.Layout[], allLayouts: Layouts) => {
     const layoutKey = getLayoutKey();
-    if (layoutKey && isLayoutLoaded) { // Only save after initial layout is loaded
+    if (layoutKey && isLayoutLoaded) {
         try {
-            localStorage.setItem(layoutKey, JSON.stringify(newLayout));
-            setLayout(newLayout);
+            // We save all breakpoint layouts to preserve responsiveness
+            localStorage.setItem(layoutKey, JSON.stringify(allLayouts));
+            setLayouts(allLayouts); // Update state with all layouts
         } catch (error) {
             toast({
               title: "Layout Save Error",
@@ -81,49 +79,101 @@ export default function WidgetDashboard({
     }
   };
 
-  const handleAccordionToggle = (isOpen: boolean, contentHeight: number) => {
-    const currentLayout = layout; // Use the stateful layout
-    const newLayout = currentLayout.map(item => {
-      if (item.i === 'plan') {
-        let newHeightInUnits;
-        if (isOpen) {
-          const requiredPixels = contentHeight + 80 + 48; // header + padding
-          newHeightInUnits = Math.ceil(requiredPixels / ROW_HEIGHT);
-        } else {
-          newHeightInUnits = 2; // Collapsed height
+  const updatePlanWidgetHeight = useCallback((contentHeight: number, breakpoint: string) => {
+    setLayouts(currentLayouts => {
+        const newLayouts = { ...currentLayouts };
+        const currentBreakpointLayout = newLayouts[breakpoint] || [];
+        
+        const newBreakpointLayout = currentBreakpointLayout.map(item => {
+            if (item.i === 'plan') {
+                const requiredPixels = contentHeight + 80 + 48; // header + padding
+                const newHeightInUnits = Math.ceil(requiredPixels / ROW_HEIGHT);
+                return { ...item, h: Math.max(2, newHeightInUnits) };
+            }
+            return item;
+        });
+
+        newLayouts[breakpoint] = newBreakpointLayout;
+        
+        // Also apply a compact height for other breakpoints to avoid layout shifts on resize
+        for (const bp in newLayouts) {
+            if (bp !== breakpoint) {
+                newLayouts[bp] = newLayouts[bp].map(item => {
+                    if (item.i === 'plan') {
+                        return { ...item, h: 2 }; // Set to collapsed height
+                    }
+                    return item;
+                });
+            }
         }
-        return { ...item, h: Math.max(2, newHeightInUnits) };
-      }
-      return item;
+        
+        // Persist the change
+        const layoutKey = getLayoutKey();
+        if (layoutKey) {
+            localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
+        }
+
+        return newLayouts;
     });
-    // This state update will trigger onLayoutChange and save to localStorage
-    setLayout(newLayout);
+}, [getLayoutKey]);
+
+  const handleAccordionToggle = (isOpen: boolean, contentHeight: number, breakpoint: string) => {
+    if (isOpen) {
+        updatePlanWidgetHeight(contentHeight, breakpoint);
+    } else {
+        // Reset to default collapsed height on all breakpoints
+        setLayouts(currentLayouts => {
+            const newLayouts = { ...currentLayouts };
+            for (const bp in newLayouts) {
+                newLayouts[bp] = newLayouts[bp].map(item => {
+                    if (item.i === 'plan') {
+                        // Use default height from the template
+                        const defaultH = getDefaultLayouts()[bp as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
+                        return { ...item, h: defaultH };
+                    }
+                    return item;
+                });
+            }
+            const layoutKey = getLayoutKey();
+            if (layoutKey) {
+                localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
+            }
+            return newLayouts;
+        });
+    }
   };
-  
-  const components: { [key: string]: React.ReactNode } = {
+
+  const components: { [key: string]: React.ReactNode } = useMemo(() => ({
     plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
     streak: <DailyStreakCard />,
-    calendar: calendarWidget, // Use the passed calendar widget
+    calendar: calendarWidget,
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
     emails: <ImportantEmailsCard />,
     'next-month': <NextMonthHighlightsCard events={activeEvents} />,
-  };
+  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth]);
   
+  const finalLayouts = useMemo(() => {
+    if (user?.userType === 'professional') {
+        const newLayouts: Layouts = {};
+        for (const breakpoint in layouts) {
+            newLayouts[breakpoint] = layouts[breakpoint].filter(item => item.i !== 'streak');
+        }
+        return newLayouts;
+    }
+    return layouts;
+  }, [layouts, user?.userType]);
+
   if (!isLayoutLoaded) {
-      return null; // Or a loading spinner
+      return null;
   }
-
-  // Filter layout based on user type again to ensure streak card is not shown for professionals
-  const finalLayout = user?.userType === 'professional' 
-    ? layout.filter(item => item.i !== 'streak') 
-    : layout;
-
+  
   return (
     <div className="relative">
-      <ReactGridLayout
+      <ResponsiveReactGridLayout
         className="layout"
-        layout={finalLayout}
-        cols={12}
+        layouts={finalLayouts}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={ROW_HEIGHT}
         margin={[16, 16]}
         isDraggable={true}
@@ -132,8 +182,7 @@ export default function WidgetDashboard({
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
       >
-        {finalLayout.map(item => {
-          // Only render components that are in the current layout
+        {finalLayouts.lg?.map(item => {
           if (!components[item.i]) return null;
           return (
             <div
@@ -151,7 +200,7 @@ export default function WidgetDashboard({
             </div>
           )
         })}
-      </ReactGridLayout>
+      </ResponsiveReactGridLayout>
       {children}
     </div>
   );

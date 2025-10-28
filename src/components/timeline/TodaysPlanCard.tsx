@@ -28,7 +28,7 @@ import { ScrollArea } from '../ui/scroll-area';
 
 
 interface TodaysPlanCardProps {
-    onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void;
+    onAccordionToggle?: (isOpen: boolean, contentHeight: number, breakpoint: string) => void;
 }
 
 export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProps) {
@@ -111,13 +111,11 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   
   const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    // Prevent accordion toggle if a button was clicked
     if (target.closest('button')) {
       return;
     }
-    // If routine setup is needed, clicking the header should open the modal
     if (isRoutineSetupNeeded) {
-        e.preventDefault(); // prevent any default accordion behavior
+        e.preventDefault();
         setIsRoutineModalOpen(true);
     }
   };
@@ -153,7 +151,6 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const normalizedDisplayDate = startOfDay(displayDate);
   const daysFromToday = differenceInDays(normalizedDisplayDate, today);
 
-  // You can go back up to 3 days, but not into the future more than 3 days.
   const canGoBack = daysFromToday > -3;
   const canGoForward = daysFromToday < 3;
 
@@ -164,6 +161,24 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     return `Plan for ${format(date, 'EEEE, MMMM d')}`;
   };
   
+  const handleAccordionValueChange = (value: string) => {
+    const isOpen = !!value;
+    setIsAccordionOpen(isOpen);
+    if (onAccordionToggle) {
+        if (isOpen) {
+            setTimeout(() => {
+                if (contentRef.current) {
+                    const breakpoint = window.innerWidth >= 1200 ? 'lg' : window.innerWidth >= 996 ? 'md' : window.innerWidth >= 768 ? 'sm' : window.innerWidth >= 480 ? 'xs' : 'xxs';
+                    onAccordionToggle(true, contentRef.current.scrollHeight, breakpoint);
+                }
+            }, 50); 
+        } else {
+             const breakpoint = window.innerWidth >= 1200 ? 'lg' : window.innerWidth >= 996 ? 'md' : window.innerWidth >= 768 ? 'sm' : window.innerWidth >= 480 ? 'xs' : 'xxs';
+            onAccordionToggle(false, 0, breakpoint);
+        }
+    }
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -209,36 +224,20 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     );
   };
 
-  const handleAccordionValueChange = (value: string) => {
-    const isOpen = !!value;
-    setIsAccordionOpen(isOpen);
-    if (onAccordionToggle) {
-        if (isOpen) {
-            setTimeout(() => {
-                if (contentRef.current) {
-                    onAccordionToggle(true, contentRef.current.scrollHeight);
-                }
-            }, 50); 
-        } else {
-            onAccordionToggle(false, 0);
-        }
-    }
-  };
-
   return (
     <>
       <div 
-        className="w-full frosted-glass shadow-lg rounded-lg"
+        className="w-full h-full frosted-glass shadow-lg rounded-lg flex flex-col"
       >
         <Accordion 
             type="single" 
             collapsible 
-            className="w-full"
+            className="w-full flex-1 flex flex-col min-h-0"
             onValueChange={handleAccordionValueChange}
         >
-          <AccordionItem value="item-1" className="border-b-0">
+          <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col min-h-0">
             <AccordionPrimitive.Header
-              className="flex items-center justify-between gap-2 p-4 md:p-6"
+              className="flex items-center justify-between gap-2 p-4 md:p-6 border-b border-border"
               onClickCapture={handleHeaderClick}
             >
               <div className="flex items-center gap-2">
@@ -317,12 +316,12 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                 </Button>
               </div>
             </AccordionPrimitive.Header>
-            <AccordionContent>
-              <div className="h-full" ref={contentRef}>
-                 <div className="p-6 pt-0">
-                    {renderContent()}
-                </div>
-              </div>
+            <AccordionContent className="flex-1 min-h-0">
+              <ScrollArea className="h-full">
+                <div ref={contentRef} className="p-6 pt-4">
+                      {renderContent()}
+                  </div>
+              </ScrollArea>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
