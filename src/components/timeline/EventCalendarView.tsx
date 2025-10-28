@@ -18,6 +18,7 @@ interface EventCalendarViewProps {
   onDayClick: (day: Date, hasEvents: boolean) => void;
   onSync: () => void;
   isSyncing: boolean;
+  onToggleTrash: () => void;
 }
 
 export default function EventCalendarView({
@@ -27,6 +28,7 @@ export default function EventCalendarView({
   onDayClick,
   onSync,
   isSyncing,
+  onToggleTrash,
 }: EventCalendarViewProps) {
   const processedEvents = useMemo(() => {
     return allEventsFromProps
@@ -71,6 +73,10 @@ export default function EventCalendarView({
               <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
                   <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
                   <span className="sr-only">Sync with Google Calendar</span>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Open Trash</span>
               </Button>
             </div>
         </div>

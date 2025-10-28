@@ -663,10 +663,6 @@ export default function DashboardPage() {
                   <PlusCircle className={cn("h-5 w-5", calendarWidgetWidth >= 400 && 'mr-2')} />
                   <span className={cn(calendarWidgetWidth < 400 && 'hidden')}>Add New Event</span>
               </Button>
-              <Button onClick={onToggleTrash} className="bg-accent hover:bg-accent/90 text-accent-foreground h-10 w-10 rounded-full flex-shrink-0 p-0">
-                  <Trash2 className="h-5 w-5" />
-                  <span className="sr-only">Open Trash</span>
-              </Button>
             </div>
          </div>
        </div>
@@ -681,6 +677,7 @@ export default function DashboardPage() {
                         onDayClick={handleDayClickFromCalendar}
                         onSync={handleSyncCalendarData}
                         isSyncing={isLoading}
+                        onToggleTrash={onToggleTrash}
                     />
                 </TabsContent>
                 <TabsContent value="list" className="mt-0 h-full flex-1">
@@ -739,6 +736,7 @@ export default function DashboardPage() {
                 onDayClick={handleDayClickFromCalendar}
                 onSync={handleSyncCalendarData}
                 isSyncing={isLoading}
+                onToggleTrash={onToggleTrash}
             />
             {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
             <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
