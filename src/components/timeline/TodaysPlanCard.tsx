@@ -9,6 +9,7 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
+  AccordionTrigger as PrimitiveAccordionTrigger,
 } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { Calendar, AlertTriangle, Edit, ChevronLeft, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
@@ -25,23 +26,6 @@ import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay,
 import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
 import { ScrollArea } from '../ui/scroll-area';
-
-// Custom AccordionTrigger that doesn't render a button
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ children, className, ...props }, ref) => (
-  <AccordionPrimitive.Header className="flex">
-    <AccordionPrimitive.Trigger
-      ref={ref}
-      className={className}
-      {...props}
-    >
-      {children}
-    </AccordionPrimitive.Trigger>
-  </AccordionPrimitive.Header>
-));
-AccordionTrigger.displayName = 'AccordionTrigger';
 
 
 interface TodaysPlanCardProps {
@@ -128,11 +112,13 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   
   const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+    // Prevent accordion toggle if a button was clicked
     if (target.closest('button')) {
       return;
     }
+    // If routine setup is needed, clicking the header should open the modal
     if (isRoutineSetupNeeded) {
-        e.preventDefault();
+        e.preventDefault(); // prevent any default accordion behavior
         setIsRoutineModalOpen(true);
     }
   };
@@ -168,6 +154,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const normalizedDisplayDate = startOfDay(displayDate);
   const daysFromToday = differenceInDays(normalizedDisplayDate, today);
 
+  // You can go back up to 3 days, but not into the future more than 3 days.
   const canGoBack = daysFromToday > -3;
   const canGoForward = daysFromToday < 3;
 
@@ -227,12 +214,13 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     const isOpen = !!value;
     setIsAccordionOpen(isOpen);
     if (onAccordionToggle) {
+        // Use a timeout to allow the DOM to update before measuring height
         if (isOpen) {
             setTimeout(() => {
                 if (contentRef.current) {
                     onAccordionToggle(true, contentRef.current.scrollHeight);
                 }
-            }, 50);
+            }, 50); // A small delay is usually sufficient
         } else {
             onAccordionToggle(false, 0);
         }
@@ -273,7 +261,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                 </Button>
               </div>
 
-              <AccordionTrigger className="flex-1 p-0 hover:no-underline group min-w-0 cursor-pointer" disabled={isRoutineSetupNeeded}>
+              <PrimitiveAccordionTrigger className="flex-1 p-0 hover:no-underline group min-w-0" disabled={isRoutineSetupNeeded}>
                    <div className="flex-1 min-w-0 text-left px-2">
                      <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
                        <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
@@ -293,7 +281,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                     {!isRoutineSetupNeeded && (
                         <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 ml-2" />
                     )}
-              </AccordionTrigger>
+              </PrimitiveAccordionTrigger>
               
               <div className="flex items-center gap-1">
                  <Button
