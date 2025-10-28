@@ -11,7 +11,6 @@ import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { GripVertical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { getLayout, saveLayout } from '@/services/layoutService';
 import { defaultLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,6 +26,8 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const getLayoutKey = () => user ? `dashboard-layout-${user.uid}` : null;
+
   const getDefaultLayout = () => {
     const layout = user?.userType === 'professional' ? defaultLayouts.professional : defaultLayouts.student;
     // Filter out streak card for professionals
@@ -38,22 +39,23 @@ export default function WidgetDashboard({
 
   useEffect(() => {
     // Load layout from storage on mount
-    const loadLayout = async () => {
-      if (!user) {
+    const loadLayout = () => {
+      const layoutKey = getLayoutKey();
+      if (!layoutKey) {
         setLayout(getDefaultLayout());
         setIsLayoutLoaded(true);
         return;
       }
       
       try {
-          const firestoreLayout = await getLayout(user.uid);
-          if (firestoreLayout && firestoreLayout.length > 0) {
-            setLayout(firestoreLayout);
+          const savedLayout = localStorage.getItem(layoutKey);
+          if (savedLayout) {
+            setLayout(JSON.parse(savedLayout));
           } else {
             setLayout(getDefaultLayout());
           }
       } catch (e) {
-          console.warn("Could not fetch layout from Firestore. Using default.", e);
+          console.warn("Could not parse layout from localStorage. Using default.", e);
           setLayout(getDefaultLayout());
       } finally {
           setIsLayoutLoaded(true);
@@ -64,15 +66,18 @@ export default function WidgetDashboard({
   }, [user]);
 
   const handleLayoutChange = (newLayout: RGL.Layout[]) => {
-    setLayout(newLayout);
-    if (user && isLayoutLoaded) { // Only save after initial layout is loaded
-      saveLayout(user.uid, newLayout).catch(err => {
-        toast({
-          title: "Layout Sync Error",
-          description: "Could not save your widget layout to the cloud.",
-          variant: "destructive"
-        })
-      });
+    const layoutKey = getLayoutKey();
+    if (layoutKey && isLayoutLoaded) { // Only save after initial layout is loaded
+        try {
+            localStorage.setItem(layoutKey, JSON.stringify(newLayout));
+            setLayout(newLayout);
+        } catch (error) {
+            toast({
+              title: "Layout Save Error",
+              description: "Could not save your widget layout.",
+              variant: "destructive"
+            });
+        }
     }
   };
 
@@ -85,13 +90,13 @@ export default function WidgetDashboard({
           const requiredPixels = contentHeight + 80 + 48; // header + padding
           newHeightInUnits = Math.ceil(requiredPixels / ROW_HEIGHT);
         } else {
-          newHeightInUnits = 1; // Collapsed height
+          newHeightInUnits = 2; // Collapsed height
         }
-        return { ...item, h: Math.max(1, newHeightInUnits) };
+        return { ...item, h: Math.max(2, newHeightInUnits) };
       }
       return item;
     });
-    // This state update will trigger onLayoutChange and save to Firestore
+    // This state update will trigger onLayoutChange and save to localStorage
     setLayout(newLayout);
   };
   
@@ -135,7 +140,7 @@ export default function WidgetDashboard({
               key={item.i}
               className="group relative"
               style={{
-                minWidth: item.minW ? `${item.minW * (1200/12)}px` : '400px',
+                minWidth: item.minW ? `${item.minW * (1200 / 12)}px` : '400px',
                 minHeight: item.minH ? `${item.minH * 100}px` : '400px',
               }}
             >
