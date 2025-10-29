@@ -171,8 +171,8 @@ export default function WidgetDashboard({
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
     emails: <ImportantEmailsCard />,
     'next-month': <NextMonthHighlightsCard events={activeEvents} />,
-    'day-timetable': dayTimetableWidget,
-  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, dayTimetableWidget]);
+    'day-timetable': dayTimetableViewWidget,
+  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, dayTimetableViewWidget]);
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
