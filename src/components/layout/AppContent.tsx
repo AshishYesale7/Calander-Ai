@@ -278,8 +278,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
     setIsTimezoneModalOpen,
-    isEditMode,
-    setIsEditMode,
   };
   
   const isVideoCallActive = !!(ongoingCall);
@@ -302,7 +300,13 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
         </div>
         
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <Header {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
+          <Header 
+            {...modalProps} 
+            handleToggleFullScreen={() => {}} 
+            isFullScreen={false}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
+          />
           <div className="flex flex-1 min-h-0 min-w-0">
               <main ref={mainScrollRef} className={cn(
                   "flex-1 overflow-y-auto p-6 pb-24 md:pb-6 transition-[margin-left] duration-300",
