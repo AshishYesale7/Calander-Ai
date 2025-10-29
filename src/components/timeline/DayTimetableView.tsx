@@ -128,7 +128,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
   };
 
   return (
-    <Card className={cn("frosted-glass w-full shadow-xl flex flex-col transition-all duration-300 max-h-[70vh]")} data-theme={viewTheme}>
+    <Card className={cn("frosted-glass w-full h-full shadow-xl flex flex-col transition-all duration-300")} data-theme={viewTheme}>
       <CardHeader className="p-4 border-b border-border/30">
         <div className="flex justify-between items-center">
             <div>
