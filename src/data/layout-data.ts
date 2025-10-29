@@ -4,23 +4,31 @@
 import type { Layout, Layouts } from 'react-grid-layout';
 
 // This function generates a basic stacked layout for smaller screens.
-// It now correctly removes minW and minH to allow for fluid resizing on smaller devices.
+// It now assigns sensible default heights and removes sizing constraints
+// to ensure widgets are resizable and stack compactly on smaller devices.
 const generateStackedLayout = (layout: Layout[], cols: number): Layout[] => {
   let y = 0;
   return layout.map((item) => {
+    
+    // Assign a smaller, more appropriate default height for stacked views.
+    // Taller widgets like the calendar get more space.
+    const newHeight = (item.i === 'calendar' || item.i === 'day-timetable' || item.i === 'emails' || item.i === 'timeline') ? 4 : 2;
+
     const newItem: Layout = {
       ...item,
       x: 0,
       y: y,
-      w: cols, // Take full width of the current breakpoint
-      // Remove minW and minH for stacked layouts to avoid them being "stuck"
-      minW: undefined,
+      w: cols, // Take full width of the current breakpoint.
+      h: newHeight, // Use the new, smaller height.
+      minW: undefined, // Remove constraints for fluid resizing.
       minH: undefined,
     };
-    y += item.h; // Stack items vertically
+    
+    y += newHeight; // Stack items based on their new height.
     return newItem;
   });
 };
+
 
 // --- Student Layout ---
 export const studentLayouts: Layout[] = [
