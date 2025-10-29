@@ -1,22 +1,23 @@
+
 'use client';
 
 import type { Layout, Layouts } from 'react-grid-layout';
 
 // This function generates a basic stacked layout for smaller screens.
-// It now correctly preserves minH and adjusts minW for responsiveness.
+// It now correctly removes minW and minH to allow for fluid resizing on smaller devices.
 const generateStackedLayout = (layout: Layout[], cols: number): Layout[] => {
   let y = 0;
   return layout.map((item) => {
-    const newItem = { 
-      ...item, 
-      x: 0, 
-      y: y, 
-      w: cols,
-      // Ensure minW is not larger than the total columns for this breakpoint
-      minW: Math.min(item.minW || 1, cols), 
-      minH: item.minH, // Preserve the original minH
+    const newItem: Layout = {
+      ...item,
+      x: 0,
+      y: y,
+      w: cols, // Take full width of the current breakpoint
+      // Remove minW and minH for stacked layouts to avoid them being "stuck"
+      minW: undefined,
+      minH: undefined,
     };
-    y += item.h;
+    y += item.h; // Stack items vertically
     return newItem;
   });
 };
