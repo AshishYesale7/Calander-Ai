@@ -1,9 +1,10 @@
 .edit-mode-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.6);
     z-index: 10; /* Lower z-index to be behind widgets */
     backdrop-filter: blur(2px);
+    border-radius: var(--radius); /* Match parent's border-radius */
 }
 
 .remove-widget-button {

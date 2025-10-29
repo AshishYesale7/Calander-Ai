@@ -274,51 +274,53 @@ export default function WidgetDashboard({
           }}
         />
       )}
-      <ResponsiveReactGridLayout
-        className="layout"
-        layouts={layoutsWithDynamicMins}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={ROW_HEIGHT}
-        margin={MARGIN}
-        isDraggable={true}
-        isResizable={true}
-        compactType="vertical"
-        draggableHandle=".drag-handle"
-        onLayoutChange={handleLayoutChange}
-        onDragStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
-        onResizeStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
-        onBreakpointChange={(newBreakpoint, newCols) => {
-            setCurrentBreakpoint(newBreakpoint);
-            setCurrentCols(newCols);
-        }}
-        onWidthChange={(containerWidth) => {
-            setCurrentContainerWidth(containerWidth);
-        }}
-      >
-        {finalLayoutsArray.map(item => {
-          if (!components[item.i]) return null;
-          return (
-            <div
-              key={item.i}
-              className="group relative z-20"
-              onClick={(e) => {
-                if (isEditMode) e.stopPropagation();
-              }}
-            >
-              {isEditMode && (
-                <div className="remove-widget-button">
-                  -
+      <div className="relative z-20">
+        <ResponsiveReactGridLayout
+            className="layout"
+            layouts={layoutsWithDynamicMins}
+            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+            rowHeight={ROW_HEIGHT}
+            margin={MARGIN}
+            isDraggable={isEditMode}
+            isResizable={isEditMode}
+            compactType="vertical"
+            draggableHandle=".drag-handle"
+            onLayoutChange={handleLayoutChange}
+            onDragStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
+            onResizeStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
+            onBreakpointChange={(newBreakpoint, newCols) => {
+                setCurrentBreakpoint(newBreakpoint);
+                setCurrentCols(newCols);
+            }}
+            onWidthChange={(containerWidth) => {
+                setCurrentContainerWidth(containerWidth);
+            }}
+        >
+            {finalLayoutsArray.map(item => {
+            if (!components[item.i]) return null;
+            return (
+                <div
+                key={item.i}
+                className="group relative"
+                onClick={(e) => {
+                    if (isEditMode) e.stopPropagation();
+                }}
+                >
+                {isEditMode && (
+                    <div className="remove-widget-button">
+                    -
+                    </div>
+                )}
+                <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
+                    {components[item.i]}
                 </div>
-              )}
-              <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
-              <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
-                {components[item.i]}
-              </div>
-            </div>
-          )
-        })}
-      </ResponsiveReactGridLayout>
+                </div>
+            )
+            })}
+        </ResponsiveReactGridLayout>
+      </div>
     </div>
   );
 }
