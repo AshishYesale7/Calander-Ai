@@ -43,7 +43,7 @@ interface MaximizedPlannerViewProps {
 export default function MaximizedPlannerView({ initialDate, allEvents, onMinimize, onEditEvent, onDeleteEvent }: MaximizedPlannerViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { chatSidebarWidth } = useChat();
+  const { isChatSidebarOpen, chattingWith } = useChat();
 
   const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -297,9 +297,17 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     }
   };
 
+  const chatSidebarWidth = useMemo(() => {
+    if (isMobile) return 0;
+    if (isChatSidebarOpen) {
+      return chattingWith ? 352 + 352 : 352;
+    }
+    return chattingWith ? 80 + 352 : 80;
+  }, [isMobile, isChatSidebarOpen, chattingWith]);
+
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        className={cn("fixed inset-y-0 left-0 flex flex-col z-30", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
         style={{ top: '4rem', right: isMobile ? '0px' : `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
