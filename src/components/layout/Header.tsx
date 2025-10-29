@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, UserPlus, Users, LogIn, XCircle } from 'lucide-react';
+import { Menu, UserCircle, LogOut, Settings, Sun, Moon, Palette, Expand, Shrink, FileText, Crown, ClipboardCheck, Clock, Trophy, Flame, MessageSquare, UserPlus, Users, LogIn, XCircle, Code } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from 'firebase/auth';
