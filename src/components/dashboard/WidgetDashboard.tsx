@@ -24,7 +24,7 @@ const MARGIN: [number, number] = [16, 16];
 const PIXEL_TO_GRID_UNITS = {
   MIN_W_PX: 280,
   MIN_H_PX: 200,
-  TIMETABLE_MIN_H_PX: 500,
+  TIMETABLE_MIN_H_PX: 400,
 };
 
 // Calculates the minimum width in grid units based on a pixel value
@@ -178,7 +178,7 @@ export default function WidgetDashboard({
   }, [layouts, user?.userType]);
 
   const components: { [key: string]: React.ReactNode } = useMemo(() => {
-    const dayTimetableViewWidget = (
+      const dayTimetableViewWidget = (
         <DayTimetableViewWidget
             date={selectedDateForDayView}
             events={activeEvents}
