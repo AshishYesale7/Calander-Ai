@@ -4,7 +4,7 @@
 import type { Layout, Layouts } from 'react-grid-layout';
 
 // NEW: Layout version. Increment this when you make breaking changes to default layouts.
-export const LAYOUT_VERSION = 2;
+export const LAYOUT_VERSION = 3;
 
 // --- Student Layouts ---
 const studentLayoutLg: Layout[] = [

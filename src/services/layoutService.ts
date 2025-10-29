@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore'
 import type { Layouts, Layout } from 'react-grid-layout';
 
 // Define the structure for versioned layouts
-interface VersionedLayouts {
+export interface VersionedLayouts {
     version: number;
     layouts: Layouts;
 }
@@ -24,13 +24,13 @@ const sanitizeLayouts = (layouts: Layouts): Layouts => {
     for (const breakpoint in layouts) {
         if (Object.prototype.hasOwnProperty.call(layouts, breakpoint)) {
             sanitizedLayouts[breakpoint] = layouts[breakpoint].map(item => {
-                const sanitizedItem: Partial<Layout> = {
-                    i: item.i,
-                    x: item.x,
-                    y: item.y,
-                    w: item.w,
-                    h: item.h,
-                };
+                const sanitizedItem: Partial<Layout> = {};
+                // Explicitly copy only the valid, serializable properties
+                if (item.i !== undefined) sanitizedItem.i = item.i;
+                if (item.x !== undefined) sanitizedItem.x = item.x;
+                if (item.y !== undefined) sanitizedItem.y = item.y;
+                if (item.w !== undefined) sanitizedItem.w = item.w;
+                if (item.h !== undefined) sanitizedItem.h = item.h;
                 if (item.minW !== undefined) sanitizedItem.minW = item.minW;
                 if (item.minH !== undefined) sanitizedItem.minH = item.minH;
                 if (item.maxW !== undefined) sanitizedItem.maxW = item.maxW;
@@ -39,6 +39,7 @@ const sanitizeLayouts = (layouts: Layouts): Layouts => {
                 if (item.isResizable !== undefined) sanitizedItem.isResizable = item.isResizable;
                 if (item.isBounded !== undefined) sanitizedItem.isBounded = item.isBounded;
                 if (item.static !== undefined) sanitizedItem.static = item.static;
+                
                 return sanitizedItem as Layout;
             });
         }
@@ -59,11 +60,11 @@ export const saveLayout = async (userId: string, role: 'student' | 'professional
 
   const fieldName = `dashboardLayouts_${role}`;
   try {
+    // Using setDoc with merge to ensure the userSettings doc is created if it doesn't exist
     await setDoc(layoutDocRef, { [fieldName]: dataToSave }, { merge: true });
   } catch (error) {
     console.error(`Failed to save ${role} layout to Firestore:`, error);
-    // We don't throw here to avoid unhandled promise rejections on cleanup.
-    // Toasting on failure can be handled by the calling component if needed.
+    // Don't throw here to avoid crashing the app on cleanup, but log the error
   }
 };
 

@@ -10,9 +10,9 @@ import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION } from '@/data/layout-data';
+import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION as CODE_LAYOUT_VERSION } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
-import { saveLayout, getLayout } from '@/services/layoutService';
+import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -64,6 +64,18 @@ export default function WidgetDashboard({
 }: any) {
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const [versionedLayouts, setVersionedLayouts] = useState<VersionedLayouts>({
+    version: CODE_LAYOUT_VERSION,
+    layouts: user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts,
+  });
+
+  const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
+  const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
+  const [currentCols, setCurrentCols] = useState(12);
+  const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
+  
+  const layoutInitialized = useRef(false);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -76,104 +88,92 @@ export default function WidgetDashboard({
     return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
 
-  const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
-  const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
-  const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
-  const [currentCols, setCurrentCols] = useState(12);
-  const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
-  
-  const layoutInitialized = useRef(false);
-
   useEffect(() => {
     const loadLayouts = async () => {
-      if (!user) {
-        setLayouts(getDefaultLayouts());
-        setIsLayoutLoaded(true);
-        return;
-      }
+      if (!user || layoutInitialized.current) return;
+      layoutInitialized.current = true;
       
-      const role = user.userType || 'student';
       const layoutKey = getLayoutKey();
-      
-      // 1. Prioritize loading from local storage
-      if (layoutKey) {
-        const savedLayoutsLocal = localStorage.getItem(layoutKey);
-        if (savedLayoutsLocal) {
-          try {
-            const parsedLayouts = JSON.parse(savedLayoutsLocal);
-            // 2. Validate version
-            if (parsedLayouts.version === LAYOUT_VERSION) {
-              setLayouts(parsedLayouts.layouts);
-              setIsLayoutLoaded(true);
-              return; // Found a valid local layout, no need to fetch from Firestore
-            }
-          } catch (e) {
-            console.warn("Could not parse layouts from local storage. Fetching from cloud.", e);
-          }
-        }
-      }
+      const role = user.userType || 'student';
 
-      // 3. Fetch from Firestore only if local storage is empty or outdated
-      try {
-        const savedLayoutsFirestore = await getLayout(user.uid, role);
-        if (savedLayoutsFirestore && savedLayoutsFirestore.version === LAYOUT_VERSION) {
-           setLayouts(savedLayoutsFirestore.layouts);
-           if (layoutKey) {
-              localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
-           }
-        } else {
-           // 4. Fallback to default if cloud is also empty or outdated
-           setLayouts(getDefaultLayouts());
-        }
-      } catch (e) {
-        console.warn("Could not retrieve layouts from Firestore. Using default.", e);
-        setLayouts(getDefaultLayouts());
-      } finally {
-        setIsLayoutLoaded(true);
+      // Fetch local and cloud layouts in parallel
+      const localLayoutPromise = new Promise<VersionedLayouts | null>((resolve) => {
+        if (layoutKey) {
+          const savedLayoutsLocal = localStorage.getItem(layoutKey);
+          if (savedLayoutsLocal) {
+            try {
+              resolve(JSON.parse(savedLayoutsLocal));
+            } catch { resolve(null); }
+          } else { resolve(null); }
+        } else { resolve(null); }
+      });
+      
+      const cloudLayoutPromise = getLayout(user.uid, role);
+
+      const [localResult, cloudResult] = await Promise.all([localLayoutPromise, cloudLayoutPromise]);
+
+      const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts() };
+
+      // Compare versions and decide which one to use
+      const localVersion = localResult?.version || 0;
+      const cloudVersion = cloudResult?.version || 0;
+      const codeVersion = CODE_LAYOUT_VERSION;
+
+      let finalLayouts: VersionedLayouts;
+
+      if (localVersion >= cloudVersion && localVersion >= codeVersion) {
+        finalLayouts = localResult!;
+      } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
+        finalLayouts = cloudResult!;
+        // Sync cloud to local
+        if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
+      } else {
+        finalLayouts = defaultLayouts;
+        // If defaults are used, clear old layouts
+        if (layoutKey) localStorage.removeItem(layoutKey);
       }
+      
+      setVersionedLayouts(finalLayouts);
+      setIsLayoutLoaded(true);
     };
 
-    if (user && !layoutInitialized.current) {
-        loadLayouts();
-        layoutInitialized.current = true;
-    }
+    if(user) loadLayouts();
+
   }, [user, getLayoutKey, getDefaultLayouts]);
 
-  // Effect to save layout to Firestore when component unmounts or user/layouts change
+  // Effect to save layout to Firestore when component unmounts
   useEffect(() => {
-    // This function will be called on cleanup
     return () => {
-      if (layoutInitialized.current && isLayoutLoaded && user) {
-        const layoutKey = getLayoutKey();
+      if (isLayoutLoaded && user) {
         const role = user.userType || 'student';
-        if (layoutKey) {
-            const dataToSave = { version: LAYOUT_VERSION, layouts };
-            saveLayout(user.uid, role, dataToSave).catch(err => {
-                // We show a toast only if the save fails on cleanup, but don't block.
-                console.error("Layout Sync Error on cleanup:", err);
-            });
-        }
+        saveLayout(user.uid, role, versionedLayouts).catch(err => {
+            console.error("Layout Sync Error on cleanup:", err);
+        });
       }
     };
-  }, [layouts, user, isLayoutLoaded, getLayoutKey]);
+  }, [versionedLayouts, user, isLayoutLoaded]);
 
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     const layoutKey = getLayoutKey();
     if (!layoutKey || !isLayoutLoaded || !user) return;
     
+    // Increment version on every change
+    const newVersion = (versionedLayouts.version || 0) + 1;
+    const dataToSave: VersionedLayouts = { version: newVersion, layouts: allLayouts };
+
+    setVersionedLayouts(dataToSave);
+    
     // Save to local storage immediately for a snappy feel
     try {
-        const dataToSave = { version: LAYOUT_VERSION, layouts: allLayouts };
         localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
     } catch (error) {
-        // Don't toast here as it would be too noisy.
         console.warn("Could not save layout to local storage.", error);
     }
-    setLayouts(allLayouts);
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    const layouts = versionedLayouts.layouts;
     const currentLayout = layouts[currentBreakpoint as keyof Layouts];
     if (!currentLayout) return;
 
@@ -193,7 +193,7 @@ export default function WidgetDashboard({
 
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
     handleLayoutChange(newLayout, newLayouts);
-  }, [layouts, currentBreakpoint]);
+  }, [versionedLayouts, currentBreakpoint]);
 
   const components: { [key: string]: React.ReactNode } = useMemo(() => {
       const dayTimetableViewWidget = (
@@ -224,13 +224,13 @@ export default function WidgetDashboard({
   const finalLayouts = useMemo(() => {
     if (user?.userType === 'professional') {
         const newLayouts: Layouts = {};
-        for (const breakpoint in layouts) {
-            newLayouts[breakpoint] = layouts[breakpoint].filter(item => item.i !== 'streak');
+        for (const breakpoint in versionedLayouts.layouts) {
+            newLayouts[breakpoint] = versionedLayouts.layouts[breakpoint].filter(item => item.i !== 'streak');
         }
         return newLayouts;
     }
-    return layouts;
-  }, [layouts, user?.userType]);
+    return versionedLayouts.layouts;
+  }, [versionedLayouts.layouts, user?.userType]);
 
   const getLayoutWithDynamicMins = useCallback((breakpoint: string) => {
     const layout = finalLayouts[breakpoint as keyof Layouts] || [];
