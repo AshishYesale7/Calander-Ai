@@ -258,7 +258,6 @@ export default function WidgetDashboard({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsEditMode(true);
-    console.log('Jiggle Mode:', true);
   };
   
   if (!isLayoutLoaded) {
@@ -272,7 +271,6 @@ export default function WidgetDashboard({
           className="edit-mode-overlay"
           onClick={() => {
             setIsEditMode(false);
-            console.log('Jiggle Mode:', false);
           }}
         />
       )}
@@ -303,7 +301,7 @@ export default function WidgetDashboard({
           return (
             <div
               key={item.i}
-              className="group relative"
+              className="group relative z-20"
               onClick={(e) => {
                 if (isEditMode) e.stopPropagation();
               }}
