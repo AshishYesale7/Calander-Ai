@@ -261,7 +261,7 @@ export default function Header({
   const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
       const secs = Math.round(seconds % 60);
-      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      return `${'${String(mins).padStart(2, '0')}'}:${'${String(secs).padStart(2, '0')}'}`;
   };
 
   const isCallViewActive = (ongoingCall || ongoingAudioCall) && !isPipMode;
@@ -384,7 +384,7 @@ export default function Header({
                                     <div className="relative h-2 w-full bg-muted/50 rounded-full">
                                         <div
                                             className="absolute top-0 left-0 h-full bg-accent rounded-full transition-all duration-300"
-                                            style={{ width: `${progressPercent}%` }}
+                                            style={{ width: `${'${progressPercent}'}%` }}
                                         >
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3 w-3 rounded-full bg-white border-2 border-accent"></div>
                                         </div>
@@ -428,7 +428,7 @@ export default function Header({
                                          className="w-full flex items-center gap-2 text-sm p-2 rounded-md hover:bg-muted"
                                       >
                                          {typeof LogoComponent === 'string' ? (
-                                              <Image src={LogoComponent} alt={`${plugin.name} logo`} width={20} height={20} />
+                                              <Image src={LogoComponent} alt={`${'${plugin.name}'} logo`} width={20} height={20} />
                                           ) : (
                                               <LogoComponent className="h-5 w-5" />
                                           )}
@@ -519,7 +519,7 @@ export default function Header({
                             <button
                                 onClick={(e) => handleRemoveAccount(e, knownUser.uid)}
                                 className="p-1 text-muted-foreground hover:text-destructive z-10"
-                                aria-label={`Remove ${knownUser.displayName || knownUser.email}`}
+                                aria-label={`Remove ${'${knownUser.displayName || knownUser.email}'}`}
                             >
                                 <XCircle className="h-4 w-4" />
                             </button>
@@ -545,7 +545,7 @@ export default function Header({
                   <span>Date & Time Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}
+                  onClick={() => userProfile?.username && router.push(`/profile/${'${userProfile.username}'}`)}
                   disabled={!userProfile?.username}
                 >
                   <UserCircle className="mr-2 h-4 w-4" />

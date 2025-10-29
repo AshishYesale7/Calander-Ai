@@ -200,7 +200,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
       }
     }
   }, [user, loading, isSubscribed, pathname, toast, onboardingCompleted]);
-
+  
   useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [

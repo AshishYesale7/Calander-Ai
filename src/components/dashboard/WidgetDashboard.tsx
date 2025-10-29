@@ -84,7 +84,7 @@ export default function WidgetDashboard({
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
     const role = user.userType || 'student';
-    return `dashboard-layouts-${user.uid}-${role}`;
+    return `dashboard-layouts-${'${user.uid}'}-${'${role}'}`;
   }, [user]);
 
   const getDefaultLayouts = useCallback(() => {
