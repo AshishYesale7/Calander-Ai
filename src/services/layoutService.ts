@@ -73,15 +73,30 @@ export const getLayout = async (userId: string, role: 'student' | 'professional'
 /**
  * Deletes the saved dashboard layout from Firestore for a specific user and role.
  */
-export const deleteLayout = async (userId: string, role: 'student' | 'professional'): Promise<void> => {
+export const deleteLayout = async (userId: string, role?: 'student' | 'professional'): Promise<void> => {
     if (!userId) return;
     const layoutDocRef = getLayoutDocRef(userId);
-    const fieldName = `dashboardLayouts_${role}`;
+    
+    // If a role is specified, delete only that role's layout.
+    // If no role is specified, delete both for a full reset.
+    const fieldsToDelete: string[] = [];
+    if (role) {
+        fieldsToDelete.push(`dashboardLayouts_${role}`);
+    } else {
+        fieldsToDelete.push('dashboardLayouts_student', 'dashboardLayouts_professional');
+    }
+    
+    const updateData: { [key: string]: any } = {};
+    fieldsToDelete.forEach(field => {
+        updateData[field] = deleteField();
+    });
+
     try {
-        await updateDoc(layoutDocRef, {
-            [fieldName]: deleteField()
-        });
+        await updateDoc(layoutDocRef, updateData);
     } catch (error) {
-        console.error(`Failed to delete ${role} layout from Firestore:`, error);
+        // Suppress "not-found" errors if the document or field doesn't exist.
+        if ((error as any).code !== 'not-found') {
+          console.error(`Failed to delete layout fields from Firestore:`, error);
+        }
     }
 };
