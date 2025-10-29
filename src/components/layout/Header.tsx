@@ -435,7 +435,7 @@ export default function Header({
                   </PopoverContent>
               </Popover>
 
-              <Popover open={isWidgetPopoverOpen} onOpenChange={setIsWidgetPopoverOpen}>
+               <Popover open={isWidgetPopoverOpen} onOpenChange={setIsWidgetPopoverOpen}>
                 <PopoverTrigger asChild>
                   <div onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')}>
                     <Button variant="ghost" size="icon">
@@ -451,8 +451,8 @@ export default function Header({
                             {widgetList.map(widget => (
                                 <div key={widget.id} className="p-2 border border-border/50 bg-background/50 rounded-md">
                                     <p className="text-sm font-semibold truncate">{widget.name}</p>
-                                    <div className="mt-2 h-16 w-full bg-muted/30 rounded flex items-center justify-center p-2">
-                                       {widget.preview}
+                                    <div className="mt-2 h-16 w-full bg-muted/30 rounded flex items-center justify-center">
+                                        {widget.preview}
                                     </div>
                                 </div>
                             ))}
