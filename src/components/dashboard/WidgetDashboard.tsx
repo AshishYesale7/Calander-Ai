@@ -24,7 +24,7 @@ const MARGIN: [number, number] = [16, 16];
 const PIXEL_TO_GRID_UNITS = {
   MIN_W_PX: 280,
   MIN_H_PX: 200,
-  TIMETABLE_MIN_H_PX: 400,
+  TIMETABLE_MIN_H_PX: 300,
 };
 
 // Calculates the minimum width in grid units based on a pixel value
@@ -166,17 +166,6 @@ export default function WidgetDashboard({
     handleLayoutChange(newLayout, newLayouts);
 }, [layouts, currentBreakpoint, handleLayoutChange]);
 
-  const finalLayouts = useMemo(() => {
-    if (user?.userType === 'professional') {
-        const newLayouts: Layouts = {};
-        for (const breakpoint in layouts) {
-            newLayouts[breakpoint] = layouts[breakpoint].filter(item => item.i !== 'streak');
-        }
-        return newLayouts;
-    }
-    return layouts;
-  }, [layouts, user?.userType]);
-
   const components: { [key: string]: React.ReactNode } = useMemo(() => {
       const dayTimetableViewWidget = (
         <DayTimetableViewWidget
@@ -216,6 +205,17 @@ export default function WidgetDashboard({
         minH: calculateMinH(item.i === 'day-timetable'),
     }));
   };
+
+  const finalLayouts = useMemo(() => {
+    if (user?.userType === 'professional') {
+        const newLayouts: Layouts = {};
+        for (const breakpoint in layouts) {
+            newLayouts[breakpoint] = layouts[breakpoint].filter(item => item.i !== 'streak');
+        }
+        return newLayouts;
+    }
+    return layouts;
+  }, [layouts, user?.userType]);
 
   const layoutsWithDynamicMins = useMemo(() => {
     const newLayouts: Layouts = {};
