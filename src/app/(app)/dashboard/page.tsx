@@ -765,6 +765,7 @@ export default function DashboardPage() {
                         onDeleteEvent={handleDeleteTimelineEvent} 
                         onEditEvent={handleOpenEditModal} 
                         onEventStatusChange={handleEventStatusUpdate}
+                        onMaximize={() => setIsPlannerMaximized(true)}
                     />
                 </div>
             )}
@@ -811,3 +812,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
