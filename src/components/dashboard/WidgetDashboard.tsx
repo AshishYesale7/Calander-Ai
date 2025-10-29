@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
+import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
 import TodaysPlanCard from '../timeline/TodaysPlanCard';
 import DailyStreakCard from './DailyStreakCard';
 import SlidingTimelineView from '../timeline/SlidingTimelineView';
@@ -12,12 +12,37 @@ import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
-import type { Layout } from 'react-grid-layout';
 import { saveLayout, getLayout } from '@/services/layoutService';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
+const MARGIN: [number, number] = [16, 16];
+
+// --- NEW HELPER FUNCTIONS ---
+const PIXEL_TO_GRID_UNITS = {
+  MIN_W_PX: 280,
+  MIN_H_PX: 200,
+};
+
+// Calculates the minimum width in grid units based on a pixel value
+const calculateMinW = (colWidth: number): number => {
+  if (colWidth <= 0) return 1;
+  const { MIN_W_PX } = PIXEL_TO_GRID_UNITS;
+  const contentWidth = MIN_W_PX - MARGIN[0];
+  const gridUnits = Math.max(1, Math.ceil(contentWidth / (colWidth + MARGIN[0])));
+  return gridUnits;
+};
+
+// Calculates the minimum height in grid units based on a pixel value
+const calculateMinH = (): number => {
+  const { MIN_H_PX } = PIXEL_TO_GRID_UNITS;
+  const contentHeight = MIN_H_PX - MARGIN[1];
+  const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
+  return gridUnits;
+};
+// --- END NEW HELPER FUNCTIONS ---
+
 
 export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
@@ -38,6 +63,8 @@ export default function WidgetDashboard({
   const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
+  const [currentCols, setCurrentCols] = useState(12);
+  const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
   
   const layoutInitialized = useRef(false);
 
@@ -51,18 +78,15 @@ export default function WidgetDashboard({
       }
       
       try {
-          // 1. Try local storage first for speed
           const savedLayoutsLocal = localStorage.getItem(layoutKey);
           if (savedLayoutsLocal) {
             setLayouts(JSON.parse(savedLayoutsLocal));
           } else {
-             // 2. If not in local, try Firestore
              const savedLayoutsFirestore = await getLayout(user!.uid);
              if (savedLayoutsFirestore) {
                 setLayouts(savedLayoutsFirestore);
                 localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
              } else {
-                 // 3. Fallback to default
                 setLayouts(getDefaultLayouts());
              }
           }
@@ -84,9 +108,7 @@ export default function WidgetDashboard({
     const layoutKey = getLayoutKey();
     if (layoutKey && isLayoutLoaded) {
         try {
-            // Save to local storage for immediate persistence
             localStorage.setItem(layoutKey, JSON.stringify(allLayouts));
-            // Save to Firestore for cross-device sync
             saveLayout(user!.uid, allLayouts).catch(err => {
                 toast({
                   title: "Layout Sync Error",
@@ -106,7 +128,6 @@ export default function WidgetDashboard({
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    // This logic remains the same, but it will now update the user's customized layout
     const currentLayouts = layouts[currentBreakpoint];
     if (!currentLayouts) return;
     
@@ -114,7 +135,7 @@ export default function WidgetDashboard({
         if (item.i === 'plan') {
             if (isOpen) {
                 const requiredPixels = contentHeight + 80;
-                const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + 16));
+                const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + MARGIN[1]));
                 return { ...item, h: Math.max(2, requiredRows) };
             } else {
                 const defaultH = getDefaultLayouts()[currentBreakpoint as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
@@ -125,7 +146,6 @@ export default function WidgetDashboard({
     });
     
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
-    // This function will handle saving the new accordion-adjusted layout
     handleLayoutChange(newLayout, newLayouts);
   }, [layouts, currentBreakpoint, getDefaultLayouts, handleLayoutChange]);
 
@@ -150,6 +170,31 @@ export default function WidgetDashboard({
     'day-timetable': dayTimetableWidget,
   }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, dayTimetableWidget]);
 
+  const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
+
+  const getLayoutWithDynamicMins = (breakpoint: string) => {
+    const layout = finalLayouts[breakpoint] || [];
+    if (breakpoint === 'lg') {
+        return layout;
+    }
+    const minW = calculateMinW(colWidth);
+    const minH = calculateMinH();
+    return layout.map(item => ({
+        ...item,
+        minW,
+        minH,
+    }));
+  };
+
+  const layoutsWithDynamicMins = useMemo(() => {
+    const newLayouts: Layouts = {};
+    for (const breakpoint in finalLayouts) {
+        newLayouts[breakpoint] = getLayoutWithDynamicMins(breakpoint);
+    }
+    return newLayouts;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBreakpoint, colWidth, finalLayouts]);
+
   if (!isLayoutLoaded) {
       return null;
   }
@@ -158,17 +203,23 @@ export default function WidgetDashboard({
     <div className="relative">
       <ResponsiveReactGridLayout
         className="layout"
-        layouts={finalLayouts}
+        layouts={layoutsWithDynamicMins}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={ROW_HEIGHT}
-        margin={[16, 16]}
+        margin={MARGIN}
         isDraggable={true}
         isResizable={true}
         compactType="vertical"
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
-        onBreakpointChange={(newBreakpoint) => setCurrentBreakpoint(newBreakpoint)}
+        onBreakpointChange={(newBreakpoint, newCols) => {
+            setCurrentBreakpoint(newBreakpoint);
+            setCurrentCols(newCols);
+        }}
+        onWidthChange={(containerWidth) => {
+            setCurrentContainerWidth(containerWidth);
+        }}
       >
         {(finalLayouts[currentBreakpoint] || []).map(item => {
           if (!components[item.i]) return null;
