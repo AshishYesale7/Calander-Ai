@@ -36,9 +36,9 @@ import {
 } from "@/components/ui/popover"
 import { WidgetIcon } from '../logo/WidgetIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { widgetList } from './widget-previews';
 import StreakPopoverContent from './StreakPopoverContent';
 import ExtensionsPopoverContent from './ExtensionsPopoverContent';
+import WidgetPreviews from './widget-previews';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -232,7 +232,7 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
-          {isEditMode && (
+          {pathname === '/dashboard' && isEditMode && (
               <Button
                 className="done-button bg-green-500 hover:bg-green-600 text-white"
                 onClick={() => setIsEditMode(false)}
@@ -279,31 +279,21 @@ export default function Header({
                   </PopoverContent>
               </Popover>
 
-               <Popover open={isWidgetPopoverOpen} onOpenChange={setIsWidgetPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <div onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')}>
-                    <Button variant="ghost" size="icon">
-                      <WidgetIcon />
-                      <span className="sr-only">Widgets</span>
-                    </Button>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')} className="w-80 frosted-glass">
-                    <div className="space-y-4">
-                        <h4 className="font-medium leading-none">Available Widgets</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            {widgetList.map(widget => (
-                                <div key={widget.id} className="p-2 border border-border/50 bg-background/50 rounded-md">
-                                    <p className="text-sm font-semibold truncate">{widget.name}</p>
-                                    <div className="mt-2 h-16 w-full bg-muted/30 rounded flex items-center justify-center">
-                                        {widget.preview}
-                                    </div>
-                                </div>
-                            ))}
+              {!isMobile && pathname === '/dashboard' && (
+                <Popover open={isWidgetPopoverOpen} onOpenChange={setIsWidgetPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <div onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')}>
+                            <Button variant="ghost" size="icon">
+                                <WidgetIcon />
+                                <span className="sr-only">Widgets</span>
+                            </Button>
                         </div>
-                    </div>
-                </PopoverContent>
-              </Popover>
+                    </PopoverTrigger>
+                    <PopoverContent onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')} className="w-80 frosted-glass">
+                        <WidgetPreviews hiddenWidgets={hiddenWidgets} onToggleWidget={handleToggleWidget} />
+                    </PopoverContent>
+                </Popover>
+              )}
               
               <NotificationPanel />
             </>

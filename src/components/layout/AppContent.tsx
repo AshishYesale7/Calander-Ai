@@ -36,7 +36,7 @@ import MobileBottomNav from './MobileBottomNav';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { saveUserFCMToken } from '@/services/userService';
-
+import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 
 function ChatAndCallUI() {
   const { 
@@ -140,6 +140,30 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const isChatPanelVisible = !!chattingWith;
     
     const [isEditMode, setIsEditMode] = useState(false);
+
+    const defaultLayouts = useMemo(() => {
+        const role = user?.userType || 'student';
+        return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
+    }, [user?.userType]);
+    
+    const defaultWidgetIds = useMemo(() => {
+        const lgLayout = defaultLayouts.lg || [];
+        return lgLayout.map(item => item.i);
+    }, [defaultLayouts]);
+
+    const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set());
+
+    const handleToggleWidget = useCallback((id: string) => {
+        setHiddenWidgets(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    }, []);
     
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
@@ -306,6 +330,8 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
             isFullScreen={false}
             isEditMode={isEditMode}
             setIsEditMode={setIsEditMode}
+            hiddenWidgets={hiddenWidgets}
+            handleToggleWidget={handleToggleWidget}
           />
           <div className="flex flex-1 min-h-0 min-w-0">
               <main ref={mainScrollRef} className={cn(
@@ -313,7 +339,12 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                   !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
                   !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
               )}>
-                {React.cloneElement(children as React.ReactElement, { isEditMode, setIsEditMode })}
+                {React.cloneElement(children as React.ReactElement, { 
+                    isEditMode, 
+                    setIsEditMode,
+                    hiddenWidgets,
+                    handleToggleWidget
+                })}
               </main>
               <ChatAndCallUI />
           </div>
