@@ -43,7 +43,7 @@ interface MaximizedPlannerViewProps {
 export default function MaximizedPlannerView({ initialDate, allEvents, onMinimize, onEditEvent, onDeleteEvent }: MaximizedPlannerViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { chatSidebarWidth } = useChat();
+  const { isChatSidebarOpen, chattingWith } = useChat();
 
   const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -74,6 +74,15 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const ghostEventRef = useRef<GhostEvent | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [eventToCreate, setEventToCreate] = useState<TimelineEvent | null>(null);
+
+  const chatSidebarWidth = useMemo(() => {
+    if (isMobile) return 0; // On mobile, the planner is always full-width underneath
+    const isChatPanelVisible = !!chattingWith;
+    if (isChatSidebarOpen) {
+      return isChatPanelVisible ? 288 + 352 : 288;
+    }
+    return isChatPanelVisible ? 80 + 352 : 80;
+  }, [isMobile, isChatSidebarOpen, chattingWith]);
 
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
@@ -299,7 +308,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col transition-[right] z-20", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        className={cn("fixed inset-y-0 left-0 flex flex-col z-30", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
         style={{ top: '4rem', right: `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
