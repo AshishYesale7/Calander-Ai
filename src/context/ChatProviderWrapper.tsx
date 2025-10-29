@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useRef, useCallback, useEffect, useMemo } from 'react';
@@ -540,17 +539,23 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
     const isMobile = useIsMobile();
 
     const chatSidebarWidth = useMemo(() => {
-      const isCallViewActive = (ongoingCall || ongoingAudioCall) && !isPipMode;
-      if (isMobile) return 0;
-      if (isCallViewActive) return 0; // No sidebar during call
-      
-      const isChatPanelVisible = !!chattingWith;
-      if (isChatSidebarOpen) {
-        return isChatPanelVisible ? 288 + 352 : 288; // 18rem + 22rem or 18rem
-      }
-      return isChatPanelVisible ? 80 + 352 : 80; // 5rem + 22rem or 5rem
+        const isCallViewActive = (ongoingCall || ongoingAudioCall) && !isPipMode;
+        if (isMobile || isCallViewActive) return 0;
+        
+        let width = 0;
+        if (isChatSidebarOpen) {
+          width = 352; // Expanded sidebar width
+          if (chattingWith) {
+            width += 352; // Add chat panel width
+          }
+        } else {
+          width = 80; // Collapsed sidebar width
+          if (chattingWith) {
+            width += 352; // Add chat panel width
+          }
+        }
+        return width;
     }, [isMobile, isChatSidebarOpen, chattingWith, ongoingCall, ongoingAudioCall, isPipMode]);
-
 
     const contextValue = {
         chattingWith, setChattingWith, 

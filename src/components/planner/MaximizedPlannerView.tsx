@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -300,8 +299,8 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col z-30", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
-        style={{ top: '4rem', right: isMobile ? 0 : `${chatSidebarWidth}px` }}
+        className={cn("fixed inset-y-0 left-0 flex flex-col", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        style={{ top: '4rem', right: isMobile ? '0px' : `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
           activeView={plannerViewMode} 
@@ -353,4 +352,3 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
-
