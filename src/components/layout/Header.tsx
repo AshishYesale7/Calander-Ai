@@ -113,6 +113,16 @@ interface HeaderProps {
   isFullScreen: boolean;
 }
 
+const widgetList = [
+    { id: 'plan', name: 'Today\'s Plan' },
+    { id: 'streak', name: 'Daily Streak' },
+    { id: 'calendar', name: 'Event Calendar' },
+    { id: 'day-timetable', name: 'Day Timetable' },
+    { id: 'timeline', name: 'Sliding Timeline' },
+    { id: 'emails', name: 'Important Emails' },
+    { id: 'next-month', name: 'Next Month Highlights' },
+];
+
 export default function Header({
   setIsCustomizeModalOpen,
   setIsSettingsModalOpen,
@@ -439,15 +449,24 @@ export default function Header({
                   <div onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')}>
                     <Button variant="ghost" size="icon">
                       <WidgetIcon />
-                      <span className="sr-only">Widget</span>
+                      <span className="sr-only">Widgets</span>
                     </Button>
                   </div>
                 </PopoverTrigger>
-                <PopoverContent onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')} className="w-64 frosted-glass">
-                  <div className="space-y-4">
-                    <h4 className="font-medium leading-none">Widgets</h4>
-                    <p className="text-sm text-muted-foreground">No widgets available yet.</p>
-                  </div>
+                <PopoverContent onMouseEnter={() => handleMouseEnter('widget')} onMouseLeave={() => handleMouseLeave('widget')} className="w-80 frosted-glass">
+                    <div className="space-y-4">
+                        <h4 className="font-medium leading-none">Available Widgets</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            {widgetList.map(widget => (
+                                <div key={widget.id} className="p-2 border border-border/50 bg-background/50 rounded-md">
+                                    <p className="text-sm font-semibold truncate">{widget.name}</p>
+                                    <div className="mt-2 h-16 w-full bg-muted/50 rounded flex items-center justify-center">
+                                        <p className="text-xs text-muted-foreground italic">Preview</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </PopoverContent>
               </Popover>
               
