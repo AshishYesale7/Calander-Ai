@@ -301,11 +301,11 @@ export default function WidgetDashboard({
             if (!components[item.i]) return null;
             return (
                 <div
-                key={item.i}
-                className="group relative"
-                onClick={(e) => {
-                    if (isEditMode) e.stopPropagation();
-                }}
+                    key={item.i}
+                    className="group relative z-20"
+                    onClick={(e) => {
+                        if (isEditMode) e.stopPropagation();
+                    }}
                 >
                 {isEditMode && (
                     <div className="remove-widget-button">
