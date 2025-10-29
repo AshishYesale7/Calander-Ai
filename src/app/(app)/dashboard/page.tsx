@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -48,16 +47,16 @@ const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | u
     try {
       const parsed = parseISO(dateInput);
       if (isNaN(parsed.valueOf())) {
-        console.warn(`Invalid date string for parseISO after parsing: ${'${dateInput}'}. Returning undefined.`);
+        console.warn(`Invalid date string for parseISO after parsing: '${dateInput}'. Returning undefined.`);
         return undefined;
       }
       return parsed;
     } catch (e) {
-      console.warn(`Error parsing date string with parseISO: ${'${dateInput}'}. Returning undefined. Error: ${'${e}'}`);
+      console.warn(`Error parsing date string with parseISO: '${dateInput}'. Returning undefined. Error: ${e}`);
       return undefined;
     }
   }
-  console.warn(`Invalid date input type or value: ${'${dateInput}'}. Returning undefined.`);
+  console.warn(`Invalid date input type or value: ${dateInput}. Returning undefined.`);
   return undefined;
 };
 
@@ -97,7 +96,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
           const parsedDate = parseDatePreservingTime(event.date);
           const parsedEndDate = parseDatePreservingTime(event.endDate);
           if (!parsedDate) {
-            console.warn(`Skipping event with invalid date from localStorage: ${'${event.id}'}, date: ${'${event.date}'}`);
+            console.warn(`Skipping event with invalid date from localStorage: '${event.id}', date: '${event.date}'`);
             return null;
           }
           return {
@@ -117,7 +116,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
       const parsedDate = parseDatePreservingTime(event.date);
       const parsedEndDate = parseDatePreservingTime(event.endDate);
       if (!parsedDate) {
-         console.warn(`Skipping mock event with invalid date: ${'${event.id}'}, date: ${'${event.date}'}`);
+         console.warn(`Skipping mock event with invalid date: '${event.id}', date: '${event.date}'`);
          return null;
       }
       return {
@@ -130,7 +129,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
     }).filter(event => event !== null) as TimelineEvent[];
 };
 
-export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode: setIsJiggleMode }: { isEditMode: boolean; setIsEditMode: (value: boolean) => void; }) {
+export default function DashboardPage() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -143,6 +142,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
   const [isAddingNewEvent, setIsAddingNewEvent] = useState(false);
   
   const [isPlannerMaximized, setIsPlannerMaximized] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const { apiKey } = useApiKey();
   const { timezone } = useTimezone();
@@ -232,7 +232,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
 
     if (insight.source === 'google_calendar' && insight.googleEventId) {
         return {
-            id: `gcal-${'${insight.googleEventId}'}`,
+            id: `gcal-${insight.googleEventId}`,
             googleEventId: insight.googleEventId,
             date: eventDate,
             endDate: eventEndDate,
@@ -251,7 +251,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
 
     if (insight.source === 'google_tasks' && insight.googleTaskId) {
         return {
-            id: `gtask-${'${insight.googleTaskId}'}`,
+            id: `gtask-${insight.googleTaskId}`,
             googleTaskId: insight.googleTaskId,
             date: eventDate,
             endDate: eventEndDate,
@@ -329,7 +329,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
             const payload = { ...data, date: data.date.toISOString(), endDate: data.endDate ? data.endDate.toISOString() : null };
             await saveTimelineEvent(user.uid, payload, { syncToGoogle: true, timezone });
           }
-          toast({ title: "Timeline Updated", description: `${'${uniqueNewEventsToAdd.length}'} new item(s) from Google were added.` });
+          toast({ title: "Timeline Updated", description: `${uniqueNewEventsToAdd.length} new item(s) from Google were added.` });
       } else {
           toast({ title: "Already Synced", description: "Your timeline already contains all the latest items from Google." });
       }
@@ -360,7 +360,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
     setAllTimelineEvents(newEvents);
     syncToLocalStorage(newEvents);
     
-    toast({ title: "Event Moved to Trash", description: `"${'${eventToDelete.title}'}" has been deleted.` });
+    toast({ title: "Event Moved to Trash", description: `"${eventToDelete.title}" has been deleted.` });
     
     try {
       await deleteTimelineEvent(user.uid, eventId);
@@ -414,7 +414,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
       defaultNewEventDate.setHours(9,0,0,0);
 
       setEventBeingEdited({
-        id: `custom-${'${Date.now()}'}`,
+        id: `custom-${Date.now()}`,
         title: '',
         date: defaultNewEventDate,
         endDate: undefined,
@@ -462,7 +462,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
         await fetchAllEvents();
         toast({
             title: isAddingNewEvent ? "Event Added" : "Event Updated",
-            description: `"${'${updatedEvent.title}'}" has been successfully ${'${isAddingNewEvent ? "added" : "updated"}'}.`
+            description: `"${updatedEvent.title}" has been successfully ${isAddingNewEvent ? "added" : "updated"}.`
         });
     } catch (error: any) {
         let description = 'An unknown error occurred while saving the event.';
@@ -488,7 +488,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
 
     toast({
       title: "Status Updated",
-      description: `"${'${updatedEvent.title}'}" marked as ${'${newStatus}'}.`
+      description: `"${updatedEvent.title}" marked as ${newStatus}.`
     });
 
     try {
@@ -523,21 +523,21 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
 
     const icsEvents = activeEvents.map(event => {
       let icsEvent = 'BEGIN:VEVENT' + CRLF;
-      icsEvent += `UID:${'${event.id}'}@calendar.ai` + CRLF;
-      icsEvent += `DTSTAMP:${'${formatToICSDate(new Date(), false)}'}` + CRLF;
-      icsEvent += `DTSTART${'${event.isAllDay ? ';VALUE=DATE' : ''}'}:${'${formatToICSDate(event.date, !!event.isAllDay)}'}` + CRLF;
+      icsEvent += `UID:${event.id}@calendar.ai` + CRLF;
+      icsEvent += `DTSTAMP:${formatToICSDate(new Date(), false)}` + CRLF;
+      icsEvent += `DTSTART${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.date, !!event.isAllDay)}` + CRLF;
       if (event.endDate) {
-        icsEvent += `DTEND${'${event.isAllDay ? ';VALUE=DATE' : ''}'}:${'${formatToICSDate(event.endDate, !!event.isAllDay)}'}` + CRLF;
+        icsEvent += `DTEND${event.isAllDay ? ';VALUE=DATE' : ''}:${formatToICSDate(event.endDate, !!event.isAllDay)}` + CRLF;
       }
-      icsEvent += `SUMMARY:${'${event.title}'}` + CRLF;
-      if (event.notes) icsEvent += `DESCRIPTION:${'${event.notes.replace(/\r\n|\n|\r/g, '\\n')}'}` + CRLF;
-      if (event.location) icsEvent += `LOCATION:${'${event.location}'}` + CRLF;
-      if (event.url) icsEvent += `URL:${'${event.url}'}` + CRLF;
+      icsEvent += `SUMMARY:${event.title}` + CRLF;
+      if (event.notes) icsEvent += `DESCRIPTION:${event.notes.replace(/\r\n|\n|\r/g, '\\n')}` + CRLF;
+      if (event.location) icsEvent += `LOCATION:${event.location}` + CRLF;
+      if (event.url) icsEvent += `URL:${event.url}` + CRLF;
       icsEvent += 'END:VEVENT' + CRLF;
       return icsEvent;
     }).join('');
 
-    const icsFileContent = `BEGIN:VCALENDAR${'${CRLF}'}VERSION:2.0${'${CRLF}'}PRODID:-//Calendar.ai//AI Calendar Assistant//EN${'${CRLF}'}${'${icsEvents}'}END:VCALENDAR`;
+    const icsFileContent = `BEGIN:VCALENDAR${CRLF}VERSION:2.0${CRLF}PRODID:-//Calendar.ai//AI Calendar Assistant//EN${CRLF}${icsEvents}END:VCALENDAR`;
     
     const blob = new Blob([icsFileContent], { type: 'text/calendar;charset=utf-8' });
     saveAs(blob, 'calendar.ai.ics');
@@ -590,7 +590,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
                     const isAllDay = !item.start.includes('T') || (item.end && !item.end.includes('T'));
 
                     const newEvent: TimelineEvent = {
-                        id: `ics-${'${item.uid || Date.now()}-${Math.random()}'}`,
+                        id: `ics-${item.uid || Date.now()}-${Math.random()}`,
                         title: item.summary,
                         date: startDate,
                         endDate: endDate,
@@ -620,7 +620,7 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
             }
 
             await fetchAllEvents();
-            toast({ title: 'Import Successful', description: `${'${eventsToSave.length}'} event(s) have been added to your timeline.` });
+            toast({ title: 'Import Successful', description: `${eventsToSave.length} event(s) have been added to your timeline.` });
 
         } catch (error: any) {
             toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
@@ -799,8 +799,8 @@ export default function DashboardPage({ isEditMode: isJiggleMode, setIsEditMode:
             closeDayTimetableView={closeDayTimetableView}
             handleEventStatusUpdate={handleEventStatusUpdate}
             setIsPlannerMaximized={setIsPlannerMaximized}
-            isEditMode={isJiggleMode}
-            setIsEditMode={setIsJiggleMode}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
         />
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>
