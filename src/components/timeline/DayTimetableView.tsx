@@ -2,7 +2,7 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, type ReactNode, useRef, useEffect, useState } from 'react';
+import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
