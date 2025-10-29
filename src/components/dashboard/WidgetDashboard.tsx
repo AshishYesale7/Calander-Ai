@@ -301,7 +301,7 @@ export default function WidgetDashboard({
             return (
                 <div
                     key={item.i}
-                    className="group relative z-20"
+                    className="group"
                     onClick={(e) => {
                         if (isEditMode) e.stopPropagation();
                     }}

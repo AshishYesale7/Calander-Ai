@@ -2,7 +2,7 @@
     position: absolute;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 10; /* Lower z-index to be behind widgets */
+    z-index: 10;
     backdrop-filter: blur(2px);
     border-radius: var(--radius); /* Match parent's border-radius */
 }
@@ -21,7 +21,7 @@
     justify-content: center;
     border: 2px solid white;
     cursor: pointer;
-    z-index: 999; /* Higher than card content */
+    z-index: 50;
     font-size: 16px;
     line-height: 1;
     transition: transform 0.2s;
