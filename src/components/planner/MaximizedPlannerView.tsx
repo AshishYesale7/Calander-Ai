@@ -43,11 +43,11 @@ interface MaximizedPlannerViewProps {
 export default function MaximizedPlannerView({ initialDate, allEvents, onMinimize, onEditEvent, onDeleteEvent }: MaximizedPlannerViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isChatSidebarOpen, chattingWith } = useChat();
+  const { isChatSidebarOpen, chattingWith, chatSidebarWidth } = useChat();
 
-  const [panelWidths, setPanelWidths] = useState([15, 25, 60]);
+  const [panelWidths, setPanelWidths] = useState([20, 25, 55]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const savedWidthsRef = useRef([15, 25, 60]);
+  const savedWidthsRef = useRef([20, 25, 55]);
   const isResizing = useRef<number | null>(null);
   const startXRef = useRef(0);
   const startWidthsRef = useRef<number[]>([]);
@@ -129,7 +129,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     const leftPanelIndex = isResizing.current;
     const rightPanelIndex = isResizing.current + 1;
 
-    const minWidth = containerWidth * 0.15; // 15% minimum width
+    const minWidth = containerWidth * 0.15;
 
     let proposedLeftWidth = newWidths[leftPanelIndex] + dx;
     let proposedRightWidth = newWidths[rightPanelIndex] - dx;
@@ -245,12 +245,10 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
       : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
     
     setEventToCreate(newEvent);
-    // State is reset in handleDragEnd
+    handleDragEnd();
   };
   
   const handleDragEnd = (e?: React.DragEvent) => {
-    // This function is called when a drag operation ends, regardless of whether it was successful.
-    // Resetting state here ensures a clean UI.
     setDraggedTask(null);
     setGhostEvent(null);
     ghostEventRef.current = null;
@@ -259,17 +257,37 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     }
   };
   
-  const handleToggleSidebar = () => {
+  const handleToggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => {
         const newIsOpen = !prev;
-        if (newIsOpen) setPanelWidths(savedWidthsRef.current);
-        else {
+        if (newIsOpen) {
+            // Restore saved widths but hide the 3rd panel
+            const restoredWidths = [...savedWidthsRef.current];
+            const sumFirstTwo = restoredWidths[0] + restoredWidths[1];
+            if (sumFirstTwo > 0) {
+                 restoredWidths[0] = (restoredWidths[0] / sumFirstTwo) * 100;
+                 restoredWidths[1] = (restoredWidths[1] / sumFirstTwo) * 100;
+            } else {
+                 restoredWidths[0] = 50; // Default split if widths were zero
+                 restoredWidths[1] = 50;
+            }
+            restoredWidths[2] = 0;
+            setPanelWidths(restoredWidths);
+        } else {
+            // Save current state before collapsing
             savedWidthsRef.current = panelWidths;
             setPanelWidths([0, 0, 100]);
         }
         return newIsOpen;
     });
-  };
+  }, [panelWidths]);
+  
+  // Effect to auto-collapse planner sidebars when chat is fully open
+  useEffect(() => {
+      if (!isMobile && isChatSidebarOpen && chattingWith && isSidebarOpen) {
+          handleToggleSidebar();
+      }
+  }, [isMobile, isChatSidebarOpen, chattingWith, isSidebarOpen, handleToggleSidebar]);
 
   const handleTaskStatusChange = async (listId: string, taskId: string) => {
     if (!user) return;
@@ -279,7 +297,6 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     
     const newStatus = taskToUpdate.status === 'completed' ? 'needsAction' : 'completed';
     
-    // Optimistic UI update
     setTasks(prev => ({
       ...prev,
       [listId]: prev[listId].map(t => t.id === taskId ? { ...t, status: newStatus } : t)
@@ -289,7 +306,6 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
       await updateGoogleTask(user.uid, listId, taskId, { status: newStatus });
     } catch (error) {
       toast({ title: "Sync Error", description: "Failed to update task in Google.", variant: 'destructive' });
-      // Revert UI on failure
       setTasks(prev => ({
         ...prev,
         [listId]: prev[listId].map(t => t.id === taskId ? { ...t, status: taskToUpdate.status } : t)
@@ -297,17 +313,9 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     }
   };
 
-  const chatSidebarWidth = useMemo(() => {
-    if (isMobile) return 0;
-    if (isChatSidebarOpen) {
-      return chattingWith ? 352 + 352 : 352;
-    }
-    return chattingWith ? 80 + 352 : 80;
-  }, [isMobile, isChatSidebarOpen, chattingWith]);
-
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col z-30", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        className={cn("fixed inset-y-0 left-0 flex flex-col z-30 transition-[right]", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
         style={{ top: '4rem', right: isMobile ? '0px' : `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
@@ -323,7 +331,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
         <div className="flex flex-1 min-h-0" ref={panelsContainerRef}>
-              {isSidebarOpen && (
+              {(isSidebarOpen && panelWidths[0] > 0) && (
                   <>
                       <div className="flex-shrink-0 flex-grow-0" style={{ width: isMobile ? '9rem' : `${panelWidths[0]}%` }}>
                          <PlannerSidebar activeView={activePlannerView} setActiveView={setActivePlannerView} viewTheme={maximizedViewTheme} />
@@ -342,20 +350,22 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                             viewTheme={maximizedViewTheme}
                           />
                       </div>
-                      {!isMobile && <Resizer onMouseDown={onMouseDown(1)} />}
+                      {!isMobile && panelWidths[2] > 0 && <Resizer onMouseDown={onMouseDown(1)} />}
                   </>
               )}
-              <div className="flex-1 flex flex-col" style={{ width: isSidebarOpen ? `${panelWidths[2]}%` : '100%' }}>
-                  <div className="flex-1 min-h-0 flex flex-col">
-                      {plannerViewMode === 'week' ? (
-                         <PlannerWeeklyView week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} />
-                      ) : plannerViewMode === 'day' ? (
-                        <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
-                      ) : (
-                        <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
-                      )}
+              {panelWidths[2] > 0 && (
+                  <div className="flex-1 flex flex-col" style={{ width: `${panelWidths[2]}%` }}>
+                      <div className="flex-1 min-h-0 flex flex-col">
+                          {plannerViewMode === 'week' ? (
+                             <PlannerWeeklyView week={currentWeekDays} events={allEvents} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} />
+                          ) : plannerViewMode === 'day' ? (
+                            <PlannerDayView date={currentDisplayDate} events={allEvents} onEditEvent={onEditEvent} onDeleteEvent={onDeleteEvent} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent} />
+                          ) : (
+                            <PlannerMonthView month={currentDisplayDate} events={allEvents} viewTheme={maximizedViewTheme} onDrop={handleDrop} onDragOver={handleDragOver} ghostEvent={ghostEvent}/>
+                          )}
+                      </div>
                   </div>
-              </div>
+              )}
         </div>
     </div>
   );
