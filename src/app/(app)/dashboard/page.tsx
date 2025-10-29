@@ -34,7 +34,7 @@ import { useTimezone } from '@/hooks/use-timezone';
 import DailyStreakCard from '@/components/dashboard/DailyStreakCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
-
+import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -687,6 +687,17 @@ export default function DashboardPage() {
         )}
     </div>
   );
+  
+  const dayTimetableWidget = (
+    <DayTimetableViewWidget
+        date={selectedDateForDayView}
+        events={activeEvents}
+        onClose={closeDayTimetableView}
+        onDeleteEvent={handleDeleteTimelineEvent}
+        onEditEvent={handleOpenEditModal}
+        onEventStatusChange={handleEventStatusUpdate}
+    />
+  );
 
 
   if (isMobile) {
@@ -779,19 +790,8 @@ export default function DashboardPage() {
             onEditEvent={handleOpenEditModal}
             handleOpenEditModal={handleOpenEditModal}
             calendarWidget={calendarWidget}
+            dayTimetableWidget={dayTimetableWidget}
         />
-        <div className="mt-6">
-            {selectedDateForDayView && (
-                <DayTimetableView 
-                    date={selectedDateForDayView} 
-                    events={activeEvents} 
-                    onClose={closeDayTimetableView} 
-                    onDeleteEvent={handleDeleteTimelineEvent} 
-                    onEditEvent={handleOpenEditModal}
-                    onEventStatusChange={handleEventStatusUpdate}
-                />
-            )}
-        </div>
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>
   );

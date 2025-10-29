@@ -23,6 +23,7 @@ export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
     isSyncing, onToggleTrash, isTrashOpen, activeDisplayMonth,
     onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
+    calendarWidget,
     dayTimetableWidget
 }: any) {
   const { user } = useAuth();
