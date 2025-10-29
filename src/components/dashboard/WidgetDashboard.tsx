@@ -10,24 +10,23 @@ import ImportantEmailsCard from '../timeline/ImportantEmailsCard';
 import NextMonthHighlightsCard from '../timeline/NextMonthHighlightsCard';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
+import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout } from '@/services/layoutService';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
 const MARGIN: [number, number] = [16, 16];
 
-// --- NEW HELPER FUNCTIONS ---
 const PIXEL_TO_GRID_UNITS = {
   MIN_W_PX: 280,
   MIN_H_PX: 200,
   TIMETABLE_MIN_H_PX: 300,
 };
 
-// Calculates the minimum width in grid units based on a pixel value
 const calculateMinW = (colWidth: number): number => {
   if (colWidth <= 0) return 1;
   const { MIN_W_PX } = PIXEL_TO_GRID_UNITS;
@@ -36,16 +35,13 @@ const calculateMinW = (colWidth: number): number => {
   return gridUnits;
 };
 
-// Calculates the minimum height in grid units based on a pixel value
 const calculateMinH = (isTimetable: boolean): number => {
   const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
-  const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX * 2 : MIN_H_PX;
+  const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
   const contentHeight = targetHeight - MARGIN[1];
   const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
   return gridUnits;
 };
-// --- END NEW HELPER FUNCTIONS ---
-
 
 export default function WidgetDashboard({
     activeEvents,
@@ -69,10 +65,15 @@ export default function WidgetDashboard({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const getLayoutKey = useCallback(() => user ? `dashboard-layouts-${user.uid}` : null, [user]);
-  
+  const getLayoutKey = useCallback(() => {
+    if (!user) return null;
+    const role = user.userType || 'student';
+    return `dashboard-layouts-${user.uid}-${role}`;
+  }, [user]);
+
   const getDefaultLayouts = useCallback(() => {
-    return user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
+    const role = user?.userType || 'student';
+    return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
 
   const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
@@ -86,24 +87,33 @@ export default function WidgetDashboard({
   useEffect(() => {
     const loadLayouts = async () => {
       const layoutKey = getLayoutKey();
-      if (!layoutKey) {
+      if (!layoutKey || !user) {
         setLayouts(getDefaultLayouts());
         setIsLayoutLoaded(true);
         return;
       }
       
+      const role = user.userType || 'student';
+
       try {
           const savedLayoutsLocal = localStorage.getItem(layoutKey);
           if (savedLayoutsLocal) {
-            setLayouts(JSON.parse(savedLayoutsLocal));
+            const parsedLayouts = JSON.parse(savedLayoutsLocal);
+            // Check version from local storage
+            if (parsedLayouts.version === LAYOUT_VERSION) {
+                setLayouts(parsedLayouts.layouts);
+                setIsLayoutLoaded(true);
+                return; // Exit if valid local layout is found
+            }
+          }
+          
+          // If no valid local layout, check Firestore
+          const savedLayoutsFirestore = await getLayout(user.uid, role);
+          if (savedLayoutsFirestore && savedLayoutsFirestore.version === LAYOUT_VERSION) {
+             setLayouts(savedLayoutsFirestore.layouts);
+             localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
           } else {
-             const savedLayoutsFirestore = await getLayout(user!.uid);
-             if (savedLayoutsFirestore) {
-                setLayouts(savedLayoutsFirestore);
-                localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
-             } else {
-                setLayouts(getDefaultLayouts());
-             }
+             setLayouts(getDefaultLayouts());
           }
       } catch (e) {
           console.warn("Could not parse layouts from storage. Using default.", e);
@@ -113,7 +123,7 @@ export default function WidgetDashboard({
       }
     };
 
-    if (!layoutInitialized.current && user) {
+    if (user && !layoutInitialized.current) {
         loadLayouts();
         layoutInitialized.current = true;
     }
@@ -121,24 +131,28 @@ export default function WidgetDashboard({
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     const layoutKey = getLayoutKey();
-    if (layoutKey && isLayoutLoaded) {
-        try {
-            localStorage.setItem(layoutKey, JSON.stringify(allLayouts));
-            saveLayout(user!.uid, allLayouts).catch(err => {
-                toast({
-                  title: "Layout Sync Error",
-                  description: "Could not save your widget layout to the cloud.",
-                  variant: "destructive"
-                });
-            });
-            setLayouts(allLayouts);
-        } catch (error) {
+    if (!layoutKey || !isLayoutLoaded || !user) return;
+    
+    const role = user.userType || 'student';
+
+    try {
+        const dataToSave = { version: LAYOUT_VERSION, layouts: allLayouts };
+        localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+        saveLayout(user.uid, role, dataToSave).catch(err => {
+            console.error("Layout Sync Error:", err);
             toast({
-              title: "Layout Save Error",
-              description: "Could not save your widget layout.",
+              title: "Layout Sync Error",
+              description: "Could not save your widget layout to the cloud.",
               variant: "destructive"
             });
-        }
+        });
+        setLayouts(allLayouts);
+    } catch (error) {
+        toast({
+          title: "Layout Save Error",
+          description: "Could not save your widget layout.",
+          variant: "destructive"
+        });
     }
   };
 
@@ -149,13 +163,11 @@ export default function WidgetDashboard({
     const newLayout = currentLayout.map(item => {
         if (item.i === 'plan') {
             if (isOpen) {
-                // When opening, calculate the required height in grid units
-                const headerHeight = 80; // Approx. pixel height of the accordion trigger
+                const headerHeight = 80;
                 const requiredPixels = contentHeight + headerHeight;
                 const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + MARGIN[1]));
                 return { ...item, h: Math.max(2, requiredRows) };
             } else {
-                // When closing, shrink it to its minimum possible height to fit the header
                 return { ...item, h: 1 };
             }
         }
@@ -164,7 +176,7 @@ export default function WidgetDashboard({
 
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
     handleLayoutChange(newLayout, newLayouts);
-}, [layouts, currentBreakpoint, handleLayoutChange]);
+  }, [layouts, currentBreakpoint]);
 
   const components: { [key: string]: React.ReactNode } = useMemo(() => {
       const dayTimetableViewWidget = (
@@ -190,14 +202,10 @@ export default function WidgetDashboard({
     }
   }, [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, selectedDateForDayView, closeDayTimetableView, handleEventStatusUpdate, setIsPlannerMaximized]);
 
-
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
   const getLayoutWithDynamicMins = (breakpoint: string) => {
     const layout = finalLayouts[breakpoint as keyof Layouts] || [];
-    if (breakpoint === 'lg') {
-        return layout;
-    }
     const minW = calculateMinW(colWidth);
     return layout.map(item => ({
         ...item,
@@ -223,11 +231,10 @@ export default function WidgetDashboard({
         newLayouts[breakpoint] = getLayoutWithDynamicMins(breakpoint);
     }
     return newLayouts;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBreakpoint, colWidth, finalLayouts]);
 
   if (!isLayoutLoaded) {
-      return null;
+      return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
   }
   
   return (
