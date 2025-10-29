@@ -15,31 +15,35 @@ const studentLayoutLg: Layout[] = [
 ];
 
 const studentLayoutMd: Layout[] = [
-  { i: 'plan', x: 0, y: 0, w: 10, h: 2, minH: 2, minW: 1 },
-  { i: 'streak', x: 0, y: 2, w: 10, h: 2, minH: 2, minW: 1 },
-  { i: 'calendar', x: 0, y: 4, w: 5, h: 4, minH: 4, minW: 1 },
-  { i: 'day-timetable', x: 5, y: 4, w: 5, h: 4, minH: 4, minW: 1 },
-  { i: 'timeline', x: 0, y: 8, w: 10, h: 4, minH: 3, minW: 1 },
-  { i: 'emails', x: 0, y: 12, w: 10, h: 5, minH: 4, minW: 1 },
-  { i: 'next-month', x: 0, y: 17, w: 10, h: 3, minH: 3, minW: 1 },
+  { i: 'plan', x: 0, y: 0, w: 10, h: 2 },
+  { i: 'streak', x: 0, y: 2, w: 10, h: 2 },
+  { i: 'calendar', x: 0, y: 4, w: 5, h: 4 },
+  { i: 'day-timetable', x: 5, y: 4, w: 5, h: 4 },
+  { i: 'timeline', x: 0, y: 8, w: 10, h: 4 },
+  { i: 'emails', x: 0, y: 12, w: 10, h: 5 },
+  { i: 'next-month', x: 0, y: 17, w: 10, h: 3 },
 ];
 
 const studentLayoutSm: Layout[] = [
-  { i: 'plan', x: 0, y: 0, w: 6, h: 2, minH: 2, minW: 1 },
-  { i: 'streak', x: 0, y: 2, w: 6, h: 2, minH: 2, minW: 1 },
-  { i: 'calendar', x: 0, y: 4, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'day-timetable', x: 0, y: 8, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'timeline', x: 0, y: 12, w: 6, h: 3, minH: 3, minW: 1 },
-  { i: 'emails', x: 0, y: 15, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'next-month', x: 0, y: 19, w: 6, h: 3, minH: 2, minW: 1 },
+  { i: 'plan', x: 0, y: 0, w: 6, h: 2 },
+  { i: 'streak', x: 0, y: 2, w: 6, h: 2 },
+  { i: 'calendar', x: 0, y: 4, w: 6, h: 4 },
+  { i: 'day-timetable', x: 0, y: 8, w: 6, h: 4 },
+  { i: 'timeline', x: 0, y: 12, w: 6, h: 3 },
+  { i: 'emails', x: 0, y: 15, w: 6, h: 4 },
+  { i: 'next-month', x: 0, y: 19, w: 6, h: 3 },
 ];
+
+const studentLayoutXs: Layout[] = studentLayoutSm.map(item => ({ ...item, w: 4 }));
+const studentLayoutXxs: Layout[] = studentLayoutSm.map(item => ({ ...item, w: 2 }));
+
 
 export const responsiveStudentLayouts: Layouts = {
     lg: studentLayoutLg,
     md: studentLayoutMd,
     sm: studentLayoutSm,
-    xs: studentLayoutSm.map(l => ({ ...l, w: 4 })),
-    xxs: studentLayoutSm.map(l => ({ ...l, w: 2 })),
+    xs: studentLayoutXs,
+    xxs: studentLayoutXxs,
 };
 
 
@@ -54,28 +58,31 @@ const professionalLayoutLg: Layout[] = [
 ];
 
 const professionalLayoutMd: Layout[] = [
-  { i: 'plan', x: 0, y: 0, w: 10, h: 2, minH: 2, minW: 1 },
-  { i: 'calendar', x: 0, y: 2, w: 5, h: 4, minH: 4, minW: 1 },
-  { i: 'day-timetable', x: 5, y: 2, w: 5, h: 4, minH: 4, minW: 1 },
-  { i: 'timeline', x: 0, y: 6, w: 10, h: 4, minH: 3, minW: 1 },
-  { i: 'emails', x: 0, y: 10, w: 10, h: 5, minH: 4, minW: 1 },
-  { i: 'next-month', x: 0, y: 15, w: 10, h: 4, minH: 3, minW: 1 },
+  { i: 'plan', x: 0, y: 0, w: 10, h: 2 },
+  { i: 'calendar', x: 0, y: 2, w: 5, h: 4 },
+  { i: 'day-timetable', x: 5, y: 2, w: 5, h: 4 },
+  { i: 'timeline', x: 0, y: 6, w: 10, h: 4 },
+  { i: 'emails', x: 0, y: 10, w: 10, h: 5 },
+  { i: 'next-month', x: 0, y: 15, w: 10, h: 4 },
 ];
 
 const professionalLayoutSm: Layout[] = [
-  { i: 'plan', x: 0, y: 0, w: 6, h: 2, minH: 2, minW: 1 },
-  { i: 'calendar', x: 0, y: 2, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'day-timetable', x: 0, y: 6, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'timeline', x: 0, y: 10, w: 6, h: 3, minH: 3, minW: 1 },
-  { i: 'emails', x: 0, y: 13, w: 6, h: 4, minH: 3, minW: 1 },
-  { i: 'next-month', x: 0, y: 17, w: 6, h: 4, minH: 2, minW: 1 },
+  { i: 'plan', x: 0, y: 0, w: 6, h: 2 },
+  { i: 'calendar', x: 0, y: 2, w: 6, h: 4 },
+  { i: 'day-timetable', x: 0, y: 6, w: 6, h: 4 },
+  { i: 'timeline', x: 0, y: 10, w: 6, h: 3 },
+  { i: 'emails', x: 0, y: 13, w: 6, h: 4 },
+  { i: 'next-month', x: 0, y: 17, w: 6, h: 4 },
 ];
+
+const professionalLayoutXs: Layout[] = professionalLayoutSm.map(item => ({ ...item, w: 4 }));
+const professionalLayoutXxs: Layout[] = professionalLayoutSm.map(item => ({ ...item, w: 2 }));
 
 
 export const responsiveProfessionalLayouts: Layouts = {
     lg: professionalLayoutLg,
     md: professionalLayoutMd,
     sm: professionalLayoutSm,
-    xs: professionalLayoutSm.map(l => ({ ...l, w: 4 })),
-    xxs: professionalLayoutSm.map(l => ({ ...l, w: 2 })),
+    xs: professionalLayoutXs,
+    xxs: professionalLayoutXxs,
 };
