@@ -19,6 +19,7 @@ import PermissionRequestModal from '@/components/chat/PermissionRequestModal';
 import { motion, useAnimation } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ChatContext } from './ChatContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ACTIVE_CALL_SESSION_KEY = 'activeCallId';
 
@@ -536,7 +537,7 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
         return () => { if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current) };
     }, [connectionStatus, endCall, toast]);
   
-    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+    const isMobile = useIsMobile();
 
     const chatSidebarWidth = useMemo(() => {
       const isCallViewActive = (ongoingCall || ongoingAudioCall) && !isPipMode;
