@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/popover"
 import { WidgetIcon } from '../logo/WidgetIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { widgetList } from './widget-previews';
 
 
 const navItems = [
@@ -112,86 +113,6 @@ interface HeaderProps {
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
 }
-
-const widgetList = [
-    { 
-        id: 'plan', 
-        name: 'Today\'s Plan',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md flex flex-col gap-1.5">
-                <div className="h-2 w-3/4 bg-muted rounded-full"></div>
-                <div className="h-1.5 w-full bg-muted/50 rounded-full"></div>
-                <div className="h-1.5 w-full bg-muted/50 rounded-full"></div>
-                <div className="h-1.5 w-2/3 bg-muted/50 rounded-full"></div>
-            </div>
-        )
-    },
-    { 
-        id: 'streak', 
-        name: 'Daily Streak',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md flex items-center justify-center">
-                <Flame className="h-6 w-6 text-orange-400"/>
-            </div>
-        )
-    },
-    { 
-        id: 'calendar', 
-        name: 'Event Calendar',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md grid grid-cols-4 gap-1">
-                {Array.from({length: 8}).map((_, i) => (
-                    <div key={i} className={cn("h-2 rounded-sm", i === 3 ? "bg-accent/80" : "bg-muted/50")}></div>
-                ))}
-            </div>
-        )
-    },
-    { 
-        id: 'day-timetable', 
-        name: 'Day Timetable',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md flex gap-1">
-                <div className="w-1/4 h-full bg-muted/30 rounded-sm"></div>
-                <div className="w-3/4 h-full bg-muted/30 rounded-sm relative">
-                    <div className="absolute top-2 left-1 right-1 h-3 bg-blue-500/50 rounded-sm"></div>
-                    <div className="absolute top-8 left-1 right-1 h-4 bg-purple-500/50 rounded-sm"></div>
-                </div>
-            </div>
-        )
-    },
-    { 
-        id: 'timeline', 
-        name: 'Sliding Timeline',
-        preview: (
-             <div className="w-full h-full p-2 bg-background/50 rounded-md flex justify-center">
-                <div className="w-0.5 h-full bg-border/80 relative">
-                    <div className="absolute -left-0.5 top-2 h-1.5 w-1.5 bg-accent rounded-full"></div>
-                    <div className="absolute -left-0.5 top-6 h-1.5 w-1.5 bg-accent rounded-full"></div>
-                </div>
-            </div>
-        )
-    },
-    { 
-        id: 'emails', 
-        name: 'Important Emails',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md flex flex-col gap-1.5">
-                <div className="h-3 w-full bg-muted/50 rounded-sm"></div>
-                <div className="h-3 w-full bg-muted/50 rounded-sm"></div>
-            </div>
-        )
-    },
-    { 
-        id: 'next-month', 
-        name: 'Next Month Highlights',
-        preview: (
-            <div className="w-full h-full p-2 bg-background/50 rounded-md flex flex-col gap-1.5">
-                <div className="h-2 w-3/4 bg-muted rounded-full"></div>
-                <div className="h-1.5 w-full bg-muted/50 rounded-full"></div>
-            </div>
-        )
-    },
-];
 
 export default function Header({
   setIsCustomizeModalOpen,
@@ -530,7 +451,7 @@ export default function Header({
                             {widgetList.map(widget => (
                                 <div key={widget.id} className="p-2 border border-border/50 bg-background/50 rounded-md">
                                     <p className="text-sm font-semibold truncate">{widget.name}</p>
-                                    <div className="mt-2 h-16 w-full bg-muted/50 rounded flex items-center justify-center">
+                                    <div className="mt-2 h-16 w-full bg-muted/30 rounded flex items-center justify-center p-2">
                                        {widget.preview}
                                     </div>
                                 </div>
