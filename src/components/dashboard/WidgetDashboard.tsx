@@ -14,7 +14,6 @@ import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION
 import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
-import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -76,6 +75,7 @@ export default function WidgetDashboard({
   const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
   
   const layoutInitialized = useRef(false);
+  const isUserInteracting = useRef(false);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -96,14 +96,11 @@ export default function WidgetDashboard({
       const layoutKey = getLayoutKey();
       const role = user.userType || 'student';
 
-      // Fetch local and cloud layouts in parallel
       const localLayoutPromise = new Promise<VersionedLayouts | null>((resolve) => {
         if (layoutKey) {
           const savedLayoutsLocal = localStorage.getItem(layoutKey);
           if (savedLayoutsLocal) {
-            try {
-              resolve(JSON.parse(savedLayoutsLocal));
-            } catch { resolve(null); }
+            try { resolve(JSON.parse(savedLayoutsLocal)); } catch { resolve(null); }
           } else { resolve(null); }
         } else { resolve(null); }
       });
@@ -114,7 +111,6 @@ export default function WidgetDashboard({
 
       const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts() };
 
-      // Compare versions and decide which one to use
       const localVersion = localResult?.version || 0;
       const cloudVersion = cloudResult?.version || 0;
       const codeVersion = CODE_LAYOUT_VERSION;
@@ -125,11 +121,9 @@ export default function WidgetDashboard({
         finalLayouts = localResult!;
       } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
         finalLayouts = cloudResult!;
-        // Sync cloud to local
         if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
       } else {
         finalLayouts = defaultLayouts;
-        // If defaults are used, clear old layouts
         if (layoutKey) localStorage.removeItem(layoutKey);
       }
       
@@ -138,10 +132,8 @@ export default function WidgetDashboard({
     };
 
     if(user) loadLayouts();
-
   }, [user, getLayoutKey, getDefaultLayouts]);
 
-  // Effect to save layout to Firestore when component unmounts
   useEffect(() => {
     return () => {
       if (isLayoutLoaded && user) {
@@ -155,21 +147,29 @@ export default function WidgetDashboard({
 
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
-    const layoutKey = getLayoutKey();
-    if (!layoutKey || !isLayoutLoaded || !user) return;
+    if (!isLayoutLoaded || !user || !isUserInteracting.current) return;
     
-    // Increment version on every change
+    const layoutKey = getLayoutKey();
+    if (!layoutKey) return;
+    
     const newVersion = (versionedLayouts.version || 0) + 1;
     const dataToSave: VersionedLayouts = { version: newVersion, layouts: allLayouts };
 
     setVersionedLayouts(dataToSave);
     
-    // Save to local storage immediately for a snappy feel
     try {
         localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
     } catch (error) {
         console.warn("Could not save layout to local storage.", error);
     }
+  };
+  
+  const handleInteractionStart = () => {
+    isUserInteracting.current = true;
+  };
+  
+  const handleInteractionStop = () => {
+    isUserInteracting.current = false;
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
@@ -268,6 +268,10 @@ export default function WidgetDashboard({
         compactType="vertical"
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
+        onDragStart={handleInteractionStart}
+        onDragStop={handleInteractionStop}
+        onResizeStart={handleInteractionStart}
+        onResizeStop={handleInteractionStop}
         onBreakpointChange={(newBreakpoint, newCols) => {
             setCurrentBreakpoint(newBreakpoint);
             setCurrentCols(newCols);
