@@ -257,6 +257,7 @@ export default function WidgetDashboard({
   
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsEditMode(true);
   };
   
@@ -268,13 +269,17 @@ export default function WidgetDashboard({
     <div 
       className="relative h-full" 
       onContextMenu={handleContextMenu}
-      onClick={() => {
-        if (isEditMode) {
-          setIsEditMode(false);
-        }
-      }}
     >
-      {isEditMode && <div className="edit-mode-overlay" />}
+      <div 
+        className="absolute inset-0"
+        onClick={() => {
+          if (isEditMode) {
+            setIsEditMode(false);
+          }
+        }}
+      >
+        {isEditMode && <div className="edit-mode-overlay pointer-events-none" />}
+      </div>
       <div className="relative z-20">
         <ResponsiveReactGridLayout
             className="layout"
@@ -285,7 +290,6 @@ export default function WidgetDashboard({
             margin={MARGIN}
             isDraggable={isEditMode}
             isResizable={isEditMode}
-            compactType="vertical"
             draggableHandle=".drag-handle"
             onLayoutChange={handleLayoutChange}
             onDragStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
@@ -304,13 +308,14 @@ export default function WidgetDashboard({
                 <div
                     key={item.i}
                     className="group"
+                    onClick={(e) => { if (isEditMode) e.stopPropagation(); }}
                 >
                   {isEditMode && (
                     <>
                       <div className="remove-widget-button">
                       -
                       </div>
-                      <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="drag-handle"></div>
                     </>
                   )}
                   {components[item.i]}
