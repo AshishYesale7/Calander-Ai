@@ -2,7 +2,7 @@
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: -1; /* Lower than widgets */
+    z-index: 0; /* Lower than widgets */
     backdrop-filter: blur(2px);
 }
 
