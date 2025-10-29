@@ -139,6 +139,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
     const isChatPanelVisible = !!chattingWith;
     
+    // ADDED STATE
+    const [isEditMode, setIsEditMode] = useState(false);
+    
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
         setSidebarOpen(false);
@@ -273,9 +276,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return <OnboardingModal onFinish={onFinishOnboarding} />;
   }
   
-  const isDashboard = pathname.endsWith('/dashboard');
-  const [isEditMode, setIsEditMode] = useState(false);
-
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
     setIsTimezoneModalOpen,
@@ -287,6 +287,9 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
   const isAudioCallActive = !!(ongoingAudioCall);
   
   const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
+
+  const showMobileSidebarToggle = isMobile && !isCallViewActive;
+  const showDesktopSidebarToggle = !isMobile && !isCallViewActive;
 
   return (
     <>

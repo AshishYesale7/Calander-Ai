@@ -130,7 +130,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
     }).filter(event => event !== null) as TimelineEvent[];
 };
 
-export default function DashboardPage() {
+export default function DashboardPage(props: any) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -158,12 +158,6 @@ export default function DashboardPage() {
   
   const calendarWidgetRef = useRef<HTMLDivElement>(null);
   const [calendarWidgetWidth, setCalendarWidgetWidth] = useState(0);
-
-  const [isEditMode, setIsEditMode] = useState(false);
-
-  useEffect(() => {
-    console.log('Jiggle Mode:', isEditMode)
-  }, [isEditMode]);
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -804,8 +798,8 @@ export default function DashboardPage() {
             closeDayTimetableView={closeDayTimetableView}
             handleEventStatusUpdate={handleEventStatusUpdate}
             setIsPlannerMaximized={setIsPlannerMaximized}
-            isEditMode={isEditMode}
-            setIsEditMode={setIsEditMode}
+            isEditMode={props.isEditMode}
+            setIsEditMode={props.setIsEditMode}
         />
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>

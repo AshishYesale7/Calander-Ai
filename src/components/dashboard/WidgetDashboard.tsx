@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import DayTimetableViewWidget from '../timeline/DayTimetableViewWidget';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import '@/app/widgets-canvas.css';
+
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
@@ -59,7 +61,9 @@ export default function WidgetDashboard({
     selectedDateForDayView,
     closeDayTimetableView,
     handleEventStatusUpdate,
-    setIsPlannerMaximized
+    setIsPlannerMaximized,
+    isEditMode,
+    setIsEditMode,
 }: any) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -251,12 +255,27 @@ export default function WidgetDashboard({
     return newLayouts;
   }, [currentLayouts, getLayoutWithDynamicMins]);
   
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsEditMode(true);
+    console.log('Jiggle Mode:', true);
+  };
+  
   if (!isLayoutLoaded) {
       return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
   }
   
   return (
-    <div className="relative">
+    <div className="relative" onContextMenu={handleContextMenu}>
+      {isEditMode && (
+        <div
+          className="edit-mode-overlay"
+          onClick={() => {
+            setIsEditMode(false);
+            console.log('Jiggle Mode:', false);
+          }}
+        />
+      )}
       <ResponsiveReactGridLayout
         className="layout"
         layouts={layoutsWithDynamicMins}
@@ -285,7 +304,15 @@ export default function WidgetDashboard({
             <div
               key={item.i}
               className="group relative"
+              onClick={(e) => {
+                if (isEditMode) e.stopPropagation();
+              }}
             >
+              {isEditMode && (
+                <div className="remove-widget-button">
+                  -
+                </div>
+              )}
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
                 {components[item.i]}

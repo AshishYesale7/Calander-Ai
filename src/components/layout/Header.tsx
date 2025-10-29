@@ -111,8 +111,8 @@ interface HeaderProps {
   setIsTimezoneModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
-  isEditMode?: boolean;
-  setIsEditMode?: (isEditMode: boolean) => void;
+  isEditMode: boolean;
+  setIsEditMode: (isEditMode: boolean) => void;
 }
 
 export default function Header({
@@ -329,7 +329,7 @@ export default function Header({
         
         <div className="flex items-center gap-1 sm:gap-2">
           
-          {isEditMode && setIsEditMode && (
+          {isEditMode && (
             <Button
               className="done-button bg-green-500 hover:bg-green-600 text-white"
               onClick={() => setIsEditMode(false)}
