@@ -24,16 +24,13 @@ const sanitizeLayouts = (layouts: Layouts): Layouts => {
     for (const breakpoint in layouts) {
         if (Object.prototype.hasOwnProperty.call(layouts, breakpoint)) {
             sanitizedLayouts[breakpoint] = layouts[breakpoint].map(item => {
-                // Build a new object with only the allowed properties
-                const sanitizedItem: Layout = {
+                const sanitizedItem: Partial<Layout> = {
                     i: item.i,
                     x: item.x,
                     y: item.y,
                     w: item.w,
                     h: item.h,
                 };
-                
-                // Add optional properties only if they exist and are not undefined
                 if (item.minW !== undefined) sanitizedItem.minW = item.minW;
                 if (item.minH !== undefined) sanitizedItem.minH = item.minH;
                 if (item.maxW !== undefined) sanitizedItem.maxW = item.maxW;
@@ -42,8 +39,7 @@ const sanitizeLayouts = (layouts: Layouts): Layouts => {
                 if (item.isResizable !== undefined) sanitizedItem.isResizable = item.isResizable;
                 if (item.isBounded !== undefined) sanitizedItem.isBounded = item.isBounded;
                 if (item.static !== undefined) sanitizedItem.static = item.static;
-                
-                return sanitizedItem;
+                return sanitizedItem as Layout;
             });
         }
     }
@@ -58,7 +54,6 @@ export const saveLayout = async (userId: string, role: 'student' | 'professional
   if (!userId) return;
   const layoutDocRef = getLayoutDocRef(userId);
   
-  // Sanitize the layout data before saving
   const sanitizedLayouts = sanitizeLayouts(versionedLayouts.layouts);
   const dataToSave = { version: versionedLayouts.version, layouts: sanitizedLayouts };
 
@@ -67,7 +62,8 @@ export const saveLayout = async (userId: string, role: 'student' | 'professional
     await setDoc(layoutDocRef, { [fieldName]: dataToSave }, { merge: true });
   } catch (error) {
     console.error(`Failed to save ${role} layout to Firestore:`, error);
-    throw new Error(`Could not save ${role} layout to cloud.`);
+    // We don't throw here to avoid unhandled promise rejections on cleanup.
+    // Toasting on failure can be handled by the calling component if needed.
   }
 };
 
