@@ -14,6 +14,7 @@ import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/
 import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout } from '@/services/layoutService';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
+import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
@@ -47,11 +48,23 @@ const calculateMinH = (isTimetable: boolean): number => {
 
 
 export default function WidgetDashboard({
-    activeEvents, onMonthChange, onDayClick, onSync,
-    isSyncing, onToggleTrash, isTrashOpen, activeDisplayMonth,
-    onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
+    activeEvents,
+    onMonthChange,
+    onDayClick,
+    onSync,
+    isSyncing,
+    onToggleTrash,
+    isTrashOpen,
+    activeDisplayMonth,
+    onNavigateMonth,
+    onDeleteEvent,
+    onEditEvent,
+    handleOpenEditModal,
     calendarWidget,
-    dayTimetableWidget
+    selectedDateForDayView,
+    closeDayTimetableView,
+    handleEventStatusUpdate,
+    setIsPlannerMaximized
 }: any) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -164,15 +177,30 @@ export default function WidgetDashboard({
     return layouts;
   }, [layouts, user?.userType]);
 
-  const components: { [key: string]: React.ReactNode } = useMemo(() => ({
-    plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
-    streak: <DailyStreakCard />,
-    calendar: calendarWidget,
-    timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
-    emails: <ImportantEmailsCard />,
-    'next-month': <NextMonthHighlightsCard events={activeEvents} />,
-    'day-timetable': dayTimetableViewWidget,
-  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, dayTimetableViewWidget]);
+  const components: { [key: string]: React.ReactNode } = useMemo(() => {
+    const dayTimetableViewWidget = (
+        <DayTimetableViewWidget
+            date={selectedDateForDayView}
+            events={activeEvents}
+            onClose={closeDayTimetableView}
+            onDeleteEvent={onDeleteEvent}
+            onEditEvent={onEditEvent}
+            onEventStatusChange={handleEventStatusUpdate}
+            onMaximize={() => setIsPlannerMaximized(true)}
+        />
+      );
+
+      return {
+        plan: <TodaysPlanCard onAccordionToggle={handleAccordionToggle} />,
+        streak: <DailyStreakCard />,
+        calendar: calendarWidget,
+        timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
+        emails: <ImportantEmailsCard />,
+        'next-month': <NextMonthHighlightsCard events={activeEvents} />,
+        'day-timetable': dayTimetableViewWidget,
+    }
+  }, [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, selectedDateForDayView, closeDayTimetableView, handleEventStatusUpdate, setIsPlannerMaximized]);
+
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 

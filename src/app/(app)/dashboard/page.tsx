@@ -690,18 +690,6 @@ export default function DashboardPage() {
         )}
     </div>
   );
-  
-  const dayTimetableWidget = (
-    <DayTimetableViewWidget
-        date={selectedDateForDayView}
-        events={activeEvents}
-        onClose={closeDayTimetableView}
-        onDeleteEvent={handleDeleteTimelineEvent}
-        onEditEvent={handleOpenEditModal}
-        onEventStatusChange={handleEventStatusUpdate}
-        onMaximize={() => setIsPlannerMaximized(true)}
-    />
-  );
 
   if (isPlannerMaximized) {
     return (
@@ -792,9 +780,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-        <WidgetDashboard 
-            activeEvents={activeEvents} 
-            onMonthChange={setActiveDisplayMonth} 
+        <WidgetDashboard
+            activeEvents={activeEvents}
+            onMonthChange={setActiveDisplayMonth}
             onDayClick={handleDayClickFromCalendar}
             onSync={handleSyncCalendarData}
             isSyncing={isLoading}
@@ -806,11 +794,12 @@ export default function DashboardPage() {
             onEditEvent={handleOpenEditModal}
             handleOpenEditModal={handleOpenEditModal}
             calendarWidget={calendarWidget}
-            dayTimetableWidget={dayTimetableWidget}
+            selectedDateForDayView={selectedDateForDayView}
+            closeDayTimetableView={closeDayTimetableView}
+            handleEventStatusUpdate={handleEventStatusUpdate}
+            setIsPlannerMaximized={setIsPlannerMaximized}
         />
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>
   );
 }
-
-    
