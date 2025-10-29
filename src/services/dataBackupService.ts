@@ -14,6 +14,7 @@ import { getBookmarkedResources, saveBookmarkedResource } from './resourcesServi
 import { getTimelineEvents, saveTimelineEvent } from './timelineService';
 import { getStreakData, updateStreakData } from './streakService';
 import { getUserProfile, saveUserPreferences } from './userService';
+import { deleteLayout } from './layoutService'; // Import the new service
 
 // Define the structure of the backup file
 interface UserDataBackup {
@@ -77,18 +78,7 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
     if (!db) throw new Error("Firestore not initialized.");
 
     // --- Clear existing data before import ---
-    const collectionsToClear = [
-        'careerGoals', 'skills', 'careerVisions', 
-        'trackedKeywords', 'resources', 'timelineEvents'
-    ];
-    
-    const clearBatch = writeBatch(db);
-    for (const collectionName of collectionsToClear) {
-        const collectionRef = collection(db, 'users', userId, collectionName);
-        const snapshot = await getDocs(collectionRef);
-        snapshot.docs.forEach(doc => clearBatch.delete(doc.ref));
-    }
-    await clearBatch.commit();
+    await formatUserData(userId); // Use the format function to clear data consistently
     
     const importPromises = [];
 
@@ -163,7 +153,7 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
  * but preserves the user account and subscription status.
  */
 export async function formatUserData(userId: string): Promise<void> {
-    if (!db) throw new Error("Firestore not initialized.");
+    if (!db) throw new Error("Firestore is not initialized.");
 
     const batch = writeBatch(db);
 
@@ -219,12 +209,8 @@ export async function formatUserData(userId: string): Promise<void> {
         deletionStatus: null,
     });
     
-    // Also clear the layout from its separate document
-    const layoutDocRef = doc(db, 'userSettings', userId);
-    batch.update(layoutDocRef, {
-        dashboardLayouts: null
-    });
-
-
     await batch.commit();
+
+    // 5. Delete the separate layout document AFTER the main batch.
+    await deleteLayout(userId);
 }

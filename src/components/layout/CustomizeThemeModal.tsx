@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { GlassEffect } from '@/context/ThemeContext';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/context/AuthContext';
+import { deleteLayout } from '@/services/layoutService'; // Import the new service
 
 interface CustomizeThemeModalProps {
   isOpen: boolean;
@@ -142,13 +143,16 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     resetCustomizations();
-    // Also clear the layout from local storage
+    
     if (user) {
+      // Clear the layout from both local storage and Firestore
       const layoutKey = `dashboard-layouts-${user.uid}`;
       localStorage.removeItem(layoutKey);
+      await deleteLayout(user.uid);
     }
+    
     toast({ title: 'Success', description: 'Theme and layout have been reset to default. Reloading...' });
     setTimeout(() => window.location.reload(), 1500); // Reload to apply default layout
     onOpenChange(false);

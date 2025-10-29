@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import type { Layouts } from 'react-grid-layout';
 
 const getLayoutDocRef = (userId: string) => {
@@ -49,4 +49,21 @@ export const getLayout = async (userId: string): Promise<Layouts | null> => {
     console.error("Failed to get layout from Firestore:", error);
     throw new Error("Could not retrieve layout from cloud.");
   }
+};
+
+/**
+ * Deletes the saved dashboard layout from Firestore for a specific user.
+ * @param userId The ID of the user.
+ */
+export const deleteLayout = async (userId: string): Promise<void> => {
+    if (!userId) return;
+    const layoutDocRef = getLayoutDocRef(userId);
+    try {
+        await updateDoc(layoutDocRef, {
+            dashboardLayouts: deleteField()
+        });
+    } catch (error) {
+        console.error("Failed to delete layout from Firestore:", error);
+        // It's not critical if this fails (e.g., doc doesn't exist), so don't re-throw.
+    }
 };
