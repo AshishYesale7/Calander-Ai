@@ -135,7 +135,7 @@ export default function DashboardPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeDisplayMonth, setActiveDisplayMonth] = useState<Date>(startOfMonth(new Date()));
-  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date>(new Date());
+  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
@@ -392,7 +392,7 @@ export default function DashboardPage() {
   };
 
   const closeDayTimetableView = () => {
-    setSelectedDateForDayView(new Date()); // Revert to today instead of null
+    setSelectedDateForDayView(null);
   };
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent, isNew: boolean = false) => {
@@ -796,4 +796,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
