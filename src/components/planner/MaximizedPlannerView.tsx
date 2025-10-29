@@ -75,6 +75,8 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const animationFrameRef = useRef<number | null>(null);
   const [eventToCreate, setEventToCreate] = useState<TimelineEvent | null>(null);
 
+  const [userHasToggledSidebar, setUserHasToggledSidebar] = useState(false);
+
   const currentWeekDays = useMemo(() => {
     return eachDayOfInterval({ start: startOfWeek(currentDisplayDate, { weekStartsOn: 0 }), end: endOfWeek(currentDisplayDate, { weekStartsOn: 0 }) });
   }, [currentDisplayDate]);
@@ -258,20 +260,22 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   };
   
   const handleToggleSidebar = useCallback(() => {
+    setUserHasToggledSidebar(true); // Mark that user has interacted
     setIsSidebarOpen(prev => {
         const newIsOpen = !prev;
         if (newIsOpen) {
-            // Restore saved widths but hide the 3rd panel
+            // Restore saved widths for the first two panels, hide the third
             const restoredWidths = [...savedWidthsRef.current];
             const sumFirstTwo = restoredWidths[0] + restoredWidths[1];
             if (sumFirstTwo > 0) {
-                 restoredWidths[0] = (restoredWidths[0] / sumFirstTwo) * 100;
-                 restoredWidths[1] = (restoredWidths[1] / sumFirstTwo) * 100;
+                // Keep ratio but make them sum to 100
+                restoredWidths[0] = (restoredWidths[0] / sumFirstTwo) * 100;
+                restoredWidths[1] = (restoredWidths[1] / sumFirstTwo) * 100;
             } else {
-                 restoredWidths[0] = 50; // Default split if widths were zero
-                 restoredWidths[1] = 50;
+                restoredWidths[0] = 50; // Default to 50/50 if saved widths were zero
+                restoredWidths[1] = 50;
             }
-            restoredWidths[2] = 0;
+            restoredWidths[2] = 0; // Explicitly hide the calendar view
             setPanelWidths(restoredWidths);
         } else {
             // Save current state before collapsing
@@ -282,12 +286,21 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     });
   }, [panelWidths]);
   
-  // Effect to auto-collapse planner sidebars when chat is fully open
+  // Auto-collapse planner sidebars when chat is fully open, but respect manual override
   useEffect(() => {
-      if (!isMobile && isChatSidebarOpen && chattingWith && isSidebarOpen) {
-          handleToggleSidebar();
-      }
-  }, [isMobile, isChatSidebarOpen, chattingWith, isSidebarOpen, handleToggleSidebar]);
+    const chatFullyOpen = !isMobile && isChatSidebarOpen && chattingWith;
+    
+    if (chatFullyOpen) {
+        if (isSidebarOpen && !userHasToggledSidebar) {
+            handleToggleSidebar();
+        }
+    } else {
+        // Reset the manual override flag when the condition is no longer met
+        if (userHasToggledSidebar) {
+            setUserHasToggledSidebar(false);
+        }
+    }
+  }, [isMobile, isChatSidebarOpen, chattingWith, isSidebarOpen, handleToggleSidebar, userHasToggledSidebar]);
 
   const handleTaskStatusChange = async (listId: string, taskId: string) => {
     if (!user) return;
@@ -315,7 +328,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   return (
      <div 
-        className={cn("fixed inset-y-0 left-0 flex flex-col z-30 transition-[right]", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
+        className={cn("fixed inset-y-0 left-0 flex flex-col transition-[right] z-30", maximizedViewTheme === 'dark' ? 'bg-[#101010] text-white' : 'bg-stone-50 text-gray-800')}
         style={{ top: '4rem', right: isMobile ? '0px' : `${chatSidebarWidth}px` }}
      >
         <PlannerHeader 
