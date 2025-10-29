@@ -35,6 +35,7 @@ import DailyStreakCard from '@/components/dashboard/DailyStreakCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
 import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
+import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -141,6 +142,8 @@ export default function DashboardPage() {
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
   const [isAddingNewEvent, setIsAddingNewEvent] = useState(false);
   
+  const [isPlannerMaximized, setIsPlannerMaximized] = useState(false);
+
   const { apiKey } = useApiKey();
   const { timezone } = useTimezone();
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
@@ -696,9 +699,21 @@ export default function DashboardPage() {
         onDeleteEvent={handleDeleteTimelineEvent}
         onEditEvent={handleOpenEditModal}
         onEventStatusChange={handleEventStatusUpdate}
+        onMaximize={() => setIsPlannerMaximized(true)}
     />
   );
 
+  if (isPlannerMaximized) {
+    return (
+      <MaximizedPlannerView
+        initialDate={selectedDateForDayView || new Date()}
+        allEvents={allTimelineEvents}
+        onMinimize={() => setIsPlannerMaximized(false)}
+        onEditEvent={handleOpenEditModal}
+        onDeleteEvent={handleDeleteTimelineEvent}
+      />
+    );
+  }
 
   if (isMobile) {
     return (

@@ -13,6 +13,7 @@ interface DayTimetableViewWidgetProps {
   onDeleteEvent?: (eventId: string) => void;
   onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
+  onMaximize?: () => void;
 }
 
 export default function DayTimetableViewWidget({
@@ -22,6 +23,7 @@ export default function DayTimetableViewWidget({
   onDeleteEvent,
   onEditEvent,
   onEventStatusChange,
+  onMaximize,
 }: DayTimetableViewWidgetProps) {
   if (!date) {
     return (
@@ -43,6 +45,7 @@ export default function DayTimetableViewWidget({
       onDeleteEvent={onDeleteEvent}
       onEditEvent={onEditEvent}
       onEventStatusChange={onEventStatusChange}
+      onMaximize={onMaximize}
     />
   );
 }

@@ -63,16 +63,17 @@ interface DayTimetableViewProps {
   onDeleteEvent?: (eventId: string) => void;
   onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
+  onMaximize?: () => void;
 }
 
-export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange }: DayTimetableViewProps) {
+export default function DayTimetableView({ date: initialDate, events: allEvents, onClose, onDeleteEvent, onEditEvent, onEventStatusChange, onMaximize }: DayTimetableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nowIndicatorRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [isMaximized, setIsMaximized] = useState(false);
+  
   const [viewTheme, setViewTheme] = useState<TimetableViewTheme>('default');
   
   const isDayInPast = useMemo(() => isPast(initialDate) && !isSameDay(initialDate, new Date()), [initialDate]);
@@ -125,18 +126,6 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
       onEventStatusChange(event.id, newStatus);
     }
   };
-  
-  if (isMaximized) {
-    return (
-      <MaximizedPlannerView
-        initialDate={initialDate}
-        allEvents={allEvents}
-        onMinimize={() => setIsMaximized(false)}
-        onEditEvent={onEditEvent}
-        onDeleteEvent={onDeleteEvent}
-      />
-    );
-  }
 
   return (
     <Card className={cn("frosted-glass w-full shadow-xl flex flex-col transition-all duration-300 max-h-[70vh]")} data-theme={viewTheme}>
@@ -172,9 +161,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                     </RadioGroup>
                   </PopoverContent>
                 </Popover>
-                <Button variant="ghost" size="icon" onClick={() => setIsMaximized(true)} aria-label="Maximize view">
-                    <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
-                </Button>
+                {onMaximize && (
+                  <Button variant="ghost" size="icon" onClick={onMaximize} aria-label="Maximize view">
+                      <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                  </Button>
+                )}
                 {onClose && (
                     <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
                         <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
