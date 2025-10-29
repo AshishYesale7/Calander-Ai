@@ -80,11 +80,12 @@ export default function WidgetDashboard({
   const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
   
   const layoutInitialized = useRef(false);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
     const role = user.userType || 'student';
-    return `dashboard-layouts-${'${user.uid}'}-${'${role}'}`;
+    return `dashboard-layouts-${user.uid}-${role}`;
   }, [user]);
 
   const getDefaultLayouts = useCallback(() => {
@@ -141,17 +142,6 @@ export default function WidgetDashboard({
 
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts]);
-
-  useEffect(() => {
-    return () => {
-      if (isLayoutLoaded && user) {
-        const role = user.userType || 'student';
-        saveLayout(user.uid, role, versionedLayouts).catch(err => {
-            console.error("Layout Sync Error on cleanup:", err);
-        });
-      }
-    };
-  }, [versionedLayouts, user, isLayoutLoaded]);
   
   const saveCurrentLayout = (newLayouts: Layouts) => {
     if (!isLayoutLoaded || !user) return;
@@ -164,6 +154,10 @@ export default function WidgetDashboard({
       const dataToSave: VersionedLayouts = { version: newVersion, layouts: newLayouts };
       try {
           localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+          // Save to cloud on unload
+          window.addEventListener('beforeunload', () => {
+             saveLayout(user.uid, user.userType || 'student', dataToSave);
+          }, { once: true });
       } catch (error) {
           console.warn("Could not save layout to local storage.", error);
       }
@@ -174,6 +168,11 @@ export default function WidgetDashboard({
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     if (!isLayoutLoaded) return;
     setCurrentLayouts(allLayouts);
+    // Debounce saving
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+        saveCurrentLayout(allLayouts);
+    }, 500);
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
@@ -187,9 +186,9 @@ export default function WidgetDashboard({
                 const headerHeight = 80;
                 const requiredPixels = contentHeight + headerHeight;
                 const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + MARGIN[1]));
-                return { ...item, h: Math.max(2, requiredRows) };
+                return { ...item, h: Math.max(2, requiredRows), minH: 2 };
             } else {
-                return { ...item, h: 1 };
+                return { ...item, h: 1, minH: 1 };
             }
         }
         return item;
@@ -282,12 +281,10 @@ export default function WidgetDashboard({
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={ROW_HEIGHT}
             margin={MARGIN}
-            isDraggable={isEditMode}
-            isResizable={isEditMode}
+            isDraggable={true}
+            isResizable={true}
             draggableHandle=".drag-handle"
             onLayoutChange={handleLayoutChange}
-            onDragStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
-            onResizeStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
             onBreakpointChange={(newBreakpoint, newCols) => {
                 setCurrentBreakpoint(newBreakpoint);
                 setCurrentCols(newCols);
@@ -309,9 +306,9 @@ export default function WidgetDashboard({
                       <div className="remove-widget-button">
                       -
                       </div>
-                      <div className="drag-handle"></div>
                     </>
                   )}
+                  <div className="drag-handle"></div>
                   {components[item.i]}
                 </div>
             )
