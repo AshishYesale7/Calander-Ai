@@ -139,7 +139,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
     const isChatPanelVisible = !!chattingWith;
     
-    // ADDED STATE
     const [isEditMode, setIsEditMode] = useState(false);
     
   useEffect(() => {
