@@ -23,6 +23,7 @@ const MARGIN: [number, number] = [16, 16];
 const PIXEL_TO_GRID_UNITS = {
   MIN_W_PX: 280,
   MIN_H_PX: 200,
+  TIMETABLE_MIN_H_PX: 500, // Increased from 400
 };
 
 // Calculates the minimum width in grid units based on a pixel value
@@ -35,9 +36,10 @@ const calculateMinW = (colWidth: number): number => {
 };
 
 // Calculates the minimum height in grid units based on a pixel value
-const calculateMinH = (): number => {
-  const { MIN_H_PX } = PIXEL_TO_GRID_UNITS;
-  const contentHeight = MIN_H_PX - MARGIN[1];
+const calculateMinH = (isTimetable: boolean): number => {
+  const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
+  const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
+  const contentHeight = targetHeight - MARGIN[1];
   const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
   return gridUnits;
 };
@@ -178,11 +180,10 @@ export default function WidgetDashboard({
         return layout;
     }
     const minW = calculateMinW(colWidth);
-    const minH = calculateMinH();
     return layout.map(item => ({
         ...item,
         minW,
-        minH,
+        minH: calculateMinH(item.i === 'day-timetable'),
     }));
   };
 
