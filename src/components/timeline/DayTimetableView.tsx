@@ -2,7 +2,7 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
+import { useMemo, type ReactNode, useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
@@ -59,7 +59,7 @@ const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
 interface DayTimetableViewProps {
   date: Date;
   events: TimelineEvent[];
-  onClose: () => void;
+  onClose?: () => void;
   onDeleteEvent?: (eventId: string) => void;
   onEditEvent?: (event: TimelineEvent, isNew?: boolean) => void;
   onEventStatusChange?: (eventId: string, status: 'completed' | 'missed') => void;
@@ -175,9 +175,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
                 <Button variant="ghost" size="icon" onClick={() => setIsMaximized(true)} aria-label="Maximize view">
                     <Maximize className="h-6 w-6 text-muted-foreground hover:text-primary" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
-                    <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
-                </Button>
+                {onClose && (
+                    <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close day timetable view">
+                        <XCircle className="h-6 w-6 text-muted-foreground hover:text-primary" />
+                    </Button>
+                )}
             </div>
         </div>
       </CardHeader>

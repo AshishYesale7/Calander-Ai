@@ -135,7 +135,7 @@ export default function DashboardPage() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeDisplayMonth, setActiveDisplayMonth] = useState<Date>(startOfMonth(new Date()));
-  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(null);
+  const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date>(new Date());
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
@@ -358,16 +358,6 @@ export default function DashboardPage() {
     syncToLocalStorage(newEvents);
     
     toast({ title: "Event Moved to Trash", description: `"${eventToDelete.title}" has been deleted.` });
-
-    if (selectedDateForDayView) {
-        const remainingEventsOnDay = newEvents.filter(event =>
-            !event.deletedAt && event.date instanceof Date && !isNaN(event.date.valueOf()) &&
-            isSameDay(dfnsStartOfDay(event.date), dfnsStartOfDay(selectedDateForDayView))
-        );
-        if (remainingEventsOnDay.length === 0) {
-            setSelectedDateForDayView(null);
-        }
-    }
     
     try {
       await deleteTimelineEvent(user.uid, eventId);
@@ -402,7 +392,7 @@ export default function DashboardPage() {
   };
 
   const closeDayTimetableView = () => {
-    setSelectedDateForDayView(null);
+    setSelectedDateForDayView(new Date()); // Revert to today instead of null
   };
 
   const handleOpenEditModal = useCallback((event?: TimelineEvent, isNew: boolean = false) => {
@@ -706,41 +696,54 @@ export default function DashboardPage() {
           <TodaysPlanCard />
         </div>
         {user?.userType !== 'professional' && <DailyStreakCard />}
-        <Tabs defaultValue="calendar" className="relative">
-          <div className="flex justify-between items-center mb-4 gap-2">
-            <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
-              <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                <Calendar className="mr-2 h-4 w-4" /> Calendar
-              </TabsTrigger>
-              <div className="w-px h-6 bg-border/50 self-center" />
-              <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                <List className="mr-2 h-4 w-4" /> List
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-1">
-              <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
-                <PlusCircle className="h-5 w-5" />
-                <span className="sr-only">Add New Event</span>
-              </Button>
-            </div>
-          </div>
-          <TabsContent value="calendar">
-            <EventCalendarView
-                events={activeEvents}
-                month={activeDisplayMonth}
-                onMonthChange={setActiveDisplayMonth}
-                onDayClick={handleDayClickFromCalendar}
-                onSync={handleSyncCalendarData}
-                isSyncing={isLoading}
-                onToggleTrash={onToggleTrash}
-            />
-            {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
-            <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
-          </TabsContent>
-          <TabsContent value="list">
-            <TimelineListView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} />
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4">
+            <Tabs defaultValue="calendar" className="relative">
+              <div className="flex justify-between items-center mb-4 gap-2">
+                <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
+                  <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                    <Calendar className="mr-2 h-4 w-4" /> Calendar
+                  </TabsTrigger>
+                  <div className="w-px h-6 bg-border/50 self-center" />
+                  <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
+                    <List className="mr-2 h-4 w-4" /> List
+                  </TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-1">
+                  <Button onClick={() => handleOpenEditModal()} className="bg-accent hover:bg-accent/90 text-accent-foreground flex-shrink-0 justify-center w-10 h-10 p-0 rounded-full">
+                    <PlusCircle className="h-5 w-5" />
+                    <span className="sr-only">Add New Event</span>
+                  </Button>
+                </div>
+              </div>
+              <TabsContent value="calendar">
+                <EventCalendarView
+                    events={activeEvents}
+                    month={activeDisplayMonth}
+                    onMonthChange={setActiveDisplayMonth}
+                    onDayClick={handleDayClickFromCalendar}
+                    onSync={handleSyncCalendarData}
+                    isSyncing={isLoading}
+                    onToggleTrash={onToggleTrash}
+                />
+              </TabsContent>
+              <TabsContent value="list">
+                <TimelineListView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} />
+              </TabsContent>
+            </Tabs>
+             {selectedDateForDayView && (
+                <div className="mt-8">
+                    <DayTimetableView 
+                        date={selectedDateForDayView} 
+                        events={activeEvents} 
+                        onClose={closeDayTimetableView} 
+                        onDeleteEvent={handleDeleteTimelineEvent} 
+                        onEditEvent={handleOpenEditModal} 
+                        onEventStatusChange={handleEventStatusUpdate}
+                    />
+                </div>
+            )}
+        </div>
+        <SlidingTimelineView events={activeEvents} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={handleMonthNavigationForSharedViews} />
         <ImportantEmailsCard />
         <NextMonthHighlightsCard events={activeEvents} />
         {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
@@ -761,23 +764,36 @@ export default function DashboardPage() {
   }
 
   return (
-    <WidgetDashboard 
-        activeEvents={activeEvents} 
-        onMonthChange={setActiveDisplayMonth} 
-        onDayClick={handleDayClickFromCalendar}
-        onSync={handleSyncCalendarData}
-        isSyncing={isLoading}
-        onToggleTrash={onToggleTrash}
-        isTrashOpen={isTrashPanelOpen}
-        activeDisplayMonth={activeDisplayMonth}
-        onNavigateMonth={handleMonthNavigationForSharedViews}
-        onDeleteEvent={handleDeleteTimelineEvent}
-        onEditEvent={handleOpenEditModal}
-        handleOpenEditModal={handleOpenEditModal}
-        calendarWidget={calendarWidget}
-    >
-      {selectedDateForDayView && <DayTimetableView date={selectedDateForDayView} events={activeEvents} onClose={closeDayTimetableView} onDeleteEvent={handleDeleteTimelineEvent} onEditEvent={handleOpenEditModal} onEventStatusChange={handleEventStatusUpdate} />}
+    <div className="space-y-6">
+        <WidgetDashboard 
+            activeEvents={activeEvents} 
+            onMonthChange={setActiveDisplayMonth} 
+            onDayClick={handleDayClickFromCalendar}
+            onSync={handleSyncCalendarData}
+            isSyncing={isLoading}
+            onToggleTrash={onToggleTrash}
+            isTrashOpen={isTrashPanelOpen}
+            activeDisplayMonth={activeDisplayMonth}
+            onNavigateMonth={handleMonthNavigationForSharedViews}
+            onDeleteEvent={handleDeleteTimelineEvent}
+            onEditEvent={handleOpenEditModal}
+            handleOpenEditModal={handleOpenEditModal}
+            calendarWidget={calendarWidget}
+        />
+        <div className="mt-6">
+            {selectedDateForDayView && (
+                <DayTimetableView 
+                    date={selectedDateForDayView} 
+                    events={activeEvents} 
+                    onClose={closeDayTimetableView} 
+                    onDeleteEvent={handleDeleteTimelineEvent} 
+                    onEditEvent={handleOpenEditModal}
+                    onEventStatusChange={handleEventStatusUpdate}
+                />
+            )}
+        </div>
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
-    </WidgetDashboard>
+    </div>
   );
 }
+
