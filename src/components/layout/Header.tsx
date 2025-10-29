@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ import NotificationPanel from './NotificationPanel';
 import { allPlugins } from '@/data/plugins';
 import { getInstalledPlugins, getUserProfile } from '@/services/userService';
 import { useStreak } from '@/context/StreakContext';
-import { usePlugin } from '@/context/use-plugin';
+import { usePlugin } from '@/hooks/use-plugin';
 import { cn } from '@/lib/utils';
 import {
   Popover,
