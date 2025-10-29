@@ -22,10 +22,30 @@ const getLayoutDocRef = (userId: string) => {
 const sanitizeLayouts = (layouts: Layouts): Layouts => {
     const sanitizedLayouts: Layouts = {};
     for (const breakpoint in layouts) {
-        sanitizedLayouts[breakpoint] = layouts[breakpoint].map(item => {
-            const { i, x, y, w, h, minW, minH, maxW, maxH, isDraggable, isResizable, isBounded, static: isStatic } = item;
-            return { i, x, y, w, h, minW, minH, maxW, maxH, isDraggable, isResizable, isBounded, static: isStatic };
-        });
+        if (Object.prototype.hasOwnProperty.call(layouts, breakpoint)) {
+            sanitizedLayouts[breakpoint] = layouts[breakpoint].map(item => {
+                // Build a new object with only the allowed properties
+                const sanitizedItem: Layout = {
+                    i: item.i,
+                    x: item.x,
+                    y: item.y,
+                    w: item.w,
+                    h: item.h,
+                };
+                
+                // Add optional properties only if they exist and are not undefined
+                if (item.minW !== undefined) sanitizedItem.minW = item.minW;
+                if (item.minH !== undefined) sanitizedItem.minH = item.minH;
+                if (item.maxW !== undefined) sanitizedItem.maxW = item.maxW;
+                if (item.maxH !== undefined) sanitizedItem.maxH = item.maxH;
+                if (item.isDraggable !== undefined) sanitizedItem.isDraggable = item.isDraggable;
+                if (item.isResizable !== undefined) sanitizedItem.isResizable = item.isResizable;
+                if (item.isBounded !== undefined) sanitizedItem.isBounded = item.isBounded;
+                if (item.static !== undefined) sanitizedItem.static = item.static;
+                
+                return sanitizedItem;
+            });
+        }
     }
     return sanitizedLayouts;
 };
@@ -77,8 +97,6 @@ export const deleteLayout = async (userId: string, role?: 'student' | 'professio
     if (!userId) return;
     const layoutDocRef = getLayoutDocRef(userId);
     
-    // If a role is specified, delete only that role's layout.
-    // If no role is specified, delete both for a full reset.
     const fieldsToDelete: string[] = [];
     if (role) {
         fieldsToDelete.push(`dashboardLayouts_${role}`);
@@ -94,7 +112,6 @@ export const deleteLayout = async (userId: string, role?: 'student' | 'professio
     try {
         await updateDoc(layoutDocRef, updateData);
     } catch (error) {
-        // Suppress "not-found" errors if the document or field doesn't exist.
         if ((error as any).code !== 'not-found') {
           console.error(`Failed to delete layout fields from Firestore:`, error);
         }
