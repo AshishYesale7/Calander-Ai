@@ -94,34 +94,42 @@ export default function WidgetDashboard({
       
       const role = user.userType || 'student';
       const layoutKey = getLayoutKey();
-
-      try {
-          if (layoutKey) {
-            const savedLayoutsLocal = localStorage.getItem(layoutKey);
-            if (savedLayoutsLocal) {
-              const parsedLayouts = JSON.parse(savedLayoutsLocal);
-              if (parsedLayouts.version === LAYOUT_VERSION) {
-                  setLayouts(parsedLayouts.layouts);
-                  setIsLayoutLoaded(true);
-                  return; 
-              }
+      
+      // 1. Prioritize loading from local storage
+      if (layoutKey) {
+        const savedLayoutsLocal = localStorage.getItem(layoutKey);
+        if (savedLayoutsLocal) {
+          try {
+            const parsedLayouts = JSON.parse(savedLayoutsLocal);
+            // 2. Validate version
+            if (parsedLayouts.version === LAYOUT_VERSION) {
+              setLayouts(parsedLayouts.layouts);
+              setIsLayoutLoaded(true);
+              return; // Found a valid local layout, no need to fetch from Firestore
             }
+          } catch (e) {
+            console.warn("Could not parse layouts from local storage. Fetching from cloud.", e);
           }
-          
-          const savedLayoutsFirestore = await getLayout(user.uid, role);
-          if (savedLayoutsFirestore && savedLayoutsFirestore.version === LAYOUT_VERSION) {
-             setLayouts(savedLayoutsFirestore.layouts);
-             if (layoutKey) {
-                localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
-             }
-          } else {
-             setLayouts(getDefaultLayouts());
-          }
+        }
+      }
+
+      // 3. Fetch from Firestore only if local storage is empty or outdated
+      try {
+        const savedLayoutsFirestore = await getLayout(user.uid, role);
+        if (savedLayoutsFirestore && savedLayoutsFirestore.version === LAYOUT_VERSION) {
+           setLayouts(savedLayoutsFirestore.layouts);
+           if (layoutKey) {
+              localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
+           }
+        } else {
+           // 4. Fallback to default if cloud is also empty or outdated
+           setLayouts(getDefaultLayouts());
+        }
       } catch (e) {
-          console.warn("Could not parse layouts from storage. Using default.", e);
-          setLayouts(getDefaultLayouts());
+        console.warn("Could not retrieve layouts from Firestore. Using default.", e);
+        setLayouts(getDefaultLayouts());
       } finally {
-          setIsLayoutLoaded(true);
+        setIsLayoutLoaded(true);
       }
     };
 
