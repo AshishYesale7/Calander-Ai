@@ -23,7 +23,7 @@ const MARGIN: [number, number] = [16, 16];
 const PIXEL_TO_GRID_UNITS = {
   MIN_W_PX: 280,
   MIN_H_PX: 200,
-  TIMETABLE_MIN_H_PX: 500, // Increased from 400
+  TIMETABLE_MIN_H_PX: 500,
 };
 
 // Calculates the minimum width in grid units based on a pixel value
@@ -38,7 +38,7 @@ const calculateMinW = (colWidth: number): number => {
 // Calculates the minimum height in grid units based on a pixel value
 const calculateMinH = (isTimetable: boolean): number => {
   const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
-  const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
+  const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX * 2 : MIN_H_PX;
   const contentHeight = targetHeight - MARGIN[1];
   const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
   return gridUnits;
@@ -130,26 +130,28 @@ export default function WidgetDashboard({
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    const currentLayouts = layouts[currentBreakpoint];
-    if (!currentLayouts) return;
-    
-    const newLayout = currentLayouts.map(item => {
+    const currentLayout = layouts[currentBreakpoint as keyof Layouts];
+    if (!currentLayout) return;
+
+    const newLayout = currentLayout.map(item => {
         if (item.i === 'plan') {
             if (isOpen) {
-                const requiredPixels = contentHeight + 80;
+                // When opening, calculate the required height in grid units
+                const headerHeight = 80; // Approx. pixel height of the accordion trigger
+                const requiredPixels = contentHeight + headerHeight;
                 const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + MARGIN[1]));
                 return { ...item, h: Math.max(2, requiredRows) };
             } else {
-                const defaultH = getDefaultLayouts()[currentBreakpoint as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
-                return { ...item, h: defaultH };
+                // When closing, shrink it to its minimum possible height to fit the header
+                return { ...item, h: 1 };
             }
         }
         return item;
     });
-    
+
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
     handleLayoutChange(newLayout, newLayouts);
-  }, [layouts, currentBreakpoint, getDefaultLayouts, handleLayoutChange]);
+}, [layouts, currentBreakpoint, handleLayoutChange]);
 
   const finalLayouts = useMemo(() => {
     if (user?.userType === 'professional') {
@@ -175,7 +177,7 @@ export default function WidgetDashboard({
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
   const getLayoutWithDynamicMins = (breakpoint: string) => {
-    const layout = finalLayouts[breakpoint] || [];
+    const layout = finalLayouts[breakpoint as keyof Layouts] || [];
     if (breakpoint === 'lg') {
         return layout;
     }
@@ -222,7 +224,7 @@ export default function WidgetDashboard({
             setCurrentContainerWidth(containerWidth);
         }}
       >
-        {(finalLayouts[currentBreakpoint] || []).map(item => {
+        {(finalLayouts[currentBreakpoint as keyof Layouts] || []).map(item => {
           if (!components[item.i]) return null;
           return (
             <div
