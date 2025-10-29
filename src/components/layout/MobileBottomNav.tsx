@@ -1,9 +1,9 @@
-
 'use client';
 
 import { motion } from 'framer-motion';
 import { Command, MessageSquare } from 'lucide-react';
 import React from 'react';
+import '@/app/styles/mobile-bottom-nav.css';
 
 interface MobileBottomNavProps {
   onCommandClick: () => void;

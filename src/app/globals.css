@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './styles/desktop-command-bar.css';
-@import './styles/mobile-bottom-nav.css';
-
 @layer base {
   /* "Light Theme" - Redefined to be the purple/pink dark theme from the image */
   :root {

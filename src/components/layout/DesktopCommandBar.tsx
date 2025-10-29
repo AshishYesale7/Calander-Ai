@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -16,6 +15,7 @@ import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/
 import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
+import '@/app/styles/desktop-command-bar.css';
 
 export interface ChatSession {
   id: string;
