@@ -1,11 +1,11 @@
-
-.edit-mode-overlay {
+.edit-mode-active::before {
+    content: '';
     position: absolute;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(2px);
-    border-radius: var(--radius); /* Match parent's border-radius */
     z-index: 10;
+    border-radius: var(--radius); /* Match parent's border-radius if needed */
 }
 
 .remove-widget-button {
@@ -50,4 +50,3 @@
 .group:hover .drag-handle {
     opacity: 1;
 }
-

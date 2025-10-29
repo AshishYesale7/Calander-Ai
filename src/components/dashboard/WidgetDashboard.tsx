@@ -257,7 +257,6 @@ export default function WidgetDashboard({
   
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsEditMode(true);
   };
   
@@ -267,19 +266,14 @@ export default function WidgetDashboard({
   
   return (
     <div 
-      className="relative h-full" 
+      className={cn("relative h-full", isEditMode && "edit-mode-active")}
       onContextMenu={handleContextMenu}
+      onClick={() => {
+        if (isEditMode) {
+          setIsEditMode(false);
+        }
+      }}
     >
-      <div 
-        className="absolute inset-0"
-        onClick={() => {
-          if (isEditMode) {
-            setIsEditMode(false);
-          }
-        }}
-      >
-        {isEditMode && <div className="edit-mode-overlay pointer-events-none" />}
-      </div>
       <div className="relative z-20">
         <ResponsiveReactGridLayout
             className="layout"
