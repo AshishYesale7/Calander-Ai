@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils';
 import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 import type { Layout } from 'react-grid-layout';
-
+import { saveLayout, getLayout } from '@/services/layoutService';
+import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
@@ -22,12 +23,12 @@ export default function WidgetDashboard({
     activeEvents, onMonthChange, onDayClick, onSync,
     isSyncing, onToggleTrash, isTrashOpen, activeDisplayMonth,
     onNavigateMonth, onDeleteEvent, onEditEvent, handleOpenEditModal,
-    children, calendarWidget
+    dayTimetableWidget
 }: any) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const getLayoutKey = () => user ? `dashboard-layouts-${user.uid}` : null;
+  const getLayoutKey = useCallback(() => user ? `dashboard-layouts-${user.uid}` : null, [user]);
   
   const getDefaultLayouts = useCallback(() => {
     return user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
@@ -36,9 +37,11 @@ export default function WidgetDashboard({
   const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
+  
+  const layoutInitialized = useRef(false);
 
   useEffect(() => {
-    const loadLayouts = () => {
+    const loadLayouts = async () => {
       const layoutKey = getLayoutKey();
       if (!layoutKey) {
         setLayouts(getDefaultLayouts());
@@ -47,28 +50,49 @@ export default function WidgetDashboard({
       }
       
       try {
-          const savedLayouts = localStorage.getItem(layoutKey);
-          if (savedLayouts) {
-            setLayouts(JSON.parse(savedLayouts));
+          // 1. Try local storage first for speed
+          const savedLayoutsLocal = localStorage.getItem(layoutKey);
+          if (savedLayoutsLocal) {
+            setLayouts(JSON.parse(savedLayoutsLocal));
           } else {
-            setLayouts(getDefaultLayouts());
+             // 2. If not in local, try Firestore
+             const savedLayoutsFirestore = await getLayout(user!.uid);
+             if (savedLayoutsFirestore) {
+                setLayouts(savedLayoutsFirestore);
+                localStorage.setItem(layoutKey, JSON.stringify(savedLayoutsFirestore));
+             } else {
+                 // 3. Fallback to default
+                setLayouts(getDefaultLayouts());
+             }
           }
       } catch (e) {
-          console.warn("Could not parse layouts from localStorage. Using default.", e);
+          console.warn("Could not parse layouts from storage. Using default.", e);
           setLayouts(getDefaultLayouts());
       } finally {
           setIsLayoutLoaded(true);
       }
     };
 
-    loadLayouts();
-  }, [user, getDefaultLayouts]);
+    if (!layoutInitialized.current && user) {
+        loadLayouts();
+        layoutInitialized.current = true;
+    }
+  }, [user, getLayoutKey, getDefaultLayouts]);
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     const layoutKey = getLayoutKey();
     if (layoutKey && isLayoutLoaded) {
         try {
+            // Save to local storage for immediate persistence
             localStorage.setItem(layoutKey, JSON.stringify(allLayouts));
+            // Save to Firestore for cross-device sync
+            saveLayout(user!.uid, allLayouts).catch(err => {
+                toast({
+                  title: "Layout Sync Error",
+                  description: "Could not save your widget layout to the cloud.",
+                  variant: "destructive"
+                });
+            });
             setLayouts(allLayouts);
         } catch (error) {
             toast({
@@ -81,18 +105,17 @@ export default function WidgetDashboard({
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    // This logic remains the same, but it will now update the user's customized layout
     const currentLayouts = layouts[currentBreakpoint];
     if (!currentLayouts) return;
     
     const newLayout = currentLayouts.map(item => {
         if (item.i === 'plan') {
             if (isOpen) {
-                // Margins (top/bottom) are 16px each. Row height is 100px.
-                const requiredPixels = contentHeight + 80; // Header + padding
+                const requiredPixels = contentHeight + 80;
                 const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + 16));
                 return { ...item, h: Math.max(2, requiredRows) };
             } else {
-                // Reset to default collapsed height
                 const defaultH = getDefaultLayouts()[currentBreakpoint as keyof Layouts]?.find(l => l.i === 'plan')?.h || 2;
                 return { ...item, h: defaultH };
             }
@@ -101,11 +124,9 @@ export default function WidgetDashboard({
     });
     
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
-    setLayouts(newLayouts);
-    // Persist this change
-    const layoutKey = getLayoutKey();
-    if(layoutKey) localStorage.setItem(layoutKey, JSON.stringify(newLayouts));
-  }, [layouts, currentBreakpoint, getLayoutKey, getDefaultLayouts]);
+    // This function will handle saving the new accordion-adjusted layout
+    handleLayoutChange(newLayout, newLayouts);
+  }, [layouts, currentBreakpoint, getDefaultLayouts, handleLayoutChange]);
 
   const finalLayouts = useMemo(() => {
     if (user?.userType === 'professional') {
@@ -125,7 +146,8 @@ export default function WidgetDashboard({
     timeline: <SlidingTimelineView events={activeEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={onNavigateMonth} />,
     emails: <ImportantEmailsCard />,
     'next-month': <NextMonthHighlightsCard events={activeEvents} />,
-  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth]);
+    'day-timetable': dayTimetableWidget,
+  }), [handleAccordionToggle, calendarWidget, activeEvents, onDeleteEvent, onEditEvent, activeDisplayMonth, onNavigateMonth, dayTimetableWidget]);
 
   if (!isLayoutLoaded) {
       return null;
@@ -153,10 +175,6 @@ export default function WidgetDashboard({
             <div
               key={item.i}
               className="group relative"
-              style={{
-                minWidth: item.minW ? `${item.minW * (1200 / 12)}px` : '400px',
-                minHeight: item.minH ? `${item.minH * 100}px` : '400px',
-              }}
             >
               <div className="drag-handle absolute top-1 left-1/2 -translate-x-1/2 h-1 w-8 bg-muted-foreground/30 rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
               <div className={cn("w-full h-full", item.i === 'plan' && 'overflow-hidden')}>
@@ -166,7 +184,6 @@ export default function WidgetDashboard({
           )
         })}
       </ResponsiveReactGridLayout>
-      {children}
     </div>
   );
 }

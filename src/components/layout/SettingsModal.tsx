@@ -38,7 +38,7 @@ import {
 import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
-import { saveUserFCMToken, anonymizeUserAccount, permanentlyDeleteUserData } from '@/services/userService';
+import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 
@@ -320,7 +320,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       } else if (actionToConfirm === 'format') {
           setIsFormatting(true);
           await formatUserData(auth.currentUser.uid);
-          Object.keys(localStorage).forEach(key => key.startsWith('futureSight') && localStorage.removeItem(key));
+          // Also clear layout from local storage
+          const layoutKey = `dashboard-layouts-${auth.currentUser.uid}`;
+          localStorage.removeItem(layoutKey);
+          
           toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
           setTimeout(() => window.location.reload(), 2000);
       }
@@ -473,7 +476,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             toast({ title: 'Import Failed', description: `Invalid file format. ${error.message}`, variant: 'destructive' });
         } finally {
             setIsImporting(false);
-            if (event.target) event.target.value = '';
+            if (event.target) {
+                event.target.value = '';
+            }
         }
     };
     reader.readAsText(file);
@@ -846,5 +851,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-    

@@ -172,7 +172,7 @@ export async function formatUserData(userId: string): Promise<void> {
         'careerGoals',
         'careerVisions',
         'dailyPlans',
-        'fcmTokens',
+        'fcmTokens', // Keeping these might be desired, but for a full format, we clear them.
         'notifications',
         'resources',
         'skills',
@@ -192,11 +192,9 @@ export async function formatUserData(userId: string): Promise<void> {
     const chatsCollectionRef = collection(db, 'users', userId, 'chats');
     const chatsSnapshot = await getDocs(chatsCollectionRef);
     for (const chatDoc of chatsSnapshot.docs) {
-        // Delete messages subcollection within each chat
         const messagesCollectionRef = collection(chatDoc.ref, 'messages');
         const messagesSnapshot = await getDocs(messagesCollectionRef);
         messagesSnapshot.docs.forEach(msgDoc => batch.delete(msgDoc.ref));
-        // Finally, delete the chat document itself
         batch.delete(chatDoc.ref);
     }
 
@@ -204,7 +202,7 @@ export async function formatUserData(userId: string): Promise<void> {
     const streakDocRef = doc(db, 'streaks', userId);
     batch.delete(streakDocRef);
 
-    // 4. Reset fields on the main user document
+    // 4. Reset fields on the main user document, PRESERVING subscription data.
     const userDocRef = doc(db, 'users', userId);
     batch.update(userDocRef, {
         bio: '',
@@ -220,6 +218,13 @@ export async function formatUserData(userId: string): Promise<void> {
         codingUsernames: {},
         deletionStatus: null,
     });
+    
+    // Also clear the layout from its separate document
+    const layoutDocRef = doc(db, 'userSettings', userId);
+    batch.update(layoutDocRef, {
+        dashboardLayouts: null
+    });
+
 
     await batch.commit();
 }

@@ -23,6 +23,7 @@ import { ColorPickerPopover } from '../ui/ColorPickerPopover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { GlassEffect } from '@/context/ThemeContext';
 import { Slider } from '@/components/ui/slider';
+import { useAuth } from '@/context/AuthContext';
 
 interface CustomizeThemeModalProps {
   isOpen: boolean;
@@ -62,6 +63,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
     setGlassEffectSettings,
   } = useTheme();
   
+  const { user } = useAuth();
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -142,7 +144,13 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
 
   const handleReset = () => {
     resetCustomizations();
-    toast({ title: 'Success', description: 'Theme customizations have been reset to default.' });
+    // Also clear the layout from local storage
+    if (user) {
+      const layoutKey = `dashboard-layouts-${user.uid}`;
+      localStorage.removeItem(layoutKey);
+    }
+    toast({ title: 'Success', description: 'Theme and layout have been reset to default. Reloading...' });
+    setTimeout(() => window.location.reload(), 1500); // Reload to apply default layout
     onOpenChange(false);
     resetForm();
   };
@@ -363,7 +371,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
 
         <DialogFooter className="p-4 pt-3 border-t border-border/30 flex-row justify-between w-full">
            <Button onClick={handleReset} variant="destructive" size="sm">
-            <Trash2 className="mr-2 h-4 w-4" /> Reset Theme
+            <Trash2 className="mr-2 h-4 w-4" /> Reset Theme & Layout
           </Button>
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm" onClick={resetForm}>
