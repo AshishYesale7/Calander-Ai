@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION as CODE_LAYOUT_VERSION } from '@/data/layout-data';
 import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
-import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
+import DayTimetableViewWidget from '../timeline/DayTimetableViewWidget';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -69,6 +69,7 @@ export default function WidgetDashboard({
     layouts: user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts,
   });
 
+  const [currentLayouts, setCurrentLayouts] = useState<Layouts>(versionedLayouts.layouts);
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
   const [currentCols, setCurrentCols] = useState(12);
@@ -111,36 +112,31 @@ export default function WidgetDashboard({
       const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts() };
 
       let finalLayouts: VersionedLayouts;
-      let usedSource: 'local' | 'cloud' | 'default' = 'default';
-
+      
       const localVersion = localResult?.version || 0;
       const cloudVersion = cloudResult?.version || 0;
       const codeVersion = CODE_LAYOUT_VERSION;
 
       if (localVersion >= cloudVersion && localVersion >= codeVersion) {
         finalLayouts = localResult!;
-        usedSource = 'local';
       } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
         finalLayouts = cloudResult!;
-        usedSource = 'cloud';
         if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
       } else {
         finalLayouts = defaultLayouts;
-        usedSource = 'default';
         if (layoutKey) localStorage.removeItem(layoutKey);
-        // If code version is newest, save it to the cloud.
         if (codeVersion > cloudVersion) {
           saveLayout(user.uid, role, defaultLayouts);
         }
       }
       
       setVersionedLayouts(finalLayouts);
+      setCurrentLayouts(finalLayouts.layouts);
       setIsLayoutLoaded(true);
     };
 
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts]);
-
 
   useEffect(() => {
     return () => {
@@ -152,8 +148,8 @@ export default function WidgetDashboard({
       }
     };
   }, [versionedLayouts, user, isLayoutLoaded]);
-
-  const saveCurrentLayout = useCallback(() => {
+  
+  const saveCurrentLayout = (newLayouts: Layouts) => {
     if (!isLayoutLoaded || !user) return;
     
     const layoutKey = getLayoutKey();
@@ -161,7 +157,7 @@ export default function WidgetDashboard({
 
     setVersionedLayouts(currentVersionedLayouts => {
       const newVersion = (currentVersionedLayouts.version || 0) + 1;
-      const dataToSave: VersionedLayouts = { version: newVersion, layouts: currentVersionedLayouts.layouts };
+      const dataToSave: VersionedLayouts = { version: newVersion, layouts: newLayouts };
       try {
           localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
       } catch (error) {
@@ -169,23 +165,19 @@ export default function WidgetDashboard({
       }
       return dataToSave;
     });
-  }, [isLayoutLoaded, user, getLayoutKey]);
-  
+  };
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
-    if (!isLayoutLoaded || !user) return;
-    setVersionedLayouts(currentVersionedLayouts => ({
-        ...currentVersionedLayouts,
-        layouts: allLayouts,
-    }));
+    if (!isLayoutLoaded) return;
+    setCurrentLayouts(allLayouts);
   };
 
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    const layouts = versionedLayouts.layouts;
-    const currentLayout = layouts[currentBreakpoint as keyof Layouts];
-    if (!currentLayout) return;
+    const layouts = currentLayouts;
+    const currentLayoutForBreakpoint = layouts[currentBreakpoint as keyof Layouts];
+    if (!currentLayoutForBreakpoint) return;
 
-    const newLayout = currentLayout.map(item => {
+    const newLayout = currentLayoutForBreakpoint.map(item => {
         if (item.i === 'plan') {
             if (isOpen) {
                 const headerHeight = 80;
@@ -200,8 +192,10 @@ export default function WidgetDashboard({
     });
 
     const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
-    handleLayoutChange(newLayout, newLayouts);
-  }, [versionedLayouts, currentBreakpoint, handleLayoutChange]);
+    setCurrentLayouts(newLayouts);
+    saveCurrentLayout(newLayouts);
+
+  }, [currentLayouts, currentBreakpoint]);
 
   const components: { [key: string]: React.ReactNode } = useMemo(() => {
       const dayTimetableViewWidget = (
@@ -229,15 +223,15 @@ export default function WidgetDashboard({
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
-  const finalLayouts = useMemo(() => {
+  const finalLayoutsArray = useMemo(() => {
     const role = user?.userType || 'student';
-    const baseLayouts = versionedLayouts.layouts[currentBreakpoint as keyof Layouts] || getDefaultLayouts()[currentBreakpoint as keyof Layouts];
+    const baseLayouts = currentLayouts[currentBreakpoint as keyof Layouts] || getDefaultLayouts()[currentBreakpoint as keyof Layouts];
     
     if (role === 'professional') {
         return baseLayouts.filter(item => item.i !== 'streak');
     }
     return baseLayouts;
-  }, [versionedLayouts.layouts, user?.userType, currentBreakpoint, getDefaultLayouts]);
+  }, [currentLayouts, user?.userType, currentBreakpoint, getDefaultLayouts]);
 
   const getLayoutWithDynamicMins = useCallback((layout: Layout[]) => {
     if (!layout) return [];
@@ -251,11 +245,11 @@ export default function WidgetDashboard({
 
   const layoutsWithDynamicMins = useMemo(() => {
     const newLayouts: Layouts = {};
-    for (const breakpoint in versionedLayouts.layouts) {
-        newLayouts[breakpoint] = getLayoutWithDynamicMins(versionedLayouts.layouts[breakpoint]);
+    for (const breakpoint in currentLayouts) {
+        newLayouts[breakpoint] = getLayoutWithDynamicMins(currentLayouts[breakpoint]);
     }
     return newLayouts;
-  }, [versionedLayouts.layouts, getLayoutWithDynamicMins]);
+  }, [currentLayouts, getLayoutWithDynamicMins]);
   
   if (!isLayoutLoaded) {
       return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
@@ -275,8 +269,8 @@ export default function WidgetDashboard({
         compactType="vertical"
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
-        onDragStop={saveCurrentLayout}
-        onResizeStop={saveCurrentLayout}
+        onDragStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
+        onResizeStop={(layout) => saveCurrentLayout({ ...currentLayouts, [currentBreakpoint]: layout })}
         onBreakpointChange={(newBreakpoint, newCols) => {
             setCurrentBreakpoint(newBreakpoint);
             setCurrentCols(newCols);
@@ -285,7 +279,7 @@ export default function WidgetDashboard({
             setCurrentContainerWidth(containerWidth);
         }}
       >
-        {finalLayouts.map(item => {
+        {finalLayoutsArray.map(item => {
           if (!components[item.i]) return null;
           return (
             <div
