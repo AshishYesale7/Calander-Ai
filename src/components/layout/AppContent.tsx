@@ -273,9 +273,14 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     return <OnboardingModal onFinish={onFinishOnboarding} />;
   }
   
+  const isDashboard = pathname.endsWith('/dashboard');
+  const [isEditMode, setIsEditMode] = useState(false);
+
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
     setIsTimezoneModalOpen,
+    isEditMode,
+    setIsEditMode,
   };
   
   const isVideoCallActive = !!(ongoingCall);
@@ -302,7 +307,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
                   !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
                   !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
               )}>
-                {children}
+                {React.cloneElement(children as React.ReactElement, { isEditMode, setIsEditMode })}
               </main>
               <ChatAndCallUI />
           </div>

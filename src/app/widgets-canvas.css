@@ -1,0 +1,32 @@
+
+.edit-mode-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 10; /* Lower than widgets */
+    backdrop-filter: blur(2px);
+}
+
+.remove-widget-button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background-color: red;
+    color: white;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    cursor: pointer;
+    z-index: 999; /* Higher than card content */
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 0.2s;
+}
+
+.remove-widget-button:hover {
+    transform: scale(1.1);
+}

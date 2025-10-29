@@ -159,6 +159,12 @@ export default function DashboardPage() {
   const calendarWidgetRef = useRef<HTMLDivElement>(null);
   const [calendarWidgetWidth, setCalendarWidgetWidth] = useState(0);
 
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    console.log('Jiggle Mode:', isEditMode)
+  }, [isEditMode]);
+
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
         if (entries[0]) {
@@ -798,6 +804,8 @@ export default function DashboardPage() {
             closeDayTimetableView={closeDayTimetableView}
             handleEventStatusUpdate={handleEventStatusUpdate}
             setIsPlannerMaximized={setIsPlannerMaximized}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
         />
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>

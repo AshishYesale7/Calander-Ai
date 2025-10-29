@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -112,6 +111,8 @@ interface HeaderProps {
   setIsTimezoneModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
+  isEditMode?: boolean;
+  setIsEditMode?: (isEditMode: boolean) => void;
 }
 
 export default function Header({
@@ -121,6 +122,8 @@ export default function Header({
   setIsTimezoneModalOpen,
   handleToggleFullScreen,
   isFullScreen,
+  isEditMode,
+  setIsEditMode,
 }: HeaderProps) {
   const { user, subscription, isSubscribed, knownUsers, removeKnownUser, switchUser } = useAuth();
   const router = useRouter();
@@ -326,6 +329,15 @@ export default function Header({
         
         <div className="flex items-center gap-1 sm:gap-2">
           
+          {isEditMode && setIsEditMode && (
+            <Button
+              className="done-button bg-green-500 hover:bg-green-600 text-white"
+              onClick={() => setIsEditMode(false)}
+            >
+              Done
+            </Button>
+          )}
+
           {streakData && isSubscribed && user?.userType !== 'professional' && (
               <Popover open={isStreakPopoverOpen} onOpenChange={setIsStreakPopoverOpen}>
                 <PopoverTrigger asChild>
