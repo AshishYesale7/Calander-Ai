@@ -9,6 +9,7 @@ import type { Layouts, Layout } from 'react-grid-layout';
 export interface VersionedLayouts {
     version: number;
     layouts: Layouts;
+    hidden?: string[]; // Add optional hidden array
 }
 
 const getLayoutDocRef = (userId: string) => {
@@ -56,7 +57,12 @@ export const saveLayout = async (userId: string, role: 'student' | 'professional
   const layoutDocRef = getLayoutDocRef(userId);
   
   const sanitizedLayouts = sanitizeLayouts(versionedLayouts.layouts);
-  const dataToSave = { version: versionedLayouts.version, layouts: sanitizedLayouts };
+  // Ensure hidden is an array, even if it's empty
+  const dataToSave: VersionedLayouts = { 
+      version: versionedLayouts.version, 
+      layouts: sanitizedLayouts,
+      hidden: versionedLayouts.hidden || [],
+  };
 
   const fieldName = `dashboardLayouts_${role}`;
   try {
@@ -78,6 +84,7 @@ export const getLayout = async (userId: string, role: 'student' | 'professional'
   try {
     const docSnap = await getDoc(layoutDocRef);
     if (docSnap.exists() && docSnap.data()[fieldName]) {
+      // Return the data, which now includes the 'hidden' field if it exists
       return docSnap.data()[fieldName] as VersionedLayouts;
     }
     return null;
@@ -89,6 +96,7 @@ export const getLayout = async (userId: string, role: 'student' | 'professional'
 
 /**
  * Deletes the saved dashboard layout from Firestore for a specific user and role.
+ * If no role is provided, it deletes layouts for both roles.
  */
 export const deleteLayout = async (userId: string, role?: 'student' | 'professional'): Promise<void> => {
     if (!userId) return;
@@ -98,6 +106,7 @@ export const deleteLayout = async (userId: string, role?: 'student' | 'professio
     if (role) {
         fieldsToDelete.push(`dashboardLayouts_${role}`);
     } else {
+        // If no role is specified, clear both for a full reset
         fieldsToDelete.push('dashboardLayouts_student', 'dashboardLayouts_professional');
     }
     
@@ -109,6 +118,8 @@ export const deleteLayout = async (userId: string, role?: 'student' | 'professio
     try {
         await updateDoc(layoutDocRef, updateData);
     } catch (error) {
+        // If the document or field doesn't exist, Firestore's updateDoc throws an error.
+        // We can safely ignore "not-found" errors during a deletion process.
         if ((error as any).code !== 'not-found') {
           console.error(`Failed to delete layout fields from Firestore:`, error);
         }

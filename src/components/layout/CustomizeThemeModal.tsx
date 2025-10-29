@@ -147,10 +147,11 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
     resetCustomizations();
     
     if (user) {
-      // Clear the layout from both local storage and Firestore
-      const layoutKey = `dashboard-layouts-${user.uid}`;
+      const role = user.userType || 'student';
+      // Clear the role-specific layout from both local storage and Firestore
+      const layoutKey = `dashboard-layouts-${user.uid}-${role}`;
       localStorage.removeItem(layoutKey);
-      await deleteLayout(user.uid);
+      await deleteLayout(user.uid, role);
     }
     
     toast({ title: 'Success', description: 'Theme and layout have been reset to default. Reloading...' });
