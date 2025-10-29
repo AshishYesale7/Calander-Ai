@@ -130,7 +130,7 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
     }).filter(event => event !== null) as TimelineEvent[];
 };
 
-export default function DashboardPage(props: any) {
+export default function DashboardPage({ isEditMode, setIsEditMode }: { isEditMode: boolean; setIsEditMode: (value: boolean) => void; }) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -385,6 +385,8 @@ export default function DashboardPage(props: any) {
     toast({ title: 'Event Permanently Deleted' });
   };
 
+  const onToggleTrash = () => setIsTrashPanelOpen(prev => !prev);
+
 
   const handleMonthNavigationForSharedViews = (direction: 'prev' | 'next') => {
     setActiveDisplayMonth(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
@@ -634,7 +636,6 @@ export default function DashboardPage(props: any) {
   
   const [calendarViewMode, setCalendarViewMode] = useState<'calendar' | 'list'>('calendar');
 
-  const onToggleTrash = () => setIsTrashPanelOpen(!isTrashPanelOpen);
 
   const calendarWidget = (
     <div ref={calendarWidgetRef} className="relative h-full flex flex-col">
@@ -798,8 +799,8 @@ export default function DashboardPage(props: any) {
             closeDayTimetableView={closeDayTimetableView}
             handleEventStatusUpdate={handleEventStatusUpdate}
             setIsPlannerMaximized={setIsPlannerMaximized}
-            isEditMode={props.isEditMode}
-            setIsEditMode={props.setIsEditMode}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
         />
       {eventBeingEdited && <EditEventModal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} eventToEdit={eventBeingEdited} onSubmit={handleSaveEditedEvent} isAddingNewEvent={isAddingNewEvent} isGoogleConnected={!!isGoogleConnected} />}
     </div>

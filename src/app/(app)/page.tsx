@@ -6,6 +6,11 @@
 // We need to pass props down to the dashboard page, so this component handles that.
 import DashboardPage from './dashboard/page';
 
-export default function AppRoot(props: any) {
+interface AppRootProps {
+  isEditMode: boolean;
+  setIsEditMode: (value: boolean) => void;
+}
+
+export default function AppRoot(props: AppRootProps) {
   return <DashboardPage {...props} />;
 }
