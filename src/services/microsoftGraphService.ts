@@ -1,3 +1,4 @@
+
 'use server';
 
 import { google } from 'googleapis'; // This seems incorrect, should be a Microsoft library
@@ -46,7 +47,8 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'email',
         'offline_access', // Important for getting a refresh token
         'Calendars.Read',
-        'Mail.Read'
+        'Mail.Read',
+        'Files.Read' // Added OneDrive scope
     ].join(' ');
 
     const redirectUri = await getRedirectURI(request);
@@ -71,7 +73,7 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
 
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', 'openid profile email offline_access Calendars.Read Mail.Read');
+    params.append('scope', 'openid profile email offline_access Calendars.Read Mail.Read Files.Read');
     params.append('code', code);
     params.append('redirect_uri', redirectUri);
     params.append('grant_type', 'authorization_code');

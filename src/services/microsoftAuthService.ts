@@ -19,6 +19,7 @@ export const signInWithMicrosoft = async (): Promise<void> => {
     provider.addScope('User.Read'); // Basic profile information
     provider.addScope('Calendars.Read'); // Read calendar events
     provider.addScope('Mail.Read'); // Read emails
+    provider.addScope('Files.Read'); // Read OneDrive files
     
     // The existing scopes for profile and email are still useful
     provider.addScope('email');
