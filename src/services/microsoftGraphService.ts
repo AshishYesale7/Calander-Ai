@@ -47,9 +47,10 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'email',
         'offline_access', // Important for getting a refresh token
         'Calendars.ReadWrite',
+        'Calendars.ReadBasic', // New permission to see free/busy status
         'Mail.Read',
         'Files.Read',
-        'OnlineMeetings.ReadWrite' // New scope for Teams meetings
+        'OnlineMeetings.ReadWrite' 
     ].join(' ');
 
     const redirectUri = await getRedirectURI(request);
@@ -74,7 +75,7 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
 
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', 'openid profile email offline_access Calendars.ReadWrite Mail.Read Files.Read OnlineMeetings.ReadWrite');
+    params.append('scope', 'openid profile email offline_access Calendars.ReadWrite Calendars.ReadBasic Mail.Read Files.Read OnlineMeetings.ReadWrite');
     params.append('code', code);
     params.append('redirect_uri', redirectUri);
     params.append('grant_type', 'authorization_code');
