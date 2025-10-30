@@ -39,6 +39,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import StreakPopoverContent from './StreakPopoverContent';
 import ExtensionsPopoverContent from './ExtensionsPopoverContent';
 import WidgetPreviews from './widget-previews';
+import { useChat } from '@/context/ChatContext';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
@@ -91,6 +92,7 @@ export default function Header({
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { streakData } = useStreak();
   const [userProfile, setUserProfile] = useState<{username?: string} | null>(null);
+  const { setIsChatSidebarOpen } = useChat();
 
   useEffect(() => {
     if (user) {
@@ -299,7 +301,7 @@ export default function Header({
             </>
           )}
 
-          <Button variant="ghost" size="icon" className="hidden md:flex">
+          <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setIsChatSidebarOpen(prev => !prev)}>
             <MessageSquare className="h-5 w-5" />
             <span className="sr-only">Toggle Chat</span>
           </Button>
