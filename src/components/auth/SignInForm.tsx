@@ -1,3 +1,4 @@
+
 'use client';
 import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
@@ -18,9 +19,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 // Import the new service functions
-import { signInWithMicrosoft } from '@/services/microsoftAuthService';
-import { signInWithYahoo } from '@/services/yahooAuthService';
-import { signInWithApple } from '@/services/appleAuthService';
+import { triggerMicrosoftRedirect } from '@/services/microsoftAuthService';
+import { triggerYahooRedirect } from '@/services/yahooAuthService';
+import { triggerAppleRedirect } from '@/services/appleAuthService';
 
 
 const GoogleIcon = () => (
@@ -98,19 +99,17 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
   const handleProviderSignIn = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
     setLoading(providerName);
     try {
-        let authUser;
         if (providerName === 'google') {
             const provider = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
-            const result = await signInWithPopup(auth, provider);
-            authUser = result.user;
+            await signInWithPopup(auth, provider);
         } else {
             let serviceFunction;
-            if (providerName === 'microsoft') serviceFunction = signInWithMicrosoft;
-            else if (providerName === 'yahoo') serviceFunction = signInWithYahoo;
-            else serviceFunction = signInWithApple; // apple
-            authUser = await serviceFunction();
+            if (providerName === 'microsoft') serviceFunction = triggerMicrosoftRedirect;
+            else if (providerName === 'yahoo') serviceFunction = triggerYahooRedirect;
+            else serviceFunction = triggerAppleRedirect;
+            await serviceFunction();
         }
         
         toast({ title: 'Success!', description: `Signed in with ${providerName} successfully.` });

@@ -1,3 +1,4 @@
+
 'use client';
 import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
@@ -18,9 +19,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 // Import the new service functions
-import { signUpWithMicrosoft } from '@/services/microsoftAuthService';
-import { signUpWithYahoo } from '@/services/yahooAuthService';
-import { signUpWithApple } from '@/services/appleAuthService';
+import { triggerMicrosoftRedirect } from '@/services/microsoftAuthService';
+import { triggerYahooRedirect } from '@/services/yahooAuthService';
+import { triggerAppleRedirect } from '@/services/appleAuthService';
 
 const GoogleIcon = () => (
   <div className="flex items-center gap-1.5 mr-2">
@@ -98,20 +99,18 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading(providerName);
 
     try {
-        let authUser;
         if (providerName === 'google') {
             const provider = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
             const result = await signInWithPopup(auth, provider);
             await createUserProfile(result.user);
-            authUser = result.user;
         } else {
             let serviceFunction;
-            if (providerName === 'microsoft') serviceFunction = signUpWithMicrosoft;
-            else if (providerName === 'yahoo') serviceFunction = signUpWithYahoo;
-            else serviceFunction = signUpWithApple;
-            authUser = await serviceFunction();
+            if (providerName === 'microsoft') serviceFunction = triggerMicrosoftRedirect;
+            else if (providerName === 'yahoo') serviceFunction = triggerYahooRedirect;
+            else serviceFunction = triggerAppleRedirect;
+            await serviceFunction('signup'); // Pass 'signup' action
         }
 
       toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });

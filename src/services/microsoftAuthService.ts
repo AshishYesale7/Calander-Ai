@@ -1,15 +1,13 @@
 
-'use client';
+'use server';
 
-import { OAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { OAuthProvider, signInWithRedirect, getRedirectResult, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { createUserProfile, getUserProfile } from './userService';
-import type { User } from 'firebase/auth';
 
 const getMicrosoftProvider = () => {
     const provider = new OAuthProvider('microsoft.com');
-    // Explicitly set the tenant to 'consumers' to ensure personal Microsoft accounts (Outlook, Hotmail) work correctly.
-    // This is a common requirement to avoid environment-related errors.
+    // This is crucial for personal accounts (Outlook, Hotmail) to work.
     provider.setCustomParameters({
         tenant: 'consumers',
     });
@@ -18,47 +16,49 @@ const getMicrosoftProvider = () => {
     return provider;
 };
 
-const handleAuthRedirect = async (): Promise<void> => {
+// This function will be called by the UI to start the sign-in/sign-up process.
+export const triggerMicrosoftRedirect = async (action: 'signin' | 'signup'): Promise<void> => {
     if (!auth) throw new Error("Firebase Auth is not initialized.");
     const provider = getMicrosoftProvider();
+    
+    // We can store the intended action in session storage to retrieve it on the callback page.
+    if (typeof window !== 'undefined') {
+        sessionStorage.setItem('msft_auth_action', action);
+    }
+    
     await signInWithRedirect(auth, provider);
 };
 
-// This function should be called when the application loads on the callback page.
-// It processes the result of the redirect.
-const handleRedirectResult = async (): Promise<User | null> => {
+// This function should be called on a dedicated callback page or when the app loads
+// to process the result of the redirect.
+export const processMicrosoftRedirect = async (): Promise<User | null> => {
     if (!auth) throw new Error("Firebase Auth is not initialized.");
     
     try {
         const result = await getRedirectResult(auth);
         if (result) {
-            // User has successfully signed in.
             const user = result.user;
+            const authAction = typeof window !== 'undefined' ? sessionStorage.getItem('msft_auth_action') : 'signin';
             
-            // Check if it's a new user by trying to get their profile.
-            const userProfile = await getUserProfile(user.uid);
-            if (!userProfile) {
-                // If no profile exists, it's a new user, so create their profile.
-                await createUserProfile(user);
+            if (authAction === 'signup') {
+                const userProfile = await getUserProfile(user.uid);
+                if (!userProfile) {
+                    await createUserProfile(user);
+                }
+            }
+            // Clear the action from session storage after use.
+            if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('msft_auth_action');
             }
             return user;
         }
         return null;
     } catch (error: any) {
         console.error("Microsoft auth redirect result error:", error);
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('msft_auth_action');
+        }
         // Let the calling UI handle specific error codes if needed.
         throw error;
     }
 };
-
-
-// We will now export a single function to handle the redirect logic,
-// which will be used for both sign-in and sign-up flows from the UI.
-export const triggerMicrosoftRedirect = async (): Promise<void> => {
-    await handleAuthRedirect();
-};
-
-// And a function to process the result after the redirect.
-export const processMicrosoftRedirect = async (): Promise<User | null> => {
-    return handleRedirectResult();
-}
