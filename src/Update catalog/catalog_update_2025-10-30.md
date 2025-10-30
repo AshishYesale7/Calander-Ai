@@ -87,6 +87,12 @@ Implemented an interactive, floating AI-powered command bar designed as the cent
 * Integrates AI chat, file browser, and terminal interfaces.
 * Accessible via keyboard shortcuts (Ctrl/Cmd + K).
 
+### **UI Enhancements**
+
+* Glassmorphic design with animated, multi-color borders.
+* Draggable and position-aware bar with persistent placement memory.
+* Smooth open/close animations using Framer Motion.
+
 ### **Architecture Diagram**
 
 ```mermaid
@@ -117,7 +123,7 @@ graph TD
 
 ---
 
-## **4. Public Pages, Onboarding & Multi-Provider Auth**
+## **4. Public Pages & Onboarding Enhancements**
 
 ### **Summary**
 
@@ -152,14 +158,37 @@ sequenceDiagram
 
 ### **Summary**
 
-Added support for Microsoft personal and work accounts via OAuth, ensuring enterprise-ready login flexibility, and debugged common Azure AD setup issues.
+Added support for Microsoft personal and work accounts via OAuth, ensuring enterprise-ready login flexibility.
 
 ### **Core Functionality**
 
 *   Integrated Microsoft's v2.0 OAuth endpoints using the `/common` tenant to support both personal (Outlook.com) and work/school (Azure AD) accounts.
 *   Securely configured the Client ID and Client Secret via environment variables.
-*   Verified the publisher domain by hosting the `microsoft-identity-association.json` file in the `/.well-known` directory to establish trust and remove the "unverified publisher" warning from the consent screen.
-*   Corrected callback URI mismatches in the Azure portal to ensure successful token exchange.
+
+### **Debugging**
+
+*   **Fixed Unverified Publisher Warning:** Resolved the "unverified publisher" warning on the Microsoft consent screen by hosting the `microsoft-identity-association.json` file in the `/.well-known` directory of our domain, proving ownership to Azure.
+*   **Corrected Callback URI Mismatch:** Ensured the `redirect_uri` sent in the OAuth request exactly matched the one registered in the Azure App Registration portal to prevent authentication failures after user sign-in.
+*   **Enabled Personal & Work Accounts:** Switched to the `/common` tenant endpoint to allow both personal Microsoft accounts and work/school accounts to authenticate, broadening user accessibility.
+
+### **Architecture Diagram**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CalendarAI as "Calendar.ai App"
+    participant AzureAD as "Microsoft Identity (Azure AD)"
+
+    User->>CalendarAI: Clicks "Sign in with Microsoft"
+    CalendarAI->>AzureAD: Redirects to /common/oauth2/v2.0/authorize with client_id, scope, redirect_uri
+    AzureAD->>User: Shows Consent Screen (Publisher Verified)
+    User->>AzureAD: Grants Consent
+    AzureAD->>CalendarAI: Redirects to /api/auth/microsoft/callback with authorization_code
+    CalendarAI->>AzureAD: POST to /token endpoint with code, client_secret
+    AzureAD-->>CalendarAI: Returns access_token & refresh_token
+    CalendarAI->>CalendarAI: Saves tokens to Firestore
+    CalendarAI->>User: Creates app session, redirects to dashboard
+```
 
 ---
 
@@ -180,6 +209,7 @@ graph TD
     D --> F[Render UI with Student features];
     E --> F[Render UI with Professional features];
 ```
+
 ---
 
 ## **7. Avatar System Implementation**
@@ -208,7 +238,6 @@ sequenceDiagram
     UserService-->>AuthContext: Updated User Profile
     AuthContext-->>User: UI updates globally with new avatar
 ```
-
 ---
 
 ## **8. Multi-Account Management**
@@ -216,12 +245,6 @@ sequenceDiagram
 ### **Summary**
 
 Built a seamless multi-account system enabling users to manage and switch between multiple authenticated profiles efficiently within the header menu.
-
-### **Core Functionality**
-
-*   Implemented multi-account session management within `AuthContext`.
-*   Enabled quick account switching using Firebase's `login_hint` parameter.
-*   Stored a list of "known users" in `localStorage` for session persistence across browser reloads.
 
 ### **Architecture Diagram**
 
@@ -246,12 +269,6 @@ sequenceDiagram
 ### **Summary**
 
 Deployed an AI-powered Q&A chatbot on the landing page, supplemented by immersive video and animation backgrounds.
-
-### **Core Functionality**
-
-*   Knowledge-based AI answering product-related queries from an embedded knowledge base.
-*   Context-aware session memory for conversational continuity.
-*   Implemented a keyword-based fallback system for when AI services are unavailable.
 
 ### **Architecture Diagram**
 
@@ -278,8 +295,6 @@ sequenceDiagram
 ---
 
 # **Technical Implementation Summary**
-
-This section provides a high-level overview of the technologies and architectural patterns used to build the Calendar.ai application.
 
 ## **1. Core Frameworks & Libraries**
 
@@ -326,7 +341,6 @@ graph TD
     Users -- "Has Private Data In" --> CareerGoals
     Users -- "Has Private Data In" --> Skills
     Users -- "Has Private Data In" --> Resources
-    Users -- "Has Private Data In" --> Chats
     Users -- "Has Private Data In" --> Notifications
 
     Chats -- "Contains Messages" --> Messages["/messages/{messageId}"]
@@ -336,7 +350,7 @@ graph TD
 
 *   **Google Workspace APIs:** We have deeply integrated the **Google Calendar, Google Tasks, and Gmail APIs** to provide seamless, real-time data synchronization for users who connect their Google account.
 *   **Competitive Programming APIs:** The Codefolio Ally plugin fetches data from the public APIs of **Codeforces, LeetCode (via its GraphQL endpoint), and CodeChef** (leveraging a reliable third-party proxy).
-*   **Razorpay API:** Used as the payment gateway for securely processing all subscription payments for monthly and yearly plans.
+*   **Razorpay API:** Used as the payment gateway for securely processing all subscription payments.
 
 ## **4. Key Libraries & Utilities**
 
