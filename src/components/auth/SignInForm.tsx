@@ -61,15 +61,12 @@ export default function SignInForm() {
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [countdown, setCountdown] = useState(0);
-  const [resendCooldown, setResendCooldown] = useState(false);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (countdown > 0) {
       timerRef.current = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else {
-      setResendCooldown(false);
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -137,7 +134,6 @@ export default function SignInForm() {
   };
   
 
-  // Setup reCAPTCHA
   const setupRecaptcha = () => {
     if (!auth || !recaptchaContainerRef.current) return;
     if (window.recaptchaVerifier) {
@@ -147,29 +143,35 @@ export default function SignInForm() {
     window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
       size: 'normal',
     });
-    window.recaptchaVerifier.render();
+    return window.recaptchaVerifier.render();
   };
 
   const handleSendOtp = async (isResend = false) => {
-    if (resendCooldown) return;
+    if (isResend && countdown > 0) return;
     if (!phone || !isValidPhoneNumber(phone)) {
       toast({ title: "Invalid Phone Number", description: "Please enter a valid phone number.", variant: "destructive" });
       return;
     }
     setLoading('phone');
-    setResendCooldown(true);
     try {
-      setupRecaptcha();
+      await setupRecaptcha();
       const appVerifier = window.recaptchaVerifier!;
       const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
       window.confirmationResult = confirmationResult;
-      setStep('otp');
-      toast({ title: "OTP Sent", description: "Check your phone for the verification code." });
-      setCountdown(isResend ? 30 : 60); // Start cooldown
+      
+      if (!isResend) {
+        setStep('otp');
+        toast({ title: "OTP Sent", description: "Check your phone for the verification code." });
+        setCountdown(60);
+      } else {
+        toast({ title: "OTP Resent", description: "A new code has been sent to your phone." });
+        setCountdown(30);
+      }
+
     } catch (error: any) {
       console.error("Phone sign-in error:", error);
       toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
-      setResendCooldown(false);
+      setCountdown(0); 
     } finally {
       setLoading(null);
     }
@@ -262,7 +264,7 @@ export default function SignInForm() {
                   {countdown > 0 ? (
                     <span className="text-muted-foreground">Resend OTP in {countdown}s</span>
                   ) : (
-                    <Button variant="link" className="p-0 h-auto" onClick={() => handleSendOtp(true)} disabled={resendCooldown}>
+                    <Button variant="link" className="p-0 h-auto" onClick={() => handleSendOtp(true)} disabled={loading === 'phone'}>
                       Resend OTP
                     </Button>
                   )}
