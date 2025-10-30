@@ -81,28 +81,29 @@ Implemented a complete backend synchronization pipeline integrating Google servi
 
 ### **Core Functionality**
 
-* Integrated Google OAuth for user authentication and secure access to Google APIs.
-* Synced Google Calendar, Gmail, and Tasks in real-time.
-* Designed AI models to summarize important emails and automatically convert relevant tasks or events into actionable timeline items.
+*   Integrated Google OAuth for user authentication and secure access to Google APIs.
+*   Synced Google Calendar, Gmail, and Tasks in real-time.
+*   Designed AI models to summarize important emails and automatically convert relevant tasks or events into actionable timeline items.
 
-### **UI Enhancements**
+### **Architecture Diagram**
 
-* Introduced timeline-based visualization for synced events and tasks.
-* Created user-centric data cards to display summarized email insights.
+```mermaid
+sequenceDiagram
+    participant User
+    participant AppFrontend as "Calendar.ai Frontend"
+    participant AppBackend as "Calendar.ai Backend"
+    participant GoogleAPI as "Google Workspace APIs"
+    participant GenkitAI as "Genkit AI Service"
 
-### **Debugging**
-
-* Resolved token expiration and refresh handling issues during prolonged sync sessions.
-* Fixed edge cases involving invalid scopes and rate-limited API responses.
-
-### **Backend**
-
-* Implemented service modules to handle secure OAuth tokens and batch data fetches.
-* Added AI filtering and summarization pipeline integrated via backend microservices.
-
-### **Conclusion**
-
-This system established a foundation for intelligent, privacy-aware data synchronization, creating a personalized and dynamic productivity experience.
+    User->>AppFrontend: Clicks "Sync with Google"
+    AppFrontend->>AppBackend: /api/google/sync-data
+    AppBackend->>GoogleAPI: Fetch Calendar, Tasks, Gmail data
+    GoogleAPI-->>AppBackend: Raw Data (Events, Tasks, Emails)
+    AppBackend->>GenkitAI: processGoogleData(Raw Data)
+    GenkitAI-->>AppBackend: Structured Insights (Timeline Items)
+    AppBackend->>AppFrontend: Update UI with new items
+    AppFrontend->>User: Shows synced & summarized items
+```
 
 ---
 
@@ -114,28 +115,29 @@ Replaced the static dashboard with a responsive, customizable grid system suppor
 
 ### **Core Functionality**
 
-* Integrated `react-grid-layout` for dynamic widget placement and resizing.
-* Added full edit mode allowing drag, resize, hide, and show operations.
-* Implemented version-controlled layout synchronization between local storage and Firestore.
+*   Integrated `react-grid-layout` for dynamic widget placement and resizing.
+*   Added full edit mode allowing drag, resize, hide, and show operations.
+*   Implemented version-controlled layout synchronization between local storage and Firestore.
 
-### **UI Enhancements**
+### **Architecture Diagram**
 
-* Introduced widget management panel with toggle-based visibility.
-* Role-specific layouts for Students and Professionals ensuring a tailored dashboard experience.
+```mermaid
+graph TD
+    A[User Enters Edit Mode] --> B{Drags & Resizes Widgets};
+    B --> C[Layout changes stored in React state];
+    C --> D{Debounced Save};
+    D --> E[Save to Local Storage (Instant)];
+    D --> F[Save to Firestore (Cloud Sync)];
 
-### **Debugging**
-
-* Fixed layout synchronization conflicts between cloud and local data.
-* Addressed grid rendering delays and alignment inconsistencies across devices.
-
-### **Backend**
-
-* Developed `layoutService.ts` to manage versioning, storage, and layout reconciliation.
-* Synced user layouts across sessions with Firestore integration.
-
-### **Conclusion**
-
-The new dashboard provides complete personalization while maintaining scalability and update compatibility across deployments.
+    subgraph "On App Load"
+        G[AuthContext determines user role] --> H{Load Layouts};
+        H -- "1. Check Local Storage" --> I[Local Layout];
+        H -- "2. Check Firestore" --> J[Cloud Layout];
+        H -- "3. Use Default" --> K[Code Default Layout];
+        I & J & K --> L[Select Newest Version];
+        L --> M[Render Dashboard];
+    end
+```
 
 ---
 
@@ -147,126 +149,104 @@ Implemented an interactive, floating AI-powered command bar designed as the cent
 
 ### **Core Functionality**
 
-* Functions as both a quick launcher and full-screen AI workspace.
-* Integrates AI chat, file browser, and terminal interfaces.
-* Accessible via keyboard shortcuts (Ctrl/Cmd + K).
+*   Functions as both a quick launcher and full-screen AI workspace.
+*   Integrates AI chat, file browser, and terminal interfaces.
+*   Accessible via keyboard shortcuts (Ctrl/Cmd + K).
 
-### **UI Enhancements**
+### **Architecture Diagram**
 
-* Glassmorphic design with animated, multi-color borders.
-* Draggable and position-aware bar with persistent placement memory.
-* Smooth open/close animations using Framer Motion.
+```mermaid
+graph TD
+    subgraph "User Interaction"
+        A[Keyboard Shortcut (Ctrl+K)]
+        B[Click on Bar]
+    end
 
-### **Debugging**
+    subgraph "Component State (Framer Motion)"
+        C{isOpen: boolean}
+        D{isFullScreen: boolean}
+        E[position: {x, y}]
+    end
 
-* Managed state synchronization across open, minimized, and full-screen modes.
-* Fixed drag offset and z-index issues overlapping chat panels.
+    subgraph "Render Logic"
+        F[DesktopCommandBar.tsx]
+        G[AiAssistantChat.tsx]
+        H[ChatBody, FileSystemBody, etc.]
+    end
 
-### **Backend**
-
-* Modularized structure using `DesktopCommandBar.tsx` and `AiAssistantChat.tsx`.
-* Optimized rendering and state storage for minimal latency transitions.
-
-### **Conclusion**
-
-The floating AI bar unified multiple productivity tools into one interface, improving accessibility and workflow fluidity for power users.
-
----
-
-## **4. Public Pages & Onboarding Enhancements**
-
-### **Summary**
-
-Redesigned all public-facing and authentication pages for a modern, cohesive, and interactive user experience.
-
-### **Core Functionality**
-
-* Rebuilt landing, sign-up, and sign-in pages with animation and multi-provider authentication.
-* Implemented onboarding flow for profile setup and role selection (Student/Professional).
-
-### **UI Enhancements**
-
-* Animated hero section with layered effects and dynamic feature showcase.
-* Integrated AI chatbot teaser on the landing page with scroll-activated visuals.
-* Unified design theme across sign-in and sign-up pages with motivational backgrounds.
-
-### **Debugging**
-
-* Resolved authentication redirection and form validation issues.
-* Fixed CSS layering conflicts between background animations and modals.
-
-### **Backend**
-
-* Added OAuth integrations for Google, Microsoft, Yahoo, and phone-based authentication.
-* Implemented account switcher logic and 30-day recovery system for account deletion.
-
-### **Conclusion**
-
-The new onboarding and authentication experience ensures professionalism, accessibility, and brand consistency from first interaction.
+    A --> C;
+    B --> C;
+    F -- Reads State --> C & D & E;
+    F -- Renders --> G;
+    G -- Renders --> H;
+```
 
 ---
 
-## **5. Microsoft Authentication Integration & Azure Debugging**
+## **4. Public Pages, Onboarding & Multi-Provider Auth**
 
 ### **Summary**
 
-Added support for Microsoft personal and work accounts via OAuth, ensuring enterprise-ready login flexibility.
+Redesigned all public-facing and authentication pages for a modern, cohesive, and interactive user experience, adding multiple authentication providers.
 
 ### **Core Functionality**
 
-* Integrated Microsoft v2.0 endpoints with `/common` tenant support.
-* Securely configured client credentials via environment variables.
+*   Rebuilt landing, sign-up, and sign-in pages with animation and multi-provider authentication.
+*   Implemented a guided onboarding flow for initial profile setup and role selection (Student/Professional).
+*   Added OAuth integrations for **Google, Microsoft, Yahoo**, and phone-based OTP authentication via Firebase.
 
-### **UI Enhancements**
+### **Authentication Flow Diagram**
 
-* Unified OAuth buttons with consistent styling and provider icons.
-* Integrated account switcher UI in authentication modals.
+```mermaid
+sequenceDiagram
+    participant User
+    participant SignInPage as "Sign-in Page"
+    participant Firebase as "Firebase Authentication"
+    participant Provider as "Google/Microsoft/Yahoo"
 
-### **Debugging**
-
-* Fixed unverified publisher domain issues through `microsoft-identity-association.json`.
-* Corrected callback URI mismatches and endpoint configurations in Azure.
-
-### **Backend**
-
-* Verified publisher domain setup in `.well-known` directory for domain trust validation.
-* Improved authentication resiliency and error handling logic.
-
-### **Conclusion**
-
-Microsoft authentication now functions seamlessly across environments, strengthening enterprise usability and security compliance.
+    User->>SignInPage: Clicks "Sign in with [Provider]"
+    SignInPage->>Firebase: signInWithPopup(provider)
+    Firebase->>Provider: Opens OAuth Popup
+    User->>Provider: Enters Credentials
+    Provider-->>Firebase: Returns Auth Token
+    Firebase-->>SignInPage: Creates User Session
+    SignInPage->>User: Redirects to /dashboard
+```
 
 ---
 
-## **6. Student vs. Professional Mode Implementation**
+## **5. Microsoft Authentication & Azure Debugging**
 
 ### **Summary**
 
-Introduced dynamic application modes tailored for Students and Professionals, optimizing dashboard content and navigation per user role.
+Added support for Microsoft personal and work accounts via OAuth, ensuring enterprise-ready login flexibility, and debugged common Azure AD setup issues.
 
 ### **Core Functionality**
 
-* Added `userType` field in Firestore profiles.
-* Role-based rendering for dashboards, widgets, and navigation menus.
+*   Integrated Microsoft's v2.0 OAuth endpoints using the `/common` tenant to support both personal (Outlook.com) and work/school (Azure AD) accounts.
+*   Securely configured the Client ID and Client Secret via environment variables.
+*   Verified the publisher domain by hosting the `microsoft-identity-association.json` file in the `/.well-known` directory to establish trust and remove the "unverified publisher" warning from the consent screen.
+*   Corrected callback URI mismatches in the Azure portal to ensure successful token exchange.
 
-### **UI Enhancements**
+---
 
-* Student dashboards highlight streaks and community features.
-* Professional dashboards focus on integrations and productivity widgets.
-* Implemented toggle switch in sidebar for instant role switching.
+## **6. Student vs. Professional Role Architecture**
 
-### **Debugging**
+### **Summary**
 
-* Fixed layout flickering on mode switch and real-time UI re-render issues.
+Introduced dynamic application modes tailored for Students and Professionals, optimizing dashboard content and navigation based on user role.
 
-### **Backend**
+### **Architecture Diagram**
 
-* Extended user schema and role persistence logic in onboarding API.
-* Added real-time re-render triggers on `userType` updates.
-
-### **Conclusion**
-
-This feature established two distinct yet unified experiences, serving diverse audience needs within the same codebase.
+```mermaid
+graph TD
+    A[User logs in or changes role] --> B(AuthContext reads `userType` from profile);
+    B --> C{userType === 'student' ?};
+    C -- Yes --> D[Load Student Dashboard Layout & Sidebar Nav];
+    C -- No --> E[Load Professional Dashboard Layout & Sidebar Nav];
+    D --> F[Render UI with Student features];
+    E --> F[Render UI with Professional features];
+```
 
 ---
 
@@ -274,32 +254,28 @@ This feature established two distinct yet unified experiences, serving diverse a
 
 ### **Summary**
 
-Developed a centralized avatar system enabling personalized identity management across the platform.
+Developed a centralized avatar system enabling personalized identity management across the platform, with options for selection during onboarding and custom uploads.
 
-### **Core Functionality**
+### **Architecture Diagram**
 
-* Avatar selection integrated in onboarding.
-* Profile customization via upload or predefined 3D avatars.
-* Real-time avatar synchronization throughout all components.
+```mermaid
+sequenceDiagram
+    participant User
+    participant ProfilePage as "Profile Page"
+    participant StorageService as "Firebase Storage Service"
+    participant UserService as "Firestore User Service"
+    participant AuthContext as "Global AuthContext"
 
-### **UI Enhancements**
-
-* Added “Customize Avatar” modal with instant preview.
-* Global avatar refresh mechanism on update.
-
-### **Debugging**
-
-* Resolved caching issues during avatar updates.
-* Prevented orphaned files with automated storage cleanup.
-
-### **Backend**
-
-* Managed uploads and deletions through Firebase Storage service.
-* Synced `photoURL` in Firestore and propagated via AuthContext.
-
-### **Conclusion**
-
-The avatar system enhanced user personalization and visual continuity across the application.
+    User->>ProfilePage: Clicks "Upload Avatar"
+    ProfilePage->>StorageService: uploadProfileImage(file)
+    StorageService-->>ProfilePage: newImageURL
+    ProfilePage->>UserService: updateUserProfile({ photoURL: newImageURL })
+    UserService-->>ProfilePage: Success
+    ProfilePage->>AuthContext: refreshUser()
+    AuthContext->>UserService: getUserProfile()
+    UserService-->>AuthContext: Updated User Profile
+    AuthContext-->>User: UI updates globally with new avatar
+```
 
 ---
 
@@ -307,35 +283,34 @@ The avatar system enhanced user personalization and visual continuity across the
 
 ### **Summary**
 
-Built a seamless multi-account system enabling users to manage and switch between multiple authenticated profiles efficiently.
+Built a seamless multi-account system enabling users to manage and switch between multiple authenticated profiles efficiently within the header menu.
 
 ### **Core Functionality**
 
-* Implemented multi-account session management within `AuthContext`.
-* Enabled quick account switching and session persistence.
+*   Implemented multi-account session management within `AuthContext`.
+*   Enabled quick account switching using Firebase's `login_hint` parameter.
+*   Stored a list of "known users" in `localStorage` for session persistence across browser reloads.
 
-### **UI Enhancements**
+### **Architecture Diagram**
 
-* Redesigned header dropdown to list known accounts with avatars and control options.
-* Added “Add Account” and “Sign out of all accounts” functionality.
+```mermaid
+sequenceDiagram
+    participant User
+    participant HeaderDropdown as "Header Menu"
+    participant AuthContext
+    participant Firebase as "Firebase Auth"
 
-### **Debugging**
-
-* Fixed localStorage desync issues after sign-out.
-* Resolved Google sign-in conflicts caused by overlapping OAuth sessions.
-
-### **Backend**
-
-* Stored known user data locally for quick re-login.
-* Integrated Firebase `signInWithPopup` with contextual `login_hint` for targeted account switching.
-
-### **Conclusion**
-
-This system streamlined multi-profile management, offering a fast and frictionless sign-in experience akin to major productivity platforms.
+    User->>HeaderDropdown: Clicks on a different account
+    HeaderDropdown->>AuthContext: switchUser(email)
+    AuthContext->>Firebase: signInWithPopup(provider, { login_hint: email })
+    Firebase-->>AuthContext: Returns new UserCredential
+    AuthContext->>AuthContext: Updates global user state
+    AuthContext-->>User: App reloads with new user's data
+```
 
 ---
 
-## **9. Landing Page AI Chatbot & Video Background**
+## **9. Landing Page AI Chatbot**
 
 ### **Summary**
 
@@ -343,41 +318,43 @@ Deployed an AI-powered Q&A chatbot on the landing page, supplemented by immersiv
 
 ### **Core Functionality**
 
-* Knowledge-based AI answering product-related queries from an embedded knowledge base.
-* Context-aware session memory for conversational continuity.
-* Implemented fallback responses for network failures.
+*   Knowledge-based AI answering product-related queries from an embedded knowledge base.
+*   Context-aware session memory for conversational continuity.
+*   Implemented a keyword-based fallback system for when AI services are unavailable.
 
-### **UI Enhancements**
+### **Architecture Diagram**
 
-* Floating Lottie-based orb expanding into a full chat interface.
-* Background video and animated gradients providing visual depth and motion.
-* Modern message interface with dynamic loading indicators.
+```mermaid
+sequenceDiagram
+    participant Visitor
+    participant ChatUI as "Landing Page Chat UI"
+    participant GenkitFlow as "webapp-qa-flow.ts"
+    participant Gemini as "Gemini AI Model"
 
-### **Debugging**
-
-* Resolved animation overlap between video layers and chat UI.
-* Fixed chatbot fallback handling on Genkit service timeouts.
-
-### **Backend**
-
-* Integrated Genkit flow (`webapp-qa-flow.ts`) for natural language processing.
-* Embedded predefined responses for critical queries like pricing and policies.
-
-### **Conclusion**
-
-The AI chatbot transformed the landing experience into an interactive, knowledge-driven introduction to the product.
+    Visitor->>ChatUI: Asks "What is the pricing?"
+    ChatUI->>GenkitFlow: answerWebAppQuestions(history)
+    alt AI service is available
+        GenkitFlow->>Gemini: Generates response from knowledge base
+        Gemini-->>GenkitFlow: "We have Student and Pro plans..."
+        GenkitFlow-->>ChatUI: AI Response
+    else AI service fails
+        GenkitFlow->>GenkitFlow: Checks for "pricing" keyword
+        GenkitFlow-->>ChatUI: Pre-written Fallback Response
+    end
+    ChatUI->>Visitor: Displays answer
+```
 
 ---
 
 # **References**
 
-* **Google Cloud Platform Documentation** – OAuth 2.0 and API Scopes
-* **Microsoft Identity Platform** – OAuth v2.0 and App Registration Guidelines
-* **Firebase Documentation** – Firestore, Storage, and Authentication
-* **Framer Motion** – Advanced Animation Framework for React
-* **React Grid Layout** – Responsive Grid System for Dashboard Customization
-* **Genkit Framework** – AI Workflow Engine for Contextual Q&A
-* **Azure Active Directory Documentation** – Domain Verification & Redirect URI Setup
+*   **Google Cloud Platform Documentation** – OAuth 2.0 and API Scopes
+*   **Microsoft Identity Platform** – OAuth v2.0 and App Registration Guidelines
+*   **Firebase Documentation** – Firestore, Storage, and Authentication
+*   **Framer Motion** – Advanced Animation Framework for React
+*   **React Grid Layout** – Responsive Grid System for Dashboard Customization
+*   **Genkit Framework** – AI Workflow Engine for Contextual Q&A
+*   **Azure Active Directory Documentation** – Domain Verification & Redirect URI Setup
 
 ---
  
