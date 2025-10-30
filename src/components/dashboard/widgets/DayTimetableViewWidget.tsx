@@ -1,10 +1,9 @@
-
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import DayTimetableView from './DayTimetableView';
+import DayTimetableView from '../../timeline/DayTimetableView';
 import { CalendarDays } from 'lucide-react';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '../../ui/card';
 
 interface DayTimetableViewWidgetProps {
   date: Date | null;
