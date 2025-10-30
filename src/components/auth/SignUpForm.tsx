@@ -1,6 +1,6 @@
 
 'use client';
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -17,6 +17,11 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { createUserProfile } from '@/services/userService';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+
+// Import the new service functions
+import { signUpWithMicrosoft } from '@/services/microsoftAuthService';
+import { signUpWithYahoo } from '@/services/yahooAuthService';
+import { signUpWithApple } from '@/services/appleAuthService';
 
 const GoogleIcon = () => (
   <div className="flex items-center gap-1.5 mr-2">
@@ -75,19 +80,31 @@ export default function SignUpForm() {
     };
   }, []);
 
-  const handleSignUp = async (provider: GoogleAuthProvider | OAuthProvider) => {
-    const providerId = provider.providerId.split('.')[0];
-    setLoading(providerId);
+  const handleProviderSignUp = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
+    setLoading(providerName);
 
     try {
-      if (!auth) throw new Error("Firebase Auth is not initialized.");
-      const result = await signInWithPopup(auth, provider);
-      await createUserProfile(result.user);
+        let authUser;
+        if (providerName === 'google') {
+            const provider = new GoogleAuthProvider();
+            provider.addScope('profile');
+            provider.addScope('email');
+            const result = await signInWithPopup(auth, provider);
+            await createUserProfile(result.user);
+            authUser = result.user;
+        } else {
+            let serviceFunction;
+            if (providerName === 'microsoft') serviceFunction = signUpWithMicrosoft;
+            else if (providerName === 'yahoo') serviceFunction = signUpWithYahoo;
+            else serviceFunction = signUpWithApple;
+            authUser = await serviceFunction();
+        }
+
       toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
       router.push('/dashboard');
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
-            toast({ title: `Sign-up cancelled`, description: `You closed the ${providerId} Sign-Up window.`, variant: 'default' });
+            toast({ title: `Sign-up cancelled`, description: `You closed the ${providerName} Sign-Up window.`, variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
             const email = error.customData.email;
             toast({
@@ -98,39 +115,11 @@ export default function SignUpForm() {
             });
             router.push(`/auth/signin?email=${encodeURIComponent(email)}`);
         } else {
-            toast({ title: 'Error', description: error.message || `Failed to sign up with ${providerId}.`, variant: 'destructive' });
+            toast({ title: 'Error', description: error.message || `Failed to sign up with ${providerName}.`, variant: 'destructive' });
         }
     } finally {
         setLoading(null);
     }
-  };
-
-  const handleGoogleSignUp = () => {
-    const provider = new GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
-    handleSignUp(provider);
-  };
-  
-  const handleMicrosoftSignUp = () => {
-    const provider = new OAuthProvider('microsoft.com');
-    provider.addScope('email');
-    provider.addScope('profile');
-    handleSignUp(provider);
-  };
-  
-  const handleYahooSignUp = () => {
-    const provider = new OAuthProvider('yahoo.com');
-    provider.addScope('email');
-    provider.addScope('profile');
-    handleSignUp(provider);
-  };
-
-  const handleAppleSignUp = () => {
-    const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    provider.addScope('name');
-    handleSignUp(provider);
   };
 
   const setupRecaptcha = () => {
@@ -268,16 +257,16 @@ export default function SignUpForm() {
         </div>
 
         <div className="space-y-4">
-            <Button variant="outline" type="button" className="w-full h-12" onClick={handleGoogleSignUp} disabled={!!loading}>
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('google')} disabled={!!loading}>
                 {loading === 'google' ? <LoadingSpinner size="sm" /> : <GoogleIcon />} Sign up with Google
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={handleMicrosoftSignUp} disabled={!!loading}>
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('microsoft')} disabled={!!loading}>
                 {loading === 'microsoft' ? <LoadingSpinner size="sm" /> : <MicrosoftIcon />} Sign up with Microsoft
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={handleYahooSignUp} disabled={!!loading}>
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('yahoo')} disabled={!!loading}>
                 {loading === 'yahoo' ? <LoadingSpinner size="sm" /> : <YahooIcon />} Sign up with Yahoo
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={handleAppleSignUp} disabled={!!loading}>
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('apple')} disabled={!!loading}>
                 {loading === 'apple' ? <LoadingSpinner size="sm" /> : <AppleIcon />} Sign up with Apple
             </Button>
         </div>

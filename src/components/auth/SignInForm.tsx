@@ -1,6 +1,6 @@
 
 'use client';
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -17,6 +17,12 @@ import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+
+// Import the new service functions
+import { signInWithMicrosoft } from '@/services/microsoftAuthService';
+import { signInWithYahoo } from '@/services/yahooAuthService';
+import { signInWithApple } from '@/services/appleAuthService';
+
 
 const GoogleIcon = () => (
   <div className="flex items-center gap-1.5 mr-2">
@@ -75,18 +81,30 @@ export default function SignInForm() {
     };
   }, []);
 
-  const handleSignIn = async (provider: GoogleAuthProvider | OAuthProvider) => {
-    const providerId = provider.providerId.split('.')[0];
-    setLoading(providerId);
-
+  const handleProviderSignIn = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
+    setLoading(providerName);
     try {
-        if (!auth) throw new Error("Firebase Auth is not initialized.");
-        await signInWithPopup(auth, provider);
-        toast({ title: 'Success!', description: `Signed in with ${providerId} successfully.` });
+        let authUser;
+        if (providerName === 'google') {
+            const provider = new GoogleAuthProvider();
+            provider.addScope('profile');
+            provider.addScope('email');
+            const result = await signInWithPopup(auth, provider);
+            authUser = result.user;
+        } else {
+            let serviceFunction;
+            if (providerName === 'microsoft') serviceFunction = signInWithMicrosoft;
+            else if (providerName === 'yahoo') serviceFunction = signInWithYahoo;
+            else serviceFunction = signInWithApple; // apple
+            authUser = await serviceFunction();
+        }
+        
+        toast({ title: 'Success!', description: `Signed in with ${providerName} successfully.` });
         router.push('/dashboard');
+
     } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-            toast({ title: `Sign-in cancelled`, description: `You closed the ${providerId} Sign-In window.`, variant: 'default' });
+         if (error.code === 'auth/popup-closed-by-user') {
+            toast({ title: `Sign-in cancelled`, description: `You closed the ${providerName} Sign-In window.`, variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData?.email;
              const methods = await fetchSignInMethodsForEmail(auth, email);
@@ -97,40 +115,13 @@ export default function SignInForm() {
                 duration: 9000,
             });
         } else {
-            toast({ title: 'Error', description: error.message || `Failed to sign in with ${providerId}.`, variant: 'destructive' });
+            toast({ title: 'Error', description: error.message || `Failed to sign in with ${providerName}.`, variant: 'destructive' });
         }
     } finally {
-      setLoading(null);
+        setLoading(null);
     }
   };
   
-  const handleGoogleSignIn = () => {
-    const provider = new GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
-    handleSignIn(provider);
-  }
-  
-  const handleMicrosoftSignIn = () => {
-    const provider = new OAuthProvider('microsoft.com');
-    provider.addScope('email');
-    provider.addScope('profile');
-    handleSignIn(provider);
-  }
-  
-  const handleYahooSignIn = () => {
-    const provider = new OAuthProvider('yahoo.com');
-    provider.addScope('email');
-    provider.addScope('profile');
-    handleSignIn(provider);
-  }
-
-  const handleAppleSignIn = () => {
-    const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    provider.addScope('name');
-    handleSignIn(provider);
-  }
 
   // Setup reCAPTCHA
   const setupRecaptcha = () => {
@@ -268,16 +259,16 @@ export default function SignInForm() {
         </div>
         
         <div className="space-y-4">
-            <Button variant="outline" type="button" className="w-full h-12" onClick={handleGoogleSignIn} disabled={!!loading}>
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('google')} disabled={!!loading}>
                 {loading === 'google' ? <LoadingSpinner size="sm" /> : <GoogleIcon />} Sign in with Google
             </Button>
-             <Button variant="outline" type="button" className="w-full h-12" onClick={handleMicrosoftSignIn} disabled={!!loading}>
+             <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('microsoft')} disabled={!!loading}>
                 {loading === 'microsoft' ? <LoadingSpinner size="sm" /> : <MicrosoftIcon />} Sign in with Microsoft
             </Button>
-             <Button variant="outline" type="button" className="w-full h-12" onClick={handleYahooSignIn} disabled={!!loading}>
+             <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('yahoo')} disabled={!!loading}>
                 {loading === 'yahoo' ? <LoadingSpinner size="sm" /> : <YahooIcon />} Sign in with Yahoo
             </Button>
-             <Button variant="outline" type="button" className="w-full h-12" onClick={handleAppleSignIn} disabled={!!loading}>
+             <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('apple')} disabled={!!loading}>
                 {loading === 'apple' ? <LoadingSpinner size="sm" /> : <AppleIcon />} Sign in with Apple
             </Button>
         </div>
