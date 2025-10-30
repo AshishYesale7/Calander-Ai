@@ -22,28 +22,19 @@ export async function getRedirectURI(request?: NextRequest): Promise<string> {
 export async function getMicrosoftAuthUrl(request: NextRequest, state?: string | null): Promise<string> {
     const tenant = 'common'; 
     const scopes = [
-        'openid',
-        'profile',
-        'email',
-        'offline_access',
-        'User.Read',
-        'Calendars.ReadWrite',
-        'Calendars.ReadWrite.Shared',
-        'Mail.Read',
-        'Mail.ReadWrite',
-        'Mail.Send',
-        'Mail.Read.Shared',
-        'Mail.ReadWrite.Shared',
-        'Mail.Send.Shared',
-        'Mail.ReadBasic',
-        'Mail.ReadBasic.Shared',
-        'Files.ReadWrite.All',
+        'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
+        'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared', 
         'Contacts.ReadWrite.Shared',
-        'OnlineMeetings.ReadWrite',
-        'OnlineMeetingTranscript.Read.All',
+        'Files.ReadWrite.All',
+        'Mail.Read', 'Mail.Read.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared', 
+        'Mail.ReadWrite', 'Mail.ReadWrite.Shared', 'Mail.Send', 'Mail.Send.Shared',
         'Notes.ReadWrite.All',
-        'Tasks.ReadWrite',
-        'Tasks.ReadWrite.Shared',
+        'Notifications.ReadWrite.CreatedByApp',
+        'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+        'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+        'TeamMember.ReadWriteNonOwnerRole.All',
+        'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
     ].join(' ');
 
     const redirectUri = await getRedirectURI(request);
@@ -69,10 +60,18 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
-        'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
-        'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
-        'Notes.ReadWrite.All', 'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+        'Contacts.ReadWrite.Shared',
+        'Files.ReadWrite.All',
+        'Mail.Read', 'Mail.Read.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
+        'Mail.ReadWrite', 'Mail.ReadWrite.Shared', 'Mail.Send', 'Mail.Send.Shared',
+        'Notes.ReadWrite.All',
+        'Notifications.ReadWrite.CreatedByApp',
+        'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+        'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+        'TeamMember.ReadWriteNonOwnerRole.All',
+        'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
     ].join(' ');
     
     const params = new URLSearchParams();
@@ -127,10 +126,18 @@ async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
-        'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
-        'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
-        'Notes.ReadWrite.All', 'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+        'Contacts.ReadWrite.Shared',
+        'Files.ReadWrite.All',
+        'Mail.Read', 'Mail.Read.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
+        'Mail.ReadWrite', 'Mail.ReadWrite.Shared', 'Mail.Send', 'Mail.Send.Shared',
+        'Notes.ReadWrite.All',
+        'Notifications.ReadWrite.CreatedByApp',
+        'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+        'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+        'TeamMember.ReadWriteNonOwnerRole.All',
+        'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
     ].join(' ');
     
     const params = new URLSearchParams();
