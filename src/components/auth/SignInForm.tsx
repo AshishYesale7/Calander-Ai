@@ -19,7 +19,6 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 // Import the new service functions
-import { signInWithMicrosoft } from '@/services/microsoftAuthService';
 import { signInWithYahoo } from '@/services/yahooAuthService';
 
 const GoogleIcon = () => (
@@ -134,7 +133,9 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
         router.push('/dashboard');
 
     } catch (error: any) {
-        if (error.code === 'auth/operation-not-supported-in-this-environment') {
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+            toast({ title: `Sign-in Cancelled`, description: `You closed the ${providerName} sign-in window.`, variant: 'default' });
+        } else if (error.code === 'auth/operation-not-supported-in-this-environment') {
           const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
           const consoleUrl = `https://console.firebase.google.com/project/${firebaseProjectId}/authentication/providers`;
           toast({
@@ -147,8 +148,6 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
             variant: 'destructive',
             duration: 15000,
           });
-        } else if (error.code === 'auth/popup-closed-by-user') {
-            toast({ title: `Sign-in cancelled`, description: `You closed the ${providerName} Sign-In window.`, variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData?.email;
              const methods = await fetchSignInMethodsForEmail(auth, email);
