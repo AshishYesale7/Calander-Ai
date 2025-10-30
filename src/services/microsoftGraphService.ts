@@ -54,6 +54,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
     url.searchParams.append('redirect_uri', redirectUri);
     url.searchParams.append('response_mode', 'query');
     url.searchParams.append('scope', scopes);
+    url.searchParams.append('prompt', 'select_account'); // This line forces account selection
     if (state) {
         url.searchParams.append('state', state);
     }
@@ -218,5 +219,3 @@ export async function createCalendarSubscription(accessToken: string): Promise<a
 
     return await response.json();
 }
-
-    

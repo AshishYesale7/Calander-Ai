@@ -112,7 +112,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
             provider.addScope('https://www.googleapis.com/auth/tasks');
         } else if (providerName === 'microsoft') {
             provider = new OAuthProvider('microsoft.com');
-            provider.setCustomParameters({ tenant: 'common' });
+            provider.setCustomParameters({ tenant: 'common', prompt: 'select_account' });
             provider.addScope('User.Read');
             provider.addScope('Calendars.ReadWrite');
             provider.addScope('Mail.Read');
@@ -125,9 +125,9 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         if (!provider) throw new Error("Invalid provider");
 
         const result = await signInWithPopup(auth, provider);
-        await createUserProfile(result.user);
+        // No need to call createUserProfile here, as the onAuthStateChanged listener handles it.
 
-        toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
+        toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
         router.push('/dashboard');
 
     } catch (error: any) {
@@ -219,8 +219,8 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading('otp');
     try {
       const userCredential = await confirmationResult.confirm(otp);
-      await createUserProfile(userCredential.user);
-      toast({ title: "Account Created!", description: "Welcome to Calendar.ai." });
+      // No need to call createUserProfile here, as the onAuthStateChanged listener handles it.
+      toast({ title: "Sign In Successful!", description: "Welcome to Calendar.ai." });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("OTP verification error:", error);
@@ -340,5 +340,3 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     </Card>
   );
 }
-
-    
