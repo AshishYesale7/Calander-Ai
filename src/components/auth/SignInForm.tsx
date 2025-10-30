@@ -19,8 +19,8 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 // Import the new service functions
-import { triggerMicrosoftRedirect } from '@/services/microsoftAuthService';
-import { triggerYahooRedirect } from '@/services/yahooAuthService';
+import { signInWithMicrosoft } from '@/services/microsoftAuthService';
+import { signInWithYahoo } from '@/services/yahooAuthService';
 
 const GoogleIcon = () => (
   <div className="flex items-center gap-1.5 mr-2">
@@ -332,7 +332,7 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
         </div>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Don\'t have an account?{' '}
+          Don't have an account?{' '}
           <Link href="/auth/signup" className="font-medium text-primary hover:underline">
             Sign up
           </Link>
