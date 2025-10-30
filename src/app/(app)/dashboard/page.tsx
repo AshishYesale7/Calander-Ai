@@ -1,16 +1,14 @@
 
 'use client';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
+import type { TimelineEvent } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { useTimezone } from '@/hooks/use-timezone';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
-import { saveAs } from 'file-saver';
-import ical from 'ical';
 
 // Import Widget Components
 import TodaysPlanWidget from '@/components/dashboard/widgets/TodaysPlanWidget';
@@ -22,6 +20,7 @@ import NextMonthHighlightsWidget from '@/components/dashboard/widgets/NextMonthH
 import DayTimetableViewWidget from '@/components/dashboard/widgets/DayTimetableViewWidget';
 import GoogleSyncWidget from '@/components/dashboard/widgets/GoogleSyncWidget';
 import DataManagementWidget from '@/components/dashboard/widgets/DataManagementWidget';
+
 
 // Main Dashboard Components
 import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
@@ -73,7 +72,14 @@ const loadFromLocalStorage = (): TimelineEvent[] => {
     }
 };
 
-export default function DashboardPage() {
+interface DashboardPageProps {
+  isEditMode: boolean;
+  setIsEditMode: (isEditMode: boolean) => void;
+  hiddenWidgets: Set<string>;
+  handleToggleWidget: (id: string) => void;
+}
+
+export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets, handleToggleWidget }: DashboardPageProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { timezone } = useTimezone();
@@ -83,6 +89,7 @@ export default function DashboardPage() {
 
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [activeDisplayMonth, setActiveDisplayMonth] = useState(new Date());
 
   const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -91,7 +98,8 @@ export default function DashboardPage() {
   
   const [isPlannerMaximized, setIsPlannerMaximized] = useState(false);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  
+  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
 
   // Fetch all events from Firestore
   const fetchAllEvents = useCallback(async () => {
@@ -119,6 +127,19 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchAllEvents();
   }, [fetchAllEvents]);
+  
+  useEffect(() => {
+    if (user) {
+      fetch('/api/auth/google/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid }),
+      })
+      .then(res => res.json())
+      .then(data => setIsGoogleConnected(data.isConnected));
+    }
+  }, [user]);
+
 
   // Separate events into active and recently deleted
   const { activeEvents, recentlyDeletedEvents } = useMemo(() => {
@@ -173,7 +194,7 @@ export default function DashboardPage() {
           ...updatedEvent,
           date: updatedEvent.date.toISOString(),
           endDate: updatedEvent.endDate ? updatedEvent.endDate.toISOString() : null,
-          deletedAt: null, // Ensure not soft-deleted
+          deletedAt: null,
       };
       await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone, syncToMicrosoft: false });
       await fetchAllEvents();
@@ -183,7 +204,7 @@ export default function DashboardPage() {
       });
     } catch (error: any) {
       toast({ title: 'Save Error', description: error.message || 'An unknown error occurred.', variant: 'destructive' });
-      fetchAllEvents(); // Refetch to revert optimistic updates if any
+      fetchAllEvents();
     }
   }, [user, toast, fetchAllEvents, isAddingNewEvent, timezone]);
   
@@ -238,11 +259,11 @@ export default function DashboardPage() {
   const allComponents = {
     plan: <TodaysPlanWidget />,
     streak: <DailyStreakWidget />,
-    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onSyncComplete={fetchAllEvents} />,
-    "day-timetable": <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
-    timeline: <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />,
+    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onMonthChange={setActiveDisplayMonth} month={activeDisplayMonth} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onSyncComplete={fetchAllEvents} />,
+    'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
+    timeline: <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={(dir) => setActiveDisplayMonth(m => dir === 'prev' ? subDays(m, 30) : addDays(m, 30))} />,
     emails: <ImportantEmailsWidget />,
-    "next-month": <NextMonthHighlightsWidget events={activeEvents} />,
+    'next-month': <NextMonthHighlightsWidget events={activeEvents} />,
     sync: <GoogleSyncWidget onSyncComplete={fetchAllEvents} />,
     data: <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
   };
@@ -251,21 +272,13 @@ export default function DashboardPage() {
     return <MaximizedPlannerView initialDate={selectedDateForDayView || new Date()} allEvents={allTimelineEvents} onMinimize={() => setIsPlannerMaximized(false)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />;
   }
 
-  // The main dashboard layout for desktop and mobile
+  // Mobile view just stacks everything.
   if (isMobile) {
     return (
       <div className="space-y-6">
-        <TodaysPlanWidget />
-        <DailyStreakWidget />
-        <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(true)} onSyncComplete={fetchAllEvents}/>
-        {selectedDateForDayView && (
-          <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />
-        )}
-        <ImportantEmailsWidget />
-        <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />
-        <NextMonthHighlightsWidget events={activeEvents} />
-        <GoogleSyncWidget onSyncComplete={fetchAllEvents} />
-        <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />
+        {Object.values(allComponents).map((component, index) => (
+            <div key={index}>{component}</div>
+        ))}
       </div>
     );
   }
@@ -276,6 +289,8 @@ export default function DashboardPage() {
         components={allComponents}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
+        hiddenWidgets={hiddenWidgets}
+        onToggleWidget={handleToggleWidget}
       />
       {eventBeingEdited && (
         <EditEventModal 
@@ -284,7 +299,7 @@ export default function DashboardPage() {
           eventToEdit={eventBeingEdited} 
           onSubmit={handleSaveEditedEvent} 
           isAddingNewEvent={isAddingNewEvent}
-          isGoogleConnected={true} // Assume connected for modal, button will be disabled if not
+          isGoogleConnected={!!isGoogleConnected}
         />
       )}
       {isTrashPanelOpen && (

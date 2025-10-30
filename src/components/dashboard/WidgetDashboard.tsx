@@ -9,31 +9,49 @@ import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import '@/app/widgets-canvas.css';
+import { widgetList } from './widget-previews';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
 const MARGIN: [number, number] = [16, 16];
 
+const PIXEL_TO_GRID_UNITS = {
+    MIN_W_PX: 280,
+    MIN_H_PX: 200,
+    TIMETABLE_MIN_H_PX: 300,
+};
+
 interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
+  hiddenWidgets: Set<string>;
+  onToggleWidget: (id: string) => void;
 }
 
-export default function WidgetDashboard({ components, isEditMode, setIsEditMode }: WidgetDashboardProps) {
+export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets, onToggleWidget }: WidgetDashboardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
+  const [currentCols, setCurrentCols] = useState(12);
+  const [currentContainerWidth, setCurrentContainerWidth] = useState(0);
+
+  const getDefaultLayouts = useCallback(() => {
+    const role = user?.userType || 'student';
+    return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
+  }, [user?.userType]);
+
   const [versionedLayouts, setVersionedLayouts] = useState<VersionedLayouts>({
     version: CODE_LAYOUT_VERSION,
-    layouts: user?.userType === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts,
+    layouts: getDefaultLayouts(),
     hidden: [],
   });
 
   const [currentLayouts, setCurrentLayouts] = useState<Layouts>(versionedLayouts.layouts);
-  const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set(versionedLayouts.hidden));
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -41,11 +59,6 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
     return `dashboard-layouts-${user.uid}-${role}`;
   }, [user]);
 
-  const getDefaultLayouts = useCallback(() => {
-    const role = user?.userType || 'student';
-    return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
-  }, [user?.userType]);
-  
   useEffect(() => {
     const loadLayouts = async () => {
       if (!user || layoutInitialized.current) return;
@@ -70,70 +83,120 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
       let finalLayouts: VersionedLayouts;
       const localVersion = localResult?.version || 0;
       const cloudVersion = cloudResult?.version || 0;
+      const codeVersion = CODE_LAYOUT_VERSION;
       
-      if (localVersion >= cloudVersion && localVersion >= CODE_LAYOUT_VERSION) {
+      if (localVersion >= cloudVersion && localVersion >= codeVersion) {
         finalLayouts = localResult!;
-      } else if (cloudVersion > localVersion && cloudVersion >= CODE_LAYOUT_VERSION) {
+      } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
         finalLayouts = cloudResult!;
         if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
       } else {
         finalLayouts = defaultLayouts;
         if (layoutKey) localStorage.removeItem(layoutKey);
-        if (CODE_LAYOUT_VERSION > cloudVersion) saveLayout(user.uid, role, defaultLayouts);
+        if (codeVersion > cloudVersion) {
+            saveLayout(user.uid, role, defaultLayouts);
+        }
       }
       
       setVersionedLayouts(finalLayouts);
       setCurrentLayouts(finalLayouts.layouts);
-      setHiddenWidgets(new Set(finalLayouts.hidden || []));
+      // Ensure onToggleWidget can work with loaded hidden widgets
+      if (finalLayouts.hidden) {
+          finalLayouts.hidden.forEach(id => onToggleWidget(id));
+      }
       setIsLayoutLoaded(true);
     };
 
     if(user) loadLayouts();
-  }, [user, getLayoutKey, getDefaultLayouts]);
+  }, [user, getLayoutKey, getDefaultLayouts, onToggleWidget]);
 
-  const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
-    if (!isLayoutLoaded) return;
-    setCurrentLayouts(allLayouts);
-  };
-  
-  useEffect(() => {
+  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
     if (!isLayoutLoaded || !user) return;
-  
-    const timeoutId = setTimeout(async () => {
-      const layoutKey = getLayoutKey();
-      if (!layoutKey) return;
-  
-      const newVersion = (versionedLayouts.version || 0) + 1;
+    
+    const layoutKey = getLayoutKey();
+    if (!layoutKey) return;
+
+    setVersionedLayouts(currentVersionedLayouts => {
+      const newVersion = (currentVersionedLayouts.version || 0) + 1;
       const dataToSave: VersionedLayouts = { 
         version: newVersion, 
-        layouts: currentLayouts, 
+        layouts: layoutsToSave, 
         hidden: Array.from(hiddenWidgets) 
       };
-  
-      setVersionedLayouts(dataToSave);
-      localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-      await saveLayout(user.uid, user.userType || 'student', dataToSave);
-    }, 1000); // Debounce for 1 second
-  
-    return () => clearTimeout(timeoutId);
-  }, [currentLayouts, hiddenWidgets, isLayoutLoaded, user, getLayoutKey, versionedLayouts.version]);
+      
+      try {
+        localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+        // Save to cloud on unload to batch updates
+        window.addEventListener('beforeunload', () => {
+           saveLayout(user.uid, user.userType || 'student', dataToSave);
+        }, { once: true });
+      } catch (error) {
+        console.warn("Could not save layout to local storage.", error);
+      }
+      return dataToSave;
+    });
+  }, [isLayoutLoaded, user, getLayoutKey, hiddenWidgets]);
 
+  const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
+    setCurrentLayouts(allLayouts);
+    // Debounce saving
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+        saveCurrentLayout(allLayouts);
+    }, 500);
+  };
+  
+  const finalLayoutsArray = useMemo(() => {
+    const role = user?.userType || 'student';
+    const baseLayouts = currentLayouts[currentBreakpoint as keyof Layouts] || getDefaultLayouts()[currentBreakpoint as keyof Layouts];
+    
+    const allAvailableWidgets = new Set(widgetList.map(w => w.id));
+    const filteredBase = baseLayouts.filter(item => allAvailableWidgets.has(item.i));
 
-  const handleToggleWidget = (id: string) => {
-    const newHidden = new Set(hiddenWidgets);
-    if (newHidden.has(id)) {
-      newHidden.delete(id);
-    } else {
-      newHidden.add(id);
+    if (role === 'professional') {
+        return filteredBase.filter(item => item.i !== 'streak');
     }
-    setHiddenWidgets(newHidden);
+    return filteredBase;
+  }, [currentLayouts, user?.userType, currentBreakpoint, getDefaultLayouts]);
+
+
+  const calculateMinW = (colWidth: number): number => {
+    if (colWidth <= 0) return 1;
+    const { MIN_W_PX } = PIXEL_TO_GRID_UNITS;
+    const contentWidth = MIN_W_PX - MARGIN[0];
+    const gridUnits = Math.max(1, Math.ceil(contentWidth / (colWidth + MARGIN[0])));
+    return gridUnits;
   };
   
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsEditMode(true);
+  const calculateMinH = (isTimetable: boolean): number => {
+    const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
+    const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
+    const contentHeight = targetHeight - MARGIN[1];
+    const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
+    return gridUnits;
   };
-  
+
+  const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
+
+  const getLayoutWithDynamicMins = useCallback((layout: Layout[]) => {
+    if (!layout) return [];
+    const minW = calculateMinW(colWidth);
+    return layout.map(item => ({
+        ...item,
+        minW,
+        minH: calculateMinH(item.i === 'day-timetable'),
+    }));
+  }, [colWidth]);
+
+  const layoutsWithDynamicMins = useMemo(() => {
+    const newLayouts: Layouts = {};
+    for (const breakpoint in currentLayouts) {
+        newLayouts[breakpoint] = getLayoutWithDynamicMins(currentLayouts[breakpoint]);
+    }
+    return newLayouts;
+  }, [currentLayouts, getLayoutWithDynamicMins]);
+
+
   if (!isLayoutLoaded) {
       return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
   }
@@ -141,13 +204,13 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
   return (
     <div 
       className={cn("relative h-full", isEditMode && "edit-mode-active")}
-      onContextMenu={handleContextMenu}
-      onClick={() => isEditMode && setIsEditMode(false)}
+      onContextMenu={(e) => { e.preventDefault(); setIsEditMode(true); }}
+      onClick={() => { if (isEditMode) setIsEditMode(false); }}
     >
       <div className="relative z-20">
         <ResponsiveReactGridLayout
             className="layout"
-            layouts={currentLayouts}
+            layouts={layoutsWithDynamicMins}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={ROW_HEIGHT}
@@ -156,18 +219,25 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
             isResizable={isEditMode}
             draggableHandle=".drag-handle"
             onLayoutChange={handleLayoutChange}
+            onBreakpointChange={(newBreakpoint, newCols) => {
+                setCurrentBreakpoint(newBreakpoint);
+                setCurrentCols(newCols);
+            }}
+            onWidthChange={(containerWidth) => {
+                setCurrentContainerWidth(containerWidth);
+            }}
         >
-            {Object.keys(components).map(key => {
-              if (hiddenWidgets.has(key)) return null;
+            {finalLayoutsArray.map(item => {
+              if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
               return (
-                  <div key={key} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
+                  <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
                     {isEditMode && (
                       <>
-                        <button className="remove-widget-button" onClick={() => handleToggleWidget(key)}>-</button>
+                        <button className="remove-widget-button" onClick={() => onToggleWidget(item.i)}>-</button>
                         <div className="drag-handle"></div>
                       </>
                     )}
-                    {components[key]}
+                    {components[item.i]}
                   </div>
               )
             })}
@@ -176,5 +246,3 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
     </div>
   );
 }
-
-    
