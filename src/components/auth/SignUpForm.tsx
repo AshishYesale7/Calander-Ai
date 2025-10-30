@@ -83,8 +83,8 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
 
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success-google') {
-        setTimeout(() => window.location.reload(), 2000);
+      if (event.data === 'auth-success-google' || event.data === 'auth-success-microsoft') {
+        setTimeout(() => window.location.reload(), 1000);
       }
     };
     window.addEventListener('message', handleAuthSuccess);
@@ -105,17 +105,30 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading(providerName);
 
     try {
+        let provider;
         if (providerName === 'google') {
-            const provider = new GoogleAuthProvider();
+            provider = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
-            const result = await signInWithPopup(auth, provider);
-            await createUserProfile(result.user);
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
+            provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+            provider.addScope('https://www.googleapis.com/auth/tasks');
         } else if (providerName === 'microsoft') {
-            await signInWithMicrosoft();
+            provider = new OAuthProvider('microsoft.com');
+            provider.setCustomParameters({ tenant: 'common' });
+            provider.addScope('User.Read');
+            provider.addScope('Calendars.ReadWrite');
+            provider.addScope('Mail.Read');
         } else if (providerName === 'yahoo') {
-            await signInWithYahoo();
+            provider = new OAuthProvider('yahoo.com');
+            provider.addScope('email');
+            provider.addScope('profile');
         }
+
+        if (!provider) throw new Error("Invalid provider");
+
+        const result = await signInWithPopup(auth, provider);
+        await createUserProfile(result.user);
 
         toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
         router.push('/dashboard');

@@ -27,7 +27,6 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'email',
         'offline_access',
         'User.Read',
-        'Calendars.ReadBasic',
         'Calendars.ReadWrite',
         'Calendars.ReadWrite.Shared',
         'Mail.Read',
@@ -43,10 +42,8 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'OnlineMeetings.ReadWrite',
         'OnlineMeetingTranscript.Read.All',
         'Notes.ReadWrite.All',
+        'Tasks.ReadWrite',
         'Tasks.ReadWrite.Shared',
-        'Analytics.Read',
-        'Notifications.ReadWrite.CreatedByApp',
-        'VirtualAppointment.ReadWrite',
     ].join(' ');
 
     const redirectUri = await getRedirectURI(request);
@@ -71,10 +68,10 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
-        'Calendars.ReadBasic', 'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
+        'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
         'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
         'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
-        'Notes.ReadWrite.All', 'Tasks.ReadWrite.Shared', 'Analytics.Read', 'Notifications.ReadWrite.CreatedByApp', 'VirtualAppointment.ReadWrite'
+        'Notes.ReadWrite.All', 'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
     ].join(' ');
     
     const params = new URLSearchParams();
@@ -129,10 +126,10 @@ async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
-        'Calendars.ReadBasic', 'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
+        'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
         'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
         'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
-        'Notes.ReadWrite.All', 'Tasks.ReadWrite.Shared', 'Analytics.Read', 'Notifications.ReadWrite.CreatedByApp', 'VirtualAppointment.ReadWrite'
+        'Notes.ReadWrite.All', 'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
     ].join(' ');
     
     const params = new URLSearchParams();

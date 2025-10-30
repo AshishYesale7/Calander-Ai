@@ -84,8 +84,8 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
   
   useEffect(() => {
     const handleAuthSuccess = (event: MessageEvent) => {
-      if (event.data === 'auth-success-google' || event.data === 'auth-success-notion') {
-        setTimeout(() => window.location.reload(), 2000);
+      if (event.data === 'auth-success-google' || event.data === 'auth-success-notion' || event.data === 'auth-success-microsoft') {
+        setTimeout(() => window.location.reload(), 1000);
       }
     };
     window.addEventListener('message', handleAuthSuccess);
@@ -111,11 +111,15 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
             provider = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
+            provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+            provider.addScope('https://www.googleapis.com/auth/tasks');
         } else if (providerName === 'microsoft') {
             provider = new OAuthProvider('microsoft.com');
-            provider.setCustomParameters({ tenant: 'consumers' });
-            provider.addScope('email');
-            provider.addScope('profile');
+            provider.setCustomParameters({ tenant: 'common' });
+            provider.addScope('User.Read');
+            provider.addScope('Calendars.ReadWrite');
+            provider.addScope('Mail.Read');
         } else if (providerName === 'yahoo') {
             provider = new OAuthProvider('yahoo.com');
             provider.addScope('email');
