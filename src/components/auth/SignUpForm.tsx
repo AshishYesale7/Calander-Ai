@@ -1,6 +1,6 @@
 
 'use client';
-import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -17,11 +17,6 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { createUserProfile } from '@/services/userService';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-
-// Import the new service functions
-import { triggerMicrosoftRedirect } from '@/services/microsoftAuthService';
-import { triggerYahooRedirect } from '@/services/yahooAuthService';
-import { triggerAppleRedirect } from '@/services/appleAuthService';
 
 const GoogleIcon = () => (
   <div className="flex items-center gap-1.5 mr-2">
@@ -96,25 +91,41 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
   }, []);
 
   const handleProviderSignUp = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
+     if (providerName === 'apple') {
+        toast({
+            title: 'Service Not Available',
+            description: 'Sign up with Apple is not available at this time. Please use another method.',
+            variant: 'default',
+        });
+        return;
+    }
     setLoading(providerName);
 
     try {
+        let provider;
         if (providerName === 'google') {
-            const provider = new GoogleAuthProvider();
+            provider = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
-            const result = await signInWithPopup(auth, provider);
-            await createUserProfile(result.user);
-        } else {
-            let serviceFunction;
-            if (providerName === 'microsoft') serviceFunction = triggerMicrosoftRedirect;
-            else if (providerName === 'yahoo') serviceFunction = triggerYahooRedirect;
-            else serviceFunction = triggerAppleRedirect;
-            await serviceFunction('signup'); // Pass 'signup' action
+        } else if (providerName === 'microsoft') {
+            provider = new OAuthProvider('microsoft.com');
+            provider.setCustomParameters({ tenant: 'consumers' });
+            provider.addScope('email');
+            provider.addScope('profile');
+        } else if (providerName === 'yahoo') {
+            provider = new OAuthProvider('yahoo.com');
+            provider.addScope('email');
+            provider.addScope('profile');
         }
 
-      toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
-      router.push('/dashboard');
+        if (!provider) throw new Error("Invalid provider");
+
+        const result = await signInWithPopup(auth, provider);
+        await createUserProfile(result.user);
+
+        toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
+        router.push('/dashboard');
+
     } catch (error: any) {
         if (error.code === 'auth/operation-not-supported-in-this-environment') {
           const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -123,8 +134,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
             title: 'Action Required',
             description: (
               <div>
-                <p>This sign-in method isn't fully configured. Please add the provider's details in your <a href={consoleUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>.</p>
-                <p className="text-xs mt-2">For providers like Microsoft or Yahoo, you may need to add the "Services ID" (OAuth Client ID) in the configuration.</p>
+                <p>This sign-in method isn't fully configured. Please add the provider's OAuth details (like Client ID or Services ID) in your <a href={consoleUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>.</p>
               </div>
             ),
             variant: 'destructive',
