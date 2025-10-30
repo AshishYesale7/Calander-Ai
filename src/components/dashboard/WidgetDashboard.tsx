@@ -33,8 +33,6 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   
   const layoutInitialized = useRef(false);
-  const hasUnsavedChanges = useRef(false);
-  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -46,7 +44,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
     const role = user?.userType || 'student';
     return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
-
+  
   useEffect(() => {
     const loadLayouts = async () => {
       if (!user || layoutInitialized.current) return;
@@ -91,53 +89,35 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
 
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts]);
-  
-  // This useEffect hook is responsible for saving the layout changes.
-  useEffect(() => {
-      if (!isLayoutLoaded || !user || !hasUnsavedChanges.current) {
-          return;
-      }
-  
-      if (saveTimeout.current) {
-          clearTimeout(saveTimeout.current);
-      }
-  
-      saveTimeout.current = setTimeout(() => {
-          const layoutKey = getLayoutKey();
-          if (!layoutKey) return;
-          
-          setVersionedLayouts(current => {
-              const newVersion = (current.version || 0) + 1;
-              const dataToSave: VersionedLayouts = { 
-                  version: newVersion, 
-                  layouts: currentLayouts, 
-                  hidden: Array.from(hiddenWidgets) 
-              };
-              
-              try {
-                  localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-                  saveLayout(user.uid, user.userType || 'student', dataToSave);
-                  hasUnsavedChanges.current = false; // Mark changes as saved
-              } catch (error) {
-                  console.warn("Could not save layout.", error);
-              }
-              return dataToSave;
-          });
-      }, 1000); // Debounce for 1 second
-
-      return () => {
-          if (saveTimeout.current) {
-              clearTimeout(saveTimeout.current);
-          }
-      };
-  }, [currentLayouts, hiddenWidgets, isLayoutLoaded, user, getLayoutKey]);
-
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     if (!isLayoutLoaded) return;
     setCurrentLayouts(allLayouts);
-    hasUnsavedChanges.current = true;
   };
+  
+  useEffect(() => {
+      if (!isLayoutLoaded || !user) return;
+
+      const save = async () => {
+          const layoutKey = getLayoutKey();
+          if (!layoutKey) return;
+
+          const newVersion = (versionedLayouts.version || 0) + 1;
+          const dataToSave: VersionedLayouts = { 
+              version: newVersion, 
+              layouts: currentLayouts, 
+              hidden: Array.from(hiddenWidgets) 
+          };
+
+          setVersionedLayouts(dataToSave);
+          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+          await saveLayout(user.uid, user.userType || 'student', dataToSave);
+      };
+
+      const timeoutId = setTimeout(save, 1000);
+      return () => clearTimeout(timeoutId);
+  }, [currentLayouts, hiddenWidgets, isLayoutLoaded, user, getLayoutKey, versionedLayouts.version]);
+
 
   const handleToggleWidget = (id: string) => {
     const newHidden = new Set(hiddenWidgets);
@@ -147,7 +127,6 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
       newHidden.add(id);
     }
     setHiddenWidgets(newHidden);
-    hasUnsavedChanges.current = true;
   };
   
   const handleContextMenu = (e: React.MouseEvent) => {
