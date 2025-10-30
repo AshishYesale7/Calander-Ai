@@ -25,12 +25,36 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'openid',
         'profile',
         'email',
-        'offline_access', // Important for getting a refresh token
-        'Calendars.ReadWrite',
+        'offline_access',
+        'User.Read',
+        // Calendar
         'Calendars.ReadBasic',
+        'Calendars.ReadWrite',
+        'Calendars.ReadWrite.Shared',
+        // Mail
         'Mail.Read',
-        'Files.Read',
-        'OnlineMeetings.ReadWrite' 
+        'Mail.ReadWrite',
+        'Mail.Send',
+        'Mail.Read.Shared',
+        'Mail.ReadWrite.Shared',
+        'Mail.Send.Shared',
+        'Mail.ReadBasic',
+        'Mail.ReadBasic.Shared',
+        // Files
+        'Files.ReadWrite.All',
+        // Contacts
+        'Contacts.ReadWrite.Shared',
+        // Teams
+        'OnlineMeetings.ReadWrite',
+        'OnlineMeetingTranscript.Read.All',
+        // Notes (OneNote)
+        'Notes.ReadWrite.All',
+        // Tasks
+        'Tasks.ReadWrite.Shared',
+        // Other
+        'Analytics.Read',
+        'Notifications.ReadWrite.CreatedByApp',
+        'VirtualAppointment.ReadWrite',
     ].join(' ');
 
     const redirectUri = await getRedirectURI(request);
@@ -53,9 +77,17 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
     const tenant = 'consumers';
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
 
+    const scopes = [
+        'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'Calendars.ReadBasic', 'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
+        'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
+        'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+        'Notes.ReadWrite.All', 'Tasks.ReadWrite.Shared', 'Analytics.Read', 'Notifications.ReadWrite.CreatedByApp', 'VirtualAppointment.ReadWrite'
+    ].join(' ');
+
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', 'openid profile email offline_access Calendars.ReadWrite Calendars.ReadBasic Mail.Read Files.Read OnlineMeetings.ReadWrite');
+    params.append('scope', scopes);
     params.append('code', code);
     params.append('redirect_uri', redirectUri);
     params.append('grant_type', 'authorization_code');
@@ -76,7 +108,6 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
         throw new Error(tokens.error_description || 'Failed to exchange code for tokens.');
     }
     
-    // Add expiry_date for consistency with Google's token object if it doesn't exist
     if (tokens.expires_in && !tokens.expiry_date) {
         tokens.expiry_date = Date.now() + tokens.expires_in * 1000;
     }
@@ -100,14 +131,21 @@ export async function getMicrosoftTokensFromFirestore(userId: string): Promise<C
     return null;
 }
 
-// Function to refresh the access token using the refresh token
 async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
     const tenant = 'consumers';
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
 
+    const scopes = [
+        'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'Calendars.ReadBasic', 'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
+        'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'Mail.Read.Shared', 'Mail.ReadWrite.Shared', 'Mail.Send.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared',
+        'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+        'Notes.ReadWrite.All', 'Tasks.ReadWrite.Shared', 'Analytics.Read', 'Notifications.ReadWrite.CreatedByApp', 'VirtualAppointment.ReadWrite'
+    ].join(' ');
+    
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', 'openid profile email offline_access Calendars.ReadWrite Calendars.ReadBasic Mail.Read Files.Read OnlineMeetings.ReadWrite');
+    params.append('scope', scopes);
     params.append('refresh_token', refreshToken);
     params.append('grant_type', 'refresh_token');
     params.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET!);
@@ -136,28 +174,23 @@ export async function getAuthenticatedClient(userId: string): Promise<{ accessTo
         return null;
     }
 
-    // Check if the access token is expired or close to expiring
     if (tokens.expiry_date && tokens.expiry_date < (Date.now() + 60000)) {
         if (tokens.refresh_token) {
             try {
                 const newTokens = await refreshAccessToken(tokens.refresh_token);
-                // Save the new tokens (including the new refresh token if provided)
                 await saveMicrosoftTokensToFirestore(userId, { ...tokens, ...newTokens });
                 return { accessToken: newTokens.access_token! };
             } catch (error) {
                 console.error(`Error refreshing Microsoft access token for user ${userId}:`, error);
-                // If refresh fails, clear tokens to prompt re-authentication
                 const userDocRef = doc(db, 'users', userId);
                 await updateDoc(userDocRef, { microsoft_tokens: deleteField() });
                 return null;
             }
         } else {
-            // No refresh token available, user needs to re-authenticate
             return null;
         }
     }
     
-    // If token is valid, return it
     if (tokens.access_token) {
         return { accessToken: tokens.access_token };
     }
