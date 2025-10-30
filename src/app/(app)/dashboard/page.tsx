@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -18,7 +19,7 @@ import CalendarWidget from '@/components/dashboard/widgets/CalendarWidget';
 import SlidingTimelineWidget from '@/components/dashboard/widgets/SlidingTimelineWidget';
 import ImportantEmailsWidget from '@/components/dashboard/widgets/ImportantEmailsWidget';
 import NextMonthHighlightsWidget from '@/components/dashboard/widgets/NextMonthHighlightsWidget';
-import DayTimetableViewWidget from '@/components/dashboard/widgets/DayTimetableViewWidget';
+import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
 import GoogleSyncWidget from '@/components/dashboard/widgets/GoogleSyncWidget';
 import DataManagementWidget from '@/components/dashboard/widgets/DataManagementWidget';
 
@@ -237,7 +238,7 @@ export default function DashboardPage() {
   const allComponents = {
     plan: <TodaysPlanWidget />,
     streak: <DailyStreakWidget />,
-    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} />,
+    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onSyncComplete={fetchAllEvents} />,
     "day-timetable": <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
     timeline: <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />,
     emails: <ImportantEmailsWidget />,
@@ -256,7 +257,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <TodaysPlanWidget />
         <DailyStreakWidget />
-        <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(true)} />
+        <CalendarWidget onDayClick={setSelectedDateForDayView} onToggleTrash={() => setIsTrashPanelOpen(true)} onSyncComplete={fetchAllEvents}/>
         {selectedDateForDayView && (
           <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />
         )}
