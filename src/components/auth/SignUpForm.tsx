@@ -121,7 +121,9 @@ export default function SignUpForm() {
 
   const setupRecaptcha = () => {
     if (!auth || !recaptchaContainerRef.current) return;
-    if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+    }
     
     window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
       size: 'normal',
@@ -169,7 +171,11 @@ export default function SignUpForm() {
       router.push('/dashboard');
     } catch (error: any) {
       console.error("OTP verification error:", error);
-      toast({ title: "Verification Failed", description: error.message || "Invalid OTP.", variant: "destructive" });
+      if (error.code === 'auth/invalid-verification-code') {
+          toast({ title: "Verification Failed", description: "The code you entered is incorrect. Please try again.", variant: "destructive" });
+      } else {
+          toast({ title: "Verification Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
+      }
     } finally {
       setLoading(null);
     }
