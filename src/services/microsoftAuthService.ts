@@ -8,6 +8,11 @@ import type { User } from 'firebase/auth';
 
 const getMicrosoftProvider = () => {
     const provider = new OAuthProvider('microsoft.com');
+    // Add custom parameters that may be required for specific environments or tenants
+    provider.setCustomParameters({
+        // prompt: 'select_account', // Optionally force account selection
+        tenant: 'consumers', // Or your specific Azure AD tenant ID
+    });
     provider.addScope('email');
     provider.addScope('profile');
     return provider;
