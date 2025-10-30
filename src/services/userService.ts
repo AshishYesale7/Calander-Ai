@@ -37,6 +37,7 @@ export const createUserProfile = async (user: User): Promise<UserProfile> => {
             const existingData = docSnap.data();
              return {
                 uid: user.uid,
+                email: existingData.email || user.email, // Add email here
                 displayName: existingData.displayName || user.displayName || 'Anonymous',
                 username: existingData.username || user.email?.split('@')[0] || `user_${user.uid.substring(0,5)}`,
                 onboardingCompleted: existingData.onboardingCompleted || false,
