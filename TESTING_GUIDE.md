@@ -2,6 +2,28 @@
 
 Welcome to Calendar.ai! This guide is designed to walk you through the key features of the application and help you get the most out of your testing experience.
 
+## Table of Contents
+
+1.  [How to Log In for Testing](#1-how-to-log-in-for-testing)
+2.  [Getting Started: The Dashboard & User Roles](#2-getting-started-the-dashboard--user-roles)
+    - [Choosing Your Role: Student vs. Professional](#choosing-your-role-student-vs-professional)
+    - [Dashboard Customization: Widgets](#dashboard-customization-widgets)
+3.  [Core Features Walkthrough](#3-core-features-walkthrough)
+    - [The AI Daily Scheduler Card](#the-ai-daily-scheduler-card)
+    - [Maximized Planner View](#maximized-planner-view)
+    - [Communication Suite: Chat & Calling](#communication-suite-chat--calling)
+    - [The AI Command Bar (Desktop Power-Up)](#the-ai-command-bar-desktop-power-up)
+4.  [Plugins & Customization](#4-plugins--customization)
+    - [The Extension Marketplace](#the-extension-marketplace)
+    - [Personalize Your Experience](#personalize-your-experience)
+5.  [Advanced Functionality](#5-advanced-functionality)
+    - [Multi-Account Management](#multi-account-management)
+    - [Responsive Design](#responsive-design)
+6.  [Gamification (Student Dashboard)](#6-gamification-student-dashboard)
+    - [Daily Streak & Leaderboard](#daily-streak--leaderboard)
+
+---
+
 ## 1. How to Log In for Testing
 
 Due to the application being in a development phase, some login methods are restricted. Please use one of the following methods to access the app.
@@ -41,7 +63,7 @@ If you are interested in becoming an official early tester with full access, ple
 
 ### The Index Page (Your Dashboard)
 
-Once you log in, you will land on the main **Dashboard**. This is your central hub, composed of several interactive **widgets**.
+Once you log in, you will land on the main **Dashboard** (the "Index Page"). This is your central hub, composed of several interactive **widgets**. It's designed to give you an at-a-glance view of your day and your progress.
 
 ### Choosing Your Role: Student vs. Professional
 
@@ -82,7 +104,7 @@ For deep planning, you can enter the **full-screen timeline viewer**:
 
 Press **`Cmd+K`** (on Mac) or **`Ctrl+K`** (on Windows) to activate the floating **AI Command Bar**. This is your central nervous system for the app.
 *   **Movable & Resizable:** Drag it anywhere on your screen.
-*   **AI Chat Interface:** It’s not just a command palette; it’s a full-featured AI chat interface powered by multiple models and a Multi-Context Processing (MCP) engine.
+*   **Advanced AI Chat:** It’s not just a command palette; it’s a full-featured AI chat interface powered by multiple models and a Multi-Context Processing (MCP) engine.
 *   **File System Access:** Open the "Files" tab within the bar to access a virtual file system.
 *   **Natural Language Commands:** Create new tasks and events just by typing, e.g., *"remind me to call the team tomorrow at 3pm."*
 *   **AI Summaries:** Ask it to summarize your upcoming tasks, emails, or events for the day.
@@ -115,5 +137,14 @@ Press **`Cmd+K`** (on Mac) or **`Ctrl+K`** (on Windows) to activate the floating
 ### Responsive Design
 
 Calendar.ai is fully responsive and designed to work seamlessly on any screen size, from a large desktop monitor to your mobile phone.
+
+---
+
+## 6. Gamification (Student Dashboard)
+
+### Daily Streak & Leaderboard
+
+*   **Daily Goal:** Stay active in the app to meet your daily time goal and keep your flame alive.
+*   **Leaderboard:** See how your engagement ranks against other students.
 
 We appreciate your feedback and help in making Calendar.ai the best it can be!
