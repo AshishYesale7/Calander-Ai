@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from '../ui/button';
-import { Plus, Minus, Flame } from 'lucide-react';
+import { Plus, Minus, Flame, Bot, Calendar, Download, List, Clock, Mail, BarChart, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Specific preview for Daily Streak
@@ -11,15 +11,16 @@ const DailyStreakPreview = () => (
 );
 
 // Generic placeholder for most widgets
-const PreviewPlaceholder = () => (
-    <p className="text-xs text-muted-foreground italic">Preview</p>
+const PreviewPlaceholder = ({ icon: Icon }: { icon: React.ElementType }) => (
+    <Icon className="h-8 w-8 text-muted-foreground" />
 );
+
 
 export const widgetList = [
     { 
         id: 'plan', 
         name: 'Today\'s Plan',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={Bot} />
     },
     { 
         id: 'streak', 
@@ -29,28 +30,38 @@ export const widgetList = [
     { 
         id: 'calendar', 
         name: 'Event Calendar',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={Calendar} />
     },
     { 
         id: 'day-timetable', 
         name: 'Day Timetable',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={Clock} />
     },
     { 
         id: 'timeline', 
         name: 'Sliding Timeline',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={List} />
     },
     { 
         id: 'emails', 
         name: 'Important Emails',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={Mail} />
     },
     { 
         id: 'next-month', 
         name: 'Next Month Highlights',
-        preview: <PreviewPlaceholder />
+        preview: <PreviewPlaceholder icon={BarChart} />
     },
+    {
+        id: 'sync',
+        name: 'Google Sync',
+        preview: <PreviewPlaceholder icon={RefreshCw} />
+    },
+    {
+        id: 'data',
+        name: 'Data Management',
+        preview: <PreviewPlaceholder icon={Download} />
+    }
 ];
 
 interface WidgetPreviewsProps {
