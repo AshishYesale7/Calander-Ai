@@ -3,7 +3,19 @@ import SignUpForm from '@/components/auth/SignUpForm';
 import Image from 'next/image';
 import { LandingHeader } from '@/components/layout/LandingHeader';
 
+const avatarImages = [
+    'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-person-with-glasses_23-2149436185.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-person-with-green-hoodie_23-2149436191.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-person_23-2149436192.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-person-with-rainbow-sunglasses_23-2149436190.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?w=740',
+    'https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671140.jpg?w=740',
+];
+
 export default function SignUpPage() {
+  const randomAvatar = avatarImages[Math.floor(Math.random() * avatarImages.length)];
+
   return (
     <div className="relative min-h-screen flex items-center justify-center md:justify-start p-4 overflow-hidden">
       <LandingHeader />
@@ -15,15 +27,8 @@ export default function SignUpPage() {
         className="-z-10"
         data-ai-hint="mountains nature"
       />
-      <Image
-        src="https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2018/pt_BR/a6708b7ae3dbc0b25463f9c8e259a513d2c4c7e6/assets/img/global/level-bg-top.jpg"
-        alt="Overlay"
-        layout="fill"
-        objectFit="cover"
-        className="-z-10 opacity-50"
-      />
        <div className="w-full max-w-sm mx-auto md:mx-0 md:ml-12 lg:ml-24">
-        <SignUpForm />
+        <SignUpForm avatarUrl={randomAvatar} />
       </div>
     </div>
   );

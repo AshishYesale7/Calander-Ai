@@ -49,7 +49,11 @@ declare global {
   }
 }
 
-export default function SignUpForm() {
+interface SignUpFormProps {
+  avatarUrl: string;
+}
+
+export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
@@ -216,10 +220,10 @@ export default function SignUpForm() {
     <Card className="frosted-glass p-6 md:p-8 w-full max-w-sm ml-0 md:ml-12 lg:ml-24">
       <div className="flex justify-center mb-6">
         <Image
-          src="https://t4.ftcdn.net/jpg/10/33/68/61/360_F_1033686185_RvraYXkGXH40OtR1nhmmQaIIbQQqHN5m.jpg"
+          src={avatarUrl}
           alt="Logo"
-          width={80}
-          height={80}
+          width={60}
+          height={60}
           className="rounded-full border-2 border-white/50 dark:border-white/20 shadow-lg"
           data-ai-hint="abstract logo"
         />
