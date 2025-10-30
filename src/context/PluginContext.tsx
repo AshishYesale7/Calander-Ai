@@ -2,7 +2,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getCodingUsernames, saveCodingUsernames, getInstalledPlugins, saveInstalledPlugins } from '@/services/userService';
@@ -19,8 +19,11 @@ interface PluginContextType {
   isCodefolioLoggedIn: boolean;
   isCheckingLogin: boolean;
   handleCodefolioLogin: (data: AllPlatformsUserData) => void;
-  isLoginViewActive: boolean; // Explicitly control login view
-  openLoginView: () => void; // New function to open the login view on demand
+  isLoginViewActive: boolean;
+  openLoginView: () => void;
+  installedPlugins: Set<string>;
+  installPlugin: (pluginName: string) => Promise<void>;
+  uninstallPlugin: (pluginName: string) => Promise<void>;
 }
 
 export const PluginContext = createContext<PluginContextType | undefined>(undefined);
@@ -30,6 +33,7 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   const [isCodefolioLoggedIn, setIsCodefolioLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
   const [isLoginViewActive, setIsLoginViewActive] = useState(false);
+  const [installedPlugins, setInstalledPlugins] = useState<Set<string>>(new Set(DEFAULT_PLUGINS));
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -55,16 +59,48 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user) {
       checkLoginStatus();
-      
-      // Ensure default plugins are set for users without a plugin list
       getInstalledPlugins(user.uid).then(plugins => {
-        if (plugins === null) { // `null` indicates no record exists for this user
+        if (plugins !== null) {
+          setInstalledPlugins(new Set(plugins));
+        } else {
           const defaultSet = new Set(DEFAULT_PLUGINS);
+          setInstalledPlugins(defaultSet);
           saveInstalledPlugins(user.uid, Array.from(defaultSet));
         }
       });
+    } else {
+        setInstalledPlugins(new Set(DEFAULT_PLUGINS));
     }
   }, [user, checkLoginStatus]);
+
+  const updatePluginsInDb = async (newPluginSet: Set<string>) => {
+    if (user) {
+      try {
+        await saveInstalledPlugins(user.uid, Array.from(newPluginSet));
+      } catch (error) {
+        toast({ title: "Sync Error", description: "Could not save plugin changes to the cloud.", variant: "destructive" });
+        // Optional: revert state if DB save fails
+        getInstalledPlugins(user.uid).then(plugins => {
+          if (plugins) setInstalledPlugins(new Set(plugins));
+        });
+      }
+    }
+  };
+
+  const installPlugin = async (pluginName: string) => {
+    const newSet = new Set(installedPlugins).add(pluginName);
+    setInstalledPlugins(newSet);
+    toast({ title: "Plugin Installed", description: `${pluginName} has been added.` });
+    await updatePluginsInDb(newSet);
+  };
+
+  const uninstallPlugin = async (pluginName: string) => {
+    const newSet = new Set(installedPlugins);
+    newSet.delete(pluginName);
+    setInstalledPlugins(newSet);
+    toast({ title: "Plugin Uninstalled", description: `${pluginName} has been removed.` });
+    await updatePluginsInDb(newSet);
+  };
   
   const openLoginView = useCallback(() => {
     setActivePlugin(null);
@@ -126,6 +162,9 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
         handleCodefolioLogin,
         isLoginViewActive,
         openLoginView,
+        installedPlugins,
+        installPlugin,
+        uninstallPlugin,
     }}>
       {children}
     </PluginContext.Provider>

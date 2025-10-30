@@ -10,17 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import CodefolioLogin from '@/components/extensions/codefolio/CodefolioLogin';
 import type { AllPlatformsUserData } from '@/ai/flows/fetch-coding-stats-flow';
 import { useAuth } from '@/context/AuthContext';
-import { getCodingUsernames, saveCodingUsernames, getInstalledPlugins, saveInstalledPlugins } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
-import { allPlugins, DEFAULT_PLUGINS } from '@/data/plugins';
+import { allPlugins } from '@/data/plugins';
 import { usePlugin } from '@/hooks/use-plugin';
 
 type Plugin = (typeof allPlugins)[0];
 
 const FullScreenPluginView: React.FC = () => {
-  const { activePlugin, setActivePlugin, closePlugin, openLoginView } = usePlugin();
+  const { activePlugin, closePlugin, openLoginView } = usePlugin();
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,7 +37,6 @@ const FullScreenPluginView: React.FC = () => {
   };
 
   const handleSettings = () => {
-    // This now correctly closes the current view and opens the login/settings modal
     closePlugin();
     openLoginView();
   };
@@ -75,10 +73,7 @@ const FullScreenPluginView: React.FC = () => {
 
 
 export default function ExtensionPage() {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [installedPluginsSet, setInstalledPluginsSet] = useState<Set<string>>(new Set());
   const [installingPlugin, setInstallingPlugin] = useState<string | null>(null);
   
   const { 
@@ -87,55 +82,20 @@ export default function ExtensionPage() {
     isCheckingLogin,
     handleCodefolioLogin,
     isLoginViewActive,
-    closePlugin
+    closePlugin,
+    installedPlugins: installedPluginsSet,
+    installPlugin,
+    uninstallPlugin,
   } = usePlugin();
 
-  // Fetch installed plugins from Firestore on mount
-  useEffect(() => {
-    if (user) {
-      getInstalledPlugins(user.uid).then(plugins => {
-        if (plugins !== null) { // If it's not null, a record exists (even if empty)
-          setInstalledPluginsSet(new Set(plugins));
-        } else {
-          // If user has no saved plugins record at all (is a new user), set the defaults
-          const defaultSet = new Set(DEFAULT_PLUGINS);
-          setInstalledPluginsSet(defaultSet);
-          // And save these defaults to their new profile
-          saveInstalledPlugins(user.uid, Array.from(defaultSet));
-        }
-      }).catch(err => {
-        console.error("Failed to load plugins from Firestore", err);
-        toast({ title: "Error", description: "Could not load your installed plugins.", variant: "destructive"});
-        // Fallback to defaults on error
-        setInstalledPluginsSet(new Set(DEFAULT_PLUGINS));
-      });
-    }
-  }, [user, toast]);
-  
-  const updateInstalledPlugins = useCallback((newSet: Set<string>) => {
-      setInstalledPluginsSet(newSet);
-      if (user) {
-          saveInstalledPlugins(user.uid, Array.from(newSet)).catch(err => {
-              toast({ title: "Sync Error", description: "Could not save your plugin changes to the cloud.", variant: "destructive" });
-          });
-      }
-  }, [user, toast]);
-
-  const handleInstall = (pluginName: string) => {
+  const handleInstall = async (pluginName: string) => {
     setInstallingPlugin(pluginName);
-    setTimeout(() => {
-      const newSet = new Set(installedPluginsSet);
-      newSet.add(pluginName);
-      updateInstalledPlugins(newSet);
-      setInstallingPlugin(null);
-      toast({ title: "Plugin Installed", description: `${pluginName} has been added.` });
-    }, 1500); // Shorter delay
+    await installPlugin(pluginName);
+    setInstallingPlugin(null);
   };
   
-  const handleUninstall = (pluginName: string) => {
-    const newSet = new Set(installedPluginsSet);
-    newSet.delete(pluginName);
-    updateInstalledPlugins(newSet);
+  const handleUninstall = async (pluginName: string) => {
+    await uninstallPlugin(pluginName);
   };
   
   const handleOpen = (plugin: Plugin) => {
@@ -277,7 +237,6 @@ export default function ExtensionPage() {
         </CardContent>
       </Card>
       
-      {/* The login modal is now controlled by the context */}
       {isLoginViewActive && (
          <CodefolioLogin
           onLoginSuccess={handleCodefolioLogin}
@@ -285,7 +244,6 @@ export default function ExtensionPage() {
         />
       )}
 
-      {/* The fullscreen view is also controlled by the context */}
       {activePlugin && (
         <FullScreenPluginView />
       )}
