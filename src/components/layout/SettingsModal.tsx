@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -21,7 +20,7 @@ import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult, OAuthProvider } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import {
@@ -62,6 +61,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [apiKeyInput, setApiKeyInput] = useState(currentApiKey || '');
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
+  const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
 
   const [isLinkingPhone, setIsLinkingPhone] = useState(false);
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
@@ -136,6 +136,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   }, [user]);
 
+  const checkMicrosoftStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/auth/microsoft/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+      const data = await res.json();
+      setIsMicrosoftConnected(data.isConnected);
+    } catch (error) {
+      setIsMicrosoftConnected(false);
+    }
+  }, [user]);
+
+
   // General setup/cleanup when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -144,6 +160,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             setIsGoogleConnected(null);
             checkGoogleStatus();
             checkNotionStatus();
+            checkMicrosoftStatus();
         }
     } else {
         // Cleanup logic when modal closes
@@ -164,7 +181,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setReauthStep('prompt');
         setReauthOtp('');
     }
-  }, [isOpen, currentApiKey, user, checkGoogleStatus, checkNotionStatus]);
+  }, [isOpen, currentApiKey, user, checkGoogleStatus, checkNotionStatus, checkMicrosoftStatus]);
 
 
   const handleApiKeySave = () => {
@@ -218,6 +235,16 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'notion' })).toString('base64');
     const authUrl = `/api/auth/notion/redirect?state=${encodeURIComponent(state)}`;
+    window.open(authUrl, '_blank', 'width=500,height=600');
+  };
+  
+  const handleConnectMicrosoft = () => {
+    if (!user) {
+        toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
+        return;
+    }
+    const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'microsoft' })).toString('base64');
+    const authUrl = `/api/auth/microsoft/redirect?state=${encodeURIComponent(state)}`;
     window.open(authUrl, '_blank', 'width=500,height=600');
   };
 
@@ -540,64 +567,41 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
 
             <div className="space-y-3 px-2">
                  <Label className="font-semibold text-base flex items-center text-primary">
-                    <Globe className="mr-2 h-4 w-4" /> Google Integration
+                    <Globe className="mr-2 h-4 w-4" /> Integrations
                 </Label>
-                <p className="text-sm text-muted-foreground">
-                    Connect your Google account to sync your calendar events and emails.
-                </p>
-                {isGoogleConnected === null ? (
-                    <div className="flex items-center space-x-2 h-10">
-                        <LoadingSpinner size="sm" />
-                        <span className="text-sm text-muted-foreground">Checking status...</span>
-                    </div>
-                ) : isGoogleConnected ? (
-                    <div className="flex items-center justify-between h-10">
-                        <p className="text-sm text-green-400 font-medium flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4" /> Connected
-                        </p>
-                        <Button onClick={handleDisconnectGoogle} variant="destructive">
-                            <Unplug className="mr-2 h-4 w-4" /> Disconnect
-                        </Button>
-                    </div>
-                ) : (
-                    <Button onClick={handleConnectGoogle} variant="outline" className="w-full" disabled={isPolling}>
-                        {isPolling ? <LoadingSpinner size="sm" className="mr-2"/> : <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>}
-                        {isPolling ? 'Waiting...' : 'Connect with Google'}
-                    </Button>
-                )}
+                {/* Google Integration */}
+                <div className="flex items-center justify-between h-10">
+                    <p className="text-sm font-medium flex items-center">
+                        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg> Google
+                    </p>
+                    {isGoogleConnected ? (
+                         <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                    ) : (
+                         <Button onClick={handleConnectGoogle} variant="outline" size="sm">Connect</Button>
+                    )}
+                </div>
+                {/* Microsoft Integration */}
+                <div className="flex items-center justify-between h-10">
+                    <p className="text-sm font-medium flex items-center">
+                        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5"><title>Microsoft</title><path d="M11.4 21.9H2.1V12.6h9.3V21.9zm0-18.6H2.1v9.3h9.3V3.3zm9.3 0v9.3h9.3V3.3h-9.3zm0 18.6v-9.3h9.3v9.3h-9.3z" fill="currentColor"/></svg> Microsoft
+                    </p>
+                    {isMicrosoftConnected ? (
+                         <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                    ) : (
+                         <Button onClick={handleConnectMicrosoft} variant="outline" size="sm">Connect</Button>
+                    )}
+                </div>
+                {/* Notion Integration */}
+                <div className="flex items-center justify-between h-10">
+                    <p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>
+                     {isNotionConnected ? (
+                         <Button onClick={handleDisconnectNotion} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                    ) : (
+                         <Button onClick={handleConnectNotion} variant="outline" size="sm">Connect</Button>
+                    )}
+                </div>
             </div>
 
-            <Separator/>
-
-            <div className="space-y-3 px-2">
-                 <Label className="font-semibold text-base flex items-center text-primary">
-                    <NotionLogo className="mr-2 h-5 w-5" /> Notion Integration
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                    Connect your Notion account to sync tasks from your databases.
-                </p>
-                {isNotionConnected === null ? (
-                    <div className="flex items-center space-x-2 h-10">
-                        <LoadingSpinner size="sm" />
-                        <span className="text-sm text-muted-foreground">Checking status...</span>
-                    </div>
-                ) : isNotionConnected ? (
-                    <div className="flex items-center justify-between h-10">
-                        <p className="text-sm text-green-400 font-medium flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4" /> Connected
-                        </p>
-                        <Button onClick={handleDisconnectNotion} variant="destructive">
-                            <Unplug className="mr-2 h-4 w-4" /> Disconnect
-                        </Button>
-                    </div>
-                ) : (
-                    <Button onClick={handleConnectNotion} variant="outline" className="w-full">
-                       <NotionLogo className="mr-2 h-4 w-4" />
-                       Connect with Notion
-                    </Button>
-                )}
-            </div>
-            
             <Separator/>
 
             <div className="space-y-3 px-2">

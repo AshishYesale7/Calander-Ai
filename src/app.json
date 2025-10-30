@@ -15,6 +15,14 @@
       "description": "Google OAuth Client Secret for Calendar/Gmail integration.",
       "required": true
     },
+    "MICROSOFT_CLIENT_ID": {
+      "description": "Microsoft Azure App Registration Client ID.",
+      "required": false
+    },
+    "MICROSOFT_CLIENT_SECRET": {
+      "description": "Microsoft Azure App Registration Client Secret.",
+      "required": false
+    },
     "NEXT_PUBLIC_BASE_URL": {
       "description": "The public URL of your deployed application (e.g., https://yourapp.web.app).",
       "required": true
