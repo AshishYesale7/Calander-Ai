@@ -6,6 +6,7 @@ Welcome to Calendar.ai! This guide is designed to walk you through the key featu
 
 1.  [How to Log In for Testing](#1-how-to-log-in-for-testing)
 2.  [Getting Started: The Dashboard & User Roles](#2-getting-started-the-dashboard--user-roles)
+    - [The Index Page (Your Dashboard)](#the-index-page-your-dashboard)
     - [Choosing Your Role: Student vs. Professional](#choosing-your-role-student-vs-professional)
     - [Dashboard Customization: Widgets](#dashboard-customization-widgets)
 3.  [Core Features Walkthrough](#3-core-features-walkthrough)
