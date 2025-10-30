@@ -20,7 +20,7 @@ export async function getRedirectURI(request?: NextRequest): Promise<string> {
 
 
 export async function getMicrosoftAuthUrl(request: NextRequest, state?: string | null): Promise<string> {
-    const tenant = 'common'; // Use 'common' to allow both personal and work/school accounts
+    const tenant = 'common'; 
     const scopes = [
         'openid',
         'profile',
@@ -218,3 +218,5 @@ export async function createCalendarSubscription(accessToken: string): Promise<a
 
     return await response.json();
 }
+
+    
