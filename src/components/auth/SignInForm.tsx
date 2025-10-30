@@ -1,4 +1,3 @@
-
 'use client';
 import { GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import Link from 'next/link';
@@ -118,7 +117,21 @@ export default function SignInForm({ avatarUrl }: SignInFormProps) {
         router.push('/dashboard');
 
     } catch (error: any) {
-         if (error.code === 'auth/popup-closed-by-user') {
+        if (error.code === 'auth/operation-not-supported-in-this-environment') {
+          const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+          const consoleUrl = `https://console.firebase.google.com/project/${firebaseProjectId}/authentication/providers`;
+          toast({
+            title: 'Action Required',
+            description: (
+              <div>
+                <p>This sign-in method isn't fully configured. Please add the provider's details in your <a href={consoleUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>.</p>
+                <p className="text-xs mt-2">For providers like Microsoft or Yahoo, you may need to add the "Services ID" (OAuth Client ID) in the configuration.</p>
+              </div>
+            ),
+            variant: 'destructive',
+            duration: 15000,
+          });
+        } else if (error.code === 'auth/popup-closed-by-user') {
             toast({ title: `Sign-in cancelled`, description: `You closed the ${providerName} Sign-In window.`, variant: 'default' });
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              const email = error.customData?.email;
