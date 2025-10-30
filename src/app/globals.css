@@ -283,7 +283,7 @@
 
 /* Style the dropdown menu */
 .PhoneInputCountrySelect-menu {
-  @apply bg-popover text-popover-foreground border-border rounded-md shadow-lg;
+  @apply bg-popover text-black border-border rounded-md shadow-lg;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background-color: hsl(var(--popover));
