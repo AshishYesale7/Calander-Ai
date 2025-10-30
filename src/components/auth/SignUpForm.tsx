@@ -59,7 +59,21 @@ export default function SignUpForm() {
   const [phone, setPhone] = useState<string | undefined>();
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [countdown, setCountdown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(false);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      timerRef.current = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
+      setResendCooldown(false);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [countdown]);
 
 
   useEffect(() => {
@@ -134,12 +148,14 @@ export default function SignUpForm() {
     window.recaptchaVerifier.render();
   };
 
-  const handleSendOtp = async () => {
+  const handleSendOtp = async (isResend = false) => {
+    if (resendCooldown) return;
     if (!phone || !isValidPhoneNumber(phone)) {
       toast({ title: "Invalid Phone Number", description: "Please enter a valid phone number.", variant: "destructive" });
       return;
     }
     setLoading('phone');
+    setResendCooldown(true);
     try {
       setupRecaptcha();
       const appVerifier = window.recaptchaVerifier!;
@@ -147,9 +163,11 @@ export default function SignUpForm() {
       window.confirmationResult = confirmationResult;
       setStep('otp');
       toast({ title: "OTP Sent", description: "Check your phone for the verification code." });
+      setCountdown(isResend ? 30 : 60); // Start cooldown
     } catch (error: any) {
       console.error("Phone sign-up error:", error);
       toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
+      setResendCooldown(false);
     } finally {
       setLoading(null);
     }
@@ -222,7 +240,7 @@ export default function SignUpForm() {
                   />
               </div>
               <div ref={recaptchaContainerRef} id="recaptcha-container"></div>
-              <Button type="button" className="w-full" onClick={handleSendOtp} disabled={!!loading}>
+              <Button type="button" className="w-full" onClick={() => handleSendOtp(false)} disabled={!!loading}>
                   {loading === 'phone' ? <LoadingSpinner size="sm" /> : "Send OTP"}
               </Button>
           </div>
@@ -237,6 +255,15 @@ export default function SignUpForm() {
                         onChange={(e) => setOtp(e.target.value)}
                         placeholder="6-digit code"
                     />
+                </div>
+                <div className="text-right text-sm">
+                  {countdown > 0 ? (
+                    <span className="text-muted-foreground">Resend OTP in {countdown}s</span>
+                  ) : (
+                    <Button variant="link" className="p-0 h-auto" onClick={() => handleSendOtp(true)} disabled={resendCooldown}>
+                      Resend OTP
+                    </Button>
+                  )}
                 </div>
                 <Button type="button" className="w-full" onClick={handleVerifyOtp} disabled={!!loading}>
                     {loading === 'otp' ? <LoadingSpinner size="sm" /> : "Verify & Sign Up"}
