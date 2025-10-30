@@ -74,6 +74,7 @@ export interface TimelineEvent {
   color?: string; // Optional custom color for the event
   reminder: EventReminder; // Updated reminder settings
   googleEventId?: string; // ID of the event in Google Calendar
+  microsoftEventId?: string; // ID of the event in Microsoft Calendar
   googleTaskId?: string; // ID of the event in Google Tasks
   deletedAt?: Date; // For soft deletes
   links?: { title: string; url: string }[];

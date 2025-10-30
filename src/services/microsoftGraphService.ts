@@ -1,7 +1,6 @@
 
 'use server';
 
-import { google } from 'googleapis'; // This seems incorrect, should be a Microsoft library
 import type { Credentials } from 'google-auth-library';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
@@ -10,25 +9,6 @@ import type { NextRequest } from 'next/server';
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-
-
-// This needs to be a valid OAuth2 client for Microsoft, not Google.
-// For now, we will create a placeholder.
-// In a real scenario, you'd use a library like `@azure/msal-node` or construct the URLs manually.
-const getOAuth2Client = async (request?: NextRequest) => {
-    if (!MICROSOFT_CLIENT_ID || !MICROSOFT_CLIENT_SECRET) {
-        throw new Error("Microsoft OAuth client credentials are not configured.");
-    }
-    const redirectUri = await getRedirectURI(request);
-    
-    // This is a conceptual placeholder. The 'googleapis' library is for Google.
-    // A proper implementation would use Microsoft's own libraries or manual URL construction.
-    return new google.auth.OAuth2(
-        MICROSOFT_CLIENT_ID,
-        MICROSOFT_CLIENT_SECRET,
-        redirectUri
-    );
-};
 
 export async function getRedirectURI(request?: NextRequest): Promise<string> {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (request ? new URL(request.url).origin : '');
@@ -96,6 +76,11 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
         throw new Error(tokens.error_description || 'Failed to exchange code for tokens.');
     }
     
+    // Add expiry_date for consistency with Google's token object if it doesn't exist
+    if (tokens.expires_in && !tokens.expiry_date) {
+        tokens.expiry_date = Date.now() + tokens.expires_in * 1000;
+    }
+    
     return tokens as Credentials;
 }
 
@@ -115,10 +100,75 @@ export async function getMicrosoftTokensFromFirestore(userId: string): Promise<C
     return null;
 }
 
+// Function to refresh the access token using the refresh token
+async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
+    const tenant = 'consumers';
+    const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+
+    const params = new URLSearchParams();
+    params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
+    params.append('scope', 'openid profile email offline_access Calendars.ReadWrite Calendars.ReadBasic Mail.Read Files.Read OnlineMeetings.ReadWrite');
+    params.append('refresh_token', refreshToken);
+    params.append('grant_type', 'refresh_token');
+    params.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET!);
+
+    const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    });
+
+    const newTokens = await response.json();
+    if (!response.ok) {
+        throw new Error(newTokens.error_description || 'Failed to refresh Microsoft token.');
+    }
+    
+    if (newTokens.expires_in) {
+      newTokens.expiry_date = Date.now() + newTokens.expires_in * 1000;
+    }
+
+    return newTokens;
+}
+
+export async function getAuthenticatedClient(userId: string): Promise<{ accessToken: string } | null> {
+    const tokens = await getMicrosoftTokensFromFirestore(userId);
+    if (!tokens) {
+        return null;
+    }
+
+    // Check if the access token is expired or close to expiring
+    if (tokens.expiry_date && tokens.expiry_date < (Date.now() + 60000)) {
+        if (tokens.refresh_token) {
+            try {
+                const newTokens = await refreshAccessToken(tokens.refresh_token);
+                // Save the new tokens (including the new refresh token if provided)
+                await saveMicrosoftTokensToFirestore(userId, { ...tokens, ...newTokens });
+                return { accessToken: newTokens.access_token! };
+            } catch (error) {
+                console.error(`Error refreshing Microsoft access token for user ${userId}:`, error);
+                // If refresh fails, clear tokens to prompt re-authentication
+                const userDocRef = doc(db, 'users', userId);
+                await updateDoc(userDocRef, { microsoft_tokens: deleteField() });
+                return null;
+            }
+        } else {
+            // No refresh token available, user needs to re-authenticate
+            return null;
+        }
+    }
+    
+    // If token is valid, return it
+    if (tokens.access_token) {
+        return { accessToken: tokens.access_token };
+    }
+
+    return null;
+}
+
+
 export async function createCalendarSubscription(accessToken: string): Promise<any> {
     const subscriptionUrl = 'https://graph.microsoft.com/v1.0/subscriptions';
     
-    // Subscriptions expire, a value of 2 days (2880 minutes) is common. Max is 4230.
     const expirationDateTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
 
     const subscriptionData = {
@@ -126,7 +176,6 @@ export async function createCalendarSubscription(accessToken: string): Promise<a
         notificationUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/microsoft/webhook`,
         resource: '/me/events',
         expirationDateTime: expirationDateTime,
-        // A client state can be used to verify the legitimacy of incoming notifications
         clientState: 'secretClientValue', 
     };
 
