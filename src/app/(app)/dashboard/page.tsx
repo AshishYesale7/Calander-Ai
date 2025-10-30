@@ -19,7 +19,7 @@ import CalendarWidget from '@/components/dashboard/widgets/CalendarWidget';
 import SlidingTimelineWidget from '@/components/dashboard/widgets/SlidingTimelineWidget';
 import ImportantEmailsWidget from '@/components/dashboard/widgets/ImportantEmailsWidget';
 import NextMonthHighlightsWidget from '@/components/dashboard/widgets/NextMonthHighlightsWidget';
-import DayTimetableViewWidget from '@/components/timeline/DayTimetableViewWidget';
+import DayTimetableViewWidget from '@/components/dashboard/widgets/DayTimetableViewWidget';
 import GoogleSyncWidget from '@/components/dashboard/widgets/GoogleSyncWidget';
 import DataManagementWidget from '@/components/dashboard/widgets/DataManagementWidget';
 
@@ -175,7 +175,7 @@ export default function DashboardPage() {
           endDate: updatedEvent.endDate ? updatedEvent.endDate.toISOString() : null,
           deletedAt: null, // Ensure not soft-deleted
       };
-      await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone });
+      await saveTimelineEvent(user.uid, payload, { syncToGoogle, timezone, syncToMicrosoft: false });
       await fetchAllEvents();
       toast({
           title: isAddingNewEvent ? "Event Added" : "Event Updated",
@@ -228,7 +228,7 @@ export default function DashboardPage() {
         date: updatedEvent.date.toISOString(),
         endDate: updatedEvent.endDate ? updatedEvent.endDate.toISOString() : null,
       };
-      await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId, timezone });
+      await saveTimelineEvent(user.uid, payload, { syncToGoogle: !!updatedEvent.googleEventId, timezone, syncToMicrosoft: false });
     } catch (error) {
       fetchAllEvents();
       toast({ title: "Sync Error", description: "Could not save status.", variant: "destructive" });
@@ -300,3 +300,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

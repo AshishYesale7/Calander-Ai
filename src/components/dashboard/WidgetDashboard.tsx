@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
 import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
@@ -21,6 +22,7 @@ interface WidgetDashboardProps {
 
 export default function WidgetDashboard({ components, isEditMode, setIsEditMode }: WidgetDashboardProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const [versionedLayouts, setVersionedLayouts] = useState<VersionedLayouts>({
     version: CODE_LAYOUT_VERSION,
@@ -31,7 +33,6 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
   const [currentLayouts, setCurrentLayouts] = useState<Layouts>(versionedLayouts.layouts);
   const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set(versionedLayouts.hidden));
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
-  
   const layoutInitialized = useRef(false);
 
   const getLayoutKey = useCallback(() => {
@@ -96,26 +97,25 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
   };
   
   useEffect(() => {
-      if (!isLayoutLoaded || !user) return;
-
-      const save = async () => {
-          const layoutKey = getLayoutKey();
-          if (!layoutKey) return;
-
-          const newVersion = (versionedLayouts.version || 0) + 1;
-          const dataToSave: VersionedLayouts = { 
-              version: newVersion, 
-              layouts: currentLayouts, 
-              hidden: Array.from(hiddenWidgets) 
-          };
-
-          setVersionedLayouts(dataToSave);
-          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-          await saveLayout(user.uid, user.userType || 'student', dataToSave);
+    if (!isLayoutLoaded || !user) return;
+  
+    const timeoutId = setTimeout(async () => {
+      const layoutKey = getLayoutKey();
+      if (!layoutKey) return;
+  
+      const newVersion = (versionedLayouts.version || 0) + 1;
+      const dataToSave: VersionedLayouts = { 
+        version: newVersion, 
+        layouts: currentLayouts, 
+        hidden: Array.from(hiddenWidgets) 
       };
-
-      const timeoutId = setTimeout(save, 1000);
-      return () => clearTimeout(timeoutId);
+  
+      setVersionedLayouts(dataToSave);
+      localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+      await saveLayout(user.uid, user.userType || 'student', dataToSave);
+    }, 1000); // Debounce for 1 second
+  
+    return () => clearTimeout(timeoutId);
   }, [currentLayouts, hiddenWidgets, isLayoutLoaded, user, getLayoutKey, versionedLayouts.version]);
 
 
@@ -176,3 +176,5 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
     </div>
   );
 }
+
+    
