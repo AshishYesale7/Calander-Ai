@@ -21,15 +21,32 @@ const PIXEL_TO_GRID_UNITS = {
     TIMETABLE_MIN_H_PX: 300,
 };
 
+const calculateMinW = (colWidth: number): number => {
+  if (colWidth <= 0) return 1;
+  const { MIN_W_PX } = PIXEL_TO_GRID_UNITS;
+  const contentWidth = MIN_W_PX - MARGIN[0];
+  const gridUnits = Math.max(1, Math.ceil(contentWidth / (colWidth + MARGIN[0])));
+  return gridUnits;
+};
+
+const calculateMinH = (isTimetable: boolean): number => {
+    const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
+    const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
+    const contentHeight = targetHeight - MARGIN[1];
+    const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
+    return gridUnits;
+};
+
+
 interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
-  hiddenWidgets: Set<string>;
+  hiddenWidgets?: Set<string>;
   onToggleWidget: (id: string) => void;
 }
 
-export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets, onToggleWidget }: WidgetDashboardProps) {
+export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets = new Set(), onToggleWidget }: WidgetDashboardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -55,9 +72,8 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
   const [debouncedLayouts, setDebouncedLayouts] = useState<Layouts | null>(null);
 
   useEffect(() => {
-    if (debouncedLayouts) {
+    if (debouncedLayouts && user) {
       const handler = setTimeout(() => {
-        if (!user) return;
         const layoutKey = `dashboard-layouts-${user.uid}-${user.userType || 'student'}`;
         const newVersion = (versionedLayouts.version || 0) + 1;
         const dataToSave: VersionedLayouts = { 
@@ -128,9 +144,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
       setCurrentLayouts(finalLayouts.layouts);
       if (finalLayouts.hidden) {
           finalLayouts.hidden.forEach(id => {
-            // We need to call onToggleWidget in a way that doesn't trigger an infinite loop.
-            // A direct call might cause issues. Let's ensure it's safe.
-            // The issue is likely in how state is managed, for now, let's just make sure it's called.
+            onToggleWidget(id);
           });
       }
       setIsLayoutLoaded(true);
@@ -156,23 +170,6 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
     }
     return filteredBase;
   }, [currentLayouts, user?.userType, currentBreakpoint, getDefaultLayouts]);
-
-  const calculateMinW = (colWidth: number): number => {
-    if (colWidth <= 0) return 1;
-    const { MIN_W_PX } = PIXEL_TO_GRID_UNITS;
-    const contentWidth = MIN_W_PX - MARGIN[0];
-    const gridUnits = Math.max(1, Math.ceil(contentWidth / (colWidth + MARGIN[0])));
-    return gridUnits;
-  };
-  
-  const calculateMinH = (isTimetable: boolean): number => {
-    const { MIN_H_PX, TIMETABLE_MIN_H_PX } = PIXEL_TO_GRID_UNITS;
-    const targetHeight = isTimetable ? TIMETABLE_MIN_H_PX : MIN_H_PX;
-    const contentHeight = targetHeight - MARGIN[1];
-    const gridUnits = Math.max(1, Math.ceil(contentHeight / (ROW_HEIGHT + MARGIN[1])));
-    return gridUnits;
-  };
-
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
