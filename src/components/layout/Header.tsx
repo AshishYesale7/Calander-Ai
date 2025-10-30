@@ -39,6 +39,7 @@ import StreakPopoverContent from './StreakPopoverContent';
 import ExtensionsPopoverContent from './ExtensionsPopoverContent';
 import WidgetPreviews from './widget-previews';
 import { useChat } from '@/context/ChatContext';
+import { getUserProfile } from '@/services/userService';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Menu }, 
