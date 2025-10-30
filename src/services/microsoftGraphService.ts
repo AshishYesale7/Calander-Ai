@@ -20,18 +20,16 @@ export async function getRedirectURI(request?: NextRequest): Promise<string> {
 
 
 export async function getMicrosoftAuthUrl(request: NextRequest, state?: string | null): Promise<string> {
-    const tenant = 'consumers'; // For personal Microsoft accounts
+    const tenant = 'common'; // Use 'common' to allow both personal and work/school accounts
     const scopes = [
         'openid',
         'profile',
         'email',
         'offline_access',
         'User.Read',
-        // Calendar
         'Calendars.ReadBasic',
         'Calendars.ReadWrite',
         'Calendars.ReadWrite.Shared',
-        // Mail
         'Mail.Read',
         'Mail.ReadWrite',
         'Mail.Send',
@@ -40,18 +38,12 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'Mail.Send.Shared',
         'Mail.ReadBasic',
         'Mail.ReadBasic.Shared',
-        // Files
         'Files.ReadWrite.All',
-        // Contacts
         'Contacts.ReadWrite.Shared',
-        // Teams
         'OnlineMeetings.ReadWrite',
         'OnlineMeetingTranscript.Read.All',
-        // Notes (OneNote)
         'Notes.ReadWrite.All',
-        // Tasks
         'Tasks.ReadWrite.Shared',
-        // Other
         'Analytics.Read',
         'Notifications.ReadWrite.CreatedByApp',
         'VirtualAppointment.ReadWrite',
@@ -74,7 +66,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
 
 export async function getTokensFromCode(request: NextRequest, code: string): Promise<Credentials> {
     const redirectUri = await getRedirectURI(request);
-    const tenant = 'consumers';
+    const tenant = 'common';
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
 
     const scopes = [
@@ -84,7 +76,7 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
         'Files.ReadWrite.All', 'Contacts.ReadWrite.Shared', 'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
         'Notes.ReadWrite.All', 'Tasks.ReadWrite.Shared', 'Analytics.Read', 'Notifications.ReadWrite.CreatedByApp', 'VirtualAppointment.ReadWrite'
     ].join(' ');
-
+    
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
     params.append('scope', scopes);
@@ -132,7 +124,7 @@ export async function getMicrosoftTokensFromFirestore(userId: string): Promise<C
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
-    const tenant = 'consumers';
+    const tenant = 'common';
     const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
 
     const scopes = [
