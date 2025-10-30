@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { useTimezone } from '@/hooks/use-timezone';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { subDays, startOfDay, isSameDay } from 'date-fns';
+import { subDays, addDays } from 'date-fns';
 
 // Import Widget Components
 import TodaysPlanWidget from '@/components/dashboard/widgets/TodaysPlanWidget';
@@ -256,10 +256,10 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
 
-  const allComponents = {
+  const components = {
     plan: <TodaysPlanWidget />,
     streak: <DailyStreakWidget />,
-    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onMonthChange={setActiveDisplayMonth} month={activeDisplayMonth} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onSyncComplete={fetchAllEvents} />,
+    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onMonthChange={setActiveDisplayMonth} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} />,
     'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
     timeline: <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={(dir) => setActiveDisplayMonth(m => dir === 'prev' ? subDays(m, 30) : addDays(m, 30))} />,
     emails: <ImportantEmailsWidget />,
@@ -276,9 +276,10 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   if (isMobile) {
     return (
       <div className="space-y-6">
-        {Object.values(allComponents).map((component, index) => (
-            <div key={index}>{component}</div>
-        ))}
+        {Object.entries(components).map(([key, component]) => {
+           if (hiddenWidgets.has(key)) return null;
+           return <div key={key}>{component}</div>
+        })}
       </div>
     );
   }
@@ -286,7 +287,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   return (
     <div className="h-full">
       <WidgetDashboard 
-        components={allComponents}
+        components={components}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
         hiddenWidgets={hiddenWidgets}

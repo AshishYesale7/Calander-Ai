@@ -37,16 +37,15 @@ const calculateMinH = (isTimetable: boolean): number => {
     return gridUnits;
 };
 
-
 interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
-  hiddenWidgets?: Set<string>;
+  hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
 }
 
-export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets = new Set(), onToggleWidget }: WidgetDashboardProps) {
+export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets, onToggleWidget }: WidgetDashboardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -65,35 +64,9 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
     hidden: [],
   });
 
-  const [currentLayouts, setCurrentLayouts] = useState<Layouts>(versionedLayouts.layouts);
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
-  
-  const [debouncedLayouts, setDebouncedLayouts] = useState<Layouts | null>(null);
-
-  useEffect(() => {
-    if (debouncedLayouts && user) {
-      const handler = setTimeout(() => {
-        const layoutKey = `dashboard-layouts-${user.uid}-${user.userType || 'student'}`;
-        const newVersion = (versionedLayouts.version || 0) + 1;
-        const dataToSave: VersionedLayouts = { 
-          version: newVersion, 
-          layouts: debouncedLayouts, 
-          hidden: Array.from(hiddenWidgets) 
-        };
-
-        setVersionedLayouts(dataToSave);
-        localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-
-        saveLayout(user.uid, user.userType || 'student', dataToSave);
-
-      }, 1000);
-
-      return () => {
-        clearTimeout(handler);
-      };
-    }
-  }, [debouncedLayouts, user, versionedLayouts.version, hiddenWidgets]);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -118,58 +91,98 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
       
       const cloudLayoutPromise = getLayout(user.uid, role);
 
-      const [localResult, cloudResult] = await Promise.all([localLayoutPromise, cloudLayoutPromise]);
+      try {
+        const [localResult, cloudResult] = await Promise.all([localLayoutPromise, cloudLayoutPromise]);
 
-      const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] };
+        const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] };
 
-      let finalLayouts: VersionedLayouts;
-      const localVersion = localResult?.version || 0;
-      const cloudVersion = cloudResult?.version || 0;
-      const codeVersion = CODE_LAYOUT_VERSION;
-      
-      if (localVersion >= cloudVersion && localVersion >= codeVersion) {
-        finalLayouts = localResult!;
-      } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
-        finalLayouts = cloudResult!;
-        if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
-      } else {
-        finalLayouts = defaultLayouts;
-        if (layoutKey) localStorage.removeItem(layoutKey);
-        if (codeVersion > cloudVersion) {
-            saveLayout(user.uid, role, defaultLayouts);
+        let finalLayouts: VersionedLayouts;
+        const localVersion = localResult?.version || 0;
+        const cloudVersion = cloudResult?.version || 0;
+        const codeVersion = CODE_LAYOUT_VERSION;
+        
+        if (localVersion >= cloudVersion && localVersion >= codeVersion) {
+            finalLayouts = localResult!;
+        } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
+            finalLayouts = cloudResult!;
+            if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
+        } else {
+            finalLayouts = defaultLayouts;
+            if (layoutKey) localStorage.removeItem(layoutKey);
+            if (codeVersion > cloudVersion) {
+                saveLayout(user.uid, role, defaultLayouts);
+            }
         }
+        
+        setVersionedLayouts(finalLayouts);
+        if (finalLayouts.hidden) {
+            finalLayouts.hidden.forEach(id => onToggleWidget(id));
+        }
+      } catch (error) {
+        console.error("Failed to load layouts, falling back to default.", error);
+        setVersionedLayouts({ version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] });
+      } finally {
+        setIsLayoutLoaded(true);
       }
-      
-      setVersionedLayouts(finalLayouts);
-      setCurrentLayouts(finalLayouts.layouts);
-      if (finalLayouts.hidden) {
-          finalLayouts.hidden.forEach(id => {
-            onToggleWidget(id);
-          });
-      }
-      setIsLayoutLoaded(true);
     };
 
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts, onToggleWidget]);
+
+  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
+      if (!user || !isLayoutLoaded) return;
+      const layoutKey = getLayoutKey();
+      if (!layoutKey) return;
+      
+      setVersionedLayouts(currentVersionedLayouts => {
+        const newVersion = (currentVersionedLayouts.version || 0) + 1;
+        const dataToSave: VersionedLayouts = { 
+            version: newVersion, 
+            layouts: layoutsToSave, 
+            hidden: Array.from(hiddenWidgets) 
+        };
+        try {
+            localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+            // Save to cloud on unload
+            window.addEventListener('beforeunload', () => {
+               saveLayout(user.uid, user.userType || 'student', dataToSave);
+            }, { once: true });
+        } catch (error) {
+            console.warn("Could not save layout to local storage.", error);
+        }
+        return dataToSave;
+      });
+  }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
   
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
-    setCurrentLayouts(allLayouts);
-    setDebouncedLayouts(allLayouts);
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+        saveCurrentLayout(allLayouts);
+    }, 500);
   };
   
-  const finalLayoutsArray = useMemo(() => {
+  const finalLayouts = useMemo(() => {
     const role = user?.userType || 'student';
-    const baseLayouts = currentLayouts[currentBreakpoint as keyof Layouts] || getDefaultLayouts()[currentBreakpoint as keyof Layouts];
+    const layouts = versionedLayouts.layouts;
     
-    const allAvailableWidgets = new Set(widgetList.map(w => w.id));
-    const filteredBase = baseLayouts.filter(item => allAvailableWidgets.has(item.i));
+    // Create a new object for the final layouts
+    const final: Layouts = {};
 
-    if (role === 'professional') {
-        return filteredBase.filter(item => item.i !== 'streak');
+    // Filter layouts for all breakpoints
+    for (const bp of ['lg', 'md', 'sm', 'xs', 'xxs']) {
+        const baseLayout = layouts[bp] || getDefaultLayouts()[bp];
+        const allAvailableWidgets = new Set(widgetList.map(w => w.id));
+        const filteredBase = baseLayout.filter(item => allAvailableWidgets.has(item.i));
+
+        if (role === 'professional') {
+            final[bp] = filteredBase.filter(item => item.i !== 'streak');
+        } else {
+            final[bp] = filteredBase;
+        }
     }
-    return filteredBase;
-  }, [currentLayouts, user?.userType, currentBreakpoint, getDefaultLayouts]);
+    return final;
+  }, [versionedLayouts.layouts, user?.userType, getDefaultLayouts]);
+
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
@@ -185,11 +198,11 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
 
   const layoutsWithDynamicMins = useMemo(() => {
     const newLayouts: Layouts = {};
-    for (const breakpoint in currentLayouts) {
-        newLayouts[breakpoint] = getLayoutWithDynamicMins(currentLayouts[breakpoint]);
+    for (const breakpoint in finalLayouts) {
+        newLayouts[breakpoint] = getLayoutWithDynamicMins(finalLayouts[breakpoint]);
     }
     return newLayouts;
-  }, [currentLayouts, getLayoutWithDynamicMins]);
+  }, [finalLayouts, getLayoutWithDynamicMins]);
 
 
   if (!isLayoutLoaded) {
@@ -222,7 +235,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
                 setCurrentContainerWidth(containerWidth);
             }}
         >
-            {finalLayoutsArray.map(item => {
+            {finalLayouts[currentBreakpoint]?.map(item => {
               if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
               return (
                   <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
