@@ -5,7 +5,6 @@ import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION as CODE_LAYOUT_VERSION } from '@/data/layout-data';
-import { useToast } from '@/hooks/use-toast';
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import '@/app/widgets-canvas.css';
@@ -45,9 +44,14 @@ interface WidgetDashboardProps {
   onToggleWidget: (id: string) => void;
 }
 
-export default function WidgetDashboard({ components, isEditMode, setIsEditMode, hiddenWidgets, onToggleWidget }: WidgetDashboardProps) {
+export default function WidgetDashboard({ 
+    components, 
+    isEditMode, 
+    setIsEditMode, 
+    hiddenWidgets = new Set(), // Safeguard
+    onToggleWidget 
+}: WidgetDashboardProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
   const [currentCols, setCurrentCols] = useState(12);
@@ -57,13 +61,8 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
     const role = user?.userType || 'student';
     return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
-
-  const [versionedLayouts, setVersionedLayouts] = useState<VersionedLayouts>({
-    version: CODE_LAYOUT_VERSION,
-    layouts: getDefaultLayouts(),
-    hidden: [],
-  });
-
+  
+  const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -114,13 +113,13 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
             }
         }
         
-        setVersionedLayouts(finalLayouts);
+        setLayouts(finalLayouts.layouts);
         if (finalLayouts.hidden) {
             finalLayouts.hidden.forEach(id => onToggleWidget(id));
         }
       } catch (error) {
         console.error("Failed to load layouts, falling back to default.", error);
-        setVersionedLayouts({ version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] });
+        setLayouts(getDefaultLayouts());
       } finally {
         setIsLayoutLoaded(true);
       }
@@ -134,27 +133,22 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
       const layoutKey = getLayoutKey();
       if (!layoutKey) return;
       
-      setVersionedLayouts(currentVersionedLayouts => {
-        const newVersion = (currentVersionedLayouts.version || 0) + 1;
-        const dataToSave: VersionedLayouts = { 
-            version: newVersion, 
-            layouts: layoutsToSave, 
-            hidden: Array.from(hiddenWidgets) 
-        };
-        try {
-            localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-            // Save to cloud on unload
-            window.addEventListener('beforeunload', () => {
-               saveLayout(user.uid, user.userType || 'student', dataToSave);
-            }, { once: true });
-        } catch (error) {
-            console.warn("Could not save layout to local storage.", error);
-        }
-        return dataToSave;
-      });
+      const currentVersion = 1; 
+      const dataToSave: VersionedLayouts = { 
+          version: currentVersion, 
+          layouts: layoutsToSave, 
+          hidden: Array.from(hiddenWidgets) 
+      };
+      try {
+          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+          saveLayout(user.uid, user.userType || 'student', dataToSave);
+      } catch (error) {
+          console.warn("Could not save layout to local storage.", error);
+      }
   }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
   
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
+    setLayouts(allLayouts);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
         saveCurrentLayout(allLayouts);
@@ -163,14 +157,11 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
   
   const finalLayouts = useMemo(() => {
     const role = user?.userType || 'student';
-    const layouts = versionedLayouts.layouts;
     
-    // Create a new object for the final layouts
     const final: Layouts = {};
 
-    // Filter layouts for all breakpoints
     for (const bp of ['lg', 'md', 'sm', 'xs', 'xxs']) {
-        const baseLayout = layouts[bp] || getDefaultLayouts()[bp];
+        const baseLayout = layouts[bp] || getDefaultLayouts()[bp as keyof Layouts];
         const allAvailableWidgets = new Set(widgetList.map(w => w.id));
         const filteredBase = baseLayout.filter(item => allAvailableWidgets.has(item.i));
 
@@ -181,7 +172,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode,
         }
     }
     return final;
-  }, [versionedLayouts.layouts, user?.userType, getDefaultLayouts]);
+  }, [layouts, user?.userType, getDefaultLayouts]);
 
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;

@@ -7,26 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { useTimezone } from '@/hooks/use-timezone';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { subDays, addDays } from 'date-fns';
+import { subDays } from 'date-fns';
 
-// Import Widget Components
-import TodaysPlanWidget from '@/components/dashboard/widgets/TodaysPlanWidget';
-import DailyStreakWidget from '@/components/dashboard/widgets/DailyStreakWidget';
-import CalendarWidget from '@/components/dashboard/widgets/CalendarWidget';
-import SlidingTimelineWidget from '@/components/dashboard/widgets/SlidingTimelineWidget';
-import ImportantEmailsWidget from '@/components/dashboard/widgets/ImportantEmailsWidget';
-import NextMonthHighlightsWidget from '@/components/dashboard/widgets/NextMonthHighlightsWidget';
-import DayTimetableViewWidget from '@/components/dashboard/widgets/DayTimetableViewWidget';
-import GoogleSyncWidget from '@/components/dashboard/widgets/GoogleSyncWidget';
-import DataManagementWidget from '@/components/dashboard/widgets/DataManagementWidget';
-
-
-// Main Dashboard Components
 import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
-import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 import EditEventModal from '@/components/timeline/EditEventModal';
 import TrashPanel from '@/components/timeline/TrashPanel';
+import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
@@ -85,12 +71,10 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const { timezone } = useTimezone();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
 
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [activeDisplayMonth, setActiveDisplayMonth] = useState(new Date());
-
+  
   const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
@@ -101,7 +85,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
 
-  // Fetch all events from Firestore
   const fetchAllEvents = useCallback(async () => {
       if (user) {
         setIsDataLoading(true);
@@ -140,8 +123,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [user]);
 
-
-  // Separate events into active and recently deleted
   const { activeEvents, recentlyDeletedEvents } = useMemo(() => {
     const active: TimelineEvent[] = [];
     const deleted: TimelineEvent[] = [];
@@ -156,7 +137,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     return { activeEvents: active, recentlyDeletedEvents: deleted.sort((a,b) => b.deletedAt!.getTime() - a.deletedAt!.getTime()) };
   }, [allTimelineEvents]);
 
-  // Modal and Panel Handlers
   const handleOpenEditModal = useCallback((event?: TimelineEvent, isNew: boolean = false) => {
     const defaultEvent: TimelineEvent = {
       id: `custom-${Date.now()}`,
@@ -182,7 +162,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [searchParams, handleOpenEditModal, router]);
 
-  // CRUD Operations
   const handleSaveEditedEvent = useCallback(async (updatedEvent: TimelineEvent, syncToGoogle: boolean) => {
     if (!user) {
       toast({ title: 'Not signed in', description: 'You must be signed in to save events.', variant: 'destructive' });
@@ -256,42 +235,27 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
 
-  const components = {
-    plan: <TodaysPlanWidget />,
-    streak: <DailyStreakWidget />,
-    calendar: <CalendarWidget onDayClick={setSelectedDateForDayView} onMonthChange={setActiveDisplayMonth} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} />,
-    'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
-    timeline: <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={(dir) => setActiveDisplayMonth(m => dir === 'prev' ? subDays(m, 30) : addDays(m, 30))} />,
-    emails: <ImportantEmailsWidget />,
-    'next-month': <NextMonthHighlightsWidget events={activeEvents} />,
-    sync: <GoogleSyncWidget onSyncComplete={fetchAllEvents} />,
-    data: <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
-  };
-  
   if (isPlannerMaximized) {
     return <MaximizedPlannerView initialDate={selectedDateForDayView || new Date()} allEvents={allTimelineEvents} onMinimize={() => setIsPlannerMaximized(false)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />;
-  }
-
-  // Mobile view just stacks everything.
-  if (isMobile) {
-    return (
-      <div className="space-y-6">
-        {Object.entries(components).map(([key, component]) => {
-           if (hiddenWidgets.has(key)) return null;
-           return <div key={key}>{component}</div>
-        })}
-      </div>
-    );
   }
   
   return (
     <div className="h-full">
       <WidgetDashboard 
-        components={components}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
         hiddenWidgets={hiddenWidgets}
         onToggleWidget={handleToggleWidget}
+        activeEvents={activeEvents}
+        isDataLoading={isDataLoading}
+        selectedDateForDayView={selectedDateForDayView}
+        setSelectedDateForDayView={setSelectedDateForDayView}
+        onEditEvent={handleOpenEditModal}
+        onDeleteEvent={handleDeleteEvent}
+        onEventStatusChange={handleEventStatusUpdate}
+        setIsPlannerMaximized={setIsPlannerMaximized}
+        onSyncComplete={fetchAllEvents}
+        onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)}
       />
       {eventBeingEdited && (
         <EditEventModal 
