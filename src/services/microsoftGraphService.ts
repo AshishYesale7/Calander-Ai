@@ -47,7 +47,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'email',
         'offline_access', // Important for getting a refresh token
         'Calendars.ReadWrite',
-        'Calendars.ReadBasic', // New permission to see free/busy status
+        'Calendars.ReadBasic',
         'Mail.Read',
         'Files.Read',
         'OnlineMeetings.ReadWrite' 
@@ -113,4 +113,37 @@ export async function getMicrosoftTokensFromFirestore(userId: string): Promise<C
         return docSnap.data().microsoft_tokens as Credentials;
     }
     return null;
+}
+
+export async function createCalendarSubscription(accessToken: string): Promise<any> {
+    const subscriptionUrl = 'https://graph.microsoft.com/v1.0/subscriptions';
+    
+    // Subscriptions expire, a value of 2 days (2880 minutes) is common. Max is 4230.
+    const expirationDateTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+
+    const subscriptionData = {
+        changeType: 'created,updated,deleted',
+        notificationUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/microsoft/webhook`,
+        resource: '/me/events',
+        expirationDateTime: expirationDateTime,
+        // A client state can be used to verify the legitimacy of incoming notifications
+        clientState: 'secretClientValue', 
+    };
+
+    const response = await fetch(subscriptionUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(subscriptionData),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        console.error("Error creating MS Graph subscription:", error);
+        throw new Error('Failed to create calendar subscription.');
+    }
+
+    return await response.json();
 }
