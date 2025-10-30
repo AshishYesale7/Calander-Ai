@@ -55,6 +55,14 @@ export const PluginProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user) {
       checkLoginStatus();
+      
+      // Ensure default plugins are set for users without a plugin list
+      getInstalledPlugins(user.uid).then(plugins => {
+        if (plugins === null) { // `null` indicates no record exists for this user
+          const defaultSet = new Set(DEFAULT_PLUGINS);
+          saveInstalledPlugins(user.uid, Array.from(defaultSet));
+        }
+      });
     }
   }, [user, checkLoginStatus]);
   

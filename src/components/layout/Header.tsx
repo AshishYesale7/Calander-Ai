@@ -24,7 +24,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { CalendarAiLogo } from '../logo/CalendarAiLogo';
 import { SidebarTrigger, useSidebar } from '../ui/sidebar';
 import NotificationPanel from './NotificationPanel';
-import { allPlugins } from '@/data/plugins';
+import { allPlugins, DEFAULT_PLUGINS } from '@/data/plugins';
 import { getInstalledPlugins, getUserProfile } from '@/services/userService';
 import { useStreak } from '@/context/StreakContext';
 import { usePlugin } from '@/hooks/use-plugin';
@@ -85,7 +85,7 @@ export default function Header({
   const { setActivePlugin } = usePlugin();
   const { state: sidebarState } = useSidebar();
   const isMobile = useIsMobile();
-  const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set());
+  const [installedPluginNames, setInstalledPluginNames] = useState<Set<string>>(new Set(DEFAULT_PLUGINS));
   const [isStreakPopoverOpen, setIsStreakPopoverOpen] = useState(false);
   const [isExtensionsPopoverOpen, setIsExtensionsPopoverOpen] = useState(false);
   const [isWidgetPopoverOpen, setIsWidgetPopoverOpen] = useState(false);
@@ -96,7 +96,13 @@ export default function Header({
 
   useEffect(() => {
     if (user) {
-        getInstalledPlugins(user.uid).then(names => setInstalledPluginNames(new Set(names)));
+        getInstalledPlugins(user.uid).then(names => {
+          if (names) {
+            setInstalledPluginNames(new Set(names));
+          } else {
+            setInstalledPluginNames(new Set(DEFAULT_PLUGINS));
+          }
+        });
         getUserProfile(user.uid).then(setUserProfile);
     }
   }, [user]);
