@@ -178,7 +178,7 @@ export default function ExtensionPage() {
 
   return (
     <div className="space-y-12">
-      <div className="text-center max-w-2xl mx-auto">
+      <div className="text-center max-w-2xl mx-auto frosted-glass p-8 rounded-lg">
         <h1 className="text-5xl font-bold font-headline text-primary">Plugins</h1>
         <p className="mt-4 text-lg text-foreground/80">
           Open source plugins for automatic programming metrics.
