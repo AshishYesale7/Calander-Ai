@@ -14,6 +14,18 @@ import EditEventModal from '@/components/timeline/EditEventModal';
 import TrashPanel from '@/components/timeline/TrashPanel';
 import MaximizedPlannerView from '@/components/planner/MaximizedPlannerView';
 
+// Widget imports
+import TodaysPlanWidget from '@/components/dashboard/widgets/TodaysPlanWidget';
+import DailyStreakWidget from '@/components/dashboard/widgets/DailyStreakWidget';
+import CalendarWidget from '@/components/dashboard/widgets/CalendarWidget';
+import SlidingTimelineWidget from '@/components/dashboard/widgets/SlidingTimelineWidget';
+import ImportantEmailsWidget from '@/components/dashboard/widgets/ImportantEmailsWidget';
+import NextMonthHighlightsWidget from '@/components/dashboard/widgets/NextMonthHighlightsWidget';
+import DayTimetableViewWidget from '@/components/dashboard/widgets/DayTimetableViewWidget';
+import GoogleSyncWidget from '@/components/dashboard/widgets/GoogleSyncWidget';
+import DataManagementWidget from '@/components/dashboard/widgets/DataManagementWidget';
+
+
 const LOCAL_STORAGE_KEY = 'futureSightTimelineEvents';
 
 const parseDatePreservingTime = (dateInput: string | Date | undefined): Date | undefined => {
@@ -235,6 +247,18 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
 
+  const components = useMemo(() => ({
+    'plan': <TodaysPlanWidget />,
+    'streak': <DailyStreakWidget />,
+    'calendar': <CalendarWidget onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} />,
+    'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
+    'timeline': <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />,
+    'emails': <ImportantEmailsWidget />,
+    'next-month': <NextMonthHighlightsWidget events={activeEvents} />,
+    'sync': <GoogleSyncWidget onSyncComplete={fetchAllEvents} />,
+    'data': <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
+  }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate]);
+
   if (isPlannerMaximized) {
     return <MaximizedPlannerView initialDate={selectedDateForDayView || new Date()} allEvents={allTimelineEvents} onMinimize={() => setIsPlannerMaximized(false)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />;
   }
@@ -246,16 +270,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
         setIsEditMode={setIsEditMode}
         hiddenWidgets={hiddenWidgets}
         onToggleWidget={handleToggleWidget}
-        activeEvents={activeEvents}
-        isDataLoading={isDataLoading}
-        selectedDateForDayView={selectedDateForDayView}
-        setSelectedDateForDayView={setSelectedDateForDayView}
-        onEditEvent={handleOpenEditModal}
-        onDeleteEvent={handleDeleteEvent}
-        onEventStatusChange={handleEventStatusUpdate}
-        setIsPlannerMaximized={setIsPlannerMaximized}
-        onSyncComplete={fetchAllEvents}
-        onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)}
+        components={components}
       />
       {eventBeingEdited && (
         <EditEventModal 
