@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
 import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
@@ -9,6 +8,7 @@ import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutS
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import '@/app/widgets-canvas.css';
 import { widgetList } from '@/components/layout/widget-previews';
+import WidgetGhost from './WidgetGhost';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 const ROW_HEIGHT = 100;
@@ -36,20 +36,23 @@ const calculateMinH = (isTimetable: boolean): number => {
     return gridUnits;
 };
 
+
 interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
   hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
+  isLoading: boolean;
 }
 
 export default function WidgetDashboard({ 
     components, 
     isEditMode, 
     setIsEditMode, 
-    hiddenWidgets = new Set(), // Safeguard
-    onToggleWidget 
+    hiddenWidgets = new Set(),
+    onToggleWidget,
+    isLoading
 }: WidgetDashboardProps) {
   const { user } = useAuth();
   
@@ -72,6 +75,34 @@ export default function WidgetDashboard({
     const role = user.userType || 'student';
     return `dashboard-layouts-${user.uid}-${role}`;
   }, [user]);
+  
+  useEffect(() => {
+    // This effect now uses a debounced approach for saving layouts.
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+      }
+    };
+  }, []);
+
+  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
+      if (!user || !isLayoutLoaded) return;
+      const layoutKey = getLayoutKey();
+      if (!layoutKey) return;
+      
+      const currentVersion = CODE_LAYOUT_VERSION; 
+      const dataToSave: VersionedLayouts = { 
+          version: currentVersion, 
+          layouts: layoutsToSave, 
+          hidden: Array.from(hiddenWidgets) 
+      };
+      try {
+          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+          saveLayout(user.uid, user.userType || 'student', dataToSave);
+      } catch (error) {
+          console.warn("Could not save layout to local storage.", error);
+      }
+  }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
 
   useEffect(() => {
     const loadLayouts = async () => {
@@ -92,30 +123,27 @@ export default function WidgetDashboard({
 
       try {
         const [localResult, cloudResult] = await Promise.all([localLayoutPromise, cloudLayoutPromise]);
-
         const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] };
-
-        let finalLayouts: VersionedLayouts;
+        let finalLayoutsData: VersionedLayouts;
         const localVersion = localResult?.version || 0;
         const cloudVersion = cloudResult?.version || 0;
-        const codeVersion = CODE_LAYOUT_VERSION;
         
-        if (localVersion >= cloudVersion && localVersion >= codeVersion) {
-            finalLayouts = localResult!;
-        } else if (cloudVersion > localVersion && cloudVersion >= codeVersion) {
-            finalLayouts = cloudResult!;
+        if (localVersion >= cloudVersion && localVersion >= CODE_LAYOUT_VERSION) {
+            finalLayoutsData = localResult!;
+        } else if (cloudVersion > localVersion && cloudVersion >= CODE_LAYOUT_VERSION) {
+            finalLayoutsData = cloudResult!;
             if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
         } else {
-            finalLayouts = defaultLayouts;
+            finalLayoutsData = defaultLayouts;
             if (layoutKey) localStorage.removeItem(layoutKey);
-            if (codeVersion > cloudVersion) {
+            if (CODE_LAYOUT_VERSION > cloudVersion) {
                 saveLayout(user.uid, role, defaultLayouts);
             }
         }
         
-        setLayouts(finalLayouts.layouts);
-        if (finalLayouts.hidden) {
-            finalLayouts.hidden.forEach(id => onToggleWidget(id));
+        setLayouts(finalLayoutsData.layouts);
+        if (finalLayoutsData.hidden) {
+            finalLayoutsData.hidden.forEach(id => onToggleWidget(id));
         }
       } catch (error) {
         console.error("Failed to load layouts, falling back to default.", error);
@@ -128,25 +156,6 @@ export default function WidgetDashboard({
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts, onToggleWidget]);
 
-  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
-      if (!user || !isLayoutLoaded) return;
-      const layoutKey = getLayoutKey();
-      if (!layoutKey) return;
-      
-      const currentVersion = 1; 
-      const dataToSave: VersionedLayouts = { 
-          version: currentVersion, 
-          layouts: layoutsToSave, 
-          hidden: Array.from(hiddenWidgets) 
-      };
-      try {
-          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-          saveLayout(user.uid, user.userType || 'student', dataToSave);
-      } catch (error) {
-          console.warn("Could not save layout to local storage.", error);
-      }
-  }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
-  
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     setLayouts(allLayouts);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -154,7 +163,7 @@ export default function WidgetDashboard({
         saveCurrentLayout(allLayouts);
     }, 500);
   };
-  
+
   const finalLayouts = useMemo(() => {
     const role = user?.userType || 'student';
     
@@ -173,7 +182,6 @@ export default function WidgetDashboard({
     }
     return final;
   }, [layouts, user?.userType, getDefaultLayouts]);
-
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
@@ -194,8 +202,7 @@ export default function WidgetDashboard({
     }
     return newLayouts;
   }, [finalLayouts, getLayoutWithDynamicMins]);
-
-
+  
   if (!isLayoutLoaded) {
       return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
   }
@@ -227,7 +234,7 @@ export default function WidgetDashboard({
             }}
         >
             {finalLayouts[currentBreakpoint]?.map(item => {
-              if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
+              if (hiddenWidgets.has(item.i) || (!components[item.i] && !isLoading)) return null;
               return (
                   <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
                     {isEditMode && (
@@ -236,7 +243,7 @@ export default function WidgetDashboard({
                         <div className="drag-handle"></div>
                       </>
                     )}
-                    {components[item.i]}
+                    {isLoading ? <WidgetGhost /> : components[item.i]}
                   </div>
               )
             })}

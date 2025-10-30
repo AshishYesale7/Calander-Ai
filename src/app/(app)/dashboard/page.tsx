@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -266,6 +265,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   return (
     <div className="h-full">
       <WidgetDashboard 
+        isLoading={isDataLoading}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
         hiddenWidgets={hiddenWidgets}
