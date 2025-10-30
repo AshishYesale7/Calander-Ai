@@ -1,341 +1,315 @@
 ---
 
-# 🧾 **Technical Changelog – 2025-10-30**
+# **Comprehensive Product Update Catalog**
 
-> **Scope:** Covers all major updates since the implementation of Picture-in-Picture (PiP) mode — focusing on stability, UX, real-time features, account management, and offline reliability.
+## **1. Comprehensive Data Synchronization**
 
----
+### **Summary**
 
-## 🧭 **1. Multi-Step Onboarding Flow**
+Implemented a complete backend synchronization pipeline integrating Google services (Calendar, Tasks, Gmail) with AI-driven data processing and contextualization.
 
-### Overview
+### **Core Functionality**
 
-Introduced a **guided onboarding modal** for new users to streamline profile setup and permissions, ensuring consistent setup before entering the app.
+* Integrated Google OAuth for user authentication and secure access to Google APIs.
+* Synced Google Calendar, Gmail, and Tasks in real-time.
+* Designed AI models to summarize important emails and automatically convert relevant tasks or events into actionable timeline items.
 
-### Key Features
+### **UI Enhancements**
 
-* **Step 1 – Profile Setup**
+* Introduced timeline-based visualization for synced events and tasks.
+* Created user-centric data cards to display summarized email insights.
 
-  * Added input for display name and unique `@username` with **real-time validation** to prevent duplicates.
-  * Integrated **3D avatar selection gallery** (male/female variants) for quick profile setup.
-  * Enforced **Google account linking** for users registering via phone number only — ensuring complete account access.
+### **Debugging**
 
-* **Step 2 – Permissions**
+* Resolved token expiration and refresh handling issues during prolonged sync sessions.
+* Fixed edge cases involving invalid scopes and rate-limited API responses.
 
-  * Added sequential requests for browser permissions:
+### **Backend**
 
-    * Notifications (push alerts)
-    * Camera & Microphone (for video/voice calls)
-    * Location (for contextual features)
-  * Optimized UX to request these politely and sequentially.
+* Implemented service modules to handle secure OAuth tokens and batch data fetches.
+* Added AI filtering and summarization pipeline integrated via backend microservices.
 
-* **Step 3 – Confirmation**
+### **Conclusion**
 
-  * Displays a personalized welcome message confirming setup.
-  * Starts a **30-day free trial** period for new accounts.
-
-### Backend & Integration
-
-* Updated `AuthContext` and user schema to include:
-
-  ```ts
-  onboardingCompleted: boolean
-  ```
-* Modified main layout to conditionally render the onboarding modal based on this flag.
-* Persisted user progress in Firestore to prevent repeat onboarding sessions.
+This system established a foundation for intelligent, privacy-aware data synchronization, creating a personalized and dynamic productivity experience.
 
 ---
 
-## 💬 **2. Real-Time Communication Suite**
+## **2. Customizable Widget Dashboard**
 
-### 2.1 Voice Calling (Audio)
+### **Summary**
 
-#### UI/UX
+Replaced the static dashboard with a responsive, customizable grid system supporting role-based layouts and persistent personalization.
 
-* Introduced **compact floating call overlay**:
+### **Core Functionality**
 
-  * Displays user avatar + **sound-wave visualization** (reactive to voice input).
-  * Includes mute/unmute toggle, end call, and minimal controls.
-  * Remains accessible while navigating across app sections.
+* Integrated `react-grid-layout` for dynamic widget placement and resizing.
+* Added full edit mode allowing drag, resize, hide, and show operations.
+* Implemented version-controlled layout synchronization between local storage and Firestore.
 
-#### Backend
+### **UI Enhancements**
 
-* Extended existing **WebRTC signaling + Firestore backend**:
+* Introduced widget management panel with toggle-based visibility.
+* Role-specific layouts for Students and Professionals ensuring a tailored dashboard experience.
 
-  * Added `callType: 'audio'` parameter in call documents.
-  * Configured peer connections to request **microphone only** (no video tracks).
-  * Implemented bandwidth optimization for audio-only mode.
+### **Debugging**
 
-#### Notifications
+* Fixed layout synchronization conflicts between cloud and local data.
+* Addressed grid rendering delays and alignment inconsistencies across devices.
 
-* Implemented **incoming/outgoing call notifications** via Firestore listeners.
-* Distinct tones and pop-ups for call acceptance/decline events.
+### **Backend**
 
----
+* Developed `layoutService.ts` to manage versioning, storage, and layout reconciliation.
+* Synced user layouts across sessions with Firestore integration.
 
-### 2.2 Call Logs
+### **Conclusion**
 
-#### UI
-
-* Added dedicated **"Calls" tab** in sidebar navigation.
-* Displays full history of:
-
-  * Incoming, outgoing, and missed audio/video calls.
-* Each entry shows:
-
-  * Avatar, name, call type (audio/video), call status, and timestamp.
-
-#### Backend
-
-* Firestore `calls` collection enhancements:
-
-  * Added `participantIds: string[]` for multi-user querying.
-  * Persisted `duration` field, computed upon call termination.
-* New `fetchUserCalls()` method in `chatService.ts` to efficiently query all related calls.
+The new dashboard provides complete personalization while maintaining scalability and update compatibility across deployments.
 
 ---
 
-### 2.3 Call State & Reliability Fixes
+## **3. Floating AI Command Bar (Desktop)**
 
-* **Persistent State:**
+### **Summary**
 
-  * Implemented `sessionStorage` to store `activeCallId`, enabling seamless recovery after reload.
-* **Session Cleanup:**
+Implemented an interactive, floating AI-powered command bar designed as the central control and interaction point for the desktop application.
 
-  * Added `window.beforeunload` listener to safely end calls and update status.
-* **Timeout Handling:**
+### **Core Functionality**
 
-  * Introduced 15-second timeout for unanswered outgoing calls to auto-cancel and notify caller.
-* **Ghost Ringing Fix:**
+* Functions as both a quick launcher and full-screen AI workspace.
+* Integrates AI chat, file browser, and terminal interfaces.
+* Accessible via keyboard shortcuts (Ctrl/Cmd + K).
 
-  * Resolved issue where inactive calls remained “ringing” in Firestore.
+### **UI Enhancements**
 
----
+* Glassmorphic design with animated, multi-color borders.
+* Draggable and position-aware bar with persistent placement memory.
+* Smooth open/close animations using Framer Motion.
 
-## 💭 **3. Chat UI Enhancements & Unified History**
+### **Debugging**
 
-### 3.1 Integrated Message & Call Timeline
+* Managed state synchronization across open, minimized, and full-screen modes.
+* Fixed drag offset and z-index issues overlapping chat panels.
 
-* Redesigned ChatPanel to display **messages and call logs** in a single chronological stream.
-* Implemented new `CallLogItem` component rendering:
+### **Backend**
 
-  * Iconography for call type (`PhoneIncoming`, `PhoneOutgoing`, `PhoneMissed`).
-  * Duration & timestamp display inline.
-* Merged Firestore queries for `messages` and `calls` → unified sort by timestamp for contextual continuity.
+* Modularized structure using `DesktopCommandBar.tsx` and `AiAssistantChat.tsx`.
+* Optimized rendering and state storage for minimal latency transitions.
 
----
+### **Conclusion**
 
-### 3.2 Visual & UX Refinements
-
-* **Timestamps:**
-
-  * Added precise timestamps (e.g., “10:42 PM”) to each message bubble.
-* **Date Separators:**
-
-  * Auto-inserted labeled dividers (e.g., “September 14, 2025”) for day transitions.
-* **Message Bubble Styling:**
-
-  * “Tailed” design — only last message in block has rounded tail; prior ones remain squared for cohesion.
-* **Optimized Avatar Display:**
-
-  * Displayed sender avatar only on final message in user block to minimize visual clutter.
+The floating AI bar unified multiple productivity tools into one interface, improving accessibility and workflow fluidity for power users.
 
 ---
 
-### 3.3 Message Interactions
+## **4. Public Pages & Onboarding Enhancements**
 
-* Added **context menu** (right-click / long-press) for per-message actions:
+### **Summary**
 
-  * `Copy Message`
-  * `Delete Message`
-* Implemented **“Delete for Everyone”**:
+Redesigned all public-facing and authentication pages for a modern, cohesive, and interactive user experience.
 
-  * When deleting your own message:
+### **Core Functionality**
 
-    * Option to delete locally or globally.
-    * Replaced message with `"This message was deleted"` placeholder in both chat views.
-* All actions fully synced across Firestore listeners in real time.
+* Rebuilt landing, sign-up, and sign-in pages with animation and multi-provider authentication.
+* Implemented onboarding flow for profile setup and role selection (Student/Professional).
 
----
+### **UI Enhancements**
 
-## 👤 **4. Account Management & User Data Control**
+* Animated hero section with layered effects and dynamic feature showcase.
+* Integrated AI chatbot teaser on the landing page with scroll-activated visuals.
+* Unified design theme across sign-in and sign-up pages with motivational backgrounds.
 
-### 4.1 Avatar Customization
+### **Debugging**
 
-* Added **3D avatar selection modal**:
+* Resolved authentication redirection and form validation issues.
+* Fixed CSS layering conflicts between background animations and modals.
 
-  * Gallery of pre-rendered avatars for male/female profiles.
-  * Simplifies setup and maintains privacy.
-* Backend updates in `userService.ts`:
+### **Backend**
 
-  * Saves selected avatar URL to user document.
-  * Deletes old avatar from Firebase Storage to prevent orphaned files.
+* Added OAuth integrations for Google, Microsoft, Yahoo, and phone-based authentication.
+* Implemented account switcher logic and 30-day recovery system for account deletion.
 
----
+### **Conclusion**
 
-### 4.2 Account Deletion Workflow
-
-#### Functionality
-
-* Introduced **“Delete My Account”** under Settings.
-
-#### Process
-
-1. **Soft Delete:**
-
-   * Anonymizes sensitive fields (`displayName`, `bio`, etc.).
-   * Updates status → `PENDING_DELETION`.
-   * Disables Firebase Auth user credentials.
-2. **Grace Period:**
-
-   * 30-day recovery window before permanent deletion.
-3. **Reclamation:**
-
-   * Added `reclaimUserAccount()` to restore anonymized data if user reauthenticates within grace period.
-4. **Permanent Deletion (Future):**
-
-   * Planned Cloud Function will periodically purge user data from all sub-collections after 30 days.
+The new onboarding and authentication experience ensures professionalism, accessibility, and brand consistency from first interaction.
 
 ---
 
-## 🌐 **5. Offline Experience & Service Worker Overhaul**
+## **5. Microsoft Authentication Integration & Azure Debugging**
 
-### 5.1 Offline Indicator UI
+### **Summary**
 
-* Implemented **animated “Reconnecting…” banner**:
+Added support for Microsoft personal and work accounts via OAuth, ensuring enterprise-ready login flexibility.
 
-  * Appears at top center on connection loss.
-  * Automatically fades out when connectivity is restored.
-  * Compact design (slightly offset to left, refined through multiple iterations).
+### **Core Functionality**
 
----
+* Integrated Microsoft v2.0 endpoints with `/common` tenant support.
+* Securely configured client credentials via environment variables.
 
-### 5.2 Offline Error Handling Improvements
+### **UI Enhancements**
 
-* **Problem:** Verbose “Sync Error” & “Offline Mode” popups appeared even during normal disconnections.
-* **Solution:**
+* Unified OAuth buttons with consistent styling and provider icons.
+* Integrated account switcher UI in authentication modals.
 
-  * Updated error logic in:
+### **Debugging**
 
-    * `ApiKeyContext.tsx`
-    * Dashboard & data-fetching modules.
-  * Filtered network errors (`TypeError: Failed to fetch`) to handle silently without triggering toast popups.
+* Fixed unverified publisher domain issues through `microsoft-identity-association.json`.
+* Corrected callback URI mismatches and endpoint configurations in Azure.
 
----
+### **Backend**
 
-### 5.3 Custom Offline Page Implementation
+* Verified publisher domain setup in `.well-known` directory for domain trust validation.
+* Improved authentication resiliency and error handling logic.
 
-#### Problem
+### **Conclusion**
 
-* Browser displayed default “No Internet” error on reload when offline.
-
-#### Fix Journey
-
-* Created minimal, dependency-free `public/offline.html`.
-* Rewrote `public/sw.js`:
-
-  * Cached `offline.html` during `install` event.
-  * Used fallback pattern in `fetch` event:
-
-    ```js
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('/offline.html'))
-    );
-    ```
-  * Ensures all navigation requests serve cached offline file during failures.
-* Result: Seamless offline navigation experience and improved PWA compliance.
+Microsoft authentication now functions seamlessly across environments, strengthening enterprise usability and security compliance.
 
 ---
 
-## 🧱 **6. Architectural & Codebase Enhancements**
+## **6. Student vs. Professional Mode Implementation**
 
-* **Service Worker:** Fully rewritten with standardized cache strategy and versioning for reliability.
-* **Error Handling:** Unified network failure handling across contexts and hooks.
-* **Firestore Queries:** Modularized data fetching in `chatService.ts` for scalability.
-* **Session Management:** Added global beforeunload safety and persistent reconnect logic for real-time events.
-* **Code Cleanup:** Removed redundant SW logic and deprecated API calls.
+### **Summary**
 
----
+Introduced dynamic application modes tailored for Students and Professionals, optimizing dashboard content and navigation per user role.
 
-## ⚡ **7. Overall Stability, UX & PWA Readiness**
+### **Core Functionality**
 
-* Offline-first design fully achieved with service worker fallback.
-* Real-time reliability: calls and chats auto-recover after reloads or tab crashes.
-* Onboarding, account management, and identity tools provide enterprise-level UX polish.
-* Chat panel design now matches modern messaging app standards (WhatsApp/iMessage aesthetic).
-* Significantly reduced runtime errors, unnecessary alerts, and user confusion in offline/unstable network scenarios.
+* Added `userType` field in Firestore profiles.
+* Role-based rendering for dashboards, widgets, and navigation menus.
 
----
+### **UI Enhancements**
 
-## ✅ **8. Summary of Key Impact**
+* Student dashboards highlight streaks and community features.
+* Professional dashboards focus on integrations and productivity widgets.
+* Implemented toggle switch in sidebar for instant role switching.
 
-| Area                   | Before                                | After                                                |
-| ---------------------- | ------------------------------------- | ---------------------------------------------------- |
-| **Offline Behavior**   | Browser error pages, redundant toasts | Custom offline page + silent handling                |
-| **Real-Time Calls**    | Video-only                            | Full audio/video support + logs                      |
-| **Chat UI**            | Basic text-only stream                | Unified chat + call timeline with contextual actions |
-| **Account Management** | Basic auth                            | Full deletion, reclamation, avatar customization     |
-| **Onboarding**         | Minimal setup                         | Guided multi-step profile & permission flow          |
-| **Resilience**         | Frequent state loss                   | Session persistence, reconnection logic              |
-| **User Experience**    | Fragmented                            | Smooth, modern, PWA-ready experience                 |
+### **Debugging**
+
+* Fixed layout flickering on mode switch and real-time UI re-render issues.
+
+### **Backend**
+
+* Extended user schema and role persistence logic in onboarding API.
+* Added real-time re-render triggers on `userType` updates.
+
+### **Conclusion**
+
+This feature established two distinct yet unified experiences, serving diverse audience needs within the same codebase.
 
 ---
 
-## 🧑‍💻 **9. Credits**
+## **7. Avatar System Implementation**
 
-*   **Author:** Ashish Yesale
+### **Summary**
+
+Developed a centralized avatar system enabling personalized identity management across the platform.
+
+### **Core Functionality**
+
+* Avatar selection integrated in onboarding.
+* Profile customization via upload or predefined 3D avatars.
+* Real-time avatar synchronization throughout all components.
+
+### **UI Enhancements**
+
+* Added “Customize Avatar” modal with instant preview.
+* Global avatar refresh mechanism on update.
+
+### **Debugging**
+
+* Resolved caching issues during avatar updates.
+* Prevented orphaned files with automated storage cleanup.
+
+### **Backend**
+
+* Managed uploads and deletions through Firebase Storage service.
+* Synced `photoURL` in Firestore and propagated via AuthContext.
+
+### **Conclusion**
+
+The avatar system enhanced user personalization and visual continuity across the application.
+
+---
+
+## **8. Multi-Account Management**
+
+### **Summary**
+
+Built a seamless multi-account system enabling users to manage and switch between multiple authenticated profiles efficiently.
+
+### **Core Functionality**
+
+* Implemented multi-account session management within `AuthContext`.
+* Enabled quick account switching and session persistence.
+
+### **UI Enhancements**
+
+* Redesigned header dropdown to list known accounts with avatars and control options.
+* Added “Add Account” and “Sign out of all accounts” functionality.
+
+### **Debugging**
+
+* Fixed localStorage desync issues after sign-out.
+* Resolved Google sign-in conflicts caused by overlapping OAuth sessions.
+
+### **Backend**
+
+* Stored known user data locally for quick re-login.
+* Integrated Firebase `signInWithPopup` with contextual `login_hint` for targeted account switching.
+
+### **Conclusion**
+
+This system streamlined multi-profile management, offering a fast and frictionless sign-in experience akin to major productivity platforms.
 
 ---
 
-## 🛠️ **10. Technologies Used**
+## **9. Landing Page AI Chatbot & Video Background**
 
-### **Programming Languages**
+### **Summary**
 
-*   **TypeScript:** Primary language for type safety and modern JavaScript features.
-*   **JavaScript:** Used for configuration files and service worker logic.
+Deployed an AI-powered Q&A chatbot on the landing page, supplemented by immersive video and animation backgrounds.
 
-### **Core Frameworks & Libraries**
+### **Core Functionality**
 
-*   **Next.js:** React framework for full-stack development, routing, and performance.
-*   **React:** Core UI library for building component-based interfaces.
-*   **Genkit:** Open-source framework from Google for building AI flows and features.
-*   **WebRTC:** For enabling peer-to-peer real-time audio and video communication.
+* Knowledge-based AI answering product-related queries from an embedded knowledge base.
+* Context-aware session memory for conversational continuity.
+* Implemented fallback responses for network failures.
 
-### **Backend & Database**
+### **UI Enhancements**
 
-*   **Firebase:**
-    *   **Firestore:** NoSQL database for real-time data storage (user profiles, chats, calls, events).
-    *   **Firebase Authentication:** Secure user management (Email/Password, Google, Phone).
-    *   **Firebase Cloud Messaging:** For native browser push notifications.
-    *   **Firebase Storage:** For user-uploaded assets like avatars.
+* Floating Lottie-based orb expanding into a full chat interface.
+* Background video and animated gradients providing visual depth and motion.
+* Modern message interface with dynamic loading indicators.
 
-### **AI & Machine Learning**
+### **Debugging**
 
-*   **Google Gemini:** The underlying large language model used for all generative AI tasks (summaries, planning, etc.).
+* Resolved animation overlap between video layers and chat UI.
+* Fixed chatbot fallback handling on Genkit service timeouts.
 
-### **External APIs**
+### **Backend**
 
-*   **Google Workspace APIs:**
-    *   Google Calendar API
-    *   Google Tasks API
-    *   Google Gmail API
-*   **Competitive Programming APIs:**
-    *   Codeforces API
-    *   LeetCode GraphQL API
-    *   Third-party proxies for CodeChef data.
+* Integrated Genkit flow (`webapp-qa-flow.ts`) for natural language processing.
+* Embedded predefined responses for critical queries like pricing and policies.
 
-### **UI & Styling**
+### **Conclusion**
 
-*   **Tailwind CSS:** Utility-first CSS framework for styling.
-*   **ShadCN UI:** A collection of accessible and reusable UI components.
-*   **Framer Motion:** For animations and interactive elements.
-*   **Lucide React:** Icon library.
-
-### **Key Libraries & Utilities**
-
-*   **Zod:** For schema declaration and validation of AI inputs/outputs.
-*   **Date-fns:** For reliable and modern date manipulation.
-*   **React Hook Form:** For managing complex forms and validation.
-*   **`react-phone-number-input`:** For international phone number input.
+The AI chatbot transformed the landing experience into an interactive, knowledge-driven introduction to the product.
 
 ---
+
+# **References**
+
+* **Google Cloud Platform Documentation** – OAuth 2.0 and API Scopes
+* **Microsoft Identity Platform** – OAuth v2.0 and App Registration Guidelines
+* **Firebase Documentation** – Firestore, Storage, and Authentication
+* **Framer Motion** – Advanced Animation Framework for React
+* **React Grid Layout** – Responsive Grid System for Dashboard Customization
+* **Genkit Framework** – AI Workflow Engine for Contextual Q&A
+* **Azure Active Directory Documentation** – Domain Verification & Redirect URI Setup
+
+---
+ 
+*   **Author:** [Ashish Yesale](https://github.com/AshishYesale7)
+
+*   **Contact:** [ashishyesale007@gmail.com](mailto:ashishyesale007@gmail.com)
