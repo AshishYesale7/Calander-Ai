@@ -33,6 +33,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   
   const layoutInitialized = useRef(false);
+  const hasUnsavedChanges = useRef(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const getLayoutKey = useCallback(() => {
@@ -91,33 +92,51 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts]);
   
-  const saveCurrentState = (layouts: Layouts, hidden: Set<string>) => {
-    if (!isLayoutLoaded || !user) return;
-    
-    const layoutKey = getLayoutKey();
-    if (!layoutKey) return;
+  // This useEffect hook is responsible for saving the layout changes.
+  useEffect(() => {
+      if (!isLayoutLoaded || !user || !hasUnsavedChanges.current) {
+          return;
+      }
+  
+      if (saveTimeout.current) {
+          clearTimeout(saveTimeout.current);
+      }
+  
+      saveTimeout.current = setTimeout(() => {
+          const layoutKey = getLayoutKey();
+          if (!layoutKey) return;
+          
+          setVersionedLayouts(current => {
+              const newVersion = (current.version || 0) + 1;
+              const dataToSave: VersionedLayouts = { 
+                  version: newVersion, 
+                  layouts: currentLayouts, 
+                  hidden: Array.from(hiddenWidgets) 
+              };
+              
+              try {
+                  localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+                  saveLayout(user.uid, user.userType || 'student', dataToSave);
+                  hasUnsavedChanges.current = false; // Mark changes as saved
+              } catch (error) {
+                  console.warn("Could not save layout.", error);
+              }
+              return dataToSave;
+          });
+      }, 1000); // Debounce for 1 second
 
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(() => {
-      setVersionedLayouts(current => {
-        const newVersion = (current.version || 0) + 1;
-        const dataToSave: VersionedLayouts = { version: newVersion, layouts, hidden: Array.from(hidden) };
-        try {
-            localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-            // Debounced cloud save
-            saveLayout(user.uid, user.userType || 'student', dataToSave);
-        } catch (error) {
-            console.warn("Could not save layout.", error);
-        }
-        return dataToSave;
-      });
-    }, 1000);
-  };
+      return () => {
+          if (saveTimeout.current) {
+              clearTimeout(saveTimeout.current);
+          }
+      };
+  }, [currentLayouts, hiddenWidgets, isLayoutLoaded, user, getLayoutKey]);
+
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     if (!isLayoutLoaded) return;
     setCurrentLayouts(allLayouts);
-    saveCurrentState(allLayouts, hiddenWidgets);
+    hasUnsavedChanges.current = true;
   };
 
   const handleToggleWidget = (id: string) => {
@@ -128,7 +147,7 @@ export default function WidgetDashboard({ components, isEditMode, setIsEditMode 
       newHidden.add(id);
     }
     setHiddenWidgets(newHidden);
-    saveCurrentState(currentLayouts, newHidden);
+    hasUnsavedChanges.current = true;
   };
   
   const handleContextMenu = (e: React.MouseEvent) => {
