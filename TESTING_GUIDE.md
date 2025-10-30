@@ -105,10 +105,10 @@ For deep planning, you can enter the **full-screen timeline viewer**:
 
 Press **`Cmd+K`** (on Mac) or **`Ctrl+K`** (on Windows) to activate the floating **AI Command Bar**. This is your central nervous system for the app.
 *   **Movable & Resizable:** Drag it anywhere on your screen.
-*   **Advanced AI Chat:** It’s not just a command palette; it’s a full-featured AI chat interface powered by multiple models and a Multi-Context Processing (MCP) engine.
-*   **File System Access:** Open the "Files" tab within the bar to access a virtual file system.
+*   **Advanced AI Chat:** It’s not just a command palette; it’s a full-featured AI chat interface powered by multiple models and a Multi-Context Processing (MCP) engine. You can ask it complex questions or give it tasks.
+*   **File System Access:** Open the "Files" tab within the bar to access a virtual file system, allowing you to manage your documents directly.
 *   **Natural Language Commands:** Create new tasks and events just by typing, e.g., *"remind me to call the team tomorrow at 3pm."*
-*   **AI Summaries:** Ask it to summarize your upcoming tasks, emails, or events for the day.
+*   **AI Summaries:** Ask it to summarize your upcoming tasks, emails, or events for the day to get a quick overview of what's important.
 
 ---
 
@@ -132,8 +132,10 @@ Press **`Cmd+K`** (on Mac) or **`Ctrl+K`** (on Windows) to activate the floating
 
 ### Multi-Account Management
 
-*   **Seamless Switching:** From the user menu, you can add another Google account. Once added, you can switch between accounts with a single click without having to log out and back in.
-*   **Combined Integrations:** Connect different Google and Microsoft accounts within a single Calendar.ai profile from the **Settings** menu.
+Calendar.ai makes it easy to work with multiple accounts from different providers.
+
+*   **Connect Multiple Services:** In the **Settings** menu, you can connect both a Google account and a Microsoft account to a single Calendar.ai profile. This allows the app to sync data from all your calendars and tasks in one place.
+*   **Seamless Account Switching:** From the user menu (your avatar), you can add another Google account. Once added, you can switch between accounts with a single click without having to log out and back in, enjoying a seamless transition.
 
 ### Responsive Design
 
