@@ -114,10 +114,23 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
             provider.addScope('https://www.googleapis.com/auth/tasks');
         } else if (providerName === 'microsoft') {
             provider = new OAuthProvider('microsoft.com');
-            provider.setCustomParameters({ tenant: 'common' });
-            provider.addScope('User.Read');
-            provider.addScope('Calendars.ReadWrite');
-            provider.addScope('Mail.Read');
+            provider.setCustomParameters({ tenant: 'common', prompt: 'select_account' });
+            const scopes = [
+                'openid', 'profile', 'email', 'offline_access', 'User.Read',
+                'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
+                'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared', 
+                'Contacts.ReadWrite.Shared',
+                'Files.ReadWrite.All',
+                'Mail.Read', 'Mail.Read.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared', 
+                'Mail.ReadWrite', 'Mail.ReadWrite.Shared', 'Mail.Send', 'Mail.Send.Shared',
+                'Notes.ReadWrite.All',
+                'Notifications.ReadWrite.CreatedByApp',
+                'OnlineMeetings.ReadWrite', 'OnlineMeetingTranscript.Read.All',
+                'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
+                'TeamMember.ReadWriteNonOwnerRole.All',
+                'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
+            ];
+            scopes.forEach(scope => provider.addScope(scope));
         } else if (providerName === 'yahoo') {
             provider = new OAuthProvider('yahoo.com');
             provider.addScope('email');
@@ -127,9 +140,9 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         if (!provider) throw new Error("Invalid provider");
 
         const result = await signInWithPopup(auth, provider);
-        await createUserProfile(result.user);
+        // The onAuthStateChanged listener handles profile creation.
 
-        toast({ title: 'Account Created!', description: 'Welcome to Calendar.ai.' });
+        toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
         router.push('/dashboard');
 
     } catch (error: any) {
@@ -221,8 +234,8 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading('otp');
     try {
       const userCredential = await confirmationResult.confirm(otp);
-      await createUserProfile(userCredential.user);
-      toast({ title: "Account Created!", description: "Welcome to Calendar.ai." });
+      // The onAuthStateChanged listener handles profile creation.
+      toast({ title: "Sign In Successful!", description: "Welcome to Calendar.ai." });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("OTP verification error:", error);
