@@ -62,7 +62,7 @@ export async function getGoogleAuthUrl(request: NextRequest, state?: string | nu
 
     return oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        prompt: 'consent',
+        prompt: 'select_account',
         scope: scopes,
         state: state ?? undefined,
     });

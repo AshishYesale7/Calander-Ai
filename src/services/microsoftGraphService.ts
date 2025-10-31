@@ -46,7 +46,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
         'TeamMember.ReadWriteNonOwnerRole.All',
         'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
-    ].join(' ');
+    ];
 
     const redirectUri = await getRedirectURI(request);
 
@@ -55,7 +55,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
     url.searchParams.append('response_type', 'code');
     url.searchParams.append('redirect_uri', redirectUri);
     url.searchParams.append('response_mode', 'query');
-    url.searchParams.append('scope', scopes);
+    url.searchParams.append('scope', scopes.join(' '));
     url.searchParams.append('prompt', 'select_account'); // This line forces account selection
     if (state) {
         url.searchParams.append('state', state);
@@ -84,11 +84,11 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
         'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
         'TeamMember.ReadWriteNonOwnerRole.All',
         'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
-    ].join(' ');
+    ];
     
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', scopes);
+    params.append('scope', scopes.join(' '));
     params.append('code', code);
     params.append('redirect_uri', redirectUri);
     params.append('grant_type', 'authorization_code');
@@ -151,11 +151,11 @@ async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
         'Tasks.ReadWrite', 'Tasks.ReadWrite.Shared',
         'TeamMember.ReadWriteNonOwnerRole.All',
         'VirtualAppointment.Read', 'VirtualAppointment.ReadWrite', 'VirtualAppointmentNotification.Send',
-    ].join(' ');
+    ];
     
     const params = new URLSearchParams();
     params.append('client_id', process.env.MICROSOFT_CLIENT_ID!);
-    params.append('scope', scopes);
+    params.append('scope', scopes.join(' '));
     params.append('refresh_token', refreshToken);
     params.append('grant_type', 'refresh_token');
     params.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET!);

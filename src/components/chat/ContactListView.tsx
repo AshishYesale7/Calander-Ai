@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Copy } from 'lucide-react';
-import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
+import { getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
 
 interface ExternalContact {
@@ -31,41 +31,57 @@ export default function ContactListView() {
 
     const handleFetchContacts = useCallback(async (provider: 'google' | 'microsoft') => {
         if (!user) return;
-        setIsLoading(provider);
-        setError(null);
-        try {
-            const { appUsers: fetchedAppUsers, externalContacts: fetchedExternalContacts } = provider === 'google'
-                ? await getGoogleContactsOnApp(user.uid)
-                : await getMicrosoftContactsOnApp(user.uid);
-            
-            setAppUsers(prev => {
-                const existingUids = new Set(prev.map(c => c.uid));
-                const newContacts = fetchedAppUsers.filter(c => !existingUids.has(c.uid));
-                return [...prev, ...newContacts];
-            });
 
-            setExternalContacts(prev => {
-                const existingNames = new Set(prev.map(c => c.displayName));
-                const newContacts = fetchedExternalContacts.filter(c => !existingNames.has(c.displayName));
-                return [...prev, ...newContacts];
-            });
+        const authAndFetch = async () => {
+            setIsLoading(provider);
+            setError(null);
+            try {
+                const fetchFn = provider === 'google' ? getGoogleContactsOnApp : getMicrosoftContactsOnApp;
+                const { appUsers: fetchedAppUsers, externalContacts: fetchedExternalContacts } = await fetchFn(user.uid);
+                
+                setAppUsers(prev => {
+                    const existingUids = new Set(prev.map(c => c.uid));
+                    const newContacts = fetchedAppUsers.filter(c => !existingUids.has(c.uid));
+                    return [...prev, ...newContacts];
+                });
 
-            if (fetchedAppUsers.length === 0 && fetchedExternalContacts.length === 0) {
-                 setError(`No new contacts from ${provider} found.`);
+                setExternalContacts(prev => {
+                    const existingNames = new Set(prev.map(c => c.displayName));
+                    const newContacts = fetchedExternalContacts.filter(c => !existingNames.has(c.displayName));
+                    return [...prev, ...newContacts];
+                });
+
+                if (fetchedAppUsers.length === 0 && fetchedExternalContacts.length === 0) {
+                     setError(`No new contacts found from ${provider}.`);
+                }
+            } catch (error: any) {
+                if (error.message.includes('permission') || error.code === 403) {
+                  setError(`Please grant contact permissions for ${provider} and try again.`);
+                } else {
+                  setError(error.message || `Failed to fetch ${provider} contacts.`);
+                }
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error: any) {
-            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || (error.code && error.code === 403)) {
-              const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
-              const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
-              window.open(authUrl, '_blank', 'width=500,height=600');
-              setError(`Please grant contact permissions for ${provider} in the pop-up window and try again.`);
-            } else {
-              setError(error.message || `Failed to fetch ${provider} contacts.`);
+        };
+
+        const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
+        const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
+        
+        const authWindow = window.open(authUrl, '_blank', 'width=500,height=600');
+
+        const handleAuthMessage = async (event: MessageEvent) => {
+            if (event.data === `auth-success-${provider}`) {
+                authWindow?.close();
+                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your contacts...' });
+                await authAndFetch();
+                window.removeEventListener('message', handleAuthMessage);
             }
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user]);
+        };
+
+        window.addEventListener('message', handleAuthMessage);
+
+    }, [user, toast]);
     
     const handleInvite = () => {
       const url = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
@@ -75,6 +91,16 @@ export default function ContactListView() {
         description: "The invite link has been copied to your clipboard.",
       });
     };
+    
+    useEffect(() => {
+      const handleAuthSuccess = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          if (event.data === 'auth-success-google') handleFetchContacts('google');
+          if (event.data === 'auth-success-microsoft') handleFetchContacts('microsoft');
+      };
+      window.addEventListener('message', handleAuthSuccess);
+      return () => window.removeEventListener('message', handleAuthSuccess);
+    }, [handleFetchContacts]);
 
     return (
         <>
@@ -144,4 +170,4 @@ export default function ContactListView() {
             </ScrollArea>
         </>
     );
-};
+}
