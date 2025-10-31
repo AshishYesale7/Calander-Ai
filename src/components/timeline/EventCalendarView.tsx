@@ -22,6 +22,8 @@ interface EventCalendarViewProps {
   isSyncing: boolean;
   onToggleTrash: () => void;
   onAddEvent: () => void;
+  onDeleteEvent: (eventId: string) => void;
+  onEditEvent: (event: TimelineEvent) => void;
 }
 
 export default function EventCalendarView({
@@ -33,6 +35,8 @@ export default function EventCalendarView({
   isSyncing,
   onToggleTrash,
   onAddEvent,
+  onDeleteEvent,
+  onEditEvent,
 }: EventCalendarViewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
@@ -133,7 +137,7 @@ export default function EventCalendarView({
                 />
             </TabsContent>
             <TabsContent value="list" className="mt-0 h-full flex-1">
-                <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onAddEvent} />
+                <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} />
             </TabsContent>
         </Tabs>
       </CardContent>

@@ -17,9 +17,11 @@ interface CalendarWidgetProps {
   onToggleTrash: () => void;
   onSyncComplete: () => void;
   onAddEvent: () => void;
+  onDeleteEvent: (eventId: string) => void;
+  onEditEvent: (event: TimelineEvent) => void;
 }
 
-export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComplete, onAddEvent }: CalendarWidgetProps) {
+export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComplete, onAddEvent, onDeleteEvent, onEditEvent }: CalendarWidgetProps) {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -86,7 +88,9 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
          onSync={handleSyncCalendarData} 
          isSyncing={isSyncing} 
          onToggleTrash={onToggleTrash} 
-         onAddEvent={onAddEvent} 
+         onAddEvent={onAddEvent}
+         onDeleteEvent={onDeleteEvent}
+         onEditEvent={onEditEvent}
        />
     </div>
   );

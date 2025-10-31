@@ -251,7 +251,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const components = useMemo(() => ({
     'plan': <TodaysPlanWidget onAccordionToggle={() => {}} />,
     'streak': <DailyStreakWidget />,
-    'calendar': <CalendarWidget onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onAddEvent={() => handleOpenEditModal(undefined, true)} />,
+    'calendar': <CalendarWidget onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onAddEvent={() => handleOpenEditModal(undefined, true)} onDeleteEvent={handleDeleteEvent} onEditEvent={handleOpenEditModal} />,
     'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
     'timeline': <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />,
     'emails': <ImportantEmailsWidget />,
