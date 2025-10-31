@@ -461,6 +461,3 @@ export const CreateEventOutputSchema = z.object({
   }).optional().describe("Reminder settings for the event.")
 });
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
-    
-
-```
