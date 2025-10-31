@@ -143,13 +143,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error("Failed to fetch full user profile:", error);
-      if (auth) {
-        await signOut(auth);
-      }
+      // ** CHANGE **: Instead of signing out, we'll just log the error.
+      // The user remains logged in with their existing session data.
+      // This prevents logouts due to temporary network issues.
+      toast({
+        title: "Sync Error",
+        description: "Could not fetch latest profile data. You are still logged in.",
+        variant: "destructive"
+      });
     } finally {
       setDataLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   const refreshUser = useCallback(async () => {
     if (auth && auth.currentUser) {
