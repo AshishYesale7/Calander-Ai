@@ -44,6 +44,7 @@ interface WidgetDashboardProps {
   hiddenWidgets?: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
+  onAccordionToggle: (isOpen: boolean, contentHeight: number) => void;
 }
 
 export default function WidgetDashboard({ 
@@ -52,7 +53,8 @@ export default function WidgetDashboard({
     setIsEditMode, 
     hiddenWidgets = new Set(),
     onToggleWidget,
-    isLoading
+    isLoading,
+    onAccordionToggle,
 }: WidgetDashboardProps) {
   const { user } = useAuth();
   
@@ -65,7 +67,7 @@ export default function WidgetDashboard({
     return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
 
-  const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
+  const [currentLayouts, setCurrentLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -96,30 +98,31 @@ export default function WidgetDashboard({
       try {
         const [localResult, cloudResult] = await Promise.all([localLayoutPromise, cloudLayoutPromise]);
         const defaultLayouts: VersionedLayouts = { version: CODE_LAYOUT_VERSION, layouts: getDefaultLayouts(), hidden: [] };
-        let finalLayoutsData: VersionedLayouts;
+        
+        let finalData: VersionedLayouts;
         const localVersion = localResult?.version || 0;
         const cloudVersion = cloudResult?.version || 0;
         
         if (localVersion >= cloudVersion && localVersion >= CODE_LAYOUT_VERSION) {
-            finalLayoutsData = localResult!;
+            finalData = localResult!;
         } else if (cloudVersion > localVersion && cloudVersion >= CODE_LAYOUT_VERSION) {
-            finalLayoutsData = cloudResult!;
+            finalData = cloudResult!;
             if (layoutKey) localStorage.setItem(layoutKey, JSON.stringify(cloudResult));
         } else {
-            finalLayoutsData = defaultLayouts;
+            finalData = defaultLayouts;
             if (layoutKey) localStorage.removeItem(layoutKey);
             if (CODE_LAYOUT_VERSION > cloudVersion) {
-                saveLayout(user.uid, role, defaultLayouts);
+                await saveLayout(user.uid, role, defaultLayouts);
             }
         }
         
-        setLayouts(finalLayoutsData.layouts);
-        if (finalLayoutsData.hidden) {
-            finalLayoutsData.hidden.forEach(id => onToggleWidget(id));
+        setCurrentLayouts(finalData.layouts);
+        if (finalData.hidden) {
+            finalData.hidden.forEach(id => onToggleWidget(id));
         }
       } catch (error) {
         console.error("Failed to load layouts, falling back to default.", error);
-        setLayouts(getDefaultLayouts());
+        setCurrentLayouts(getDefaultLayouts());
       } finally {
         setIsLayoutLoaded(true);
       }
@@ -148,7 +151,7 @@ export default function WidgetDashboard({
   }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
-    setLayouts(allLayouts);
+    setCurrentLayouts(allLayouts);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
         saveCurrentLayout(allLayouts);
@@ -159,9 +162,12 @@ export default function WidgetDashboard({
     const role = user?.userType || 'student';
     
     const final: Layouts = {};
+    const defaultLayouts = getDefaultLayouts();
 
     for (const bp of ['lg', 'md', 'sm', 'xs', 'xxs']) {
-        const baseLayout = layouts[bp] || getDefaultLayouts()[bp as keyof Layouts];
+        const baseLayout = currentLayouts[bp] || defaultLayouts[bp as keyof Layouts];
+        if (!baseLayout) continue;
+
         const allAvailableWidgets = new Set(widgetList.map(w => w.id));
         const filteredBase = baseLayout.filter(item => allAvailableWidgets.has(item.i));
 
@@ -172,7 +178,7 @@ export default function WidgetDashboard({
         }
     }
     return final;
-  }, [layouts, user?.userType, getDefaultLayouts]);
+  }, [currentLayouts, user?.userType, getDefaultLayouts]);
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 

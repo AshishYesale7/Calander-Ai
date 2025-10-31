@@ -245,6 +245,11 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
       toast({ title: "Sync Error", description: "Could not save status.", variant: "destructive" });
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
+  
+  const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    // This function will be passed to TodaysPlanCard (via the components object)
+    // The actual layout update logic is now handled inside WidgetDashboard
+  }, []);
 
   const components = useMemo(() => ({
     'plan': <TodaysPlanWidget />,
@@ -264,13 +269,14 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   
   return (
     <div className="h-full">
-      <WidgetDashboard 
+      <WidgetDashboard
         isLoading={isDataLoading}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
         hiddenWidgets={hiddenWidgets}
         onToggleWidget={handleToggleWidget}
         components={components}
+        onAccordionToggle={handleAccordionToggle}
       />
       {eventBeingEdited && (
         <EditEventModal 
