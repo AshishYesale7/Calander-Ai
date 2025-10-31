@@ -230,7 +230,7 @@ export default function ImportantEmailsCard({ className }: ImportantEmailsCardPr
                 </div>
                 ) : (
                 emails.map(email => (
-                    <div key={email.id} className="p-3 rounded-md border border-border/50 bg-background/30 space-y-1.5 transition-colors">
+                    <div key={email.id} className="p-3 rounded-md frosted-glass space-y-1.5 transition-colors">
                         <div className="flex justify-between items-start gap-2">
                             <p className="text-sm font-semibold text-foreground line-clamp-2">{email.subject}</p>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(email.internalDate)}</span>
