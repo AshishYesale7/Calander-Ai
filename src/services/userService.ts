@@ -685,4 +685,9 @@ export async function formatUserData(userId: string): Promise<void> {
     });
 
     await batch.commit();
+
+    // 5. Delete the separate layout document AFTER the main batch.
+    await deleteLayout(userId, 'student');
+    await deleteLayout(userId, 'professional');
 }
+

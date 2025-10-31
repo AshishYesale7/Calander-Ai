@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -18,12 +19,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Download, Eraser, Trash2, Shield, PhoneAuthProvider } from 'lucide-react';
+import { Upload, Download, Eraser, Trash2, Shield, PhoneAuthProvider, User } from 'lucide-react';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { anonymizeUserAccount } from '@/services/userService';
 import { saveAs } from 'file-saver';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, reauthenticateWithPopup, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier, reauthenticateWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
+import { GoogleIcon } from '../auth/SignInForm';
 
 declare global {
   interface Window {
@@ -44,7 +46,7 @@ export default function DangerZoneSettings() {
     const [reauthStep, setReauthStep] = useState<'prompt' | 'otp' | 'verifying'>('prompt');
     const [reauthOtp, setReauthOtp] = useState('');
     const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
-
+    
     const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
     const hasPhoneProvider = !!user?.phoneNumber;
 
@@ -118,7 +120,12 @@ export default function DangerZoneSettings() {
     };
 
     const handleSendReauthOtp = async () => {
-        if (!user?.phoneNumber || !reauthRecaptchaContainerRef.current) return;
+        if (!auth || !user?.phoneNumber) return;
+        if (!reauthRecaptchaContainerRef.current) {
+            console.error("reCAPTCHA container not found");
+            return;
+        }
+
         setIsReauthenticating(true);
         try {
             if (window.reauthRecaptchaVerifier) window.reauthRecaptchaVerifier.clear();
@@ -127,7 +134,8 @@ export default function DangerZoneSettings() {
             window.reauthConfirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, verifier);
             setReauthStep('verifying');
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message || 'Failed to send OTP.', variant: 'destructive' });
+            toast({ title: 'Error', description: error.message || 'Failed to send OTP for verification.', variant: 'destructive' });
+            setReauthStep('prompt'); // Go back to prompt on error
         } finally {
             setIsReauthenticating(false);
         }
@@ -135,13 +143,14 @@ export default function DangerZoneSettings() {
 
     const handleVerifyReauthOtp = async () => {
         const confirmationResult = window.reauthConfirmationResult;
-        if (!confirmationResult || !reauthOtp || !user) return;
+        if (!confirmationResult || !reauthOtp || reauthOtp.length !== 6 || !auth.currentUser) return;
+        
         setIsReauthenticating(true);
         try {
             const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, reauthOtp);
-            await reauthenticateWithCredential(user, credential);
+            await reauthenticateWithCredential(auth.currentUser, credential);
             await executeConfirmedAction();
-        } catch (error) {
+        } catch (error: any) {
             toast({ title: 'OTP Verification Failed', description: 'The code was incorrect.', variant: 'destructive' });
         } finally {
             setIsReauthenticating(false);
@@ -209,7 +218,6 @@ export default function DangerZoneSettings() {
                 </div>
             </div>
 
-            {/* Re-authentication Modal */}
             <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => { if (!open) { setActionToConfirm(null); setReauthStep('prompt'); } }}>
                 <AlertDialogContent className="frosted-glass">
                     <AlertDialogHeader>
@@ -222,13 +230,13 @@ export default function DangerZoneSettings() {
                                 {hasGoogleProvider && (
                                     <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
                                         {isReauthenticating && <LoadingSpinner size="sm" className="mr-2"/>}
-                                        Continue with Google
+                                        <GoogleIcon /> Continue with Google
                                     </Button>
                                 )}
                                 {hasGoogleProvider && hasPhoneProvider && <div className="relative my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div></div>}
                                 {hasPhoneProvider && (
                                     <Button onClick={() => setReauthStep('otp')} className="w-full" disabled={isReauthenticating}>
-                                        Verify with Phone Number
+                                        <User className="mr-2 h-4 w-4" /> Verify with Phone Number
                                     </Button>
                                 )}
                                 {!hasGoogleProvider && !hasPhoneProvider && <p className="text-sm text-destructive text-center">No verifiable sign-in method found.</p>}

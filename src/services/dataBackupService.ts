@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -134,7 +135,7 @@ export const importUserData = async (userId: string, data: UserDataBackup): Prom
                 deletedAt: event.deletedAt ? new Date(event.deletedAt).toISOString() : null,
             };
             // Sync to Google is false by default for imports to prevent conflicts
-            importPromises.push(saveTimelineEvent(userId, eventToSave as any, { syncToGoogle: false, timezone: 'UTC' }));
+            importPromises.push(saveTimelineEvent(userId, eventToSave as any, { syncToGoogle: false, timezone: 'UTC', syncToMicrosoft: false }));
         });
     }
 
@@ -162,7 +163,7 @@ export async function formatUserData(userId: string): Promise<void> {
         'careerGoals',
         'careerVisions',
         'dailyPlans',
-        'fcmTokens',
+        'fcmTokens', // Keeping these might be desired, but for a full format, we clear them.
         'notifications',
         'resources',
         'skills',
@@ -206,7 +207,7 @@ export async function formatUserData(userId: string): Promise<void> {
         installedPlugins: [],
         'preferences.routine': [],
         codingUsernames: {},
-        deletionStatus: null,
+        // The 'subscription' field is intentionally omitted to preserve it.
     });
     
     await batch.commit();
