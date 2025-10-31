@@ -10,6 +10,7 @@ import { summarizeText } from '@/ai/flows/summarize-text-flow';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils'; // Import the cn utility
 
 export default function SummarizerTab() {
   const [inputText, setInputText] = useState('');
