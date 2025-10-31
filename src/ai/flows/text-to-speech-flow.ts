@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Text-to-Speech (TTS) AI agent.
@@ -10,14 +11,14 @@ import { z } from 'genkit';
 import wav from 'wav';
 
 // Input schema: just a string of text
-export const TextToSpeechInputSchema = z.object({
+const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to be converted to speech.'),
   apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 // Output schema: a data URI containing the WAV audio
-export const TextToSpeechOutputSchema = z.object({
+const TextToSpeechOutputSchema = z.object({
   audioDataUri: z.string().describe('The generated audio as a WAV data URI.'),
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
