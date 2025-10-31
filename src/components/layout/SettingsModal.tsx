@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -13,25 +14,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, User, Link2, Globe, FileText } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
-import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, PhoneAuthProvider, OAuthProvider, reauthenticateWithPopup, signInWithPhoneNumber } from 'firebase/auth';
-import 'react-phone-number-input/style.css';
-import { getToken } from 'firebase/messaging';
-import { NotionLogo } from '../logo/NotionLogo';
-import { saveUserFCMToken } from '@/services/userService';
-import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
 import DangerZoneSettings from './DangerZoneSettings';
-import { Switch } from '../ui/switch';
+import { saveUserFCMToken } from '@/services/userService';
+import { messaging } from '@/lib/firebase';
+import { getToken } from 'firebase/messaging';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '../ui/label';
+import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 const IntegrationRow = ({
   icon,
@@ -46,10 +43,10 @@ const IntegrationRow = ({
   description: string;
   providerId: 'google.com' | 'microsoft.com';
   onConnect: () => void;
-  onDisconnect: () => void;
+  onDisconnect: (email: string) => void;
 }) => {
   const { user } = useAuth();
-  const [isSyncEnabled, setIsSyncEnabled] = useState(true); // Placeholder state
+  const [isSyncEnabled, setIsSyncEnabled] = useState(true);
 
   const connectedAccounts = user?.providerData.filter(p => p.providerId === providerId) || [];
 
@@ -67,16 +64,16 @@ const IntegrationRow = ({
              <div className="pl-4 space-y-3">
                 {connectedAccounts.map(account => (
                     <div key={account.uid} className="p-2 bg-background/50 rounded-md border space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{account.email}</span>
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm font-medium truncate">{account.email}</span>
                             </div>
-                            <Button onClick={onDisconnect} variant="destructive" size="sm" className="h-7 text-xs">
+                            <Button onClick={() => account.email && onDisconnect(account.email)} variant="destructive" size="sm" className="h-7 text-xs">
                                 <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
                             </Button>
                         </div>
-                         <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                             <div className="flex items-center space-x-2">
                                 <Switch id={`oneway-${account.uid}`} checked={isSyncEnabled} onCheckedChange={(c) => setIsSyncEnabled(c)} aria-label="One-way sync"/>
                                 <Label htmlFor={`oneway-${account.uid}`} className="text-xs">One-way sync</Label>
@@ -118,6 +115,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isTestingPush, setIsTestingPush] = useState(false);
+  const [isRestoringDefaults, setIsRestoringDefaults] = useState(false);
 
   const checkStatuses = useCallback(async () => {
     if (!user) return;
@@ -204,8 +202,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setIsTestingPush(false);
     }
   };
-
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh]">
@@ -215,7 +212,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <Tabs defaultValue="account" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="integrations">Integrations</TabsTrigger>
               <TabsTrigger value="datetime">Date & Time</TabsTrigger>
@@ -249,7 +246,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                           <Switch id="push-notifications" checked={notificationPermission === 'granted'} onCheckedChange={(checked) => { if(checked) handleRequestNotificationPermission()}} disabled={notificationPermission === 'denied'} />
                           <Label htmlFor="push-notifications">{notificationPermission === 'granted' ? "Enabled" : (notificationPermission === 'denied' ? "Blocked" : "Disabled")}</Label>
                         </div>
-                        {notificationPermission === 'granted' && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush ? <LoadingSpinner size="sm" className="mr-2"/> : null} Test Push Notification</Button>}
+                        {notificationPermission === 'granted' && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush && <LoadingSpinner size="sm" className="mr-2"/>} Test Push Notification</Button>}
                     </div>
                   </div>
                 </TabsContent>
@@ -261,7 +258,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       description="Gmail, G Suite"
                       providerId='google.com'
                       onConnect={() => handleConnect('google')}
-                      onDisconnect={() => handleDisconnect('google')}
+                      onDisconnect={(email) => handleDisconnect('google')}
                     />
                     <IntegrationRow
                       icon={<MicrosoftIcon />}
