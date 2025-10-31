@@ -2,7 +2,7 @@
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Paperclip, ChevronDown, Sparkles, X, Minus, Expand, Shrink, ArrowUp, ImageIcon, Lightbulb, Telescope, BookOpen, MoreHorizontal, Globe, Wand2 } from 'lucide-react';
+import { Paperclip, ChevronDown, Sparkles, X, Minus, Expand, Shrink, ArrowUp, ImageIcon, Lightbulb, Telescope, BookOpen, MoreHorizontal, Globe, Wand2, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Input } from '../ui/input';
@@ -12,12 +12,12 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '../ui/dropdown-menu';
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
-import { conversationalAgent, type ConversationalAgentOutput } from '@/ai/flows/conversational-agent-flow';
+import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import '@/app/styles/desktop-command-bar.css';
