@@ -416,11 +416,16 @@ export default function AppContent({
           isFullScreen={false}
         />
         
-        <AnimatePresence>
-          {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
-          {!isMobile && <DashboardChat scrollDirection={scrollDirection} />}
-
-          {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
+        <AnimatePresence key="command-bar-presence">
+            {!isMobile && <DesktopCommandBar key="desktop-command-bar" scrollDirection={scrollDirection} />}
+        </AnimatePresence>
+        
+        <AnimatePresence key="dashboard-chat-presence">
+          {!isMobile && <DashboardChat key="dashboard-chat" scrollDirection={scrollDirection} />}
+        </AnimatePresence>
+        
+        <AnimatePresence key="mobile-nav-presence">
+            {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
                 <MobileBottomNav
                     onCommandClick={() => setIsCommandPaletteOpen(true)}
                     onChatClick={() => setIsChatSidebarOpen(true)}
