@@ -111,7 +111,7 @@ export default function EventCalendarView({
       </CardHeader>
       <CardContent className="p-2 sm:p-4 flex-1 overflow-auto">
         <Tabs defaultValue="calendar" className="relative h-full flex flex-col">
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-2">
               <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30 w-auto">
                 <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Calendar
