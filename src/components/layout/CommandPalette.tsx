@@ -2,6 +2,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Command as CommandPrimitive } from 'cmdk';
+import { Dialog, DialogProps } from '@radix-ui/react-dialog';
 import { CommandDialog } from '@/components/ui/command';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Folder, Zap, Bot, Settings, ChevronDown, Expand, Shrink } from 'lucide-react';
@@ -84,16 +86,16 @@ export function CommandPalette({
 // Update the CommandDialog component to accept the isFullScreen prop
 const CommandDialogContent = Dialog.Content as any; // Temporary type assertion
 
-const UpdatedCommandDialog = ({ children, isFullScreen, ...props }: { children: React.ReactNode, isFullScreen?: boolean } & Dialog.DialogProps) => (
-  <Dialog.Root {...props}>
+const UpdatedCommandDialog = ({ children, isFullScreen, ...props }: { children: React.ReactNode, isFullScreen?: boolean } & DialogProps) => (
+  <Dialog {...props}>
     <CommandDialogContent 
         className={isFullScreen ? "w-full h-full max-w-full sm:max-w-full sm:rounded-none" : "sm:max-w-2xl"}
     >
         {children}
     </CommandDialogContent>
-  </Dialog.Root>
+  </Dialog>
 );
 
 // Redefine CommandDialog to use the updated version
-const CustomCommandDialog = UpdatedCommandDialog as typeof CommandDialogPrimitive;
+const CustomCommandDialog = UpdatedCommandDialog as typeof CommandPrimitive;
 export { CustomCommandDialog as CommandDialog };
