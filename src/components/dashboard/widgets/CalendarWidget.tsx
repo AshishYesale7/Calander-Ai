@@ -1,19 +1,16 @@
 
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import EventCalendarView from '@/components/timeline/EventCalendarView';
-import TimelineListView from '@/components/timeline/TimelineListView';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, List } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/hooks/use-api-key';
-import type { TimelineEvent } from '@/types';
 import { processGoogleData } from '@/ai/flows/process-google-data-flow';
 import { getGoogleCalendarEvents } from '@/services/googleCalendarService';
 import { getGoogleTasks } from '@/services/googleTasksService';
 import { useToast } from '@/hooks/use-toast';
 import { saveTimelineEvent } from '@/services/timelineService';
 import { useTimezone } from '@/hooks/use-timezone';
+import type { TimelineEvent } from '@/types';
 
 interface CalendarWidgetProps {
   onDayClick: (date: Date) => void;
@@ -28,15 +25,11 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
   const { toast } = useToast();
   const { timezone } = useTimezone();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-
-  // This widget doesn't manage events itself, it receives them or triggers fetches.
-  // The actual event data will be passed from the main dashboard page.
-  // For now, we simulate fetching.
 
   const handleSyncCalendarData = async () => {
     if (!user) return;
     setIsSyncing(true);
+    toast({ title: "Syncing...", description: "Fetching data from Google." });
     try {
       const [calendarEvents, googleTasks] = await Promise.all([
         getGoogleCalendarEvents(user.uid),
@@ -45,6 +38,11 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
       const result = await processGoogleData({
         calendarEvents, googleTasks, apiKey, userId: user.uid,
       });
+
+      if(result.insights.length === 0) {
+        toast({ title: "Nothing to sync", description: "Your calendar is up to date." });
+        return;
+      }
 
       for (const insight of result.insights) {
         const newEvent: TimelineEvent = {
@@ -67,7 +65,7 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
           date: newEvent.date.toISOString(),
           endDate: newEvent.endDate ? newEvent.endDate.toISOString() : null,
         };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle: true, timezone, syncToMicrosoft: false });
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle: false, timezone, syncToMicrosoft: false });
       }
       onSyncComplete();
       toast({ title: "Sync Complete", description: `${result.insights.length} items synced.` });
@@ -78,31 +76,18 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
     }
   };
 
-  // For simplicity, this example doesn't show passing events down.
-  // In a real app, `EventCalendarView` and `TimelineListView` would receive events as props.
   return (
     <div className="relative h-full flex flex-col">
-       <div className="flex-shrink-0 p-4 pb-0">
-          <Tabs defaultValue="calendar" className="relative">
-              <div className="flex justify-between items-center mb-4 gap-2">
-                <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30">
-                  <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                    <Calendar className="mr-2 h-4 w-4" /> Calendar
-                  </TabsTrigger>
-                  <div className="w-px h-6 bg-border/50 self-center" />
-                  <TabsTrigger value="list" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
-                    <List className="mr-2 h-4 w-4" /> List
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              <TabsContent value="calendar" className="mt-0 h-full flex-1">
-                  <EventCalendarView events={[]} month={new Date()} onMonthChange={() => {}} onDayClick={onDayClick} onSync={handleSyncCalendarData} isSyncing={isSyncing} onToggleTrash={onToggleTrash} onAddEvent={onAddEvent} />
-              </TabsContent>
-              <TabsContent value="list" className="mt-0 h-full flex-1">
-                  <TimelineListView events={[]} onDeleteEvent={() => {}} onEditEvent={() => {}} />
-              </TabsContent>
-          </Tabs>
-       </div>
+       <EventCalendarView 
+         events={[]} 
+         month={new Date()} 
+         onMonthChange={() => {}} 
+         onDayClick={onDayClick} 
+         onSync={handleSyncCalendarData} 
+         isSyncing={isSyncing} 
+         onToggleTrash={onToggleTrash} 
+         onAddEvent={onAddEvent} 
+       />
     </div>
   );
 }

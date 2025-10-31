@@ -11,12 +11,13 @@ import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TimelineListView from './TimelineListView';
 
 interface EventCalendarViewProps {
   events: TimelineEvent[];
   month: Date;
   onMonthChange: (newMonth: Date) => void;
-  onDayClick: (day: Date, hasEvents: boolean) => void;
+  onDayClick: (day: Date) => void;
   onSync: () => void;
   isSyncing: boolean;
   onToggleTrash: () => void;
@@ -61,8 +62,7 @@ export default function EventCalendarView({
 
   const handleDayClickInternal = (day: Date | undefined) => {
     if (day) {
-      const eventsOnDay = processedEvents.filter(event => isSameDay(startOfDay(event.date), startOfDay(day)));
-      onDayClick(day, eventsOnDay.length > 0);
+      onDayClick(day);
     }
   };
 
@@ -83,7 +83,7 @@ export default function EventCalendarView({
       ref={cardRef}
       className={cn("w-full h-full flex flex-col frosted-glass")}
     >
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex justify-between items-center mb-4">
           <Button onClick={onAddEvent} size={isCompact ? 'icon' : 'default'} className="bg-accent hover:bg-accent/90">
               <PlusCircle className={cn("h-5 w-5", !isCompact && "mr-2")} />
@@ -133,7 +133,7 @@ export default function EventCalendarView({
                 />
             </TabsContent>
             <TabsContent value="list" className="mt-0 h-full flex-1">
-                {/* Placeholder for list view content */}
+                <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onAddEvent} />
             </TabsContent>
         </Tabs>
       </CardContent>
