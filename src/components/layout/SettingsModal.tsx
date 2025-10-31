@@ -15,16 +15,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, Globe, User, Shield } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, Globe, User } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult, OAuthProvider } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { getToken } from 'firebase/messaging';
-import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken } from '@/services/userService';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
@@ -33,14 +32,89 @@ import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
 import DangerZoneSettings from './DangerZoneSettings';
 import { Switch } from '../ui/switch';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
+const IntegrationRow = ({
+  icon,
+  name,
+  description,
+  isConnected,
+  onConnect,
+  onDisconnect,
+  isComingSoon = false,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  description: string;
+  isConnected: boolean | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  isComingSoon?: boolean;
+}) => {
+  const [oneWay, setOneWay] = useState(true);
+  const [twoWay, setTwoWay] = useState(false);
 
-declare global {
-  interface Window {
-    linkRecaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: ConfirmationResult;
-  }
-}
+  useEffect(() => {
+    if (!isConnected) {
+      setOneWay(false);
+      setTwoWay(false);
+    }
+  }, [isConnected]);
+
+  const handleOneWayToggle = (checked: boolean) => {
+    setOneWay(checked);
+    if (checked) {
+      setTwoWay(false);
+    }
+  };
+
+  const handleTwoWayToggle = (checked: boolean) => {
+    setTwoWay(checked);
+    if (checked) {
+      setOneWay(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+        <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+                <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card">{icon}</div>
+                <div>
+                    <h4 className="font-semibold">{name}</h4>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                </div>
+            </div>
+            {isComingSoon ? (
+                <Badge variant="outline">Coming Soon</Badge>
+            ) : isConnected === null ? (
+                <LoadingSpinner size="sm" />
+            ) : isConnected ? (
+                <Button onClick={onDisconnect} variant="secondary" size="sm">Disconnect</Button>
+            ) : (
+                <Button onClick={onConnect} variant="outline" size="sm">Connect</Button>
+            )}
+        </div>
+        {isConnected && (
+            <div className="pl-14">
+                <Separator className="mb-4" />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                        <Switch id={`oneway-${name}`} checked={oneWay} onCheckedChange={handleOneWayToggle} aria-label="One-way sync"/>
+                        <Label htmlFor={`oneway-${name}`} className="text-xs">One-way sync</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Switch id={`twoway-${name}`} checked={twoWay} onCheckedChange={handleTwoWayToggle} aria-label="Two-way sync"/>
+                        <Label htmlFor={`twoway-${name}`} className="text-xs">Two-way sync</Label>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+  );
+};
+
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -229,9 +303,49 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 </TabsContent>
                 <TabsContent value="integrations">
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><GoogleIcon /> Google</p>{isGoogleConnected ? <Button onClick={() => handleDisconnect('google')} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={() => handleConnect('google')} variant="outline" size="sm">Connect</Button>}</div>
-                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><MicrosoftIcon /> Microsoft</p>{isMicrosoftConnected ? <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={() => handleConnect('microsoft')} variant="outline" size="sm">Connect</Button>}</div>
-                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>{isNotionConnected ? <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={() => handleConnect('notion')} variant="outline" size="sm">Connect</Button>}</div>
+                    <IntegrationRow
+                      icon={<GoogleIcon />}
+                      name="Google Calendar"
+                      description="Gmail, G Suite"
+                      isConnected={isGoogleConnected}
+                      onConnect={() => handleConnect('google')}
+                      onDisconnect={() => handleDisconnect('google')}
+                    />
+                    <IntegrationRow
+                      icon={<MicrosoftIcon />}
+                      name="Office 365 Calendar"
+                      description="Office 365, Outlook.com, Live.com"
+                      isConnected={isMicrosoftConnected}
+                      onConnect={() => handleConnect('microsoft')}
+                      onDisconnect={() => { /* Implement disconnect */ }}
+                    />
+                     <IntegrationRow
+                      icon={<Image src="/logos/exchange-logo.svg" width={24} height={24} alt="Exchange" />}
+                      name="Exchange Calendar"
+                      description="Exchange Server"
+                      isConnected={false}
+                      onConnect={() => {}}
+                      onDisconnect={() => {}}
+                      isComingSoon={true}
+                    />
+                    <IntegrationRow
+                      icon={<Image src="/logos/apple-logo.svg" width={24} height={24} alt="Apple" />}
+                      name="Apple Calendar"
+                      description="iCloud"
+                      isConnected={false}
+                      onConnect={() => {}}
+                      onDisconnect={() => {}}
+                      isComingSoon={true}
+                    />
+                    <Separator/>
+                     <IntegrationRow
+                        icon={<NotionLogo className="h-6 w-6" />}
+                        name="Notion"
+                        description="Tasks, Databases, Pages"
+                        isConnected={isNotionConnected}
+                        onConnect={() => handleConnect('notion')}
+                        onDisconnect={() => { /* Implement disconnect */ }}
+                    />
                   </div>
                 </TabsContent>
                 <TabsContent value="datetime">
