@@ -4,6 +4,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
 import type { GenerateAvatarOutput } from '@/components/profile/CustomizeAvatarModal';
+import { z } from 'genkit';
 
 export interface SocialLinks {
     github?: string;
@@ -372,5 +373,20 @@ export interface ActivityLog {
     platforms?: string[];
   }
 }
+
+// Conversational Agent Types
+export const ConversationalAgentInputSchema = z.object({
+  chatHistory: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    content: z.string(),
+  })).describe("The history of the conversation so far."),
+  prompt: z.string().describe("The user's latest message."),
+});
+export type ConversationalAgentInput = z.infer<typeof ConversationalAgentInputSchema>;
+
+export const ConversationalAgentOutputSchema = z.object({
+  response: z.string().describe("The AI's generated response."),
+});
+export type ConversationalAgentOutput = z.infer<typeof ConversationalAgentOutputSchema>;
 
     

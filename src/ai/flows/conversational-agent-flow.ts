@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A general-purpose conversational AI agent.
@@ -7,22 +8,13 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { 
+  ConversationalAgentInputSchema,
+  type ConversationalAgentInput,
+  ConversationalAgentOutputSchema,
+  type ConversationalAgentOutput,
+} from '@/types';
 
-// Input schema for the new conversational agent
-export const ConversationalAgentInputSchema = z.object({
-  chatHistory: z.array(z.object({
-    role: z.enum(['user', 'model']),
-    content: z.string(),
-  })).describe("The history of the conversation so far."),
-  prompt: z.string().describe("The user's latest message."),
-});
-export type ConversationalAgentInput = z.infer<typeof ConversationalAgentInputSchema>;
-
-// Output schema is just a string response
-export const ConversationalAgentOutputSchema = z.object({
-  response: z.string().describe("The AI's generated response."),
-});
-export type ConversationalAgentOutput = z.infer<typeof ConversationalAgentOutputSchema>;
 
 // The Genkit prompt definition
 const conversationalAgentPrompt = ai.definePrompt({
