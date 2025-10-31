@@ -531,7 +531,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto px-1 -mx-6 pr-2">
-          <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+          <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger className="px-6 font-semibold"><Bell className="mr-2 h-4 w-4"/>Notifications</AccordionTrigger>
               <AccordionContent className="px-6 pt-2 space-y-4">
@@ -823,3 +823,5 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
+
+    

@@ -209,7 +209,7 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto min-h-0 px-1 -mx-4">
-          <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+          <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger className="px-4 font-semibold"><Droplets className="mr-2 h-4 w-4"/>Glass & Card Style</AccordionTrigger>
               <AccordionContent className="px-4 pt-2">
@@ -387,3 +387,5 @@ export default function CustomizeThemeModal({ isOpen, onOpenChange }: CustomizeT
     </Dialog>
   );
 }
+
+    
