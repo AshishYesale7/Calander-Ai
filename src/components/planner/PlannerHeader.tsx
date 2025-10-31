@@ -28,7 +28,7 @@ interface PlannerHeaderProps {
   isSidebarOpen: boolean;
   viewTheme: MaxViewTheme;
   onToggleTheme: () => void;
-  onAddEvent: () => void; // New prop
+  onAddEvent: () => void;
 }
 
 export default function PlannerHeader({
@@ -42,7 +42,7 @@ export default function PlannerHeader({
   isSidebarOpen,
   viewTheme,
   onToggleTheme,
-  onAddEvent, // New prop
+  onAddEvent,
 }: PlannerHeaderProps) {
   const getTitle = () => {
     switch(activeView) {
@@ -55,7 +55,7 @@ export default function PlannerHeader({
   const headerClasses = viewTheme === 'dark'
     ? 'border-gray-700/50 text-gray-300 bg-[#171717]'
     : 'border-stone-200 bg-[#fff8ed] text-gray-700';
-  const buttonClasses = viewTheme === 'dark' ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-stone-200';
+  const buttonClasses = viewTheme === 'dark' ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' : 'text-gray-600 hover:bg-stone-200 hover:text-black';
   const textClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-900';
   const viewModeButtonContainer = viewTheme === 'dark' ? 'bg-black/50' : 'bg-[#faefdd]';
 
