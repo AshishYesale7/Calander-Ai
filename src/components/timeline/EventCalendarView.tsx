@@ -6,7 +6,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Bot, Trash2, RefreshCw, PlusCircle, Calendar as CalendarIcon, List } from 'lucide-react';
 import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
 import { cn } from '@/lib/utils';
@@ -22,8 +22,8 @@ interface EventCalendarViewProps {
   isSyncing: boolean;
   onToggleTrash: () => void;
   onAddEvent: () => void;
-  onDeleteEvent: (eventId: string) => void;
-  onEditEvent: (event: TimelineEvent) => void;
+  onDeleteEvent?: (eventId: string) => void;
+  onEditEvent?: (event: TimelineEvent) => void;
 }
 
 export default function EventCalendarView({
@@ -88,7 +88,7 @@ export default function EventCalendarView({
       className={cn("w-full h-full flex flex-col frosted-glass")}
     >
       <CardHeader>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center">
           <Button onClick={onAddEvent} size={isCompact ? 'icon' : 'default'} className="bg-accent hover:bg-accent/90">
               <PlusCircle className={cn("h-5 w-5", !isCompact && "mr-2")} />
               {!isCompact && <span>New Event</span>}
@@ -105,7 +105,7 @@ export default function EventCalendarView({
               </Button>
             </div>
         </div>
-        <CardTitle className="font-headline text-xl text-primary">
+        <CardTitle className="font-headline text-xl text-primary mt-4">
           Event Calendar
         </CardTitle>
       </CardHeader>
