@@ -11,16 +11,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, User, Link2 } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, User, Link2, Globe } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, PhoneAuthProvider, OAuthProvider } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
-import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { getToken } from 'firebase/messaging';
 import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken } from '@/services/userService';
@@ -31,7 +31,8 @@ import DateTimeSettings from './DateTimeSettings';
 import DangerZoneSettings from './DangerZoneSettings';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '../ui/label';
 
 const IntegrationRow = ({
   icon,
@@ -40,7 +41,6 @@ const IntegrationRow = ({
   isConnected,
   onConnect,
   onDisconnect,
-  isComingSoon = false,
 }: {
   icon: React.ReactNode;
   name: string;
@@ -48,7 +48,6 @@ const IntegrationRow = ({
   isConnected: boolean | null;
   onConnect: () => void;
   onDisconnect: () => void;
-  isComingSoon?: boolean;
 }) => {
   const [oneWay, setOneWay] = useState(true);
   const [twoWay, setTwoWay] = useState(false);
@@ -90,11 +89,7 @@ const IntegrationRow = ({
                     <p className="text-xs text-muted-foreground">{description}</p>
                 </div>
             </div>
-            {isComingSoon ? (
-                <Badge variant="outline">Coming Soon</Badge>
-            ) : isConnected === null ? (
-                <LoadingSpinner size="sm" />
-            ) : null}
+            {isConnected === null && <LoadingSpinner size="sm" />}
         </div>
         
         {/* Render connected accounts */}
@@ -113,14 +108,12 @@ const IntegrationRow = ({
         )}
         
         {/* "Add Account" button always visible unless it's coming soon */}
-        {!isComingSoon && (
-             <div className="pl-14">
-                <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
-                    <Link2 className="mr-2 h-4 w-4"/>
-                    {isConnected && connectedEmail ? 'Connect Another Account' : 'Connect Account'}
-                </Button>
-            </div>
-        )}
+        <div className="pl-14">
+            <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
+                <Link2 className="mr-2 h-4 w-4"/>
+                {isConnected && connectedEmail ? 'Connect Another Account' : 'Connect Account'}
+            </Button>
+        </div>
 
         {isConnected && (
             <div className="pl-14">
@@ -141,7 +134,6 @@ const IntegrationRow = ({
   );
 };
 
-
 interface SettingsModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -150,22 +142,15 @@ interface SettingsModalProps {
 export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalProps) {
   const { apiKey: currentApiKey, setApiKey } = useApiKey();
   const { toast } = useToast();
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const [apiKeyInput, setApiKeyInput] = useState(currentApiKey || '');
   
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
-
-  const [isLinkingPhone, setIsLinkingPhone] = useState(false);
-  const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
-  const [phoneForLinking, setPhoneForLinking] = useState<string | undefined>();
-  const [otpForLinking, setOtpForLinking] = useState('');
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isTestingPush, setIsTestingPush] = useState(false);
-
-  const hasPhoneProvider = !!user?.phoneNumber;
 
   const checkStatuses = useCallback(async () => {
     if (!user) return;
@@ -217,7 +202,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       toast({ title: 'Error', description: `Failed to disconnect. Please try again.`, variant: 'destructive' });
     }
   };
-  
+
   const handleRequestNotificationPermission = async () => {
     if (!messaging || !user) return;
     try {
@@ -255,10 +240,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
-  // Rest of the handlers (phone linking, danger zone actions) can be complex and are omitted for brevity,
-  // but they would remain similar to the previous version. The key changes are in the JSX.
-  const handleSendLinkOtp = async () => { /* ... */ };
-  const handleVerifyLinkOtp = async () => { /* ... */ };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -287,16 +268,21 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <Separator/>
                     <div className="space-y-3">
                       <h3 className="font-medium flex items-center"><Smartphone className="mr-2 h-4 w-4" /> Phone Number</h3>
-                      {hasPhoneProvider ? <p className="text-sm text-green-400 font-medium flex items-center"><CheckCircle className="mr-2 h-4 w-4" />Linked: {user?.phoneNumber}</p> : <Button onClick={() => setIsLinkingPhone(true)} variant="outline" className="w-full">Link Phone Number</Button>}
-                      {/* Phone linking UI would go here */}
+                      {user?.phoneNumber ? (
+                        <div className="flex items-center justify-between h-10">
+                          <p className="text-sm text-green-400 font-medium flex items-center"><CheckCircle className="mr-2 h-4 w-4" />Linked: {user.phoneNumber}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Link your phone number for OTP-based sign-in and account recovery.</p>
+                      )}
                     </div>
-                     <Separator/>
+                    <Separator/>
                     <div className="space-y-3">
                         <h3 className="font-medium flex items-center"><Bell className="mr-2 h-4 w-4" /> Push Notifications</h3>
                         <p className="text-sm text-muted-foreground">Receive reminders for your upcoming events directly on your device.</p>
                         <div className="flex items-center space-x-2">
-                           <Switch id="push-notifications" checked={notificationPermission === 'granted'} onCheckedChange={(checked) => { if(checked) handleRequestNotificationPermission()}} disabled={notificationPermission === 'denied'} />
-                           <Label htmlFor="push-notifications">{notificationPermission === 'granted' ? "Enabled" : (notificationPermission === 'denied' ? "Blocked" : "Disabled")}</Label>
+                          <Switch id="push-notifications" checked={notificationPermission === 'granted'} onCheckedChange={(checked) => { if(checked) handleRequestNotificationPermission()}} disabled={notificationPermission === 'denied'} />
+                          <Label htmlFor="push-notifications">{notificationPermission === 'granted' ? "Enabled" : (notificationPermission === 'denied' ? "Blocked" : "Disabled")}</Label>
                         </div>
                         {notificationPermission === 'granted' && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush ? <LoadingSpinner size="sm" className="mr-2"/> : null} Test Push Notification</Button>}
                     </div>
