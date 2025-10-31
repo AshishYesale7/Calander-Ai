@@ -17,6 +17,8 @@ import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
 import '@/app/styles/desktop-command-bar.css';
+import { useTimezone } from '@/hooks/use-timezone';
+import { createEventFromPrompt } from '@/ai/flows/create-event-flow';
 
 export interface ChatSession {
   id: string;
@@ -56,6 +58,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
+  const { timezone } = useTimezone();
   const { isChatSidebarOpen, chattingWith, chatSidebarWidth } = useChat();
 
   const [selectedAction, setSelectedAction] = useState('Auto');
@@ -222,10 +225,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     setIsFullScreen(prev => !prev);
   }
   
-  const handleMinimize = () => {
-    setIsFullScreen(false);
-  };
-
   const { modelName, modelVersion } = useMemo(() => {
     const parts = selectedModel.split(' ');
     if (parts.length >= 2) {
@@ -242,6 +241,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
           const result: ConversationalEventOutput = await createConversationalEvent({
               chatHistory: history.map(m => ({ role: m.role, content: m.content })),
               apiKey,
+              timezone,
           });
           if (result.response) {
             setChatSessions(prevSessions =>
@@ -251,6 +251,10 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
                   : session
               )
             );
+          }
+          if (result.event) {
+              console.log("AI created an event:", result.event);
+              // Here you would handle the event creation, e.g., call onEventCreation(result.event)
           }
       } catch (e) {
           setChatSessions(prevSessions =>
@@ -272,7 +276,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     if (lastMessage && lastMessage.role === 'user') {
       handleAIResponse(activeChat.messages);
     }
-  }, [activeChat?.messages, activeChatId]);
+  }, [activeChat?.messages, activeChatId, isLoading, handleAIResponse]);
   
   const handleNewChat = () => {
     const newId = shortid.generate();
@@ -378,7 +382,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
             >
               <AiAssistantChat 
-                initialPrompt={search} 
                 onBack={handleClose}
                 dragControls={dragControls}
                 handleToggleFullScreen={handleToggleFullScreen}

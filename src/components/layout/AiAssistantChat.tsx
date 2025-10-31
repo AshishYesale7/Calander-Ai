@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Bot,
@@ -40,7 +40,6 @@ export interface ChatMessage {
 }
 
 interface AiAssistantChatProps {
-  initialPrompt: string;
   onBack: () => void;
   dragControls: any;
   handleToggleFullScreen: () => void;
