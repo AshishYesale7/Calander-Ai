@@ -50,7 +50,7 @@ interface SignUpFormProps {
   avatarUrl: string;
 }
 
-export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
+export default function SignInForm({ avatarUrl }: SignUpFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
@@ -142,11 +142,11 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         // This is the new logic to handle account linking
         if (auth.currentUser) {
             // If there's already a user (e.g., from phone auth), link the new provider
-            const credential = await linkWithCredential(auth.currentUser, provider);
+            await linkWithCredential(auth.currentUser, provider);
             toast({ title: 'Account Linked!', description: `Successfully linked your ${providerName} account.` });
         } else {
              // Otherwise, this is a fresh sign-in/sign-up
-            const result = await signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
             toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
         }
         
