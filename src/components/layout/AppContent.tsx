@@ -52,7 +52,6 @@ function ChatAndCallUI() {
   
   const isVideoCallActive = !!(ongoingCall);
   const isAudioCallActive = !!(ongoingAudioCall);
-  // An active call view is only when a video is fullscreen. Audio and PiP are overlays.
   const isCallViewActive = isVideoCallActive && !isPipMode;
 
   if (isMobile || isCallViewActive) return null;
@@ -142,17 +141,29 @@ export default function AppContent({
 
     const [search, setSearch] = useState('');
     const [isVoiceActivationEnabled, setIsVoiceActivationEnabled] = useState(false);
+    const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null);
 
-    // NEW state for the orb
+
     const [isChatOrbOpen, setIsChatOrbOpen] = useState(false);
 
     const {
       isListening,
       permissionStatus,
       requestPermissionAndStart,
+      listenForCommand,
     } = useVoiceActivation({
-      wakeWord: 'hey cafe',
-      onActivation: () => setIsChatOrbOpen(true),
+      wakeWord: 'hey orb',
+      onActivation: async () => {
+        setIsChatOrbOpen(true);
+        try {
+          const command = await listenForCommand();
+          if (command) {
+            setInitialChatMessage(command);
+          }
+        } catch (error) {
+          console.error("Error listening for command:", error);
+        }
+      },
       isEnabled: isVoiceActivationEnabled,
     });
     
@@ -184,7 +195,6 @@ export default function AppContent({
     const isChatPanelVisible = !!chattingWith;
 
   useEffect(() => {
-    // If the full chat is open, auto-collapse the main sidebar.
     const fullChatOpen = isChatSidebarOpen && chattingWith;
     if (!isMobile && fullChatOpen && sidebarState === 'expanded') {
       setSidebarOpen(false);
@@ -254,7 +264,6 @@ export default function AppContent({
         { hue1: 30, hue2: 0},    { hue1: 0, hue2: 320 },
     ];
     const colorInterval = setInterval(() => {
-        // Target both the desktop bar and the mobile bar if they exist
         const desktopBar = document.querySelector('.desktop-command-bar-glow') as HTMLElement;
         const mobileBar = bottomNavRef.current;
         const cmdkDialog = document.querySelector('.cmdk-dialog-border-glow') as HTMLElement;
@@ -286,7 +295,6 @@ export default function AppContent({
     const handleScroll = () => {
       const currentScrollY = mainEl.scrollTop;
       
-      // For Mobile Nav
       if (isMobile) {
         if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
           setIsBottomNavVisible(false);
@@ -295,7 +303,6 @@ export default function AppContent({
         }
       }
       
-      // For Desktop Command Bar
       if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
         setScrollDirection('down');
       } else {
@@ -420,12 +427,18 @@ export default function AppContent({
         />
         
         <AnimatePresence>
-            {!isMobile && (
-              <React.Fragment key="desktop-ui-wrapper">
-                <DesktopCommandBar scrollDirection={scrollDirection} />
-                <DashboardChat isOpen={isChatOrbOpen} setIsOpen={setIsChatOrbOpen} />
-              </React.Fragment>
-            )}
+            <React.Fragment key="desktop-ui-wrapper-1">
+                {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
+            </React.Fragment>
+            <React.Fragment key="desktop-ui-wrapper-2">
+                {!isMobile && (
+                    <DashboardChat 
+                        isOpen={isChatOrbOpen} 
+                        setIsOpen={setIsChatOrbOpen} 
+                        initialMessage={initialChatMessage}
+                    />
+                )}
+            </React.Fragment>
         </AnimatePresence>
         
         <AnimatePresence>

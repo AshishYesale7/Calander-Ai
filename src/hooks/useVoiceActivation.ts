@@ -10,7 +10,6 @@ interface UseVoiceActivationProps {
   isEnabled: boolean;
 }
 
-// Check for SpeechRecognition API
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
 
@@ -20,7 +19,6 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
   const [isListening, setIsListening] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   
-  // Clean up the recognition instance
   const cleanup = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -32,7 +30,6 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
     }
   }, []);
 
-  // Main logic to start listening
   const startListening = useCallback(() => {
     if (!SpeechRecognition) {
       console.warn("Speech recognition not supported in this browser.");
@@ -68,7 +65,6 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
         setTimeout(() => {
             if (recognitionRef.current && isEnabled) {
                  try {
-                    // Check if it's not already running
                     recognitionRef.current.start();
                  } catch (e: any) {
                      if (e.name !== 'InvalidStateError') {
@@ -93,7 +89,6 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
 
   }, [isEnabled, wakeWord, onActivation, permissionStatus, cleanup]);
   
-  // Effect to manage the listening state based on the isEnabled prop
   useEffect(() => {
     if (isEnabled) {
       if (permissionStatus === 'granted') {
@@ -103,11 +98,9 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
       cleanup();
     }
     
-    // Return cleanup function to be called when component unmounts or dependencies change
     return cleanup;
   }, [isEnabled, permissionStatus, startListening, cleanup]);
 
-  // The function to be called by a user action to request permission
   const requestPermissionAndStart = async () => {
     if (!SpeechRecognition) {
       toast({ title: "Not Supported", description: "Your browser does not support speech recognition.", variant: "destructive" });
@@ -119,16 +112,53 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
     }
     
     try {
-      // This is a common way to trigger the permission prompt
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // We don't need the stream, just the permission
+      stream.getTracks().forEach(track => track.stop());
       setPermissionStatus('granted');
-      // The useEffect will now automatically call startListening
     } catch (err) {
       setPermissionStatus('denied');
       toast({ title: "Permission Denied", description: "Microphone access is required for voice commands.", variant: "destructive" });
     }
   };
 
-  return { isListening, permissionStatus, requestPermissionAndStart };
+  const listenForCommand = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        if (!SpeechRecognition) {
+            reject("Speech recognition not supported.");
+            return;
+        }
+
+        // Stop the wake word listener temporarily
+        cleanup();
+
+        const commandRecognition = new SpeechRecognition();
+        commandRecognition.continuous = false;
+        commandRecognition.interimResults = false;
+
+        commandRecognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim();
+            resolve(transcript);
+        };
+
+        commandRecognition.onerror = (event) => {
+            console.error("Command recognition error:", event.error);
+            reject(event.error);
+        };
+        
+        commandRecognition.onend = () => {
+            // Restart the main wake word listener after the command is processed
+            if (isEnabled) {
+                startListening();
+            }
+        };
+
+        try {
+            commandRecognition.start();
+        } catch (e) {
+            reject("Failed to start command recognition.");
+        }
+    });
+  };
+
+  return { isListening, permissionStatus, requestPermissionAndStart, listenForCommand };
 };

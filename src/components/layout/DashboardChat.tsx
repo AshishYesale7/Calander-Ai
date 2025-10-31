@@ -42,9 +42,10 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
 interface DashboardChatProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
+    initialMessage: string | null;
 }
 
-export default function DashboardChat({ isOpen, setIsOpen }: DashboardChatProps) {
+export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: DashboardChatProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +72,12 @@ export default function DashboardChat({ isOpen, setIsOpen }: DashboardChatProps)
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (initialMessage) {
+        setChatHistory(prev => [...prev, { role: 'user', content: initialMessage }]);
+    }
+  }, [initialMessage]);
   
   useEffect(() => {
     if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
@@ -158,6 +165,8 @@ export default function DashboardChat({ isOpen, setIsOpen }: DashboardChatProps)
         onPointerDown={(e) => {
             if (isOpen) {
               e.stopPropagation();
+            } else {
+                dragControls.start(e);
             }
         }}
       >
