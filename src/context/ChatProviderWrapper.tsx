@@ -592,17 +592,17 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
                     <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
                 </div>
             )}
-            {ongoingAudioCall && otherUserInCall && !isPipMode && (
-                <motion.div
-                    drag
-                    dragMomentum={false}
-                    className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 cursor-grab active:cursor-grabbing"
-                >
-                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
-                </motion.div>
+            
+            {/* THIS IS THE LOGIC TO CHANGE */}
+            {ongoingAudioCall && otherUserInCall && (
+                 <IncomingAudioCall
+                    call={ongoingAudioCall}
+                    onAccept={() => {}} 
+                    onDecline={() => endCall(ongoingAudioCall.id)}
+                    isActive={true}
+                />
             )}
 
-            {/* PiP Call UI */}
             {isPipMode && (ongoingCall || ongoingAudioCall) && otherUserInCall && (
                  <motion.div
                     drag
@@ -633,7 +633,11 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
             )}
             {incomingCall && (<IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />)}
             {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
-            {incomingAudioCall && <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />}
+            
+            {incomingAudioCall && !ongoingAudioCall && (
+                <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />
+            )}
+
             {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
             
             <audio ref={remoteStream && remoteStream.getAudioTracks().length > 0 ? (el => { if (el) el.srcObject = remoteStream; }) : null} autoPlay playsInline className="hidden" />

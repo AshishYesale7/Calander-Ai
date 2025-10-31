@@ -58,15 +58,15 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
         
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const radius = 56; // Slightly larger than avatar radius (h-24/2 = 48px)
-        const bars = 100; // Number of lines in the visualizer
+        const radius = canvas.width / 2 - 40; 
+        const bars = 100;
 
         for (let i = 0; i < bars; i++) {
-          const barHeight = dataArray[i] * 0.5; // Adjust multiplier for sensitivity
+          const barHeight = dataArray[i] * 0.35;
           const angle = (i / bars) * 2 * Math.PI;
 
-          const startX = centerX + (radius) * Math.cos(angle);
-          const startY = centerY + (radius) * Math.sin(angle);
+          const startX = centerX + radius * Math.cos(angle);
+          const startY = centerY + radius * Math.sin(angle);
           const endX = centerX + (radius + barHeight) * Math.cos(angle);
           const endY = centerY + (radius + barHeight) * Math.sin(angle);
 
@@ -74,7 +74,7 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
           canvasCtx.moveTo(startX, startY);
           canvasCtx.lineTo(endX, endY);
           canvasCtx.lineWidth = 2;
-          canvasCtx.strokeStyle = `rgba(50, 205, 255, ${barHeight / 255})`; // Fades with intensity
+          canvasCtx.strokeStyle = `rgba(50, 205, 255, ${barHeight / 255})`; 
           canvasCtx.stroke();
         }
       };
@@ -97,15 +97,11 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
+    <div
       className="p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
     >
       <div className="flex flex-col items-center text-center relative">
-        {/* Canvas for Waveform - positioned absolutely behind the avatar */}
-        <canvas ref={canvasRef} width="200" height="200" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
+        <canvas ref={canvasRef} width="150" height="150" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
         
         <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg relative z-10">
           <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
@@ -139,6 +135,6 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
           <PhoneOff className="h-6 w-6" />
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 }
