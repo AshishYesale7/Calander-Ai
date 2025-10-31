@@ -122,23 +122,25 @@ export default function EventCalendarView({
                 </TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="calendar" className="mt-4 h-full flex-1 -m-4">
-                <Calendar
-                    mode="single"
-                    onSelect={(day) => handleDayClickInternal(day)}
-                    month={month}
-                    onMonthChange={onMonthChange}
-                    className="rounded-md w-full p-0 [&_button]:text-base"
-                    classNames={{
-                      day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
-                    }}
-                    components={{ DayContent: DayWithDotRenderer }}
-                    showOutsideDays={true}
-                />
-            </TabsContent>
-            <TabsContent value="list" className="mt-4 h-full flex-1">
-                <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} />
-            </TabsContent>
+            <div className="mt-4 flex-1">
+              <TabsContent value="calendar" className="h-full flex-1 -m-4">
+                  <Calendar
+                      mode="single"
+                      onSelect={(day) => handleDayClickInternal(day)}
+                      month={month}
+                      onMonthChange={onMonthChange}
+                      className="rounded-md w-full p-0 [&_button]:text-base"
+                      classNames={{
+                        day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
+                      }}
+                      components={{ DayContent: DayWithDotRenderer }}
+                      showOutsideDays={true}
+                  />
+              </TabsContent>
+              <TabsContent value="list" className="h-full flex-1">
+                  <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} />
+              </TabsContent>
+            </div>
         </Tabs>
       </CardContent>
     </Card>
