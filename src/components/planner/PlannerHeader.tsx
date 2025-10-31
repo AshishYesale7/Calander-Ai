@@ -94,7 +94,7 @@ export default function PlannerHeader({
             </DropdownMenu>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 bg-white p-1 rounded-full">
             <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)} onClick={onToggleTheme}><Palette className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className={cn("h-7 w-7 hidden md:inline-flex", buttonClasses)}><UserPlus className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className={cn("h-7 w-7", buttonClasses)}><Plus className="h-4 w-4" /></Button>
