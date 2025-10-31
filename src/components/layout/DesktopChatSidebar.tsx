@@ -8,7 +8,7 @@ import { onSnapshot, collection, query, where, orderBy, doc, getDoc, limit } fro
 import { db } from '@/lib/firebase';
 import type { PublicUserProfile, CallData } from '@/types';
 import { cn } from '@/lib/utils';
-import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus, PhoneMissed } from 'lucide-react';
+import { Search, UserPlus, X, PanelRightClose, Users, Phone, ArrowUpRight, ArrowDownLeft, Archive, EyeOff, Video, Trash2, Plus, PhoneMissed, Copy } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -45,7 +45,6 @@ import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleCon
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
 import Link from 'next/link';
 
-
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
     timestamp?: Date;
@@ -59,7 +58,9 @@ type CallLogItem = CallData & {
 const ContactListView = () => {
     const { user } = useAuth();
     const { setChattingWith } = useChat();
-    const [contacts, setContacts] = useState<PublicUserProfile[]>([]);
+    const { toast } = useToast();
+    const [appUsers, setAppUsers] = useState<PublicUserProfile[]>([]);
+    const [externalContacts, setExternalContacts] = useState<{ displayName: string }[]>([]);
     const [isLoading, setIsLoading] = useState<'google' | 'microsoft' | false>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -68,20 +69,27 @@ const ContactListView = () => {
         setIsLoading(provider);
         setError(null);
         try {
-            const appContacts = provider === 'google'
+            const { appUsers: fetchedAppUsers, externalContacts: fetchedExternalContacts } = provider === 'google'
                 ? await getGoogleContactsOnApp(user.uid)
                 : await getMicrosoftContactsOnApp(user.uid);
             
-            setContacts(prev => {
+            setAppUsers(prev => {
                 const existingUids = new Set(prev.map(c => c.uid));
-                const newContacts = appContacts.filter(c => !existingUids.has(c.uid));
+                const newContacts = fetchedAppUsers.filter(c => !existingUids.has(c.uid));
                 return [...prev, ...newContacts];
             });
-            if (appContacts.length === 0) {
-                 setError(`No new contacts from ${provider} found on Calendar.ai.`);
+
+            setExternalContacts(prev => {
+                const existingNames = new Set(prev.map(c => c.displayName));
+                const newContacts = fetchedExternalContacts.filter(c => !existingNames.has(c.displayName));
+                return [...prev, ...newContacts];
+            });
+
+            if (fetchedAppUsers.length === 0 && fetchedExternalContacts.length === 0) {
+                 setError(`No new contacts from ${provider} found.`);
             }
         } catch (error: any) {
-            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || error.code === 403) {
+            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || (error.code && error.code === 403)) {
               const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
               const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
               window.open(authUrl, '_blank', 'width=500,height=600');
@@ -94,6 +102,15 @@ const ContactListView = () => {
         }
     };
     
+    const handleInvite = () => {
+      const url = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      navigator.clipboard.writeText(url);
+      toast({
+        title: "Link Copied!",
+        description: "The invite link has been copied to your clipboard.",
+      });
+    };
+
     return (
         <>
             <div className="p-4 border-b border-border/30 flex-shrink-0">
@@ -111,23 +128,51 @@ const ContactListView = () => {
                 </div>
             </div>
             <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
+                <div className="p-2 space-y-4">
                     {error && <p className="text-xs text-destructive text-center p-2">{error}</p>}
-                    {contacts.length > 0 ? (
-                        contacts.map(contact => (
-                            <Link href="#" key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={contact.photoURL || undefined} alt={contact.displayName}/>
-                                    <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="text-left">
-                                    <p className="text-sm font-medium truncate">{contact.displayName}</p>
-                                    <p className="text-xs text-muted-foreground">@{contact.username}</p>
+                    
+                    {appUsers.length > 0 && (
+                        <div>
+                            <h3 className="text-xs font-semibold text-muted-foreground px-2 mb-1">On Calendar.ai</h3>
+                            {appUsers.map(contact => (
+                                <Link href="#" key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={contact.photoURL || undefined} alt={contact.displayName}/>
+                                        <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-left">
+                                        <p className="text-sm font-medium truncate">{contact.displayName}</p>
+                                        <p className="text-xs text-muted-foreground">@{contact.username}</p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {externalContacts.length > 0 && (
+                        <div>
+                            <h3 className="text-xs font-semibold text-muted-foreground px-2 mb-1">Invite to Calendar.ai</h3>
+                            {externalContacts.map((contact, index) => (
+                                <div key={index} className="w-full flex items-center justify-between gap-3 p-2 rounded-md hover:bg-muted">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="text-left">
+                                            <p className="text-sm font-medium truncate">{contact.displayName}</p>
+                                        </div>
+                                    </div>
+                                    <Button size="sm" variant="outline" onClick={handleInvite}>
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Invite
+                                    </Button>
                                 </div>
-                            </Link>
-                        ))
-                    ) : (
-                        !isLoading && !error && <p className="text-xs text-muted-foreground text-center p-8">Click a provider above to find your contacts.</p>
+                            ))}
+                        </div>
+                    )}
+
+                    {!isLoading && appUsers.length === 0 && externalContacts.length === 0 && !error && (
+                         <p className="text-xs text-muted-foreground text-center p-8">Click a provider above to find your contacts.</p>
                     )}
                     {isLoading && <div className="flex justify-center p-8"><LoadingSpinner /></div>}
                 </div>
@@ -339,7 +384,7 @@ const ChatListView = () => {
                         <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteChat}>Clear History</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
+            </>
         </>
     );
 };
@@ -406,7 +451,6 @@ const CallLogView = () => {
         if (!user || selectedIds.size === 0) return;
         const idsToDelete = Array.from(selectedIds);
         
-        // No optimistic update here to prevent freezes. Let the listener handle it.
         try {
             await deleteCalls(user.uid, idsToDelete);
             setSelectedIds(new Set());
@@ -528,11 +572,3 @@ export default function DesktopChatSidebar() {
         </div>
     );
 }
-
-    
-
-    
-
-
-    
-
