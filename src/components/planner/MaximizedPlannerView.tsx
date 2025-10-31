@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay, isSameDay } from 'date-fns';
+import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay, isSameDay, differenceInDays } from 'date-fns';
 import type { TimelineEvent, GoogleTaskList, RawGoogleTask, RawCalendarEvent } from '@/types';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask, updateGoogleTask } from '@/services/googleTasksService';
 import { getRawGoogleCalendarEvents } from '@/services/googleCalendarService'; // Import new service
@@ -268,7 +268,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
     let newEvent: TimelineEvent;
     
-    if (hour === -1) { // Dropped in all-day area
+    if (dropHour === -1) { // Dropped in all-day area
       newEvent = { 
         id: `custom-${Date.now()}`, 
         title, 
@@ -364,7 +364,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     try {
       await updateGoogleTask(user.uid, listId, taskId, { status: newStatus });
     } catch (error) {
-      toast({ title: "Sync Error", description: "Failed to update task in Google.", variant: 'destructive' });
+      toast({ title: "Sync Error", description: "Failed to update task in Google.", variant: "destructive" });
       setTasks(prev => ({
         ...prev,
         [listId]: prev[listId].map(t => t.id === taskId ? { ...t, status: taskToUpdate.status } : t)
