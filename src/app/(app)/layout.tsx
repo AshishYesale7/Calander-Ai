@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import type { ReactNode } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { PluginProvider } from '@/context/PluginContext';
@@ -13,10 +13,10 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { setOnboardingCompleted } = useAuth();
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set());
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [hiddenWidgets, setHiddenWidgets] = React.useState<Set<string>>(new Set());
 
-  const handleToggleWidget = useCallback((id: string) => {
+  const handleToggleWidget = React.useCallback((id: string) => {
     setHiddenWidgets(prev => {
         const newSet = new Set(prev);
         if (newSet.has(id)) {
@@ -29,22 +29,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, []);
   
   return (
-    <SidebarProvider>
-        <PluginProvider>
-            <StreakProvider>
-                <ChatProviderWrapper>
-                    <AppContent 
-                      onFinishOnboarding={() => setOnboardingCompleted(true)}
-                      isEditMode={isEditMode}
-                      setIsEditMode={setIsEditMode}
-                      hiddenWidgets={hiddenWidgets}
-                      handleToggleWidget={handleToggleWidget}
-                    >
-                        {children}
-                    </AppContent>
-                </ChatProviderWrapper>
-            </StreakProvider>
-        </PluginProvider>
-    </SidebarProvider>
+    <div className="relative h-screen w-full">
+        <SidebarProvider>
+            <PluginProvider>
+                <StreakProvider>
+                    <ChatProviderWrapper>
+                        <AppContent 
+                          onFinishOnboarding={() => setOnboardingCompleted(true)}
+                          isEditMode={isEditMode}
+                          setIsEditMode={setIsEditMode}
+                          hiddenWidgets={hiddenWidgets}
+                          handleToggleWidget={handleToggleWidget}
+                        >
+                            {children}
+                        </AppContent>
+                    </ChatProviderWrapper>
+                </StreakProvider>
+            </PluginProvider>
+        </SidebarProvider>
+    </div>
   )
 }

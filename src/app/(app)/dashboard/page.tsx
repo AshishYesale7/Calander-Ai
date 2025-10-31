@@ -96,6 +96,20 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const [isPlannerMaximized, setIsPlannerMaximized] = useState(false);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   
+  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if(user) {
+        fetch('/api/auth/google/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid }),
+        })
+        .then(res => res.json())
+        .then(data => setIsGoogleConnected(data.isConnected));
+    }
+  }, [user]);
+
   const fetchAllEvents = useCallback(async () => {
       if (user) {
         setIsDataLoading(true);
@@ -251,10 +265,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     'data': <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
   }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate]);
 
-  if (isPlannerMaximized) {
-    return <MaximizedPlannerView initialDate={selectedDateForDayView || new Date()} allEvents={allTimelineEvents} onMinimize={() => setIsPlannerMaximized(false)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />;
-  }
-  
   return (
     <div className="h-full">
       <WidgetDashboard
@@ -266,6 +276,17 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
         components={components}
         onAccordionToggle={handleAccordionToggle}
       />
+
+      {isPlannerMaximized && (
+        <MaximizedPlannerView 
+          initialDate={selectedDateForDayView || new Date()} 
+          allEvents={allTimelineEvents} 
+          onMinimize={() => setIsPlannerMaximized(false)} 
+          onEditEvent={handleOpenEditModal}
+          onDeleteEvent={handleDeleteEvent} 
+        />
+      )}
+
       {eventBeingEdited && (
         <EditEventModal 
           isOpen={isEditModalOpen} 
@@ -276,6 +297,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
           isGoogleConnected={!!isGoogleConnected}
         />
       )}
+      
       {isTrashPanelOpen && (
          <div className="absolute right-0 top-0 h-full w-[22rem] xl:w-96 min-w-[360px] z-20">
             <TrashPanel
