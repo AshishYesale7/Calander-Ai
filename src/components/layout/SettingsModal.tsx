@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -68,7 +68,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const hasPhoneProvider = !!user?.phoneNumber;
 
-  const checkStatuses = async () => {
+  const checkStatuses = useCallback(async () => {
     if (!user) return;
     try {
       const [googleRes, notionRes, microsoftRes] = await Promise.all([
@@ -82,7 +82,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     } catch (error) {
       toast({ title: 'Error', description: 'Could not verify integration statuses.', variant: 'destructive' });
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -95,7 +95,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         setIsLinkingPhone(false);
         setLinkingPhoneState('input');
     }
-  }, [isOpen, currentApiKey, user]);
+  }, [isOpen, currentApiKey, user, checkStatuses]);
 
   const handleApiKeySave = () => {
     setApiKey(apiKeyInput.trim() ? apiKeyInput.trim() : null);
@@ -183,13 +183,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
 
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="font-headline text-lg text-primary">Settings</DialogTitle>
-          <DialogDescription>Manage your application settings and integrations.</DialogDescription>
+          <DialogDescription>Manage application settings and preferences.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <Tabs defaultValue="account" className="h-full flex flex-col">
@@ -252,25 +251,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-```
-- src/services/yahooAuthService.ts:
-```ts
-
-'use server';
-
-import { OAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-
-export const signInWithYahoo = async (): Promise<void> => {
-    if (!auth) throw new Error("Firebase Auth is not initialized.");
-    
-    const provider = new OAuthProvider('yahoo.com');
-    provider.addScope('email');
-    provider.addScope('profile');
-    
-    // The onAuthStateChanged listener in AuthContext will handle user creation.
-    await signInWithPopup(auth, provider);
-};
-
-```
