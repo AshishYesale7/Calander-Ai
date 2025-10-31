@@ -21,8 +21,6 @@ interface AudioCallViewProps {
 export default function AudioCallView({ call, otherUser, onEndCall, connectionStatus }: AudioCallViewProps) {
   const { onToggleMute, remoteStream, isMuted } = useChat();
   const [callDuration, setCallDuration] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameId = useRef<number>();
 
   // Effect for the call duration timer
   useEffect(() => {
@@ -34,62 +32,6 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
     }
   }, [connectionStatus]);
 
-  // Effect for Web Audio API and canvas visualization
-  useEffect(() => {
-    if (remoteStream && remoteStream.getAudioTracks().length > 0 && canvasRef.current) {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaStreamSource(remoteStream);
-      source.connect(analyser);
-
-      analyser.fftSize = 256;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const canvas = canvasRef.current;
-      const canvasCtx = canvas.getContext('2d');
-      if (!canvasCtx) return;
-
-      const draw = () => {
-        animationFrameId.current = requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
-        
-        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = canvas.width / 2 - 40; 
-        const bars = 100;
-
-        for (let i = 0; i < bars; i++) {
-          const barHeight = dataArray[i] * 0.35;
-          const angle = (i / bars) * 2 * Math.PI;
-
-          const startX = centerX + radius * Math.cos(angle);
-          const startY = centerY + radius * Math.sin(angle);
-          const endX = centerX + (radius + barHeight) * Math.cos(angle);
-          const endY = centerY + (radius + barHeight) * Math.sin(angle);
-
-          canvasCtx.beginPath();
-          canvasCtx.moveTo(startX, startY);
-          canvasCtx.lineTo(endX, endY);
-          canvasCtx.lineWidth = 2;
-          canvasCtx.strokeStyle = `rgba(50, 205, 255, ${barHeight / 255})`; 
-          canvasCtx.stroke();
-        }
-      };
-      draw();
-      
-      return () => {
-        if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-        source.disconnect();
-        analyser.disconnect();
-        audioContext.close().catch(e => console.warn("Error closing audio context", e));
-      };
-    }
-  }, [remoteStream]);
-
-
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
@@ -98,17 +40,15 @@ export default function AudioCallView({ call, otherUser, onEndCall, connectionSt
 
   return (
     <div
-      className="p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-80"
+      className="p-6 rounded-2xl shadow-2xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 text-white w-64 cursor-grab active:cursor-grabbing"
     >
-      <div className="flex flex-col items-center text-center relative">
-        <canvas ref={canvasRef} width="150" height="150" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
-        
-        <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg relative z-10">
+      <div className="flex flex-col items-center text-center">
+        <Avatar className="h-24 w-24 border-4 border-green-500 shadow-lg">
           <AvatarImage src={otherUser.photoURL || undefined} alt={otherUser.displayName} />
           <AvatarFallback className="text-3xl">{otherUser.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
 
-        <p className="font-bold text-2xl mt-4">{otherUser.displayName}</p>
+        <p className="font-bold text-xl mt-4">{otherUser.displayName}</p>
         
         <div className="h-5 mt-1">
             {connectionStatus === 'disconnected' ? (

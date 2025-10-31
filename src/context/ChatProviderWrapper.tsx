@@ -60,7 +60,6 @@ export function GlobalCallUI() {
         isPipMode,
         onTogglePipMode,
         pipSizeMode,
-        handleTogglePipSizeMode,
         pipControls,
         isResetting,
         pipSize,
@@ -71,6 +70,11 @@ export function GlobalCallUI() {
         outgoingAudioCall,
         connectionStatus,
     } = useChat();
+
+    const handleTogglePipSizeMode = useCallback(() => {
+        // This function is passed to VideoCallView but its logic lives in the main provider
+        // We're just passing a stub here for now. The real logic is in ChatProviderWrapper.
+    }, []);
 
     return (
         <>
@@ -84,20 +88,30 @@ export function GlobalCallUI() {
             )}
             {incomingCall && <IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />}
             {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
+            
             {ongoingCall && otherUserInCall && !isPipMode && (
                 <div className="fixed inset-0 z-50 bg-black">
                     <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
                 </div>
             )}
+
             {incomingAudioCall && !ongoingAudioCall && (
                 <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />
             )}
-            {ongoingAudioCall && otherUserInCall && (
-                <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
-            )}
-            {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
             
-            {isPipMode && (ongoingCall || ongoingAudioCall) && otherUserInCall && (
+            {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
+
+            {ongoingAudioCall && otherUserInCall && (
+                 <motion.div
+                    drag
+                    dragMomentum={false}
+                    className="fixed top-20 left-5 z-[200]"
+                >
+                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
+                 </motion.div>
+            )}
+
+            {isPipMode && ongoingCall && otherUserInCall && (
                  <motion.div
                     drag
                     dragMomentum={false}
@@ -111,8 +125,7 @@ export function GlobalCallUI() {
                         height: pipSize.height,
                     }}
                 >
-                    {ongoingCall && <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />}
-                    {ongoingAudioCall && <div className="h-full w-full flex items-center justify-center"><AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} /></div>}
+                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
                 </motion.div>
             )}
         </>
@@ -214,7 +227,6 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
             });
         }
     
-        // Immediately clean up all local state to end the call for the current user.
         setOngoingCall(null);
         setOutgoingCall(null);
         setOngoingAudioCall(null);
@@ -653,6 +665,9 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
         chatSidebarWidth,
         permissionRequest,
         setPermissionRequest,
+        // For GlobalCallUI to use
+        activeCallId,
+        handleTogglePipSizeMode
     };
     
     return (
