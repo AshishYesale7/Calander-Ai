@@ -6,8 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { addDays, addMonths, addWeeks, subDays, subMonths, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, set, startOfDay as dfnsStartOfDay, endOfDay, isSameDay } from 'date-fns';
-import type { TimelineEvent, GoogleTaskList, RawGoogleTask } from '@/types';
+import type { TimelineEvent, GoogleTaskList, RawGoogleTask, RawCalendarEvent } from '@/types';
 import { getGoogleTaskLists, getAllTasksFromList, createGoogleTask, updateGoogleTask } from '@/services/googleTasksService';
+import { getRawGoogleCalendarEvents } from '@/services/googleCalendarService'; // Import new service
 
 import PlannerHeader from './PlannerHeader';
 import PlannerSidebar from './PlannerSidebar';
@@ -19,7 +20,7 @@ import { GripVertical } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useChat } from '@/context/ChatContext';
 
-export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | string;
+export type ActivePlannerView = 'today' | 'upcoming' | 'all_tasks' | 'gmail' | 'google' | string;
 export type PlannerViewMode = 'day' | 'week' | 'month';
 export type MaxViewTheme = 'light' | 'dark';
 
@@ -59,6 +60,9 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
   const [tasks, setTasks] = useState<Record<string, RawGoogleTask[]>>({});
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   
+  const [googleEvents, setGoogleEvents] = useState<RawCalendarEvent[]>([]);
+  const [isGoogleEventsLoading, setIsGoogleEventsLoading] = useState(false);
+
   const [currentDisplayDate, setCurrentDisplayDate] = useState(initialDate);
   const [plannerViewMode, setPlannerViewMode] = useState<PlannerViewMode>('week');
   
@@ -67,7 +71,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     return (localStorage.getItem('planner-view-theme') as MaxViewTheme) || 'dark';
   });
   
-  const [draggedTask, setDraggedTask] = useState<RawGoogleTask | null>(null);
+  const [draggedItem, setDraggedItem] = useState<RawGoogleTask | RawCalendarEvent | null>(null);
   type GhostEvent = { date: Date; hour: number; title?: string };
   const [ghostEvent, setGhostEvent] = useState<GhostEvent | null>(null);
 
@@ -187,10 +191,24 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
       setIsTasksLoading(false);
     }
   }, [user, toast]);
+
+  const fetchGoogleEvents = useCallback(async () => {
+    if (!user) return;
+    setIsGoogleEventsLoading(true);
+    try {
+      const events = await getRawGoogleCalendarEvents(user.uid);
+      setGoogleEvents(events);
+    } catch(e: any) {
+       toast({ title: "Error", description: e.message || "Failed to fetch Google Calendar events.", variant: "destructive" });
+    } finally {
+      setIsGoogleEventsLoading(false);
+    }
+  }, [user, toast]);
   
   useEffect(() => {
     fetchTaskData();
-  }, [fetchTaskData]);
+    fetchGoogleEvents();
+  }, [fetchTaskData, fetchGoogleEvents]);
 
   const handleAddTask = async (listId: string, title: string) => {
     if (!user) return;
@@ -208,11 +226,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     }
   };
   
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: RawGoogleTask) => {
-    setDraggedTask(task);
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, item: RawGoogleTask | RawCalendarEvent) => {
+    setDraggedItem(item);
     if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', JSON.stringify(task));
+        e.dataTransfer.setData('text/plain', JSON.stringify(item));
     }
   };
 
@@ -229,10 +247,11 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 
-    if (draggedTask) {
+    if (draggedItem) {
         const currentGhost = ghostEventRef.current;
+        const title = 'summary' in draggedItem ? draggedItem.summary : draggedItem.title;
         if (!currentGhost || !isSameDay(currentGhost.date, date) || currentGhost.hour !== hour) {
-            ghostEventRef.current = { date, hour, title: draggedTask.title };
+            ghostEventRef.current = { date, hour, title };
             throttledSetGhostEvent();
         }
     }
@@ -240,18 +259,45 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropDate: Date, dropHour: number) => {
     e.preventDefault();
-    if (!draggedTask) return;
+    if (!draggedItem) return;
 
-    const newEvent: TimelineEvent = dropHour === -1
-      ? { id: `custom-${Date.now()}`, title: draggedTask.title, date: dfnsStartOfDay(dropDate), endDate: endOfDay(dropDate), type: 'custom', notes: draggedTask.notes, isAllDay: true, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } }
-      : { id: `custom-${Date.now()}`, title: draggedTask.title, date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }), type: 'custom', notes: draggedTask.notes, isAllDay: false, isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } };
+    const title = 'summary' in draggedItem ? draggedItem.summary : draggedItem.title;
+    const notes = 'description' in draggedItem ? draggedItem.description : ('notes' in draggedItem ? draggedItem.notes : undefined);
+    const startDateTime = 'startDateTime' in draggedItem ? new Date(draggedItem.startDateTime) : undefined;
+    const endDateTime = 'endDateTime' in draggedItem ? new Date(draggedItem.endDateTime) : undefined;
+
+    let newEvent: TimelineEvent;
+    
+    if (hour === -1) { // Dropped in all-day area
+      newEvent = { 
+        id: `custom-${Date.now()}`, 
+        title, 
+        date: dfnsStartOfDay(dropDate), 
+        endDate: endOfDay(dropDate), 
+        type: 'custom', 
+        notes, 
+        isAllDay: true, 
+        isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } 
+      };
+    } else { // Dropped in timed area
+      newEvent = { 
+        id: `custom-${Date.now()}`, 
+        title, 
+        date: set(dropDate, { hours: dropHour, minutes: 0, seconds: 0, milliseconds: 0 }),
+        endDate: endDateTime && startDateTime ? addDays(endDateTime, differenceInDays(dropDate, startDateTime)) : undefined,
+        type: 'custom', 
+        notes, 
+        isAllDay: false, 
+        isDeletable: true, priority: 'None', status: 'pending', reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' } 
+      };
+    }
     
     setEventToCreate(newEvent);
     handleDragEnd();
   };
   
   const handleDragEnd = (e?: React.DragEvent) => {
-    setDraggedTask(null);
+    setDraggedItem(null);
     setGhostEvent(null);
     ghostEventRef.current = null;
     if (animationFrameRef.current) {
@@ -355,7 +401,9 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
                             activeView={activePlannerView}
                             tasks={tasks}
                             taskLists={taskLists}
-                            isLoading={isTasksLoading}
+                            googleEvents={googleEvents}
+                            isTasksLoading={isTasksLoading}
+                            isGoogleEventsLoading={isGoogleEventsLoading}
                             onAddTask={handleAddTask}
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
@@ -383,3 +431,5 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     </div>
   );
 }
+
+    

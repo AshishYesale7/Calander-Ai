@@ -1,5 +1,6 @@
 
 'use client';
+
 import { cn } from '@/lib/utils';
 import { Mail, Calendar, Star, Columns, Clock, Palette } from 'lucide-react';
 import type { ActivePlannerView, MaxViewTheme } from './MaximizedPlannerView';
@@ -13,6 +14,7 @@ interface PlannerSidebarProps {
 export default function PlannerSidebar({ activeView, setActiveView, viewTheme }: PlannerSidebarProps) {
   const mainSections = [
     { id: 'gmail', icon: Mail, label: 'Gmail', badge: 0 },
+    { id: 'google', icon: Calendar, label: 'Google Calendar' },
     { id: 'today', icon: Calendar, label: 'Today' },
     { id: 'upcoming', icon: Star, label: 'Upcoming' },
     { id: 'all_tasks', icon: Columns, label: 'All tasks' },

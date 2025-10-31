@@ -141,3 +141,46 @@ export async function getGoogleCalendarEvents(userId: string): Promise<RawCalend
     throw new Error('Failed to fetch Google Calendar events.');
   }
 }
+
+export async function getRawGoogleCalendarEvents(userId: string): Promise<RawCalendarEvent[]> {
+  const client = await getAuthenticatedClient(userId);
+  if (!client) {
+    return [];
+  }
+  const calendar = google.calendar({ version: 'v3', auth: client });
+  const now = new Date();
+  const timeMin = startOfMonth(now).toISOString();
+  const timeMax = endOfMonth(addMonths(now, 1)).toISOString();
+
+  try {
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: timeMin,
+      timeMax: timeMax,
+      maxResults: 100,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+    const items = response.data.items;
+    if (!items) return [];
+
+    return items.map((event): RawCalendarEvent | null => {
+      const start = event.start?.dateTime || event.start?.date;
+      const end = event.end?.dateTime || event.end?.date;
+      if (!event.id || !event.summary || !start || !end) return null;
+      return {
+        id: event.id,
+        summary: event.summary,
+        description: event.description || undefined,
+        startDateTime: start,
+        endDateTime: end,
+        htmlLink: event.htmlLink || undefined,
+      };
+    }).filter((e): e is RawCalendarEvent => e !== null);
+  } catch (error) {
+    console.error("Error fetching raw Google Calendar events:", error);
+    throw new Error("Could not retrieve Google Calendar events.");
+  }
+}
+
+    
