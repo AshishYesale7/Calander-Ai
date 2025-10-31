@@ -47,7 +47,7 @@ interface ChatContextType {
   pipSize: { width: number; height: number };
   setPipSize: Dispatch<SetStateAction<{ width: number; height: number }>>;
   pipSizeMode: 'medium' | 'large';
-  setPipSizeMode: Dispatch<SetStateAction<'medium' | 'large'>>;
+  onTogglePipSizeMode: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
   otherUserInCall: PublicUserProfile | null;
@@ -59,6 +59,13 @@ interface ChatContextType {
 
   // New property for chat sidebar width
   chatSidebarWidth: number;
+  
+  // New state for permission requests
+  permissionRequest: { callType: CallType; onGrant: () => void; onDeny: () => void; } | null;
+  setPermissionRequest: Dispatch<SetStateAction<{ callType: CallType; onGrant: () => void; onDeny: () => void; } | null>>;
+
+  // Add activeCallId for context
+  activeCallId: string | null;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
