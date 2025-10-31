@@ -316,14 +316,15 @@ export default function AppContent({
 
   return (
     <>
+      <OfflineIndicator />
       <ChatProviderWrapper>
         <GlobalCallUI />
         <div className={cn(
             'relative z-0 flex h-screen w-full overflow-hidden',
             isPendingDeletion && 'pointer-events-none blur-sm'
         )}>
-          <OfflineIndicator />
-          <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
+          
+          <div className={cn('contents', isVideoCallActive && !isPipMode && 'hidden md:contents')}>
             <SidebarNav {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
           </div>
           

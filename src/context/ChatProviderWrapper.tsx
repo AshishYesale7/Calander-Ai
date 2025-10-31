@@ -69,12 +69,8 @@ export function GlobalCallUI() {
         incomingAudioCall,
         outgoingAudioCall,
         connectionStatus,
+        handleTogglePipSizeMode
     } = useChat();
-
-    const handleTogglePipSizeMode = useCallback(() => {
-        // This function is passed to VideoCallView but its logic lives in the main provider
-        // We're just passing a stub here for now. The real logic is in ChatProviderWrapper.
-    }, []);
 
     return (
         <>
@@ -86,7 +82,7 @@ export function GlobalCallUI() {
                     onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
                 />
             )}
-            {incomingCall && <IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />}
+            {incomingCall && !ongoingCall && <IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />}
             {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
             
             {ongoingCall && otherUserInCall && !isPipMode && (
@@ -105,7 +101,7 @@ export function GlobalCallUI() {
                  <motion.div
                     drag
                     dragMomentum={false}
-                    className="fixed top-20 left-5 z-[200]"
+                    className="absolute top-20 left-5 z-[200]"
                 >
                     <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
                  </motion.div>
@@ -622,8 +618,8 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
     const isMobile = useIsMobile();
 
     const chatSidebarWidth = useMemo(() => {
-        const isCallViewActive = (ongoingCall || ongoingAudioCall) && !isPipMode;
-        if (isMobile || isCallViewActive) return 0;
+        const isVideoCallActive = ongoingCall && !isPipMode;
+        if (isMobile || isVideoCallActive) return 0;
         
         let width = 0;
         if (isChatSidebarOpen) {
@@ -638,7 +634,7 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
           }
         }
         return width;
-    }, [isMobile, isChatSidebarOpen, chattingWith, ongoingCall, ongoingAudioCall, isPipMode]);
+    }, [isMobile, isChatSidebarOpen, chattingWith, ongoingCall, isPipMode]);
 
     const contextValue = {
         chattingWith, setChattingWith, 
@@ -665,7 +661,6 @@ export default function ChatProviderWrapper({ children }: { children: ReactNode 
         chatSidebarWidth,
         permissionRequest,
         setPermissionRequest,
-        // For GlobalCallUI to use
         activeCallId,
         handleTogglePipSizeMode
     };
