@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
 import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
@@ -41,7 +42,7 @@ interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
-  hiddenWidgets?: Set<string>;
+  hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
   onAccordionToggle: (isOpen: boolean, contentHeight: number) => void;
@@ -249,3 +250,5 @@ export default function WidgetDashboard({
     </div>
   );
 }
+
+    

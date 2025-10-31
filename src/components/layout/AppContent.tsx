@@ -36,7 +36,6 @@ import MobileBottomNav from './MobileBottomNav';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { saveUserFCMToken } from '@/services/userService';
-import { responsiveStudentLayouts, responsiveProfessionalLayouts } from '@/data/layout-data';
 
 function ChatAndCallUI() {
   const { 
@@ -140,17 +139,6 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     const isChatPanelVisible = !!chattingWith;
     
     const [isEditMode, setIsEditMode] = useState(false);
-
-    const defaultLayouts = useMemo(() => {
-        const role = user?.userType || 'student';
-        return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
-    }, [user?.userType]);
-    
-    const defaultWidgetIds = useMemo(() => {
-        const lgLayout = defaultLayouts.lg || [];
-        return lgLayout.map(item => item.i);
-    }, [defaultLayouts]);
-
     const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set());
 
     const handleToggleWidget = useCallback((id: string) => {
@@ -411,3 +399,5 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
+
+    
