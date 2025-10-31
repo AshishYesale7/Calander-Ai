@@ -7,6 +7,8 @@ import './electric-border.css';
 import './styles/video-player.css';
 import '@/components/landing/lottie-orb.css';
 import '@/components/landing/bottom-chat.css';
+import './styles/dashboard-chat.css';
+import './styles/dashboard-orb.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { SpeedInsights } from "@vercel/speed-insights/next";

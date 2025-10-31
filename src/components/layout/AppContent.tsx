@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -30,6 +31,7 @@ import DesktopChatSidebar from './DesktopChatSidebar';
 import { ChatSidebar } from './ChatSidebar';
 import OnboardingModal from '@/components/auth/OnboardingModal';
 import DesktopCommandBar from './DesktopCommandBar';
+import DashboardChat from './DashboardChat';
 import MobileBottomNav from './MobileBottomNav';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
@@ -416,6 +418,7 @@ export default function AppContent({
         
         <AnimatePresence>
           {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
+          {!isMobile && <DashboardChat scrollDirection={scrollDirection} />}
 
           {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
                 <MobileBottomNav
