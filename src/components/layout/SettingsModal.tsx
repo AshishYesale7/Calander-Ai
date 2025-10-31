@@ -15,12 +15,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, User, Shield, Info, HardDrive, Clock } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, User, Shield, HardDrive, Clock, Bell, Info } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, type ConfirmationResult } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import { NotionLogo } from '../logo/NotionLogo';
@@ -28,7 +28,9 @@ import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
-import DangerZoneSettings from './DangerZoneSettings'; // Import the new component
+import DangerZoneSettings from './DangerZoneSettings';
+import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
+import { Switch } from '../ui/switch';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,44 +42,49 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const { toast } = useToast();
   const { user, refreshUser } = useAuth();
   const [apiKeyInput, setApiKeyInput] = useState(currentApiKey || '');
+  
+  // Integrations state
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
+  
+  // Phone linking state
   const [isLinkingPhone, setIsLinkingPhone] = useState(false);
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
   const [phoneForLinking, setPhoneForLinking] = useState<string | undefined>();
   const [otpForLinking, setOtpForLinking] = useState('');
 
+  // Notification state
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
+
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
-  const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
 
-  const checkGoogleStatus = async () => {
+  const checkStatuses = async () => {
     if (!user) return;
-    const res = await fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
-    const data = await res.json();
-    setIsGoogleConnected(data.isConnected);
-  };
-  const checkNotionStatus = async () => {
-    if (!user) return;
-    const res = await fetch('/api/auth/notion/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
-    const data = await res.json();
-    setIsNotionConnected(data.isConnected);
-  };
-  const checkMicrosoftStatus = async () => {
-    if (!user) return;
-    const res = await fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
-    const data = await res.json();
-    setIsMicrosoftConnected(data.isConnected);
+    const googleRes = await fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const googleData = await googleRes.json();
+    setIsGoogleConnected(googleData.isConnected);
+
+    const notionRes = await fetch('/api/auth/notion/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const notionData = await notionRes.json();
+    setIsNotionConnected(notionData.isConnected);
+    
+    const microsoftRes = await fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const microsoftData = await microsoftRes.json();
+    setIsMicrosoftConnected(microsoftData.isConnected);
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setIsPushEnabled(Notification.permission === 'granted');
+    }
   };
 
   useEffect(() => {
     if (isOpen && user) {
       setApiKeyInput(currentApiKey || '');
-      checkGoogleStatus();
-      checkNotionStatus();
-      checkMicrosoftStatus();
+      checkStatuses();
     }
   }, [isOpen, currentApiKey, user]);
 
@@ -95,7 +102,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const handleDisconnectGoogle = async () => {
     if (!user) return;
     await fetch('/api/auth/google/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
-    checkGoogleStatus();
+    checkStatuses();
     toast({ title: 'Disconnected from Google' });
   };
   
@@ -141,6 +148,27 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       setLinkingPhoneState('otp-sent');
     }
   };
+
+  const handleTestPush = async () => {
+    if (!user) return;
+    setIsTestingPush(true);
+    toast({ title: 'Testing Push Notification...', description: 'You should receive a test notification in 5 seconds.'});
+    setTimeout(async () => {
+        try {
+            const result = await sendWebPushNotification({
+                userId: user.uid,
+                title: 'Test Notification ✅',
+                body: 'If you see this, push notifications are working!',
+                url: '/dashboard',
+            });
+            if (!result.success) throw new Error(result.message);
+        } catch (error: any) {
+            toast({ title: 'Test Failed', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsTestingPush(false);
+        }
+    }, 5000);
+  };
   
 
   return (
@@ -159,7 +187,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
               <TabsTrigger value="danger" className="text-destructive">Danger Zone</TabsTrigger>
             </TabsList>
             <ScrollArea className="flex-1 mt-4">
-              <div className="pr-4">
+              <div className="p-1 pr-4">
                 <TabsContent value="account">
                   <div className="space-y-6">
                     <div className="space-y-3">
@@ -174,6 +202,17 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       {isLinkingPhone && linkingPhoneState === 'input' && <div className="space-y-4"><div className="space-y-2 phone-input-container"><Label htmlFor="phone-link">Enter phone number</Label><PhoneInput id="phone-link" international defaultCountry="US" value={phoneForLinking} onChange={setPhoneForLinking}/></div><Button onClick={handleSendLinkOtp}>Send OTP</Button><div ref={recaptchaContainerRef} id="recaptcha-container-settings"></div></div>}
                       {(isLinkingPhone && linkingPhoneState === 'otp-sent') && <div className="space-y-4"><Input value={otpForLinking} onChange={e => setOtpForLinking(e.target.value)} placeholder="6-digit OTP" /><Button onClick={handleVerifyLinkOtp}>Verify &amp; Link</Button></div>}
                       {linkingPhoneState === 'success' && <p className="text-sm text-green-400">Phone linked successfully!</p>}
+                    </div>
+                     <Separator/>
+                    <div className="space-y-3">
+                        <Label className="font-medium flex items-center"><Bell className="mr-2 h-4 w-4" /> Push Notifications</Label>
+                        <p className="text-sm text-muted-foreground">Receive reminders for your upcoming events directly on your device.</p>
+                        <div className="flex items-center space-x-2">
+                           <Switch id="push-notifications" checked={isPushEnabled} disabled />
+                           <Label htmlFor="push-notifications">{isPushEnabled ? "Notifications Enabled" : "Notifications Disabled"}</Label>
+                        </div>
+                         {!isPushEnabled && <p className="text-xs text-muted-foreground"><Info className="inline h-3 w-3 mr-1" />To enable, click "Allow" when your browser prompts you, or change the setting in your browser's site permissions for this page.</p>}
+                        {isPushEnabled && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush ? <LoadingSpinner size="sm" className="mr-2"/> : null} Test Push Notification</Button>}
                     </div>
                   </div>
                 </TabsContent>
