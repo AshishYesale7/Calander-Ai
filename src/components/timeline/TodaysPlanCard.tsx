@@ -213,13 +213,13 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
           <AccordionItem value="item-1" className="border-b-0">
             <div className="p-4 md:p-6" onClickCapture={(e) => { if(isRoutineSetupNeeded){e.preventDefault(); setIsRoutineModalOpen(true);}}}>
               <AccordionTrigger className="w-full flex items-center justify-between gap-2 hover:no-underline p-0">
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1">
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); handlePrevDay(); }}
                         disabled={!canGoBack || isLoading}
-                        className="h-8 w-8 shrink-0"
+                        className="h-8 w-8 shrink-0 bg-black/30 backdrop-blur-sm rounded-full text-muted-foreground hover:text-white"
                         aria-label="Previous day"
                     >
                         <ChevronLeft className="h-5 w-5" />
@@ -241,13 +241,13 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                         )}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-1 pl-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 pl-2">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
                         disabled={!canGoForward || isLoading}
-                        className="h-8 w-8 shrink-0"
+                        className="h-8 w-8 shrink-0 bg-black/30 backdrop-blur-sm rounded-full text-muted-foreground hover:text-white"
                         aria-label="Next day"
                     >
                         <ChevronRight className="h-5 w-5" />
@@ -259,11 +259,11 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                         e.stopPropagation();
                         fetchAndGeneratePlan(displayDate, true);
                       }}
-                      className="h-8 w-8 p-0 shrink-0"
+                      className="h-8 w-8 shrink-0 bg-black/30 backdrop-blur-sm rounded-full text-muted-foreground hover:text-white"
                       aria-label="Refresh plan"
                       disabled={isLoading}
                     >
-                      <RefreshCw className={`h-5 w-5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -272,10 +272,10 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                         e.stopPropagation();
                         setIsRoutineModalOpen(true);
                       }}
-                      className="h-8 w-8 p-0 shrink-0"
+                      className="h-8 w-8 shrink-0 bg-black/30 backdrop-blur-sm rounded-full text-muted-foreground hover:text-white"
                       aria-label="Edit routine"
                     >
-                      <Edit className="h-5 w-5 text-muted-foreground" />
+                      <Edit className="h-5 w-5" />
                     </Button>
                   </div>
               </AccordionTrigger>
