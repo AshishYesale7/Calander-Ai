@@ -111,7 +111,7 @@ export default function EventCalendarView({
       </CardHeader>
       <CardContent className="p-2 sm:p-4 flex-1 overflow-auto">
         <Tabs defaultValue="calendar" className="relative h-full flex flex-col">
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center">
               <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30 w-auto">
                 <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Calendar
@@ -122,7 +122,7 @@ export default function EventCalendarView({
                 </TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="calendar" className="mt-0 h-full flex-1 -m-4">
+            <TabsContent value="calendar" className="mt-4 h-full flex-1 -m-4">
                 <Calendar
                     mode="single"
                     onSelect={(day) => handleDayClickInternal(day)}
@@ -136,7 +136,7 @@ export default function EventCalendarView({
                     showOutsideDays={true}
                 />
             </TabsContent>
-            <TabsContent value="list" className="mt-0 h-full flex-1">
+            <TabsContent value="list" className="mt-4 h-full flex-1">
                 <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} />
             </TabsContent>
         </Tabs>
