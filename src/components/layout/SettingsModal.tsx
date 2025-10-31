@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, Globe, User } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, Globe, User, Link2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -34,6 +34,8 @@ import DangerZoneSettings from './DangerZoneSettings';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
+
 
 const IntegrationRow = ({
   icon,
@@ -115,7 +117,6 @@ const IntegrationRow = ({
   );
 };
 
-
 interface SettingsModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -130,7 +131,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
-  
+
   const [isLinkingPhone, setIsLinkingPhone] = useState(false);
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
   const [phoneForLinking, setPhoneForLinking] = useState<string | undefined>();
@@ -165,9 +166,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       if (typeof window !== 'undefined' && 'Notification' in window) {
         setNotificationPermission(Notification.permission);
       }
-    } else {
-        setIsLinkingPhone(false);
-        setLinkingPhoneState('input');
     }
   }, [isOpen, currentApiKey, user, checkStatuses]);
 
@@ -200,10 +198,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     if (!auth.currentUser || !phoneForLinking || !isValidPhoneNumber(phoneForLinking) || !recaptchaContainerRef.current) return;
     setLinkingPhoneState('loading');
     try {
-      if (window.linkRecaptchaVerifier) window.linkRecaptchaVerifier.clear();
+      if ((window as any).linkRecaptchaVerifier) (window as any).linkRecaptchaVerifier.clear();
       const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, { 'size': 'normal' });
-      window.linkRecaptchaVerifier = verifier;
-      window.confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
+      (window as any).linkRecaptchaVerifier = verifier;
+      (window as any).confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
       setLinkingPhoneState('otp-sent');
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -212,10 +210,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   };
 
   const handleVerifyLinkOtp = async () => {
-    if (!otpForLinking || !window.confirmationResult) return;
+    if (!otpForLinking || !(window as any).confirmationResult) return;
     setLinkingPhoneState('loading');
     try {
-      await window.confirmationResult.confirm(otpForLinking);
+      await (window as any).confirmationResult.confirm(otpForLinking);
       await refreshUser();
       setLinkingPhoneState('success');
     } catch (error: any) {
@@ -248,7 +246,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     setIsTestingPush(true);
     toast({ title: 'Sending Test Push Notification...'});
     try {
-        const result = await sendWebPushNotification({ userId: user.uid, title: 'Test Notification ✅', body: 'If you see this, push notifications are working!', url: '/dashboard' });
+        const result = await (await fetch('/api/test-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid, title: 'Test Notification ✅', body: 'If you see this, push notifications are working!', url: '/dashboard' }),
+        })).json();
         if (!result.success) throw new Error(result.message);
     } catch (error: any) {
         toast({ title: 'Test Failed', description: error.message, variant: 'destructive' });
@@ -276,7 +278,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
               <div className="p-1 pr-4">
                 <TabsContent value="account">
                   <div className="space-y-6">
-                    <div className="space-y-3">
+                     <div className="space-y-3">
                       <h3 className="font-medium flex items-center"><KeyRound className="mr-2 h-4 w-4" /> Custom API Key</h3>
                       <p className="text-sm text-muted-foreground">Optionally provide your own Google Gemini API key.</p>
                       <div className="flex gap-2"><Input id="geminiApiKey" type="password" placeholder="Enter Gemini API key" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)} /><Button onClick={handleApiKeySave}>Save</Button></div>
@@ -365,3 +367,5 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
+
+    
