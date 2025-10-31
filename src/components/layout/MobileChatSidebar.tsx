@@ -40,10 +40,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu';
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
-import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -55,7 +53,7 @@ type CallLogItem = CallData & {
     otherUser: PublicUserProfile;
 };
 
-const ContactsPopover = () => {
+const ContactListView = () => {
     const { user } = useAuth();
     const { setChattingWith } = useChat();
     const [contacts, setContacts] = useState<PublicUserProfile[]>([]);
@@ -77,7 +75,7 @@ const ContactsPopover = () => {
                 return [...prev, ...newContacts];
             });
             if (appContacts.length === 0) {
-                 setError(`No new contacts found on ${provider}.`);
+                 setError(`No new contacts from ${provider} found on Calendar.ai.`);
             }
         } catch (error: any) {
             setError(error.message || `Failed to fetch ${provider} contacts.`);
@@ -87,49 +85,44 @@ const ContactsPopover = () => {
     };
     
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <button
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 transition-colors hover:text-foreground"
-                    )}
-                >
-                    <UserPlus className="h-5 w-5" />
-                    <span className="text-xs">Contacts</span>
-                </button>
-            </PopoverTrigger>
-            <PopoverContent side="top" className="w-64 frosted-glass p-2">
-                <h4 className="font-medium text-sm p-2">Find Contacts on Calendar.ai</h4>
-                 <div className="p-2 grid grid-cols-2 gap-2">
+        <>
+            <div className="p-4 border-b border-border/30 flex-shrink-0">
+                <h2 className="text-lg font-semibold">Find Contacts</h2>
+                <p className="text-xs text-muted-foreground mt-1">Discover which of your contacts are already on Calendar.ai.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button variant="outline" onClick={() => handleFetchContacts('google')} disabled={!!isLoading}>
-                         {isLoading === 'google' ? <LoadingSpinner size="sm" className="mr-2"/> : <GoogleIcon/>}
-                         Google
+                        {isLoading === 'google' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        Find on Google
                     </Button>
                     <Button variant="outline" onClick={() => handleFetchContacts('microsoft')} disabled={!!isLoading}>
-                        {isLoading === 'microsoft' ? <LoadingSpinner size="sm" className="mr-2"/> : <MicrosoftIcon/>}
-                        Microsoft
+                        {isLoading === 'microsoft' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        Find on Microsoft
                     </Button>
                 </div>
-                {error && <p className="text-xs text-destructive text-center p-2">{error}</p>}
-                {contacts.length > 0 ? (
-                    <ScrollArea className="h-64">
-                    <div className="space-y-1 p-2">
-                        {contacts.map(contact => (
+            </div>
+            <ScrollArea className="flex-1">
+                <div className="p-2 space-y-1">
+                    {error && <p className="text-xs text-destructive text-center p-2">{error}</p>}
+                    {contacts.length > 0 ? (
+                        contacts.map(contact => (
                             <button key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
-                                <Avatar className="h-8 w-8">
+                                <Avatar className="h-10 w-10">
                                     <AvatarImage src={contact.photoURL || undefined} alt={contact.displayName}/>
                                     <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm font-medium truncate">{contact.displayName}</span>
+                                <div className="text-left">
+                                    <p className="text-sm font-medium truncate">{contact.displayName}</p>
+                                    <p className="text-xs text-muted-foreground">@{contact.username}</p>
+                                </div>
                             </button>
-                        ))}
-                    </div>
-                    </ScrollArea>
-                ) : (
-                    !isLoading && !error && <p className="text-xs text-muted-foreground text-center p-4">Click to find contacts from your connected accounts.</p>
-                )}
-            </PopoverContent>
-        </Popover>
+                        ))
+                    ) : (
+                        !isLoading && !error && <p className="text-xs text-muted-foreground text-center p-8">Click a provider above to find your contacts.</p>
+                    )}
+                    {isLoading && <div className="flex justify-center p-8"><LoadingSpinner /></div>}
+                </div>
+            </ScrollArea>
+        </>
     );
 };
 
@@ -489,15 +482,17 @@ const CallLogView = () => {
 
 export default function MobileChatSidebar() {
     const { setIsChatSidebarOpen } = useChat();
-    const [activeView, setActiveView] = useState<'chats' | 'updates' | 'communities' | 'calls'>('chats');
+    const [activeView, setActiveView] = useState<'chats' | 'updates' | 'contacts' | 'calls'>('chats');
     
     return (
         <div className={cn("flex flex-col h-full bg-card/60 backdrop-blur-xl border-r border-border/30")}>
              <div className="p-4 border-b border-border/30">
                  <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-bold font-headline text-primary">Chats</h1>
+                    <h1 className="text-xl font-bold font-headline text-primary">
+                      {activeView.charAt(0).toUpperCase() + activeView.slice(1)}
+                    </h1>
                     <Button variant="ghost" size="icon" onClick={() => setIsChatSidebarOpen(false)}>
-                        <X className="h-6 w-6 text-black dark:text-white" />
+                        <X className="h-6 w-6" />
                     </Button>
                 </div>
             </div>
@@ -506,7 +501,8 @@ export default function MobileChatSidebar() {
             <div className="flex-1 flex flex-col min-h-0 p-2">
                 {activeView === 'chats' && <ChatListView />}
                 {activeView === 'calls' && <CallLogView />}
-                {(activeView === 'updates' || activeView === 'communities') && (
+                {activeView === 'contacts' && <ContactListView />}
+                {activeView === 'updates' && (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         <p>Coming soon!</p>
                     </div>
@@ -517,7 +513,7 @@ export default function MobileChatSidebar() {
                 <div className="flex justify-around items-center">
                     <NavItem icon={ChatIcon} label="Chats" isActive={activeView === 'chats'} onClick={() => setActiveView('chats')} />
                     <NavItem icon={UpdatesIcon} label="Updates" isActive={activeView === 'updates'} onClick={() => setActiveView('updates')} />
-                    <ContactsPopover />
+                    <NavItem icon={Users} label="Contacts" isActive={activeView === 'contacts'} onClick={() => setActiveView('contacts')} />
                     <NavItem icon={Phone} label="Calls" isActive={activeView === 'calls'} onClick={() => setActiveView('calls')} />
                 </div>
             </div>
@@ -528,5 +524,6 @@ export default function MobileChatSidebar() {
     
 
     
+
 
 

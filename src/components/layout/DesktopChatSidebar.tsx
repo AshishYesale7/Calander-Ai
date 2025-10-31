@@ -43,8 +43,6 @@ import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } fr
 import { useTheme } from '@/hooks/use-theme';
 import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 
 type RecentChatUser = PublicUserProfile & {
@@ -108,12 +106,12 @@ const ContactListView = () => {
                 <p className="text-xs text-muted-foreground mt-1">Discover which of your contacts are already on Calendar.ai.</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button variant="outline" onClick={() => handleFetchContacts('google')} disabled={!!isLoading}>
-                        {isLoading === 'google' ? <LoadingSpinner size="sm" className="mr-2"/> : <GoogleIcon/>}
-                        Google
+                        {isLoading === 'google' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        Find on Google
                     </Button>
                     <Button variant="outline" onClick={() => handleFetchContacts('microsoft')} disabled={!!isLoading}>
-                        {isLoading === 'microsoft' ? <LoadingSpinner size="sm" className="mr-2"/> : <MicrosoftIcon/>}
-                        Microsoft
+                        {isLoading === 'microsoft' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        Find on Microsoft
                     </Button>
                 </div>
             </div>
@@ -529,6 +527,3 @@ export default function DesktopChatSidebar() {
 
 
     
-
-
-
