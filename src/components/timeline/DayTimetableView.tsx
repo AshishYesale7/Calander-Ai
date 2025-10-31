@@ -4,7 +4,7 @@
 import type { TimelineEvent } from '@/types';
 import { useMemo, useRef, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
 import { Bot, Trash2, XCircle, Edit3, CalendarDays, Maximize, Palette, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,9 +42,9 @@ const getEventColorStyle = (event: TimelineEvent) => {
 
 
 const getEventTypeIcon = (event: TimelineEvent): ReactNode => {
-  if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+  if (event.type === 'ai_suggestion') return <Bot className="mr-2 h-5 w-5 text-accent flex-shrink-0" />;
   const Icon = event.icon || CalendarDays;
-  return <Icon className="mr-2 h-4 w-4 text-accent flex-shrink-0" />;
+  return <Icon className="mr-2 h-5 w-5 text-accent flex-shrink-0" />;
 };
 
 
@@ -119,6 +119,11 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     }
   };
 
+  const getEventTooltip = (event: TimelineEvent): string => {
+    const time = format(event.date, 'h:mm a');
+    return `${event.title} - ${time}`;
+  };
+
   return (
     <Card className={cn("frosted-glass w-full h-full shadow-xl flex flex-col transition-all duration-300")} data-theme={viewTheme}>
       <CardHeader className="p-4 border-b border-border/30">
@@ -167,7 +172,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         </div>
       </CardHeader>
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border/30 bg-black/30 backdrop-blur-sm timetable-allday-area">
+          <div className="p-2 border-b border-border/30 bg-black/30 backdrop-blur-sm timetable-allday-area frosted-glass">
             <div className="flex gap-2">
                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
@@ -313,7 +318,3 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
-
-    
-
-    
