@@ -27,7 +27,7 @@ interface ExternalContact {
  * @param userId The ID of the user requesting their contacts.
  * @returns A promise that resolves to an object containing appUsers and externalContacts.
  */
-export async function getContactsOnApp(userId: string): Promise<{ appUsers: PublicUserProfile[], externalContacts: ExternalContact[] }> {
+export async function getMicrosoftContactsOnApp(userId: string): Promise<{ appUsers: PublicUserProfile[], externalContacts: ExternalContact[] }> {
   const client = await getAuthenticatedClient(userId);
   if (!client?.accessToken) {
     console.log(`Not authenticated with Microsoft for user ${userId}. Cannot fetch contacts.`);

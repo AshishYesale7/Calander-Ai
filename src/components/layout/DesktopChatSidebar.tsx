@@ -42,7 +42,7 @@ import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
 import { useTheme } from '@/hooks/use-theme';
 import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
-import { getContactsOnApp as getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
+import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
 import Link from 'next/link';
 
 type RecentChatUser = PublicUserProfile & {

@@ -42,7 +42,7 @@ import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
 import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
-
+import Link from 'next/link';
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -88,7 +88,7 @@ const ContactListView = () => {
                  setError(`No new contacts from ${provider} found.`);
             }
         } catch (error: any) {
-            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || error.code === 403) {
+            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || (error.code && error.code === 403)) {
               const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
               const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
               window.open(authUrl, '_blank', 'width=500,height=600');
@@ -405,7 +405,7 @@ const CallLogView = () => {
             return;
         }
         setIsLoading(true);
-        const localCalls = loadCallsFromLocal(user.uid);
+        const localCalls = loadCallsFromLocal(userId);
         setCallLog(localCalls);
         setIsLoading(false);
 
