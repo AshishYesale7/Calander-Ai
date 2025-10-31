@@ -51,7 +51,8 @@ function ChatAndCallUI() {
   
   const isVideoCallActive = !!(ongoingCall);
   const isAudioCallActive = !!(ongoingAudioCall);
-  const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
+  // An active call view is only when a video is fullscreen. Audio and PiP are overlays.
+  const isCallViewActive = isVideoCallActive && !isPipMode;
 
   if (isMobile || isCallViewActive) return null;
 
@@ -307,24 +308,21 @@ export default function AppContent({
   };
   
   const isVideoCallActive = !!(ongoingCall);
-  const isAudioCallActive = !!(ongoingAudioCall);
-  
-  const isCallViewActive = (isVideoCallActive || isAudioCallActive) && !isPipMode;
-
-  const showMobileSidebarToggle = isMobile && !isCallViewActive;
-  const showDesktopSidebarToggle = !isMobile && !isCallViewActive;
+  const isCallViewActive = isVideoCallActive && !isPipMode;
 
   return (
     <>
       <OfflineIndicator />
       <ChatProviderWrapper>
+        {/* All floating call UI is now rendered at the top level here */}
         <GlobalCallUI />
+
         <div className={cn(
             'relative z-0 flex h-screen w-full overflow-hidden',
             isPendingDeletion && 'pointer-events-none blur-sm'
         )}>
           
-          <div className={cn('contents', isVideoCallActive && !isPipMode && 'hidden md:contents')}>
+          <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
             <SidebarNav {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
           </div>
           

@@ -72,60 +72,74 @@ export function GlobalCallUI() {
         handleTogglePipSizeMode
     } = useChat();
 
-    return (
-        <>
-            {permissionRequest && (
-                <PermissionRequestModal
-                    callType={permissionRequest.callType}
-                    onGrant={permissionRequest.onGrant}
-                    onDeny={permissionRequest.onDeny}
-                    onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
-                />
-            )}
-            {incomingCall && !ongoingCall && <IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />}
-            {outgoingCall && !ongoingCall && (<OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />)}
-            
-            {ongoingCall && otherUserInCall && !isPipMode && (
-                <div className="fixed inset-0 z-50 bg-black">
-                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
-                </div>
-            )}
+    if (permissionRequest) {
+        return (
+            <PermissionRequestModal
+                callType={permissionRequest.callType}
+                onGrant={permissionRequest.onGrant}
+                onDeny={permissionRequest.onDeny}
+                onOpenChange={(isOpen) => !isOpen && setPermissionRequest(null)}
+            />
+        )
+    }
 
-            {incomingAudioCall && !ongoingAudioCall && (
-                <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />
-            )}
-            
-            {outgoingAudioCall && !ongoingAudioCall && <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />}
+    if (incomingCall && !ongoingCall) {
+        return <IncomingCallNotification call={incomingCall} onAccept={acceptCall} onDecline={declineCall} />;
+    }
 
-            {ongoingAudioCall && otherUserInCall && (
-                 <motion.div
-                    drag
-                    dragMomentum={false}
-                    className="absolute top-20 left-5 z-[200]"
-                >
-                    <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
-                 </motion.div>
-            )}
+    if (outgoingCall && !ongoingCall) {
+        return <OutgoingCallNotification user={outgoingCall} onCancel={() => endCall(activeCallId, 'declined')} />;
+    }
 
-            {isPipMode && ongoingCall && otherUserInCall && (
-                 <motion.div
-                    drag
-                    dragMomentum={false}
-                    animate={pipControls}
-                    className={cn(
-                        "fixed top-4 right-4 z-[100] rounded-lg overflow-hidden shadow-2xl border-2 border-accent cursor-grab active:cursor-grabbing flex flex-col bg-black/50 backdrop-blur-md",
-                        isResetting && "transition-transform duration-300"
-                    )}
-                    style={{
-                        width: pipSize.width,
-                        height: pipSize.height,
-                    }}
-                >
-                    <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
-                </motion.div>
-            )}
-        </>
-    );
+    if (ongoingCall && otherUserInCall && !isPipMode) {
+        return (
+             <div className="fixed inset-0 z-50 bg-black">
+                <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={false} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
+            </div>
+        );
+    }
+    
+    if (isPipMode && ongoingCall && otherUserInCall) {
+        return (
+             <motion.div
+                drag
+                dragMomentum={false}
+                animate={pipControls}
+                className={cn(
+                    "fixed top-4 right-4 z-[100] rounded-lg overflow-hidden shadow-2xl border-2 border-accent cursor-grab active:cursor-grabbing flex flex-col bg-black/50 backdrop-blur-md",
+                    isResetting && "transition-transform duration-300"
+                )}
+                style={{
+                    width: pipSize.width,
+                    height: pipSize.height,
+                }}
+            >
+                <VideoCallView call={ongoingCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingCall.id)} isPipMode={true} onTogglePipMode={onTogglePipMode} pipSizeMode={pipSizeMode} onTogglePipSizeMode={handleTogglePipSizeMode} />
+            </motion.div>
+        );
+    }
+
+    if (ongoingAudioCall && otherUserInCall) {
+        return (
+            <motion.div
+                drag
+                dragMomentum={false}
+                className="fixed top-20 left-5 z-[200]"
+            >
+                <AudioCallView call={ongoingAudioCall} otherUser={otherUserInCall} onEndCall={() => endCall(ongoingAudioCall.id)} connectionStatus={connectionStatus} />
+             </motion.div>
+        );
+    }
+
+    if (incomingAudioCall && !ongoingAudioCall) {
+        return <IncomingAudioCall call={incomingAudioCall} onAccept={acceptCall} onDecline={declineCall} />;
+    }
+    
+    if (outgoingAudioCall && !ongoingAudioCall) {
+        return <OutgoingAudioCall user={outgoingAudioCall} onCancel={() => endCall(activeCallId, 'declined')} />;
+    }
+
+    return null;
 }
 
 export default function ChatProviderWrapper({ children }: { children: ReactNode }) {
