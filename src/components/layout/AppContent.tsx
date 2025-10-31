@@ -135,6 +135,7 @@ export default function AppContent({
     const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+    const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
     const lastScrollY = useRef(0);
 
     const [search, setSearch] = useState('');
@@ -250,20 +251,32 @@ export default function AppContent({
   useEffect(() => {
     const mainEl = mainScrollRef.current;
     if (!mainEl) return;
-
+  
     const handleScroll = () => {
       const currentScrollY = mainEl.scrollTop;
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-        setIsBottomNavVisible(false);
-      } else {
-        setIsBottomNavVisible(true);
+      
+      // For Mobile Nav
+      if (isMobile) {
+        if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+          setIsBottomNavVisible(false);
+        } else {
+          setIsBottomNavVisible(true);
+        }
       }
+      
+      // For Desktop Command Bar
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setScrollDirection('down');
+      } else {
+        setScrollDirection('up');
+      }
+  
       lastScrollY.current = currentScrollY;
     };
-
+  
     mainEl.addEventListener('scroll', handleScroll);
     return () => mainEl.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMobile]);
   
   if (loading) {
     return (
@@ -379,7 +392,7 @@ export default function AppContent({
         />
         
         <AnimatePresence>
-          {!isMobile && <DesktopCommandBar />}
+          {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
 
           {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
                  <MobileBottomNav

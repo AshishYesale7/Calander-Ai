@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -38,7 +39,7 @@ const moreActionItems = [
 ];
 
 
-export default function DesktopCommandBar() {
+export default function DesktopCommandBar({ scrollDirection }: { scrollDirection: 'up' | 'down' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [search, setSearch] = useState('');
@@ -59,6 +60,7 @@ export default function DesktopCommandBar() {
 
   const [selectedAction, setSelectedAction] = useState('Auto');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isAtDefaultPosition, setIsAtDefaultPosition] = useState(true);
 
   useEffect(() => {
     if (chatSessions.length === 0) {
@@ -153,8 +155,14 @@ export default function DesktopCommandBar() {
       const closedX = shouldShiftLeft
         ? 80 
         : (window.innerWidth - size.closed.width) / 2;
-      const closedY = window.innerHeight - size.closed.height - 24;
       
+      let closedY;
+      if (scrollDirection === 'down' && isAtDefaultPosition) {
+        closedY = window.innerHeight; // Animate it off-screen
+      } else {
+        closedY = window.innerHeight - size.closed.height - 24;
+      }
+
       animationControls.start({
         x: closedX,
         y: closedY,
@@ -169,7 +177,7 @@ export default function DesktopCommandBar() {
           lastOpenPosition.current = null;
       }
     }
-  }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls]);
+  }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls, scrollDirection, isAtDefaultPosition]);
 
   // This effect cycles through a predefined set of color pairs for the border glow.
   useEffect(() => {
@@ -345,6 +353,7 @@ export default function DesktopCommandBar() {
       style={{ position: 'fixed', zIndex: 40 }}
       animate={animationControls}
       onDragStart={() => {
+        setIsAtDefaultPosition(false);
         if (document.body) document.body.style.userSelect = 'none';
       }}
       onDragEnd={() => {
