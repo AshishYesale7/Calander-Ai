@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser, User, Shield, Info, HardDrive, Clock } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, User, Shield, Info, HardDrive, Clock } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -22,25 +23,12 @@ import { auth, messaging } from '@/lib/firebase';
 import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { getToken } from 'firebase/messaging';
-import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
-import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
-import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
-import { saveAs } from 'file-saver';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
-
-
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: ConfirmationResult;
-  }
-}
+import DangerZoneSettings from './DangerZoneSettings'; // Import the new component
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -59,24 +47,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
   const [phoneForLinking, setPhoneForLinking] = useState<string | undefined>();
   const [otpForLinking, setOtpForLinking] = useState('');
-  const [notificationPermission, setNotificationPermission] = useState('default');
-  const [isSendingTest, setIsSendingTest] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isFormatting, setIsFormatting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-  }, [isOpen]);
 
   const checkGoogleStatus = async () => {
     if (!user) return;
@@ -166,84 +141,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
       setLinkingPhoneState('otp-sent');
     }
   };
-
-  const handleRequestNotificationPermission = async () => {
-    if (!messaging || !user) return;
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      if (permission === 'granted') {
-        const token = await getToken(messaging, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY });
-        if (token) await saveUserFCMToken(user.uid, token);
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Could not enable notifications.', variant: 'destructive' });
-    }
-  };
-
-  const handleSendTestNotification = async () => {
-    if (!user) return;
-    setIsSendingTest(true);
-    await createNotification({ userId: user.uid, type: 'system_alert', message: 'This is a test notification!', link: '/dashboard' });
-    setIsSendingTest(false);
-  };
-
-  const handleExportData = async () => {
-    if (!user) return;
-    setIsExporting(true);
-    try {
-      const data = await exportUserData(user.uid);
-      saveAs(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'futuresight-backup.json');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleImportClick = () => fileInputRef.current?.click();
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0] || !user) return;
-    setIsImporting(true);
-    try {
-      const data = JSON.parse(await e.target.files[0].text());
-      await importUserData(user.uid, data);
-      toast({ title: 'Import successful', description: 'Reloading...' });
-      window.location.reload();
-    } catch (error: any) {
-      toast({ title: 'Import failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsImporting(false);
-    }
-  };
   
-  const handleFormatData = async () => {
-    if (!user) return;
-    setIsFormatting(true);
-    try {
-        await formatUserData(user.uid);
-        toast({ title: 'Data Formatted', description: 'Your account data has been cleared. Reloading...' });
-        setTimeout(() => window.location.reload(), 2000);
-    } catch (error: any) {
-        toast({ title: 'Error', description: 'Could not format data.', variant: 'destructive'});
-    } finally {
-        setIsFormatting(false);
-    }
-  };
-  
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    setIsDeleting(true);
-    try {
-        await anonymizeUserAccount(user.uid);
-        toast({ title: 'Account Deletion Initiated', description: 'Your account is scheduled for deletion in 30 days.'});
-        await auth.signOut();
-        window.location.href = '/';
-    } catch (error: any) {
-        toast({ title: 'Error', description: 'Could not initiate account deletion.', variant: 'destructive'});
-    } finally {
-        setIsDeleting(false);
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -254,10 +152,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <Tabs defaultValue="account" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="integrations">Integrations</TabsTrigger>
               <TabsTrigger value="datetime">Date &amp; Time</TabsTrigger>
+              <TabsTrigger value="danger" className="text-destructive">Danger Zone</TabsTrigger>
             </TabsList>
             <ScrollArea className="flex-1 mt-4">
               <div className="pr-4">
@@ -287,6 +186,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 </TabsContent>
                 <TabsContent value="datetime">
                   <DateTimeSettings />
+                </TabsContent>
+                <TabsContent value="danger">
+                  <DangerZoneSettings />
                 </TabsContent>
               </div>
             </ScrollArea>

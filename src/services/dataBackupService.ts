@@ -162,13 +162,13 @@ export async function formatUserData(userId: string): Promise<void> {
         'careerGoals',
         'careerVisions',
         'dailyPlans',
-        'fcmTokens', // Keeping these might be desired, but for a full format, we clear them.
+        'fcmTokens',
         'notifications',
         'resources',
         'skills',
         'timelineEvents',
         'trackedKeywords',
-        'calls', // Added calls
+        'calls',
     ];
 
     // 1. Delete all documents in simple subcollections
@@ -212,5 +212,6 @@ export async function formatUserData(userId: string): Promise<void> {
     await batch.commit();
 
     // 5. Delete the separate layout document AFTER the main batch.
-    await deleteLayout(userId);
+    await deleteLayout(userId, 'student');
+    await deleteLayout(userId, 'professional');
 }
