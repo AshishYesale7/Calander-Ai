@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -6,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { getTimelineEvents, saveTimelineEvent, deleteTimelineEvent, restoreTimelineEvent, permanentlyDeleteTimelineEvent } from '@/services/timelineService';
 import { useTimezone } from '@/hooks/use-timezone';
-import { subDays } from 'date-fns';
+import { subDays, startOfMonth, addMonths, subMonths } from 'date-fns';
 
 import WidgetDashboard from '@/components/dashboard/WidgetDashboard';
 import EditEventModal from '@/components/timeline/EditEventModal';
@@ -86,6 +87,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const [allTimelineEvents, setAllTimelineEvents] = useState<TimelineEvent[]>(loadFromLocalStorage);
   const [isDataLoading, setIsDataLoading] = useState(true);
   
+  const [activeDisplayMonth, setActiveDisplayMonth] = useState<Date>(startOfMonth(new Date()));
   const [selectedDateForDayView, setSelectedDateForDayView] = useState<Date | null>(new Date());
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [eventBeingEdited, setEventBeingEdited] = useState<TimelineEvent | null>(null);
@@ -94,8 +96,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const [isPlannerMaximized, setIsPlannerMaximized] = useState(false);
   const [isTrashPanelOpen, setIsTrashPanelOpen] = useState(false);
   
-  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-
   const fetchAllEvents = useCallback(async () => {
       if (user) {
         setIsDataLoading(true);
@@ -122,18 +122,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     fetchAllEvents();
   }, [fetchAllEvents]);
   
-  useEffect(() => {
-    if (user) {
-      fetch('/api/auth/google/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
-      })
-      .then(res => res.json())
-      .then(data => setIsGoogleConnected(data.isConnected));
-    }
-  }, [user]);
-
   const { activeEvents, recentlyDeletedEvents } = useMemo(() => {
     const active: TimelineEvent[] = [];
     const deleted: TimelineEvent[] = [];

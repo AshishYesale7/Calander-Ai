@@ -1,5 +1,6 @@
 
 'use client';
+
 import React, { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
 import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
 import { useAuth } from '@/context/AuthContext';
@@ -8,7 +9,6 @@ import { responsiveStudentLayouts, responsiveProfessionalLayouts, LAYOUT_VERSION
 import { saveLayout, getLayout, type VersionedLayouts } from '@/services/layoutService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import '@/app/widgets-canvas.css';
-import { widgetList } from '@/components/layout/widget-previews';
 import WidgetGhost from './WidgetGhost';
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -16,9 +16,9 @@ const ROW_HEIGHT = 100;
 const MARGIN: [number, number] = [16, 16];
 
 const PIXEL_TO_GRID_UNITS = {
-    MIN_W_PX: 280,
-    MIN_H_PX: 200,
-    TIMETABLE_MIN_H_PX: 300,
+  MIN_W_PX: 280,
+  MIN_H_PX: 200,
+  TIMETABLE_MIN_H_PX: 300,
 };
 
 const calculateMinW = (colWidth: number): number => {
@@ -169,7 +169,7 @@ export default function WidgetDashboard({
         const baseLayout = currentLayouts[bp] || defaultLayouts[bp as keyof Layouts];
         if (!baseLayout) continue;
 
-        const allAvailableWidgets = new Set(widgetList.map(w => w.id));
+        const allAvailableWidgets = new Set(Object.keys(components));
         const filteredBase = baseLayout.filter(item => allAvailableWidgets.has(item.i));
 
         if (role === 'professional') {
@@ -179,7 +179,7 @@ export default function WidgetDashboard({
         }
     }
     return final;
-  }, [currentLayouts, user?.userType, getDefaultLayouts]);
+  }, [currentLayouts, user?.userType, getDefaultLayouts, components]);
 
   const colWidth = (currentContainerWidth - (currentCols + 1) * MARGIN[0]) / currentCols;
 
@@ -250,5 +250,3 @@ export default function WidgetDashboard({
     </div>
   );
 }
-
-    
