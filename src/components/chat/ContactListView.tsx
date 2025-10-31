@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Copy } from 'lucide-react';
 import { getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
+import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 interface ExternalContact {
     displayName: string;
@@ -109,11 +110,11 @@ export default function ContactListView() {
                 <p className="text-xs text-muted-foreground mt-1">Discover which of your contacts are on Calendar.ai.</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button variant="outline" onClick={() => handleFetchContacts('google')} disabled={!!isLoading}>
-                        {isLoading === 'google' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        {isLoading === 'google' ? <LoadingSpinner size="sm" className="mr-2"/> : <GoogleIcon />}
                         Find on Google
                     </Button>
                     <Button variant="outline" onClick={() => handleFetchContacts('microsoft')} disabled={!!isLoading}>
-                        {isLoading === 'microsoft' && <LoadingSpinner size="sm" className="mr-2"/>}
+                        {isLoading === 'microsoft' ? <LoadingSpinner size="sm" className="mr-2"/> : <MicrosoftIcon />}
                         Find on Microsoft
                     </Button>
                 </div>
@@ -165,7 +166,7 @@ export default function ContactListView() {
                     {!isLoading && appUsers.length === 0 && externalContacts.length === 0 && !error && (
                          <p className="text-xs text-muted-foreground text-center p-8">Click a provider above to find your contacts.</p>
                     )}
-                    {isLoading && <div className="flex justify-center p-8"><LoadingSpinner /></div>}
+                    {isLoading && appUsers.length === 0 && externalContacts.length === 0 && <div className="flex justify-center p-8"><LoadingSpinner /></div>}
                 </div>
             </ScrollArea>
         </>
