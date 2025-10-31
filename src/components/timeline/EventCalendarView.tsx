@@ -5,7 +5,7 @@ import type { TimelineEvent } from '@/types';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Bot, Trash2, RefreshCw, PlusCircle, Calendar as CalendarIcon, List } from 'lucide-react';
-import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, getYear, setYear, setMonth } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
@@ -40,6 +40,8 @@ export default function EventCalendarView({
 }: EventCalendarViewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
+  const [calendarView, setCalendarView] = useState<'month' | 'year' | 'day'>('month');
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -67,8 +69,21 @@ export default function EventCalendarView({
   const handleDayClickInternal = (day: Date | undefined) => {
     if (day) {
       onDayClick(day);
+      setSelectedDay(day);
+      setCalendarView('day');
     }
   };
+
+  const handleMonthSelect = (monthIndex: number) => {
+    onMonthChange(setMonth(month, monthIndex));
+    setCalendarView('month');
+  };
+
+  const handleYearNavigation = (direction: 'prev' | 'next') => {
+    const newYear = getYear(month) + (direction === 'prev' ? -1 : 1);
+    onMonthChange(setYear(month, newYear));
+  };
+
 
   const DayWithDotRenderer: DayContentRenderer = (dayProps) => {
     const isEventDay = uniqueEventDaysForDots.some(eventDay => isSameDay(dayProps.date, eventDay));
@@ -81,6 +96,11 @@ export default function EventCalendarView({
       </div>
     );
   };
+  
+  const eventsForSelectedDay = useMemo(() => {
+    if (!selectedDay) return [];
+    return processedEvents.filter(e => isSameDay(e.date, selectedDay));
+  }, [processedEvents, selectedDay]);
 
   return (
     <Card 
@@ -111,7 +131,7 @@ export default function EventCalendarView({
       </CardHeader>
       <CardContent className="p-2 sm:p-4 flex-1 overflow-auto">
         <Tabs defaultValue="calendar" className="relative h-full flex flex-col">
-            <div className="flex justify-center mb-2">
+            <div className="flex justify-center">
               <TabsList className="inline-flex h-auto p-1 rounded-full bg-black/50 backdrop-blur-sm border border-border/30 w-auto">
                 <TabsTrigger value="calendar" className="px-4 py-1.5 text-sm h-auto rounded-full data-[state=active]:shadow-md">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Calendar
@@ -126,16 +146,22 @@ export default function EventCalendarView({
               <TabsContent value="calendar" className="h-full flex-1">
                   <div className="flex justify-center">
                     <Calendar
-                        mode="single"
-                        onSelect={(day) => handleDayClickInternal(day)}
+                        mode={calendarView}
+                        onDayClick={handleDayClickInternal}
                         month={month}
                         onMonthChange={onMonthChange}
+                        onYearChange={handleYearNavigation}
+                        selected={selectedDay}
+                        onSelect={handleDayClickInternal}
+                        onCaptionClick={() => setCalendarView(prev => prev === 'year' ? 'month' : 'year')}
+                        onMonthSelect={handleMonthSelect}
+                        events={eventsForSelectedDay}
                         className="p-0 [&>div]:w-full"
                         classNames={{
                           head_cell: "w-full md:w-9 text-muted-foreground rounded-md text-xs font-normal",
                           cell: "h-9 w-9 md:h-10 md:w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
                           day: "h-9 w-9 md:h-10 md:w-10 p-0 font-normal aria-selected:opacity-100",
-                          caption_label: "text-sm md:text-base font-medium",
+                          caption_label: "text-sm md:text-base font-medium cursor-pointer hover:text-accent transition-colors",
                           day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
                         }}
                         components={{ DayContent: DayWithDotRenderer }}
