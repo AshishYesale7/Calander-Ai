@@ -19,12 +19,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Download, Eraser, Trash2, Shield, PhoneAuthProvider, User } from 'lucide-react';
+import { Upload, Download, Eraser, Trash2, Shield, User } from 'lucide-react';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { anonymizeUserAccount } from '@/services/userService';
 import { saveAs } from 'file-saver';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
+import { GoogleAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier, PhoneAuthProvider } from 'firebase/auth';
 import { GoogleIcon } from '../auth/SignInForm';
 
 declare global {
@@ -246,7 +246,8 @@ export default function DangerZoneSettings() {
                             <div className="space-y-4">
                                 <p className="text-sm text-muted-foreground text-center">An OTP will be sent to your registered number ({user?.phoneNumber}).</p>
                                 <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
-                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />} Send Verification Code
+                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Send Verification Code
                                 </Button>
                                 <div id="reauth-recaptcha-container" ref={reauthRecaptchaContainerRef} className="flex justify-center"></div>
                             </div>
@@ -256,7 +257,8 @@ export default function DangerZoneSettings() {
                                 <Label htmlFor="reauth-otp">Enter OTP</Label>
                                 <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
                                 <Button onClick={handleVerifyReauthOtp} className="w-full" disabled={isReauthenticating}>
-                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />} Verify and Continue
+                                    {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
+                                    Verify and Continue
                                 </Button>
                             </div>
                         )}
