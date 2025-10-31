@@ -41,8 +41,10 @@ import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, C
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
 import { useTheme } from '@/hooks/use-theme';
-import { getContactsOnApp } from '@/services/googleContactsService';
+import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
+import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 
 type RecentChatUser = PublicUserProfile & {
@@ -72,37 +74,56 @@ const ContactsPopover = () => {
     const { user } = useAuth();
     const { setChattingWith } = useChat();
     const [contacts, setContacts] = useState<PublicUserProfile[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasFetched, setHasFetched] = useState(false);
+    const [isLoading, setIsLoading] = useState<'google' | 'microsoft' | false>(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleFetchContacts = async () => {
-        if (!user || hasFetched) return;
-        setIsLoading(true);
+    const handleFetchContacts = async (provider: 'google' | 'microsoft') => {
+        if (!user) return;
+        setIsLoading(provider);
+        setError(null);
         try {
-            const appContacts = await getContactsOnApp(user.uid);
-            setContacts(appContacts);
-        } catch (error) {
-            console.error("Failed to fetch contacts", error);
+            const appContacts = provider === 'google'
+                ? await getGoogleContactsOnApp(user.uid)
+                : await getMicrosoftContactsOnApp(user.uid);
+            
+            setContacts(prev => {
+                const existingUids = new Set(prev.map(c => c.uid));
+                const newContacts = appContacts.filter(c => !existingUids.has(c.uid));
+                return [...prev, ...newContacts];
+            });
+            if (appContacts.length === 0) {
+                 setError(`No new contacts found on ${provider}.`);
+            }
+        } catch (error: any) {
+            setError(error.message || `Failed to fetch ${provider} contacts.`);
         } finally {
             setIsLoading(false);
-            setHasFetched(true);
         }
     };
     
     return (
-        <Popover onOpenChange={(open) => { if (open && !hasFetched) handleFetchContacts(); }}>
+        <Popover>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9 w-full">
                     <UserPlus className="h-5 w-5"/>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent side="top" className="w-64 frosted-glass p-2">
-                <h4 className="font-medium text-sm p-2">Contacts on Calendar.ai</h4>
-                {isLoading ? (
-                    <div className="flex justify-center p-4"><LoadingSpinner/></div>
-                ) : contacts.length > 0 ? (
+            <PopoverContent side="top" className="w-72 frosted-glass p-2">
+                <h4 className="font-medium text-sm p-2">Find Contacts on Calendar.ai</h4>
+                <div className="p-2 grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => handleFetchContacts('google')} disabled={!!isLoading}>
+                         {isLoading === 'google' ? <LoadingSpinner size="sm" className="mr-2"/> : <GoogleIcon/>}
+                         Google
+                    </Button>
+                    <Button variant="outline" onClick={() => handleFetchContacts('microsoft')} disabled={!!isLoading}>
+                        {isLoading === 'microsoft' ? <LoadingSpinner size="sm" className="mr-2"/> : <MicrosoftIcon/>}
+                        Microsoft
+                    </Button>
+                </div>
+                {error && <p className="text-xs text-destructive text-center p-2">{error}</p>}
+                {contacts.length > 0 ? (
                     <ScrollArea className="h-64">
-                    <div className="space-y-1">
+                    <div className="space-y-1 p-2">
                         {contacts.map(contact => (
                             <button key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
                                 <Avatar className="h-8 w-8">
@@ -115,7 +136,7 @@ const ContactsPopover = () => {
                     </div>
                     </ScrollArea>
                 ) : (
-                    <p className="text-xs text-muted-foreground text-center p-4">No Google Contacts found on the app. Invite your friends!</p>
+                    !isLoading && !error && <p className="text-xs text-muted-foreground text-center p-4">Click to find contacts from your connected accounts.</p>
                 )}
             </PopoverContent>
         </Popover>
@@ -504,4 +525,5 @@ export default function DesktopChatSidebar() {
 
 
     
+
 

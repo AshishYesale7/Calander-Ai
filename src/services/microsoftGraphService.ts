@@ -33,6 +33,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
     const tenant = 'common'; 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'Contacts.Read', // Added permission to read contacts
         'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared', 
         'Contacts.ReadWrite.Shared',
@@ -70,6 +71,7 @@ export async function getTokensFromCode(request: NextRequest, code: string): Pro
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'Contacts.Read',
         'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
         'Contacts.ReadWrite.Shared',
@@ -136,6 +138,7 @@ async function refreshAccessToken(refreshToken: string): Promise<Credentials> {
 
     const scopes = [
         'openid', 'profile', 'email', 'offline_access', 'User.Read',
+        'Contacts.Read',
         'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared',
         'Contacts.ReadWrite.Shared',
