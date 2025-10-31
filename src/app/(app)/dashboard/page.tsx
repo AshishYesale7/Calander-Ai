@@ -75,9 +75,16 @@ interface DashboardPageProps {
   setIsEditMode: (isEditMode: boolean) => void;
   hiddenWidgets: Set<string>;
   handleToggleWidget: (id: string) => void;
+  onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void;
 }
 
-export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets, handleToggleWidget }: DashboardPageProps) {
+export default function DashboardPage({ 
+  isEditMode, 
+  setIsEditMode, 
+  hiddenWidgets, 
+  handleToggleWidget,
+  onAccordionToggle,
+}: DashboardPageProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { timezone } = useTimezone();
@@ -249,7 +256,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
   
   const components = useMemo(() => ({
-    'plan': <TodaysPlanWidget onAccordionToggle={() => {}} />,
+    'plan': <TodaysPlanWidget onAccordionToggle={onAccordionToggle} />,
     'streak': <DailyStreakWidget />,
     'calendar': <CalendarWidget events={activeEvents} onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onAddEvent={() => handleOpenEditModal(undefined, true)} onDeleteEvent={handleDeleteEvent} onEditEvent={handleOpenEditModal} month={activeDisplayMonth} onMonthChange={setActiveDisplayMonth} />,
     'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
@@ -258,7 +265,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     'next-month': <NextMonthHighlightsWidget events={activeEvents} />,
     'sync': <GoogleSyncWidget onSyncComplete={fetchAllEvents} />,
     'data': <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
-  }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate, activeDisplayMonth]);
+  }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate, activeDisplayMonth, onAccordionToggle]);
 
   return (
     <div className="h-full">
@@ -269,6 +276,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
         hiddenWidgets={hiddenWidgets}
         onToggleWidget={handleToggleWidget}
         components={components}
+        onAccordionToggle={onAccordionToggle}
       />
 
       {isPlannerMaximized && (
@@ -293,7 +301,7 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
       )}
       
       {isTrashPanelOpen && (
-         <div className="absolute right-0 top-0 h-full w-[22rem] xl:w-96 min-w-[360px] z-20">
+         <div className="absolute right-0 top-0 h-full w-[22rem] xl:w-96 min-w-[360px] z-40">
             <TrashPanel
                 deletedEvents={recentlyDeletedEvents}
                 onRestore={handleRestoreEvent}
