@@ -26,7 +26,7 @@ interface GoogleContact {
  * @param userId The ID of the user requesting their contacts.
  * @returns A promise that resolves to an object containing appUsers and externalContacts.
  */
-export async function getContactsOnApp(userId: string): Promise<{ appUsers: PublicUserProfile[], externalContacts: GoogleContact[] }> {
+export async function getGoogleContactsOnApp(userId: string): Promise<{ appUsers: PublicUserProfile[], externalContacts: GoogleContact[] }> {
   const client = await getAuthenticatedClient(userId);
   if (!client) {
     console.log(`Not authenticated with Google for user ${userId}. Cannot fetch contacts.`);
