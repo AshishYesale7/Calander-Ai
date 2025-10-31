@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -14,26 +13,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText, Globe, UserX, UserCheck } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText, Globe, UserX, UserCheck, PhoneAuthProvider, Brain } from 'lucide-react';
 import { Separator } from '../ui/separator';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
+import { auth, messaging } from '@/lib/firebase';
+import { GoogleAuthProvider, reauthenticateWithPopup, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier, OAuthProvider } from 'firebase/auth';
+import { getToken } from 'firebase/messaging';
+import { saveUserFCMToken } from '@/services/userService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
 import DangerZoneSettings from './DangerZoneSettings';
-import { saveUserFCMToken } from '@/services/userService';
-import { messaging } from '@/lib/firebase';
-import { getToken } from 'firebase/messaging';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+
 
 const IntegrationRow = ({
   icon,
   name,
   description,
+  isConnected,
   accounts,
   onConnect,
   onDisconnect,
@@ -41,7 +43,8 @@ const IntegrationRow = ({
   icon: React.ReactNode;
   name: string;
   description: string;
-  accounts: { email: string, uid: string }[];
+  isConnected: boolean | null;
+  accounts: { email: string | null; uid: string }[];
   onConnect: () => void;
   onDisconnect: (email: string) => void;
 }) => {
@@ -56,16 +59,18 @@ const IntegrationRow = ({
             <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card flex-shrink-0">{icon}</div>
         </div>
         
-        {accounts.length > 0 && (
+        {isConnected === null ? (
+          <div className="flex justify-center py-4"><LoadingSpinner size="sm"/></div>
+        ) : accounts.length > 0 ? (
              <div className="space-y-3">
                 {accounts.map(account => (
                     <div key={account.uid} className="p-3 bg-background/50 rounded-md border space-y-3">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                                 <UserCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                <span className="text-sm font-medium truncate" title={account.email}>{account.email}</span>
+                                <span className="text-sm font-medium truncate" title={account.email || 'Unknown Email'}>{account.email || 'Connected Account'}</span>
                             </div>
-                            <Button onClick={() => onDisconnect(account.email)} variant="destructive" size="sm" className="h-7 text-xs w-full sm:w-auto">
+                            <Button onClick={() => onDisconnect(account.email!)} variant="destructive" size="sm" className="h-7 text-xs w-full sm:w-auto">
                                 <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
                             </Button>
                         </div>
@@ -82,7 +87,7 @@ const IntegrationRow = ({
                     </div>
                 ))}
              </div>
-        )}
+        ) : null}
         
         <div>
             <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
@@ -111,8 +116,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isTestingPush, setIsTestingPush] = useState(false);
-  const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const checkStatuses = useCallback(async () => {
     if (!user) return;
     try {
@@ -141,7 +145,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     setApiKey(apiKeyInput.trim() ? apiKeyInput.trim() : null);
     toast({ title: 'API Key Saved' });
   };
-  
+
   const handleConnect = (provider: 'google' | 'microsoft') => {
     if (!user) return;
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
@@ -149,7 +153,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     window.open(authUrl, '_blank', 'width=500,height=600');
   };
 
-  const handleDisconnect = async (provider: 'google') => {
+  const handleDisconnect = async (provider: 'google' | 'microsoft') => {
     if (!user) return;
     try {
       const response = await fetch(`/api/auth/${provider}/revoke`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
@@ -199,9 +203,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   };
   
+  const googleAccounts = user?.providerData.filter(p => p.providerId === 'google.com') || [];
+  const microsoftAccounts = user?.providerData.filter(p => p.providerId === 'microsoft.com') || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh] p-0">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="font-headline text-lg text-primary">Settings</DialogTitle>
           <DialogDescription>Manage application settings and preferences.</DialogDescription>
@@ -254,7 +261,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       icon={<GoogleIcon />}
                       name="Google Calendar"
                       description="Connect your Google accounts to sync calendars and tasks."
-                      accounts={user?.providerData.filter(p => p.providerId === 'google.com').map(p => ({ email: p.email!, uid: p.uid })) || []}
+                      isConnected={isGoogleConnected}
+                      accounts={googleAccounts}
                       onConnect={() => handleConnect('google')}
                       onDisconnect={() => handleDisconnect('google')}
                     />
@@ -262,9 +270,10 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       icon={<MicrosoftIcon />}
                       name="Office 365 Calendar"
                       description="Connect your Microsoft accounts for calendar sync."
-                      accounts={user?.providerData.filter(p => p.providerId === 'microsoft.com').map(p => ({ email: p.email!, uid: p.uid })) || []}
+                      isConnected={isMicrosoftConnected}
+                      accounts={microsoftAccounts}
                       onConnect={() => handleConnect('microsoft')}
-                      onDisconnect={() => {}}
+                      onDisconnect={() => { toast({ title: "Coming Soon", description: "Disconnecting Microsoft accounts will be available soon."}) }}
                     />
                   </div>
                 </TabsContent>
@@ -285,5 +294,3 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     </Dialog>
   );
 }
-
-    
