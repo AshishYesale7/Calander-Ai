@@ -43,6 +43,7 @@ import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } fr
 import { useTheme } from '@/hooks/use-theme';
 import { getContactsOnApp as getGoogleContactsOnApp } from '@/services/googleContactsService';
 import { getMicrosoftContactsOnApp } from '@/services/microsoftContactsService';
+import Link from 'next/link';
 
 
 type RecentChatUser = PublicUserProfile & {
@@ -54,19 +55,6 @@ type RecentChatUser = PublicUserProfile & {
 type CallLogItem = CallData & {
     otherUser: PublicUserProfile;
 };
-
-const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType, label: string, isActive?: boolean, onClick?: () => void }) => (
-    <button
-        onClick={onClick}
-        className={cn(
-            "flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 transition-colors",
-            isActive ? "text-accent" : "hover:text-foreground"
-        )}
-    >
-        <Icon className="h-5 w-5" />
-        <span className="text-xs">{label}</span>
-    </button>
-);
 
 const ContactListView = () => {
     const { user } = useAuth();
@@ -93,7 +81,14 @@ const ContactListView = () => {
                  setError(`No new contacts from ${provider} found on Calendar.ai.`);
             }
         } catch (error: any) {
-            setError(error.message || `Failed to fetch ${provider} contacts.`);
+            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || error.code === 403) {
+              const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
+              const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
+              window.open(authUrl, '_blank', 'width=500,height=600');
+              setError(`Please grant contact permissions for ${provider} in the pop-up window and try again.`);
+            } else {
+              setError(error.message || `Failed to fetch ${provider} contacts.`);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -120,7 +115,7 @@ const ContactListView = () => {
                     {error && <p className="text-xs text-destructive text-center p-2">{error}</p>}
                     {contacts.length > 0 ? (
                         contacts.map(contact => (
-                            <button key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                            <Link href="#" key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
                                 <Avatar className="h-10 w-10">
                                     <AvatarImage src={contact.photoURL || undefined} alt={contact.displayName}/>
                                     <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
@@ -129,7 +124,7 @@ const ContactListView = () => {
                                     <p className="text-sm font-medium truncate">{contact.displayName}</p>
                                     <p className="text-xs text-muted-foreground">@{contact.username}</p>
                                 </div>
-                            </button>
+                            </Link>
                         ))
                     ) : (
                         !isLoading && !error && <p className="text-xs text-muted-foreground text-center p-8">Click a provider above to find your contacts.</p>
@@ -141,6 +136,19 @@ const ContactListView = () => {
     );
 };
 
+
+const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType, label: string, isActive?: boolean, onClick?: () => void }) => (
+    <button
+        onClick={onClick}
+        className={cn(
+            "flex flex-col items-center justify-center gap-1 text-muted-foreground w-20 transition-colors",
+            isActive ? "text-accent" : "hover:text-foreground"
+        )}
+    >
+        <Icon className="h-5 w-5" />
+        <span className="text-xs">{label}</span>
+    </button>
+);
 
 const ChatListView = () => {
     const { user } = useAuth();
@@ -527,3 +535,4 @@ export default function DesktopChatSidebar() {
 
 
     
+

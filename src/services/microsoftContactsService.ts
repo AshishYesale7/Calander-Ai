@@ -21,7 +21,7 @@ export async function getMicrosoftContactsOnApp(userId: string): Promise<PublicU
   const client = await getAuthenticatedClient(userId);
   if (!client?.accessToken) {
     console.log(`Not authenticated with Microsoft for user ${userId}. Cannot fetch contacts.`);
-    return [];
+    throw new Error('Microsoft authentication required.');
   }
 
   const contactsUrl = 'https://graph.microsoft.com/v1.0/me/contacts?$select=displayName,emailAddresses';
@@ -35,6 +35,9 @@ export async function getMicrosoftContactsOnApp(userId: string): Promise<PublicU
 
     if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 403) {
+             throw new Error('Contacts permission denied. Please re-authenticate.');
+        }
         console.error("Microsoft Graph API error:", errorData.error.message);
         throw new Error('Failed to fetch Microsoft contacts.');
     }
@@ -87,9 +90,9 @@ export async function getMicrosoftContactsOnApp(userId: string): Promise<PublicU
     return appUsers;
 
   } catch (error: any) {
-    if (error.code === 403) {
+    if (error.code === 403 || error.message.includes('denied')) {
         console.error("Microsoft Graph API access denied for contacts. Ensure 'Contacts.Read' permission is granted.", error);
-        throw new Error("Permission to read Microsoft contacts is denied.");
+        throw new Error('Contacts permission denied. Please re-authenticate.');
     }
     console.error(`Error fetching Microsoft Contacts for user ${userId}:`, error);
     throw new Error('Failed to fetch Microsoft Contacts.');

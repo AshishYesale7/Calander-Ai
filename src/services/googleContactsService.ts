@@ -17,7 +17,7 @@ export async function getContactsOnApp(userId: string): Promise<PublicUserProfil
   const client = await getAuthenticatedClient(userId);
   if (!client) {
     console.log(`Not authenticated with Google for user ${userId}. Cannot fetch contacts.`);
-    return [];
+    throw new Error('Google authentication required.');
   }
 
   const people = google.people({ version: 'v1', auth: client });
@@ -80,11 +80,19 @@ export async function getContactsOnApp(userId: string): Promise<PublicUserProfil
     return appUsers;
 
   } catch (error: any) {
-    if (error.code === 403 && error.errors?.[0]?.reason === 'accessNotConfigured') {
+    if (error.code === 403) {
+      const isPermissionError = error.errors?.some((e: any) => e.reason === 'forbidden' || e.message.includes('permission'));
+      if (isPermissionError) {
+          throw new Error('Contacts permission denied. Please re-authenticate.');
+      }
+      
+      const isApiNotEnabled = error.errors?.some((e: any) => e.reason === 'accessNotConfigured');
+      if (isApiNotEnabled) {
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '[your-project-id]';
         const errorMessage = `Google People API has not been enabled in project ${projectId}. Please visit https://console.developers.google.com/apis/api/people.googleapis.com/overview?project=${projectId} to enable it.`;
         console.error(errorMessage, error);
         throw new Error("Contact sync is not configured for this application.");
+      }
     }
     console.error(`Error fetching Google Contacts for user ${userId}:`, error);
     throw new Error('Failed to fetch Google Contacts.');

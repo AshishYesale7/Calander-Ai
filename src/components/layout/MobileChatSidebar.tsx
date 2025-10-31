@@ -78,7 +78,14 @@ const ContactListView = () => {
                  setError(`No new contacts from ${provider} found on Calendar.ai.`);
             }
         } catch (error: any) {
-            setError(error.message || `Failed to fetch ${provider} contacts.`);
+            if (error.message.includes('permission') || error.message.includes('accessNotConfigured') || error.code === 403) {
+              const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
+              const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
+              window.open(authUrl, '_blank', 'width=500,height=600');
+              setError(`Please grant contact permissions for ${provider} in the pop-up window and try again.`);
+            } else {
+              setError(error.message || `Failed to fetch ${provider} contacts.`);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -524,6 +531,7 @@ export default function MobileChatSidebar() {
     
 
     
+
 
 
 
