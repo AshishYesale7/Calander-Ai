@@ -5,8 +5,7 @@
  * This flow synthesizes data from Gmail, Calendar, and weekly insights.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getGoogleGmailMessages } from '@/services/googleGmailService';
 import { getTimelineEvents } from '@/services/timelineService';
@@ -21,31 +20,29 @@ const GenerateDailyBriefingInputSchema = z.object({
   apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 
-const briefingPrompt = genkit({
+const briefingPrompt = ai.definePrompt({
     name: 'dailyBriefingPrompt',
-    inputSchema: z.object({
+    input: { schema: z.object({
         todaysDate: z.string(),
         userName: z.string().optional(),
         todaysEvents: z.string(),
         todaysEmails: z.string(),
         weeklyInsights: z.string(),
-    }),
-    outputSchema: GenerateDailyBriefingOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are an expert personal assistant AI named 'Calendar.ai'. Your goal is to provide a clear, concise, and actionable daily briefing for a user.
+    })},
+    output: { schema: GenerateDailyBriefingOutputSchema },
+    prompt: `You are an expert personal assistant AI named 'Calendar.ai'. Your goal is to provide a clear, concise, and actionable daily briefing for a user.
 
-Date: ${input.todaysDate}
-User's Name: ${input.userName || 'there'}
+Date: {{{todaysDate}}}
+User's Name: {{{userName}}}
 
 **1. Today's Key Events & Deadlines:**
-${input.todaysEvents}
+{{{todaysEvents}}}
 
 **2. Important Emails Received Today:**
-${input.todaysEmails}
+{{{todaysEmails}}}
 
 **3. This Week's Overall Priorities (for context):**
-${input.weeklyInsights}
+{{{weeklyInsights}}}
 
 ---
 **YOUR TASK**
@@ -59,21 +56,15 @@ Analyze all the provided information and generate a single, friendly paragraph t
 
 Your entire output must be a single, valid JSON object that adheres to the output schema.
 `,
-    };
 });
 
-const generateDailyBriefingFlow = genkit({
+const generateDailyBriefingFlow = ai.defineFlow({
     name: 'generateDailyBriefingFlow',
     inputSchema: GenerateDailyBriefingInputSchema,
     outputSchema: GenerateDailyBriefingOutputSchema,
 }, async (input) => {
     const { userId, apiKey } = input;
     
-    // Set up dynamic AI client with user's key if provided
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: apiKey ?? undefined })],
-    });
-
     const now = new Date();
     const todayStart = startOfDay(now);
     
@@ -99,13 +90,13 @@ const generateDailyBriefingFlow = genkit({
     const weeklyInsightsText = `Critical Tasks: ${weeklyInsights.prioritizedTasks.map(t => t.taskTitle).join(', ')}. Major Events to Prep For: ${weeklyInsights.prepForEvents.map(e => e.eventName).join(', ')}.`;
 
     try {
-        const { output } = await dynamicAi.generate(briefingPrompt({
+        const { output } = await briefingPrompt({
             todaysDate: format(now, 'MMMM d, yyyy'),
             userName: 'there', // In a real app, you'd fetch the user's name
             todaysEvents: eventsText,
             todaysEmails: emailsText,
             weeklyInsights: weeklyInsightsText
-        }));
+        });
 
         if (!output) {
           throw new Error("The AI model did not return a valid daily briefing.");

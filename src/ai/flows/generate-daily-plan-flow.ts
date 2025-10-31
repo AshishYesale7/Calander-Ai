@@ -8,8 +8,7 @@
  * - GenerateDailyPlanOutput - The return type for the generateDailyPlan function.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getTimelineEvents } from '@/services/timelineService';
 import { getCareerGoals } from '@/services/careerGoalsService';
@@ -45,40 +44,38 @@ const GenerateDailyPlanOutputSchema = z.object({
 });
 export type GenerateDailyPlanOutput = z.infer<typeof GenerateDailyPlanOutputSchema>;
 
-const dailyPlanPrompt = genkit({
+const dailyPlanPrompt = ai.definePrompt({
     name: 'dailyPlanPrompt',
-    inputSchema: z.object({
+    input: { schema: z.object({
         currentDateStr: z.string(),
         sleepScheduleText: z.string(),
         fixedScheduleText: z.string(),
         careerGoalsText: z.string(),
         skillsText: z.string(),
         timelineEventsText: z.string(),
-    }),
-    outputSchema: GenerateDailyPlanOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are an expert productivity and career coach AI named 'Calendar.ai'.
+    }) },
+    output: { schema: GenerateDailyPlanOutputSchema },
+    prompt: `You are an expert productivity and career coach AI named 'Calendar.ai'.
 Your goal is to create a highly personalized, scannable, and motivating daily plan for a user that flows chronologically from their wake-up time.
 
-Today's date is: ${input.currentDateStr}
+Today's date is: {{{currentDateStr}}}
 
 **1. User's Preferred Sleep Schedule:**
-${input.sleepScheduleText}
+{{{sleepScheduleText}}}
 
 **2. CRITICAL: User's Fixed Schedule for Today**
 These are the user's fixed, non-negotiable activities and appointments for today (excluding sleep). The times provided are in 24-hour format.
 You MUST include every single one of these items in the final schedule at their specified times.
-${input.fixedScheduleText}
+{{{fixedScheduleText}}}
 
 **3. User's Long-Term Goals & Vision:**
 - Career Goals:
-${input.careerGoalsText}
+{{{careerGoalsText}}}
 - Skills to Develop:
-${input.skillsText}
+{{{skillsText}}}
 
 **4. All Upcoming Events (for context):**
-${input.timelineEventsText}
+{{{timelineEventsText}}}
 
 ---
 **YOUR TASK**
@@ -102,10 +99,9 @@ Analyze all the provided information and generate a complete daily plan. Follow 
 4.  **Find a Motivational Quote:** Provide one short, inspiring quote related to productivity or learning.
 
 Your entire output MUST be a single, valid JSON object that adheres to the output schema.`
-    };
 });
 
-const generateDailyPlanFlow = genkit({
+const generateDailyPlanFlow = ai.defineFlow({
     name: 'generateDailyPlanFlow',
     inputSchema: GenerateDailyPlanInputSchema,
     outputSchema: GenerateDailyPlanOutputSchema,
@@ -118,10 +114,6 @@ const generateDailyPlanFlow = genkit({
         getUserPreferences(input.userId),
     ]);
     
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     // Pre-process the data for the prompt
     const today = new Date(input.currentDate);
 
@@ -184,14 +176,14 @@ const generateDailyPlanFlow = genkit({
       : 'No upcoming events on the timeline.';
     
     try {
-        const { output } = await dynamicAi.generate(dailyPlanPrompt({
+        const { output } = await dailyPlanPrompt({
             currentDateStr,
             sleepScheduleText,
             fixedScheduleText,
             careerGoalsText,
             skillsText,
             timelineEventsText
-        }));
+        });
 
         if (!output) {
           throw new Error("The AI model did not return a valid daily plan.");
@@ -213,5 +205,3 @@ const generateDailyPlanFlow = genkit({
 export async function generateDailyPlan(input: GenerateDailyPlanInput): Promise<GenerateDailyPlanOutput> {
     return generateDailyPlanFlow(input);
 }
-
-    

@@ -8,8 +8,7 @@
  * - CreateEventInput - The input type for the function.
  * - CreateEventOutput - The return type for the function.
  */
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { CreateEventOutputSchema, type CreateEventOutput } from '@/types';
 
@@ -23,21 +22,18 @@ const CreateEventInputSchema = z.object({
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 
 
-const createEventPrompt = genkit({
+const createEventPrompt = ai.definePrompt({
     name: 'createEventPrompt',
-    inputSchema: z.object({ prompt: z.string(), timezone: z.string(), currentDate: z.string() }),
-    outputSchema: CreateEventOutputSchema,
-    output: { format: 'json' },
-}, async (input) => {
-    return {
-        prompt: `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
+    input: { schema: z.object({ prompt: z.string(), timezone: z.string(), currentDate: z.string() }) },
+    output: { schema: CreateEventOutputSchema, format: 'json' },
+    prompt: `You are an expert scheduling assistant. Your primary task is to parse a user's natural language request and convert it into a structured calendar event object. You must be extremely precise with dates and times.
 
 Current Context:
-- The current date and time is: ${input.currentDate}.
-- The user's timezone is: ${input.timezone}. Use this timezone for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week at 2pm"). All output ISO 8601 strings should reflect this timezone.
+- The current date and time is: {{{currentDate}}}.
+- The user's timezone is: {{{timezone}}}. Use this timezone for all relative time calculations (e.g., "tomorrow", "in 2 hours", "next week at 2pm"). All output ISO 8601 strings should reflect this timezone.
 
 User's Request:
-"${input.prompt}"
+"{{{prompt}}}"
 
 Instructions:
 1.  Analyze the user's request to extract the event's title, start time, end time, and any notes or location.
@@ -66,24 +62,19 @@ Instructions:
     -   **Resulting \`reminder.enabled\`:** false
 
 Now, generate a JSON object that strictly adheres to the specified output schema based on the user's request and all the instructions above.`,
-    };
 });
 
-const createEventFromPromptFlow = genkit({
+const createEventFromPromptFlow = ai.defineFlow({
     name: 'createEventFromPromptFlow',
     inputSchema: CreateEventInputSchema,
     outputSchema: CreateEventOutputSchema,
 }, async (input) => {
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     try {
-        const { output } = await dynamicAi.generate(createEventPrompt({
+        const { output } = await createEventPrompt({
             prompt: input.prompt,
             timezone: input.timezone || 'UTC',
             currentDate: new Date().toISOString(),
-        }));
+        });
 
         if (!output) {
           throw new Error("The AI model did not return a valid event structure.");
@@ -101,5 +92,3 @@ const createEventFromPromptFlow = genkit({
 export async function createEventFromPrompt(input: CreateEventInput): Promise<CreateEventOutput> {
     return createEventFromPromptFlow(input);
 }
-
-    

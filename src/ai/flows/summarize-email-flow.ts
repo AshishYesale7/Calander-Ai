@@ -8,8 +8,7 @@
  * - SummarizeEmailOutput - The return type for the summarizeEmail function.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const SummarizeEmailPayloadSchema = z.object({
@@ -28,36 +27,29 @@ const SummarizeEmailOutputSchema = z.object({
 });
 export type SummarizeEmailOutput = z.infer<typeof SummarizeEmailOutputSchema>;
 
-const summarizeEmailPrompt = genkit({
+const summarizeEmailPrompt = ai.definePrompt({
     name: 'summarizeEmailPrompt',
-    inputSchema: SummarizeEmailPayloadSchema,
-    outputSchema: SummarizeEmailOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are an expert personal assistant. Your task is to provide a concise, one-paragraph summary of the following email. Focus on the most important takeaways, such as direct questions, action items, or deadlines.
+    input: { schema: SummarizeEmailPayloadSchema },
+    output: { schema: SummarizeEmailOutputSchema },
+    prompt: `You are an expert personal assistant. Your task is to provide a concise, one-paragraph summary of the following email. Focus on the most important takeaways, such as direct questions, action items, or deadlines.
 
 Email Subject:
-${input.subject}
+{{{subject}}}
 
 Email Content Snippet:
-${input.snippet}
+{{{snippet}}}
 
 Generate the summary.
 `,
-    };
 });
 
-const summarizeEmailFlow = genkit({
+const summarizeEmailFlow = ai.defineFlow({
     name: 'summarizeEmailFlow',
     inputSchema: SummarizeEmailInputSchema,
     outputSchema: SummarizeEmailOutputSchema,
 }, async (input) => {
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     try {
-        const { output } = await dynamicAi.generate(summarizeEmailPrompt(input));
+        const { output } = await summarizeEmailPrompt(input);
 
         if (!output) {
             throw new Error("The AI model did not return a valid summary.");
@@ -75,5 +67,3 @@ const summarizeEmailFlow = genkit({
 export async function summarizeEmail(input: SummarizeEmailInput): Promise<SummarizeEmailOutput> {
     return summarizeEmailFlow(input);
 }
-
-    

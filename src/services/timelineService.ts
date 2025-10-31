@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -88,11 +87,11 @@ export const saveTimelineEvent = async (
           }
         } catch (error) {
           console.error("Critical Error: Failed to sync event to Google Calendar.", error);
-          googleEventId = null; 
+          throw new Error("Could not sync to Google Calendar. Please check permissions in Settings.");
         }
-      } else {
+      } else if (isNewEvent || event.googleEventId) { // Only throw error if user intended to sync
          console.warn(`User ${userId} opted to sync to Google, but is not authenticated.`);
-         googleEventId = null;
+         throw new Error("Could not sync to Google Calendar. Please connect your Google account in Settings.");
       }
     }
 

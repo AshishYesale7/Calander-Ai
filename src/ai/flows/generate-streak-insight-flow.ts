@@ -7,8 +7,7 @@
  *                           to generate a personalized, encouraging message.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateStreakInsightInputSchema = z.object({
@@ -36,19 +35,16 @@ const mockInsights = [
     "Don't stop now, you've got momentum on your side!",
 ];
 
-const streakInsightPrompt = genkit({
+const streakInsightPrompt = ai.definePrompt({
     name: 'streakInsightPrompt',
-    inputSchema: GenerateStreakInsightInputSchema.omit({apiKey: true}), // We don't need apiKey in the prompt itself
-    outputSchema: GenerateStreakInsightOutputSchema,
-}, async (input) => {
-    const rankInfo = input.rank ? `Rank: ${input.rank} / ${input.totalUsers}` : 'Not Ranked';
-    return {
-        prompt: `You are a motivating and analytical AI coach. Your goal is to generate a single, short, encouraging sentence for a user based on their daily streak and leaderboard performance.
+    input: { schema: GenerateStreakInsightInputSchema.omit({apiKey: true}) }, // We don't need apiKey in the prompt itself
+    output: { schema: GenerateStreakInsightOutputSchema },
+    prompt: `You are a motivating and analytical AI coach. Your goal is to generate a single, short, encouraging sentence for a user based on their daily streak and leaderboard performance.
 
 **User Data:**
-- Current Streak: ${input.currentStreak} days
-- Longest Streak: ${input.longestStreak} days
-- Leaderboard ${rankInfo}
+- Current Streak: {{{currentStreak}}} days
+- Longest Streak: {{{longestStreak}}} days
+- Leaderboard {{#if rank}}Rank: {{{rank}}} / {{{totalUsers}}}{{else}}Not Ranked{{/if}}
 
 **Instructions:**
 1.  **Acknowledge Milestones:** If the streak hits a specific milestone, make it the focus.
@@ -63,7 +59,7 @@ const streakInsightPrompt = genkit({
     -   If rank is in the top 25%: "Keeping a streak puts you in the top 25% of all users. Keep climbing!"
     -   If rank is available but not top 25%: "You're on the leaderboard! Keep the streak alive to climb higher."
 3.  **Compare to Longest Streak:** If not a milestone and not highly ranked, compare to their personal best.
-    -   If approaching longest streak: "You're only ${input.longestStreak - input.currentStreak} days away from your personal best!"
+    -   If approaching longest streak: "You're only {{{longestStreak}}} - {{{currentStreak}}} days away from your personal best!"
     -   If just broke longest streak: "New personal record! You've officially set your new longest streak."
 4.  **Default Encouragement:** If none of the above apply (e.g., low streak, low rank), give a simple, encouraging message.
     -   "Each day is a new victory. Keep it up!"
@@ -71,21 +67,17 @@ const streakInsightPrompt = genkit({
 5.  **Output:** Provide only a single sentence in the 'insight' field.
 
 Now, generate the insight for the provided user data.`,
-    };
 });
 
-const generateStreakInsightFlow = genkit(
+const generateStreakInsightFlow = ai.defineFlow(
   {
     name: 'generateStreakInsightFlow',
     inputSchema: GenerateStreakInsightInputSchema,
     outputSchema: GenerateStreakInsightOutputSchema,
   },
   async (input) => {
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
     try {
-        const { output } = await dynamicAi.generate(streakInsightPrompt(input));
+        const { output } = await streakInsightPrompt(input);
         if (!output || !output.insight) {
             throw new Error("AI did not return a valid insight.");
         }
@@ -102,5 +94,3 @@ const generateStreakInsightFlow = genkit(
 export async function generateStreakInsight(input: GenerateStreakInsightInput): Promise<GenerateStreakInsightOutput> {
   return generateStreakInsightFlow(input);
 }
-
-    

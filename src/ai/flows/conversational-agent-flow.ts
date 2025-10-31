@@ -6,8 +6,7 @@
  * acting as a flexible, intelligent chatbot.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { 
   ConversationalAgentInputSchema,
@@ -28,23 +27,18 @@ This is the user's new message:
 Provide a helpful and relevant response to the user's message.`;
 
 // The main Genkit flow
-const conversationalAgentFlow = genkit({
+const conversationalAgentFlow = ai.defineFlow({
     name: 'conversationalAgentFlow',
     inputSchema: ConversationalAgentInputSchema,
     outputSchema: ConversationalAgentOutputSchema,
   },
   async (input) => {
-    // Dynamically configure the AI plugin with the user's key if provided
-    const dynamicAi = genkit({
-      plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-    
     // Format the history into a simple string for the prompt
     const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
     
     try {
       // Call the prompt and get the AI's response
-      const llmResponse = await dynamicAi.generate({
+      const llmResponse = await ai.generate({
         prompt: {
           text: conversationalAgentPromptTemplate,
           input: {

@@ -4,8 +4,7 @@
  * @fileOverview A conversational AI agent for creating calendar events.
  * It can ask clarifying questions if the initial prompt is incomplete.
  */
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { 
     ConversationalEventInputSchema,
@@ -14,26 +13,24 @@ import {
     type ConversationalEventOutput,
 } from '@/types';
 
-const conversationalEventPrompt = genkit({
+const conversationalEventPrompt = ai.definePrompt({
     name: 'conversationalEventPrompt',
-    inputSchema: z.object({
+    input: { schema: z.object({
       chatHistoryString: z.string(),
       currentDate: z.string(),
       timezone: z.string(),
-    }),
-    outputSchema: ConversationalEventOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are a conversational scheduling assistant. Your goal is to help a user create a calendar event. You must be helpful and friendly.
+    })},
+    output: { schema: ConversationalEventOutputSchema },
+    prompt: `You are a conversational scheduling assistant. Your goal is to help a user create a calendar event. You must be helpful and friendly.
 
 You will receive the entire chat history. Your task is to analyze the last message from the user in the context of the history.
 
 **Current Context:**
-- The current date is: ${input.currentDate}
-- The user's timezone is: ${input.timezone}
+- The current date is: {{{currentDate}}}
+- The user's timezone is: {{{timezone}}}
 
 **Chat History:**
-${input.chatHistoryString}
+{{{chatHistoryString}}}
 
 **Instructions:**
 1.  **Analyze the History:** Read the entire conversation to understand what information has already been provided (like the title, date, time, etc.).
@@ -54,26 +51,21 @@ ${input.chatHistoryString}
 
 Your entire output must be a single JSON object that adheres to the provided schema.
 `,
-    };
 });
 
-const createConversationalEventFlow = genkit({
+const createConversationalEventFlow = ai.defineFlow({
     name: 'createConversationalEventFlow',
     inputSchema: ConversationalEventInputSchema,
     outputSchema: ConversationalEventOutputSchema,
 }, async (input) => {
     const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
     
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     try {
-        const { output } = await dynamicAi.generate(conversationalEventPrompt({
+        const { output } = await conversationalEventPrompt({
             chatHistoryString: historyString,
             currentDate: new Date().toISOString(),
             timezone: input.timezone || 'UTC',
-        }));
+        });
 
         if (!output) {
           throw new Error("The AI model did not return a valid response.");
@@ -93,5 +85,3 @@ const createConversationalEventFlow = genkit({
 export async function createConversationalEvent(input: ConversationalEventInput): Promise<ConversationalEventOutput> {
   return createConversationalEventFlow(input);
 }
-
-    

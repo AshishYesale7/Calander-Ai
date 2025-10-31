@@ -8,8 +8,7 @@
  * - ProcessGoogleDataOutput - The return type for the processGoogleData function.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import {z} from 'genkit';
 
 // Schemas for Google API Data
@@ -65,28 +64,26 @@ const ProcessGoogleDataOutputSchema = z.object({
 });
 export type ProcessGoogleDataOutput = z.infer<typeof ProcessGoogleDataOutputSchema>;
 
-const processGoogleDataPrompt = genkit({
+const processGoogleDataPrompt = ai.definePrompt({
     name: 'processGoogleDataPrompt',
-    inputSchema: z.object({
+    input: { schema: z.object({
         calendarEventsSection: z.string(),
         googleTasksSection: z.string(),
         currentDate: z.string(),
-    }),
-    outputSchema: ProcessGoogleDataOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are an expert personal assistant AI. Your task is to analyze a user's Google data (Calendar events, Tasks) to identify important upcoming events, deadlines, and tasks.
+    }) },
+    output: { schema: ProcessGoogleDataOutputSchema },
+    prompt: `You are an expert personal assistant AI. Your task is to analyze a user's Google data (Calendar events, Tasks) to identify important upcoming events, deadlines, and tasks.
 
 Context:
-- Today's date is ${input.currentDate}.
+- Today's date is {{{currentDate}}}.
 - The user wants to track important items from their Google account.
 
 Provided Data:
 1. Google Calendar Events:
-${input.calendarEventsSection}
+{{{calendarEventsSection}}}
 
 2. Google Tasks (To-Do list):
-${input.googleTasksSection}
+{{{googleTasksSection}}}
 
 
 ---
@@ -108,18 +105,13 @@ ${input.googleTasksSection}
 Structure your final output strictly according to the 'ActionableInsightSchema'.
 Generate the list of actionable insights based on all the provided data.
 `,
-    };
 });
 
-const processGoogleDataFlow = genkit({
+const processGoogleDataFlow = ai.defineFlow({
     name: 'processGoogleDataFlow',
     inputSchema: ProcessGoogleDataInputSchema,
     outputSchema: ProcessGoogleDataOutputSchema,
 }, async (input) => {
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     const currentDate = new Date().toISOString();
 
     let calendarEventsSection = 'No calendar events provided.';
@@ -145,11 +137,11 @@ const processGoogleDataFlow = genkit({
 `).join('');
     }
 
-    const { output } = await dynamicAi.generate(processGoogleDataPrompt({
+    const { output } = await processGoogleDataPrompt({
         currentDate,
         calendarEventsSection,
         googleTasksSection,
-    }));
+    });
 
     if (!output) {
       console.warn('AI did not return expected output for processGoogleDataFlow.');
@@ -161,5 +153,3 @@ const processGoogleDataFlow = genkit({
 export async function processGoogleData(input: ProcessGoogleDataInput): Promise<ProcessGoogleDataOutput> {
   return processGoogleDataFlow(input);
 }
-
-    

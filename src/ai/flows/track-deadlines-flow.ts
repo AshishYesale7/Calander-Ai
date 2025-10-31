@@ -9,8 +9,7 @@
  * - TrackDeadlinesOutput - The return type for the function.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TrackDeadlinesInputSchema = z.object({
@@ -38,17 +37,15 @@ const TrackDeadlinesOutputSchema = z.object({
 });
 export type TrackDeadlinesOutput = z.infer<typeof TrackDeadlinesOutputSchema>;
 
-const trackDeadlinesPrompt = genkit({
+const trackDeadlinesPrompt = ai.definePrompt({
     name: 'trackDeadlinesPrompt',
-    inputSchema: z.object({ keyword: z.string(), currentDate: z.string() }),
-    outputSchema: TrackDeadlinesOutputSchema,
-}, async (input) => {
-    return {
-        prompt: `You are an expert AI research assistant specializing in helping students and professionals track important career opportunities. Your task is to perform a simulated, intelligent web search for the given keyword to find the most recent, relevant, and *upcoming* dates and deadlines.
+    input: { schema: z.object({ keyword: z.string(), currentDate: z.string() }) },
+    output: { schema: TrackDeadlinesOutputSchema },
+    prompt: `You are an expert AI research assistant specializing in helping students and professionals track important career opportunities. Your task is to perform a simulated, intelligent web search for the given keyword to find the most recent, relevant, and *upcoming* dates and deadlines.
 
-Today's date is: ${input.currentDate}.
+Today's date is: {{{currentDate}}}.
 
-User's Keyword: "${input.keyword}"
+User's Keyword: "{{{keyword}}}"
 
 **CRITICAL INSTRUCTIONS:**
 1.  **Analyze the Full Lifecycle & Be Proactive:**
@@ -75,23 +72,18 @@ User's Keyword: "${input.keyword}"
 
 Now, generate a JSON object that strictly adheres to the output schema based on the user's request and all the instructions above.
 `,
-    };
 });
 
-const trackDeadlinesFlow = genkit({
+const trackDeadlinesFlow = ai.defineFlow({
     name: 'trackDeadlinesFlow',
     inputSchema: TrackDeadlinesInputSchema,
     outputSchema: TrackDeadlinesOutputSchema,
 }, async (input) => {
-    const dynamicAi = genkit({
-        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
-    });
-
     try {
-        const { output } = await dynamicAi.generate(trackDeadlinesPrompt({
+        const { output } = await trackDeadlinesPrompt({
             keyword: input.keyword,
             currentDate: new Date().toISOString(),
-        }));
+        });
 
         if (!output) {
           return { deadlines: [] };
@@ -109,5 +101,3 @@ const trackDeadlinesFlow = genkit({
 export async function trackDeadlines(input: TrackDeadlinesInput): Promise<TrackDeadlinesOutput> {
   return trackDeadlinesFlow(input);
 }
-
-    
