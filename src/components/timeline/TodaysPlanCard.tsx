@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -180,7 +180,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-muted-foreground">Checking for plan...</p>
         </div>
@@ -189,7 +189,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     
     if (isRoutineSetupNeeded) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <Edit className="h-10 w-10 mb-4 text-accent" />
           <p className="font-semibold text-lg">Set Up Your Weekly Routine</p>
           <p className="text-sm text-muted-foreground my-2">Click the header above or the button below to define your schedule so the AI can generate your plan.</p>
@@ -202,7 +202,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-48 text-center text-destructive">
+        <div className="flex flex-col items-center justify-center text-center text-destructive">
           <AlertTriangle className="h-10 w-10 mb-2" />
           <p className="font-semibold">Could not generate plan</p>
           <p className="text-sm">{error}</p>
@@ -215,7 +215,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     }
 
     return (
-      <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
         <p>No plan available for {format(displayDate, 'MMMM d')}.</p>
         <Button onClick={() => fetchAndGeneratePlan(displayDate, true)} className="mt-4">Generate Plan</Button>
       </div>
@@ -225,17 +225,17 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   return (
     <>
       <div 
-        className="w-full h-full frosted-glass shadow-lg rounded-lg flex flex-col"
+        className="w-full frosted-glass shadow-lg rounded-lg flex flex-col"
       >
         <Accordion 
             type="single" 
             collapsible 
-            className="w-full flex-1 flex flex-col min-h-0"
+            className="w-full"
             onValueChange={handleAccordionValueChange}
         >
-          <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col min-h-0">
+          <AccordionItem value="item-1" className="border-b-0">
             <AccordionPrimitive.Header
-              className="flex items-center justify-between gap-2 p-4 md:p-6 border-b border-border"
+              className="flex items-center justify-between gap-2 p-4 md:p-6"
               onClickCapture={handleHeaderClick}
             >
               <div className="flex items-center gap-2">
@@ -314,12 +314,10 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                 </Button>
               </div>
             </AccordionPrimitive.Header>
-            <AccordionContent className="flex-1 min-h-0">
-              <ScrollArea className="h-full">
-                <div ref={contentRef} className="p-6 pt-4">
-                      {renderContent()}
-                  </div>
-              </ScrollArea>
+            <AccordionContent>
+              <div ref={contentRef} className="px-6 pb-6">
+                  {renderContent()}
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
