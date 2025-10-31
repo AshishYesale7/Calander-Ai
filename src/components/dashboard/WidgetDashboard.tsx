@@ -45,6 +45,7 @@ interface WidgetDashboardProps {
   hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
+  onAccordionToggle: (isOpen: boolean, contentHeight: number) => void; // Added prop
 }
 
 export default function WidgetDashboard({ 
@@ -54,7 +55,7 @@ export default function WidgetDashboard({
     hiddenWidgets = new Set(),
     onToggleWidget,
     isLoading,
-}: WidgetDashboardProps) {
+}: Omit<WidgetDashboardProps, 'onAccordionToggle'> & { onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void}) {
   const { user } = useAuth();
   
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
@@ -199,9 +200,37 @@ export default function WidgetDashboard({
     return newLayouts;
   }, [finalLayouts, getLayoutWithDynamicMins]);
   
-  const onAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    // This is now handled automatically by removing maxH, but we keep the prop for potential future use.
-  }, []);
+  const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    setCurrentLayouts(prevLayouts => {
+      const newLayouts = { ...prevLayouts };
+      const bp = currentBreakpoint as keyof Layouts;
+      
+      if (!newLayouts[bp]) return prevLayouts;
+
+      newLayouts[bp] = newLayouts[bp]!.map(item => {
+        if (item.i === 'plan') {
+          if (isOpen) {
+            // Calculate new height based on content
+            const newHeightInUnits = Math.ceil((contentHeight + MARGIN[1]) / (ROW_HEIGHT + MARGIN[1]));
+            return { ...item, h: Math.max(item.minH || 1, newHeightInUnits) };
+          } else {
+            // Revert to a smaller height, respecting minH
+            const defaultLg = getDefaultLayouts().lg;
+            const defaultItem = defaultLg?.find(i => i.i === 'plan');
+            return { ...item, h: defaultItem?.h || item.minH || 1 };
+          }
+        }
+        return item;
+      });
+      
+      // Save the new layout state immediately
+      if (user) {
+        saveCurrentLayout(newLayouts);
+      }
+      
+      return newLayouts;
+    });
+  }, [currentBreakpoint, getDefaultLayouts, saveCurrentLayout, user]);
 
 
   if (!isLayoutLoaded) {
@@ -238,7 +267,7 @@ export default function WidgetDashboard({
               if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
               // Pass down the onAccordionToggle function only to the 'plan' widget
               const componentToRender = item.i === 'plan' 
-                ? React.cloneElement(components[item.i] as React.ReactElement, { onAccordionToggle }) 
+                ? React.cloneElement(components[item.i] as React.ReactElement, { onAccordionToggle: handleAccordionToggle }) 
                 : components[item.i];
               
               return (

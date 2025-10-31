@@ -248,13 +248,8 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
     }
   }, [allTimelineEvents, user, toast, fetchAllEvents, timezone]);
   
-  const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    // This function will be passed to TodaysPlanCard (via the components object)
-    // The actual layout update logic is now handled inside WidgetDashboard
-  }, []);
-
   const components = useMemo(() => ({
-    'plan': <TodaysPlanWidget />,
+    'plan': <TodaysPlanWidget onAccordionToggle={() => {}} />,
     'streak': <DailyStreakWidget />,
     'calendar': <CalendarWidget onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} />,
     'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
@@ -274,7 +269,6 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
         hiddenWidgets={hiddenWidgets}
         onToggleWidget={handleToggleWidget}
         components={components}
-        onAccordionToggle={handleAccordionToggle}
       />
 
       {isPlannerMaximized && (

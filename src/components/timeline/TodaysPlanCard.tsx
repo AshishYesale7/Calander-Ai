@@ -25,7 +25,11 @@ import { format, subDays, addDays, isToday, isTomorrow, isYesterday, startOfDay,
 import EditRoutineModal from './EditRoutineModal';
 import { logUserActivity } from '@/services/activityLogService';
 
-export default function TodaysPlanCard() {
+interface TodaysPlanCardProps {
+  onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void;
+}
+
+export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProps) {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -36,6 +40,8 @@ export default function TodaysPlanCard() {
   const [error, setError] = useState<string | null>(null);
   const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
   const [isRoutineSetupNeeded, setIsRoutineSetupNeeded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
 
   const fetchAndGeneratePlan = useCallback(async (date: Date, forceRegenerate: boolean = false) => {
     if (!user) {
@@ -203,7 +209,11 @@ export default function TodaysPlanCard() {
       <Card 
         className="w-full h-full frosted-glass shadow-lg flex flex-col"
       >
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" onValueChange={(value) => {
+          if(onAccordionToggle && contentRef.current) {
+            onAccordionToggle(!!value, contentRef.current.scrollHeight);
+          }
+        }}>
           <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col min-h-0">
             <AccordionTrigger className="p-4 md:p-6 hover:no-underline" disabled={isRoutineSetupNeeded}>
               <div 
@@ -277,8 +287,8 @@ export default function TodaysPlanCard() {
                   </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="flex-1 min-h-0">
-                <div className="px-6 pb-6 overflow-y-auto max-h-[260px]">
+            <AccordionContent>
+                <div ref={contentRef} className="px-6 pb-6 overflow-y-auto">
                     {renderContent()}
                 </div>
             </AccordionContent>
