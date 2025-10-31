@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
@@ -42,6 +41,9 @@ import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, C
 import { deleteConversationForCurrentUser } from '@/actions/chatActions';
 import { subscribeToCallHistory, loadCallsFromLocal, subscribeToRecentChats } from '@/services/chatService';
 import { useTheme } from '@/hooks/use-theme';
+import { getContactsOnApp } from '@/services/googleContactsService';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+
 
 type RecentChatUser = PublicUserProfile & {
     lastMessage?: string;
@@ -65,6 +67,60 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.Element
         <span className="text-xs">{label}</span>
     </button>
 );
+
+const ContactsPopover = () => {
+    const { user } = useAuth();
+    const { setChattingWith } = useChat();
+    const [contacts, setContacts] = useState<PublicUserProfile[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasFetched, setHasFetched] = useState(false);
+
+    const handleFetchContacts = async () => {
+        if (!user || hasFetched) return;
+        setIsLoading(true);
+        try {
+            const appContacts = await getContactsOnApp(user.uid);
+            setContacts(appContacts);
+        } catch (error) {
+            console.error("Failed to fetch contacts", error);
+        } finally {
+            setIsLoading(false);
+            setHasFetched(true);
+        }
+    };
+    
+    return (
+        <Popover onOpenChange={(open) => { if (open && !hasFetched) handleFetchContacts(); }}>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 w-full">
+                    <UserPlus className="h-5 w-5"/>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent side="top" className="w-64 frosted-glass p-2">
+                <h4 className="font-medium text-sm p-2">Contacts on Calendar.ai</h4>
+                {isLoading ? (
+                    <div className="flex justify-center p-4"><LoadingSpinner/></div>
+                ) : contacts.length > 0 ? (
+                    <ScrollArea className="h-64">
+                    <div className="space-y-1">
+                        {contacts.map(contact => (
+                            <button key={contact.uid} onClick={() => setChattingWith(contact)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={contact.photoURL || undefined} alt={contact.displayName}/>
+                                    <AvatarFallback>{contact.displayName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-medium truncate">{contact.displayName}</span>
+                            </button>
+                        ))}
+                    </div>
+                    </ScrollArea>
+                ) : (
+                    <p className="text-xs text-muted-foreground text-center p-4">No Google Contacts found on the app. Invite your friends!</p>
+                )}
+            </PopoverContent>
+        </Popover>
+    );
+};
 
 const ChatListView = () => {
     const { user } = useAuth();
@@ -434,7 +490,7 @@ export default function DesktopChatSidebar() {
                 <div className="flex justify-around items-center">
                     <NavItem icon={ChatIcon} label="Chats" isActive={activeView === 'chats'} onClick={() => setActiveView('chats')} />
                     <NavItem icon={UpdatesIcon} label="Updates" isActive={activeView === 'updates'} onClick={() => setActiveView('updates')} />
-                    <NavItem icon={Users} label="Communities" isActive={activeView === 'communities'} onClick={() => setActiveView('communities')} />
+                    <ContactsPopover />
                     <NavItem icon={Phone} label="Calls" isActive={activeView === 'calls'} onClick={() => setActiveView('calls')} />
                 </div>
             </div>
@@ -448,3 +504,4 @@ export default function DesktopChatSidebar() {
 
 
     
+

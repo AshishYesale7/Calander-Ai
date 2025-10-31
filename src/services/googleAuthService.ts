@@ -56,7 +56,8 @@ export async function getGoogleAuthUrl(request: NextRequest, state?: string | nu
     const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/tasks' // Correct scope for read/write access
+        'https://www.googleapis.com/auth/tasks',
+        'https://www.googleapis.com/auth/contacts.readonly' // Added new scope for contacts
     ];
 
     return oauth2Client.generateAuthUrl({
