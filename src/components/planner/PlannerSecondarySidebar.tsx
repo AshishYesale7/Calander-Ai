@@ -149,7 +149,108 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd, dateQuery }: { vi
     );
 };
 
-// ... existing components ...
+const PlannerGoogleCalendarList = ({ events, isLoading, viewTheme, onDragStart, onDragEnd }: { events: RawCalendarEvent[], isLoading: boolean, viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, item: RawCalendarEvent) => void, onDragEnd: (e?: React.DragEvent) => void }) => {
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+    const itemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
+    const textClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
+
+    return (
+        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
+             <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Calendar size={16} /> Google Calendar</h1>
+            </div>
+             <div className="space-y-1 text-xs overflow-y-auto flex-1">
+                {isLoading && events.length === 0 && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
+                {!isLoading && events.length === 0 && <div className="text-center p-4 text-xs text-gray-400">No upcoming events found.</div>}
+                {events.map(event => {
+                    const isAllDay = !event.startDateTime.includes('T');
+                    return (
+                        <div 
+                            key={event.id} 
+                            className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", itemClasses)}
+                            draggable
+                            onDragStart={(e) => onDragStart(e, event)}
+                            onDragEnd={onDragEnd}
+                        >
+                            <p className={cn("text-xs font-bold flex-1", textClasses)}>{event.summary}</p>
+                            <p className="text-[10px] text-gray-400 w-full truncate">
+                                {isAllDay 
+                                    ? format(new Date(event.startDateTime), 'MMM d') 
+                                    : `${format(new Date(event.startDateTime), 'MMM d, p')}`
+                                }
+                            </p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    )
+};
+
+
+const PlannerTaskList = ({
+  list,
+  tasks,
+  isTasksLoading,
+  onAddTask,
+  onDragStart,
+  onDragEnd,
+  onStatusChange,
+  viewTheme,
+}: {
+  list: GoogleTaskList;
+  tasks: RawGoogleTask[];
+  isTasksLoading: boolean;
+  onAddTask: (listId: string, title: string) => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, item: RawGoogleTask) => void;
+  onDragEnd: (e?: React.DragEvent) => void;
+  onStatusChange: (listId: string, taskId: string) => void;
+  viewTheme: MaxViewTheme;
+}) => {
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const handleAddTask = () => {
+    if (newTaskTitle.trim()) {
+      onAddTask(list.id, newTaskTitle.trim());
+      setNewTaskTitle('');
+    }
+  };
+  const taskTextClasses = viewTheme === 'dark' ? 'text-gray-300' : 'text-gray-700';
+
+  return (
+    <AccordionItem value={list.id} className="border-b-0">
+      <AccordionTrigger className="p-2 text-sm font-semibold hover:no-underline">{list.title}</AccordionTrigger>
+      <AccordionContent className="pb-0 pl-2 pr-1 space-y-1 text-xs">
+        <form onSubmit={e => { e.preventDefault(); handleAddTask(); }} className="flex items-center gap-1 mb-2 px-1">
+          <Plus size={14} className="text-gray-500" />
+          <Input 
+            value={newTaskTitle} 
+            onChange={e => setNewTaskTitle(e.target.value)} 
+            placeholder="Add a task" 
+            className="h-6 text-xs bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+          />
+        </form>
+        {isTasksLoading ? (
+            <div className="py-4 text-center"><LoadingSpinner size="sm" /></div>
+        ) : (
+            tasks.map(task => (
+                <div 
+                    key={task.id} 
+                    className="flex items-start gap-2 p-1 rounded-md hover:bg-gray-700/30 cursor-grab"
+                    draggable
+                    onDragStart={(e) => onDragStart(e, task)}
+                    onDragEnd={onDragEnd}
+                >
+                    <Checkbox id={`task-${task.id}`} checked={task.status === 'completed'} onCheckedChange={() => onStatusChange(list.id, task.id)} className="mt-0.5" />
+                    <label htmlFor={`task-${task.id}`} className={cn("flex-1", taskTextClasses)}>{task.title}</label>
+                </div>
+            ))
+        )}
+      </AccordionContent>
+    </AccordionItem>
+  );
+};
+
 
 // --- MAIN COMPONENT ---
 interface PlannerSecondarySidebarProps {
@@ -169,11 +270,46 @@ interface PlannerSecondarySidebarProps {
 export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarProps) {
   const { activeView, taskLists, tasks, isTasksLoading, onAddTask, onDragStart, onDragEnd, onStatusChange, viewTheme, googleEvents, isGoogleEventsLoading } = props;
   
-  // ... existing logic ...
+  const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+  const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
 
+  if (activeView === 'gmail') {
+      return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart as any} onDragEnd={onDragEnd} />;
+  }
+  
+  if (activeView === 'today') {
+      return <PlannerGmailList viewTheme={viewTheme} onDragStart={onDragStart as any} onDragEnd={onDragEnd} dateQuery="today" />;
+  }
+
+  if (activeView === 'upcoming') {
+    return <PlannerUpcomingView viewTheme={viewTheme} />;
+  }
+  
   if (activeView === 'google') {
     return <PlannerGoogleCalendarList events={googleEvents} isLoading={isGoogleEventsLoading} viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd} />;
   }
   
-  // ... other view rendering logic ...
+  return (
+    <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
+      <div className="flex justify-between items-center mb-2 px-1">
+        <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Columns size={16} /> All Tasks</h1>
+        <Button variant="ghost" size="icon" className="h-6 w-6"><Filter className="h-4 w-4" /></Button>
+      </div>
+      <Accordion type="multiple" defaultValue={taskLists.map(l => l.id)} className="w-full">
+        {taskLists.map(list => (
+          <PlannerTaskList 
+            key={list.id} 
+            list={list} 
+            tasks={tasks[list.id] || []} 
+            isTasksLoading={isTasksLoading}
+            onAddTask={onAddTask}
+            onDragStart={onDragStart as any}
+            onDragEnd={onDragEnd}
+            onStatusChange={onStatusChange}
+            viewTheme={viewTheme}
+          />
+        ))}
+      </Accordion>
+    </div>
+  );
 }
