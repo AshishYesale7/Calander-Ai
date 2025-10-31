@@ -162,7 +162,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center text-center">
+        <div className="flex flex-col items-center justify-center text-center p-4">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-muted-foreground">Checking for plan...</p>
         </div>
@@ -171,7 +171,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     
     if (isRoutineSetupNeeded) {
       return (
-        <div className="flex flex-col items-center justify-center text-center">
+        <div className="flex flex-col items-center justify-center text-center p-4">
           <Edit className="h-10 w-10 mb-4 text-accent" />
           <p className="font-semibold text-lg">Set Up Your Weekly Routine</p>
           <p className="text-sm text-muted-foreground my-2">Click the header above or the button below to define your schedule so the AI can generate your plan.</p>
@@ -184,7 +184,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center text-center text-destructive">
+        <div className="flex flex-col items-center justify-center text-center text-destructive p-4">
           <AlertTriangle className="h-10 w-10 mb-2" />
           <p className="font-semibold">Could not generate plan</p>
           <p className="text-sm">{error}</p>
@@ -197,7 +197,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     }
 
     return (
-      <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center text-center p-4 text-muted-foreground">
         <p>No plan available for {format(displayDate, 'MMMM d')}.</p>
         <Button onClick={() => fetchAndGeneratePlan(displayDate, true)} className="mt-4">Generate Plan</Button>
       </div>
@@ -209,12 +209,8 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
       <Card 
         className="w-full h-full frosted-glass shadow-lg flex flex-col"
       >
-        <Accordion type="single" collapsible className="w-full flex-1 flex flex-col min-h-0" onValueChange={(value) => {
-          if(onAccordionToggle && contentRef.current) {
-            onAccordionToggle(!!value, contentRef.current.scrollHeight);
-          }
-        }}>
-          <AccordionItem value="item-1" className="border-b-0 flex-1 flex flex-col min-h-0">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1" className="border-b-0">
             <AccordionTrigger className="p-4 md:p-6 hover:no-underline" disabled={isRoutineSetupNeeded}>
               <div 
                 className="w-full flex items-center justify-between gap-2"
@@ -230,16 +226,6 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                         aria-label="Previous day"
                     >
                         <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
-                        disabled={!canGoForward || isLoading}
-                        className="h-8 w-8 shrink-0"
-                        aria-label="Next day"
-                    >
-                        <ChevronRight className="h-5 w-5" />
                     </Button>
                   </div>
                   <div className="flex-1 min-w-0 text-left px-2">
@@ -259,6 +245,16 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1 pl-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); handleNextDay(); }}
+                        disabled={!canGoForward || isLoading}
+                        className="h-8 w-8 shrink-0"
+                        aria-label="Next day"
+                    >
+                        <ChevronRight className="h-5 w-5" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -287,8 +283,8 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                   </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="flex-1 flex flex-col min-h-0">
-                <div ref={contentRef} className="px-6 pb-6 overflow-y-auto">
+            <AccordionContent>
+                <div className="px-6 pb-6 pt-0">
                     {renderContent()}
                 </div>
             </AccordionContent>
