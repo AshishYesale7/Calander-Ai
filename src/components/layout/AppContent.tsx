@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -14,14 +13,12 @@ import { CommandPalette } from '@/components/layout/CommandPalette';
 import CustomizeThemeModal from '@/components/layout/CustomizeThemeModal';
 import SettingsModal from '@/components/layout/SettingsModal';
 import LegalModal from '@/components/layout/LegalModal';
-import TimezoneModal from '@/components/layout/TimezoneModal';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
-import { ChatContext, useChat } from '@/context/ChatContext';
-import ChatProviderWrapper, { GlobalCallUI } from '@/context/ChatProviderWrapper';
+import { useChat } from '@/context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileChatSidebar from '@/components/layout/MobileChatSidebar';
@@ -134,7 +131,6 @@ export default function AppContent({
     const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-    const [isTimezoneModalOpen, setIsTimezoneModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
     const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
@@ -306,7 +302,6 @@ export default function AppContent({
   
   const modalProps = {
     setIsCustomizeModalOpen, setIsSettingsModalOpen, setIsLegalModalOpen,
-    setIsTimezoneModalOpen,
   };
   
   const isVideoCallActive = !!(ongoingCall);
@@ -408,7 +403,6 @@ export default function AppContent({
         <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
         <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
         <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
-        <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
         <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
       </div>
     </>

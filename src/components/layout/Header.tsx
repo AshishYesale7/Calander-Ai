@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,6 @@ interface HeaderProps {
   setIsCustomizeModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   setIsLegalModalOpen: (open: boolean) => void;
-  setIsTimezoneModalOpen: (open: boolean) => void;
   handleToggleFullScreen: () => void;
   isFullScreen: boolean;
   isEditMode: boolean;
@@ -70,7 +68,6 @@ export default function Header({
   setIsCustomizeModalOpen,
   setIsSettingsModalOpen,
   setIsLegalModalOpen,
-  setIsTimezoneModalOpen,
   handleToggleFullScreen,
   isFullScreen,
   isEditMode,
@@ -362,10 +359,6 @@ export default function Header({
                   <Palette className="mr-2 h-4 w-4" />
                   <span>Customize Theme</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsTimezoneModalOpen(true)}>
-                  <Clock className="mr-2 h-4 w-4" />
-                  <span>Date & Time Settings</span>
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => userProfile?.username && router.push(`/profile/${userProfile.username}`)}
                   disabled={!userProfile?.username}
@@ -383,7 +376,7 @@ export default function Header({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsLegalModalOpen(true)}>
                   <FileText className="mr-2 h-4 w-4" />
-                  <span>Terms & Policies</span>
+                  <span>Terms &amp; Policies</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => handleSignOut(null)}>

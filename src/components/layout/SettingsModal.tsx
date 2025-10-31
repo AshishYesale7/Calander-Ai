@@ -1,8 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,25 +14,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser, User, Shield, Info, HardDrive } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser, User, Shield, Info, HardDrive, Clock } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, reauthenticateWithPopup, reauthenticateWithCredential, signInWithPhoneNumber, type ConfirmationResult, OAuthProvider } from 'firebase/auth';
+import { GoogleAuthProvider, linkWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { getToken } from 'firebase/messaging';
 import { createNotification } from '@/services/notificationService';
 import { NotionLogo } from '../logo/NotionLogo';
@@ -42,17 +30,14 @@ import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '../ui/scroll-area';
+import DateTimeSettings from './DateTimeSettings';
 
 
 declare global {
   interface Window {
-    // Keep for confirmationResult, but not verifier
+    recaptchaVerifier?: RecaptchaVerifier;
     confirmationResult?: ConfirmationResult;
   }
 }
@@ -70,42 +55,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
-
   const [isLinkingPhone, setIsLinkingPhone] = useState(false);
   const [linkingPhoneState, setLinkingPhoneState] = useState<'input' | 'otp-sent' | 'loading' | 'success'>('input');
   const [phoneForLinking, setPhoneForLinking] = useState<string | undefined>();
   const [otpForLinking, setOtpForLinking] = useState('');
-  
-  const [isPolling, setIsPolling] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isSendingTest, setIsSendingTest] = useState(false);
-  const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFormatting, setIsFormatting] = useState(false);
-  
-  const [actionToConfirm, setActionToConfirm] = useState<'delete' | 'format' | null>(null);
-  const [isReauthenticating, setIsReauthenticating] = useState(false);
-  const [reauthStep, setReauthStep] = useState<'prompt' | 'otp' | 'verifying'>('prompt');
-  const [reauthOtp, setReauthOtp] = useState('');
-  
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isFormatConfirmOpen, setIsFormatConfirmOpen] = useState(false);
-  
-  const linkRecaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const reauthRecaptchaContainerRef = useRef<HTMLDivElement>(null);
-  const linkVerifier = useRef<RecaptchaVerifier | null>(null);
-  const reauthVerifier = useRef<RecaptchaVerifier | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   const hasGoogleProvider = user?.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
   const hasPhoneProvider = !!user?.phoneNumber;
-
-  const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -113,715 +78,224 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     }
   }, [isOpen]);
 
-  const checkGoogleStatus = useCallback(async () => {
+  const checkGoogleStatus = async () => {
     if (!user) return;
-    try {
-        const res = await fetch('/api/auth/google/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.uid }),
-        });
-        const data = await res.json();
-        setIsGoogleConnected(data.isConnected);
-    } catch (error) {
-        setIsGoogleConnected(false);
-        toast({ title: 'Error', description: 'Could not verify Google connection status.', variant: 'destructive' });
-    }
-  }, [user, toast]);
-  
-  const checkNotionStatus = useCallback(async () => {
+    const res = await fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const data = await res.json();
+    setIsGoogleConnected(data.isConnected);
+  };
+  const checkNotionStatus = async () => {
     if (!user) return;
-    try {
-      const res = await fetch('/api/auth/notion/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
-      });
-      const data = await res.json();
-      setIsNotionConnected(data.isConnected);
-    } catch (error) {
-      setIsNotionConnected(false);
-    }
-  }, [user]);
-
-  const checkMicrosoftStatus = useCallback(async () => {
+    const res = await fetch('/api/auth/notion/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const data = await res.json();
+    setIsNotionConnected(data.isConnected);
+  };
+  const checkMicrosoftStatus = async () => {
     if (!user) return;
-    try {
-      const res = await fetch('/api/auth/microsoft/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
-      });
-      const data = await res.json();
-      setIsMicrosoftConnected(data.isConnected);
-    } catch (error) {
-      setIsMicrosoftConnected(false);
-    }
-  }, [user]);
+    const res = await fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    const data = await res.json();
+    setIsMicrosoftConnected(data.isConnected);
+  };
 
-
-  // General setup/cleanup when modal opens/closes
   useEffect(() => {
-    if (isOpen) {
-        setApiKeyInput(currentApiKey || '');
-        if (user) {
-            setIsGoogleConnected(null);
-            checkGoogleStatus();
-            checkNotionStatus();
-            checkMicrosoftStatus();
-        }
-    } else {
-        // Cleanup logic when modal closes
-        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-        if (linkVerifier.current) { linkVerifier.current.clear(); linkVerifier.current = null; }
-        if (reauthVerifier.current) { reauthVerifier.current.clear(); reauthVerifier.current = null; }
-        setIsPolling(false);
-        setIsLinkingPhone(false);
-        setLinkingPhoneState('input');
-        setPhoneForLinking(undefined);
-        setOtpForLinking('');
-        setIsSendingTest(false);
-        setActionToConfirm(null);
-        setIsReauthenticating(false);
-        setIsDeleteConfirmOpen(false);
-        setIsFormatConfirmOpen(false);
-        setReauthStep('prompt');
-        setReauthOtp('');
+    if (isOpen && user) {
+      setApiKeyInput(currentApiKey || '');
+      checkGoogleStatus();
+      checkNotionStatus();
+      checkMicrosoftStatus();
     }
-  }, [isOpen, currentApiKey, user, checkGoogleStatus, checkNotionStatus, checkMicrosoftStatus]);
-
+  }, [isOpen, currentApiKey, user]);
 
   const handleApiKeySave = () => {
-    const trimmedKey = apiKeyInput.trim();
-    setApiKey(trimmedKey ? trimmedKey : null);
-    toast({
-        title: trimmedKey ? 'API Key Saved' : 'API Key Cleared',
-        description: trimmedKey
-            ? 'Your custom Gemini API key has been saved.'
-            : 'The app will use its fallback key if available.',
-    });
+    setApiKey(apiKeyInput.trim() ? apiKeyInput.trim() : null);
+    toast({ title: 'API Key Saved' });
   };
   
   const handleConnectGoogle = async () => {
-    if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in to connect a Google account.', variant: 'destructive' });
-        return;
-    }
-
+    if (!user) return;
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google' })).toString('base64');
-    const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
-    window.open(authUrl, '_blank', 'width=500,height=600');
+    window.open(`/api/auth/google/redirect?state=${encodeURIComponent(state)}`, '_blank', 'width=500,height=600');
   };
 
   const handleDisconnectGoogle = async () => {
-      if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
-        return;
-      }
-      try {
-        const response = await fetch('/api/auth/google/revoke', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ userId: user.uid }),
-        });
-        if (response.ok) {
-            await checkGoogleStatus(); // Re-check status after successful disconnect
-            toast({ title: 'Success', description: 'Disconnected from Google account.' });
-        } else {
-            throw new Error('Failed to disconnect');
-        }
-      } catch (error) {
-        toast({ title: 'Error', description: 'Failed to disconnect from Google. Please try again.', variant: 'destructive' });
-      }
+    if (!user) return;
+    await fetch('/api/auth/google/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
+    checkGoogleStatus();
+    toast({ title: 'Disconnected from Google' });
   };
   
   const handleConnectNotion = () => {
-    if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
-        return;
-    }
+    if (!user) return;
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'notion' })).toString('base64');
-    const authUrl = `/api/auth/notion/redirect?state=${encodeURIComponent(state)}`;
-    window.open(authUrl, '_blank', 'width=500,height=600');
+    window.open(`/api/auth/notion/redirect?state=${encodeURIComponent(state)}`, '_blank', 'width=500,height=600');
   };
   
   const handleConnectMicrosoft = () => {
-    if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in.', variant: 'destructive' });
-        return;
-    }
-    const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'microsoft' })).toString('base64');
-    const authUrl = `/api/auth/microsoft/redirect?state=${encodeURIComponent(state)}`;
-    window.open(authUrl, '_blank', 'width=500,height=600');
-  };
-
-  const handleDisconnectNotion = async () => {
     if (!user) return;
-    toast({ title: "Coming Soon", description: "Notion disconnect functionality will be added soon." });
+    const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'microsoft' })).toString('base64');
+    window.open(`/api/auth/microsoft/redirect?state=${encodeURIComponent(state)}`, '_blank', 'width=500,height=600');
   };
-  
-  useEffect(() => {
-    if (isLinkingPhone && linkingPhoneState === 'input' && linkRecaptchaContainerRef.current) {
-        if (linkVerifier.current) linkVerifier.current.clear();
-        linkVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container-settings', { 'size': 'normal' });
-        linkVerifier.current.render();
-
-        return () => {
-            if (linkVerifier.current) {
-                linkVerifier.current.clear();
-                linkVerifier.current = null;
-            }
-        };
-    }
-  }, [isLinkingPhone, linkingPhoneState]);
-
-  useEffect(() => {
-    if (actionToConfirm && reauthStep === 'otp' && reauthRecaptchaContainerRef.current) {
-        if (reauthVerifier.current) reauthVerifier.current.clear();
-        reauthVerifier.current = new RecaptchaVerifier(auth, 'reauth-recaptcha-container', { 'size': 'normal' });
-        reauthVerifier.current.render();
-
-        return () => {
-            if (reauthVerifier.current) {
-                reauthVerifier.current.clear();
-                reauthVerifier.current = null;
-            }
-        };
-    }
-  }, [actionToConfirm, reauthStep]);
 
   const handleSendLinkOtp = async () => {
     if (!auth.currentUser || !phoneForLinking || !isValidPhoneNumber(phoneForLinking)) {
-      toast({ title: 'Invalid Phone Number', description: 'Please enter a valid phone number.', variant: 'destructive' });
+      toast({ title: 'Invalid Phone Number', variant: 'destructive' });
       return;
     }
     setLinkingPhoneState('loading');
     try {
-      if (!linkVerifier.current) throw new Error("reCAPTCHA not initialized.");
-      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, linkVerifier.current);
+      if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+      const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current!, { 'size': 'normal' });
+      const confirmationResult = await linkWithPhoneNumber(auth.currentUser, phoneForLinking, verifier);
       window.confirmationResult = confirmationResult;
       setLinkingPhoneState('otp-sent');
-      toast({ title: 'OTP Sent', description: 'Check your phone for the verification code.' });
     } catch (error: any) {
-      console.error("Phone link error:", error);
-      toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setLinkingPhoneState('input');
     }
   };
 
   const handleVerifyLinkOtp = async () => {
-    if (!otpForLinking || otpForLinking.length !== 6) {
-        toast({ title: 'Invalid OTP', description: 'Please enter the 6-digit OTP.', variant: 'destructive' });
-        return;
-    }
-    const confirmationResult = window.confirmationResult;
-    if (!confirmationResult) {
-        toast({ title: 'Error', description: 'Verification expired. Please try again.', variant: 'destructive'});
-        setLinkingPhoneState('input');
-        return;
-    }
+    if (!otpForLinking || otpForLinking.length !== 6 || !window.confirmationResult) return;
     setLinkingPhoneState('loading');
     try {
-        await confirmationResult.confirm(otpForLinking);
-        await refreshUser(); 
-        setLinkingPhoneState('success');
-        toast({ title: 'Success!', description: 'Your phone number has been linked.' });
+      await window.confirmationResult.confirm(otpForLinking);
+      await refreshUser();
+      setLinkingPhoneState('success');
     } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use' || error.code === 'auth/account-exists-with-different-credential') {
-            toast({
-                title: 'Account Exists With This Credential',
-                description: "This phone number is already linked to another account.",
-                variant: 'destructive',
-                duration: 9000
-            });
-        } else {
-            console.error("OTP verification error:", error);
-            toast({ title: 'Error', description: 'Invalid OTP or verification failed.', variant: 'destructive' });
-        }
-        setLinkingPhoneState('otp-sent');
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      setLinkingPhoneState('otp-sent');
     }
-  };
-
-  const executeConfirmedAction = async () => {
-      if (!auth.currentUser) return;
-      
-      if (actionToConfirm === 'delete') {
-          await anonymizeUserAccount(auth.currentUser.uid);
-          toast({ title: 'Account Deletion Initiated', description: 'Your account is scheduled for deletion in 30 days.' });
-          await auth.signOut();
-          localStorage.clear();
-          window.location.href = '/'; 
-      } else if (actionToConfirm === 'format') {
-          setIsFormatting(true);
-          await formatUserData(auth.currentUser.uid);
-          // Also clear layout from local storage
-          const layoutKey = `dashboard-layouts-${auth.currentUser.uid}`;
-          localStorage.removeItem(layoutKey);
-          
-          toast({ title: 'Format Complete', description: 'Your account data has been cleared. Reloading...' });
-          setTimeout(() => window.location.reload(), 2000);
-      }
-      onOpenChange(false);
-  }
-
-  const reauthenticateAndExecute = async () => {
-    if (!auth.currentUser) return;
-    setIsReauthenticating(true);
-    try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        await reauthenticateWithPopup(auth.currentUser, provider);
-        await executeConfirmedAction();
-    } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-            toast({ title: "Cancelled", description: "You cancelled the confirmation process.", variant: 'default' });
-        } else {
-            console.error("Re-authentication failed:", error);
-            toast({ title: 'Authentication Failed', description: 'Could not confirm your identity.', variant: 'destructive' });
-        }
-    } finally {
-        setIsReauthenticating(false);
-        setActionToConfirm(null);
-    }
-  };
-  
-  const handleSendReauthOtp = async () => {
-    if (!auth || !user?.phoneNumber || !reauthVerifier.current) return;
-    setIsReauthenticating(true);
-    try {
-      const confirmationResult = await signInWithPhoneNumber(auth, user.phoneNumber, reauthVerifier.current);
-      window.confirmationResult = confirmationResult;
-      setReauthStep('verifying');
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Failed to send OTP for verification.', variant: 'destructive' });
-    } finally {
-      setIsReauthenticating(false);
-    }
-  };
-
-  const handleVerifyReauthOtp = async () => {
-    const confirmationResult = window.confirmationResult;
-    if (!confirmationResult || !reauthOtp || reauthOtp.length !== 6 || !auth.currentUser) return;
-    
-    setIsReauthenticating(true);
-    try {
-        const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, reauthOtp);
-        await reauthenticateWithCredential(auth.currentUser, credential);
-        await executeConfirmedAction();
-    } catch (error: any) {
-        toast({ title: 'OTP Verification Failed', description: 'The code was incorrect.', variant: 'destructive' });
-    } finally {
-        setIsReauthenticating(false);
-    }
-  };
-  
-  const handleDeleteAccount = () => {
-    setIsDeleteConfirmOpen(false);
-    setActionToConfirm('delete');
-  };
-
-  const handleFormatData = () => {
-    setIsFormatConfirmOpen(false);
-    setActionToConfirm('format');
   };
 
   const handleRequestNotificationPermission = async () => {
-    if (!messaging || !user) {
-      toast({ title: 'Error', description: 'Push notifications not supported or not signed in.', variant: 'destructive' });
-      return;
-    }
+    if (!messaging || !user) return;
     try {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       if (permission === 'granted') {
-        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-        if (!vapidKey) throw new Error("VAPID key is missing.");
-        const fcmToken = await getToken(messaging, { vapidKey });
-        if (fcmToken) {
-            await saveUserFCMToken(user.uid, fcmToken);
-            toast({ title: 'Success', description: 'Push notifications enabled!' });
-        } else { throw new Error("Could not retrieve token."); }
-      } else {
-        toast({ title: 'Notifications Denied', variant: 'default' });
+        const token = await getToken(messaging, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY });
+        if (token) await saveUserFCMToken(user.uid, token);
       }
     } catch (error) {
-      toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Could not enable notifications.', variant: 'destructive' });
     }
   };
 
   const handleSendTestNotification = async () => {
     if (!user) return;
-    if (isSendingTest) {
-      if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-      setIsSendingTest(false);
-      toast({ title: 'Test Stopped' });
-    } else {
-      setIsSendingTest(true);
-      toast({ title: 'Test Started', description: 'Sending a notification every 5 seconds.' });
-      await createNotification({ userId: user.uid, type: 'system_alert', message: `Test - ${new Date().toLocaleTimeString()}`, link: '/dashboard' });
-      testIntervalRef.current = setInterval(async () => {
-        if (!user) {
-            if (testIntervalRef.current) clearInterval(testIntervalRef.current);
-            setIsSendingTest(false);
-            return;
-        }
-        await createNotification({ userId: user.uid, type: 'system_alert', message: `Test - ${new Date().toLocaleTimeString()}`, link: '/dashboard' });
-      }, 5000);
-    }
+    setIsSendingTest(true);
+    await createNotification({ userId: user.uid, type: 'system_alert', message: 'This is a test notification!', link: '/dashboard' });
+    setIsSendingTest(false);
   };
 
   const handleExportData = async () => {
     if (!user) return;
     setIsExporting(true);
-    toast({ title: 'Exporting...', description: 'Gathering your data.' });
     try {
-        const data = await exportUserData(user.uid);
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
-        saveAs(blob, `futuresight-backup-${new Date().toISOString().split('T')[0]}.json`);
-        toast({ title: 'Export Complete' });
-    } catch (error) {
-        toast({ title: 'Export Failed', variant: 'destructive' });
+      const data = await exportUserData(user.uid);
+      saveAs(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'futuresight-backup.json');
     } finally {
-        setIsExporting(false);
+      setIsExporting(false);
     }
   };
 
   const handleImportClick = () => fileInputRef.current?.click();
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0] || !user) return;
     setIsImporting(true);
-    toast({ title: 'Importing...', description: 'Parsing your data file.' });
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        if (!content) {
-            toast({ title: 'Error', description: 'Could not read file.', variant: 'destructive' });
-            setIsImporting(false);
-            return;
-        }
-        try {
-            const dataToImport = JSON.parse(content);
-            await importUserData(user.uid, dataToImport);
-            toast({ title: 'Import Successful', description: 'Data imported. Reloading...' });
-            setTimeout(() => window.location.reload(), 2000);
-        } catch (error: any) {
-            toast({ title: 'Import Failed', description: `Invalid file format. ${error.message}`, variant: 'destructive' });
-        } finally {
-            setIsImporting(false);
-            if (event.target) {
-                event.target.value = '';
-            }
-        }
-    };
-    reader.readAsText(file);
+    try {
+      const data = JSON.parse(await e.target.files[0].text());
+      await importUserData(user.uid, data);
+      toast({ title: 'Import successful', description: 'Reloading...' });
+      window.location.reload();
+    } catch (error: any) {
+      toast({ title: 'Import failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsImporting(false);
+    }
   };
   
-    return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg frosted-glass flex flex-col h-auto max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="font-headline text-lg text-primary flex items-center">
-            <KeyRound className="mr-2 h-5 w-5" /> Settings
-          </DialogTitle>
-          <DialogDescription>
-            Manage application settings, API keys, and integrations here.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 min-h-0 overflow-y-auto px-1 -mx-6 pr-2">
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="px-6 font-semibold"><Bell className="mr-2 h-4 w-4"/>Notifications</AccordionTrigger>
-              <AccordionContent className="px-6 pt-2 space-y-4">
-                <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                        Receive reminders for your upcoming events directly on your device.
-                    </p>
-                    {notificationPermission === 'granted' ? (
-                        <div className="flex items-center justify-between h-10">
-                            <p className="text-sm text-green-400 font-medium flex items-center">
-                                <CheckCircle className="mr-2 h-4 w-4" /> Notifications Enabled
-                            </p>
-                        </div>
-                    ) : (
-                        <Button onClick={handleRequestNotificationPermission} variant="outline" className="w-full" disabled={notificationPermission === 'denied'}>
-                            {notificationPermission === 'denied' ? 'Permission Denied in Browser' : 'Enable Push Notifications'}
-                        </Button>
-                    )}
-                </div>
-                <Separator/>
-                <div className="space-y-3">
-                    <Label className="font-medium flex items-center">
-                        <Send className="mr-2 h-4 w-4" /> Test Push Notification
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                        Use this to test if you receive notifications when the app is in the background.
-                    </p>
-                    <Button onClick={handleSendTestNotification} variant={isSendingTest ? 'destructive' : 'outline'} className="w-full" disabled={notificationPermission !== 'granted'}>
-                        {isSendingTest ? <LoadingSpinner size="sm" className="mr-2"/> : <Send className="mr-2 h-4 w-4" />}
-                        {notificationPermission !== 'granted' 
-                            ? 'Enable Notifications First' 
-                            : isSendingTest 
-                                ? 'Stop Test'
-                                : 'Start Test (1 every 5s)'
-                        }
-                    </Button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="px-6 font-semibold"><Globe className="mr-2 h-4 w-4"/>Integrations</AccordionTrigger>
-              <AccordionContent className="px-6 pt-2 space-y-3">
-                  <div className="flex items-center justify-between h-10">
-                      <p className="text-sm font-medium flex items-center">
-                          <GoogleIcon /> Google
-                      </p>
-                      {isGoogleConnected ? (
-                          <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
-                      ) : (
-                          <Button onClick={handleConnectGoogle} variant="outline" size="sm">Connect</Button>
-                      )}
-                  </div>
-                  <div className="flex items-center justify-between h-10">
-                      <p className="text-sm font-medium flex items-center">
-                          <MicrosoftIcon /> Microsoft
-                      </p>
-                      {isMicrosoftConnected ? (
-                          <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
-                      ) : (
-                          <Button onClick={handleConnectMicrosoft} variant="outline" size="sm">Connect</Button>
-                      )}
-                  </div>
-                  <div className="flex items-center justify-between h-10">
-                      <p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>
-                      {isNotionConnected ? (
-                          <Button onClick={handleDisconnectNotion} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
-                      ) : (
-                          <Button onClick={handleConnectNotion} variant="outline" size="sm">Connect</Button>
-                      )}
-                  </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger className="px-6 font-semibold"><User className="mr-2 h-4 w-4"/>Account</AccordionTrigger>
-              <AccordionContent className="px-6 pt-2 space-y-4">
-                  <div className="space-y-3">
-                    <Label className="font-medium flex items-center"><Smartphone className="mr-2 h-4 w-4" /> Phone Number</Label>
-                    {user?.phoneNumber ? (
-                        <div className="flex items-center justify-between h-10">
-                            <p className="text-sm text-green-400 font-medium flex items-center">
-                                <CheckCircle className="mr-2 h-4 w-4" /> Linked: {user.phoneNumber}
-                            </p>
-                        </div>
-                    ) : (
-                      <>
-                        {!isLinkingPhone ? (
-                            <Button onClick={() => setIsLinkingPhone(true)} variant="outline" className="w-full">Link Phone Number</Button>
-                        ) : (
-                          <>
-                            {linkingPhoneState === 'input' && (
-                                <div className="space-y-4">
-                                    <div className="space-y-2 phone-input-container">
-                                        <Label htmlFor="phone-link" className="text-xs">Enter your phone number</Label>
-                                        <PhoneInput id="phone-link" international defaultCountry="US" placeholder="Enter phone number" value={phoneForLinking} onChange={setPhoneForLinking}/>
-                                    </div>
-                                    <Button onClick={handleSendLinkOtp} disabled={linkingPhoneState === 'loading'} className="w-full">
-                                        {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
-                                        Send OTP
-                                    </Button>
-                                    <div id="recaptcha-container-settings" ref={linkRecaptchaContainerRef}></div>
-                                </div>
-                            )}
-                            {(linkingPhoneState === 'otp-sent' || linkingPhoneState === 'loading') && (
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="otp-link" className="text-xs">Enter 6-digit OTP</Label>
-                                        <Input id="otp-link" type="text" value={otpForLinking} onChange={(e) => setOtpForLinking(e.target.value)} placeholder="123456"/>
-                                    </div>
-                                    <Button onClick={handleVerifyLinkOtp} disabled={linkingPhoneState === 'loading'} className="w-full">
-                                        {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
-                                        Verify & Link Phone
-                                    </Button>
-                                </div>
-                            )}
-                            {linkingPhoneState === 'success' && (
-                                <p className="text-sm text-green-400 font-medium flex items-center h-10">
-                                    <CheckCircle className="mr-2 h-4 w-4" /> Phone number linked successfully!
-                                </p>
-                            )}
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <Separator/>
-                  <div className="space-y-3">
-                      <Label className="font-medium flex items-center"><KeyRound className="mr-2 h-4 w-4" /> Custom API Key</Label>
-                      <p className="text-sm text-muted-foreground">
-                          Optionally provide your own Google Gemini API key. Your key is saved securely to your account.
-                      </p>
-                      <div className="space-y-2">
-                          <div className="flex gap-2">
-                              <Input id="geminiApiKey" type="password" placeholder="Enter your Gemini API key" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)}/>
-                              <Button onClick={handleApiKeySave} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                                  Save
-                              </Button>
-                          </div>
-                      </div>
-                  </div>
-              </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="item-4">
-              <AccordionTrigger className="px-6 font-semibold"><HardDrive className="mr-2 h-4 w-4"/>Data & Privacy</AccordionTrigger>
-              <AccordionContent className="px-6 pt-2 space-y-4">
-                 <div className="space-y-3">
-                    <Label className="font-medium flex items-center text-primary">
-                        <Upload className="mr-2 h-4 w-4" /> Data Management
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                        Export all your app data to a JSON file, or import a backup to restore your account.
-                    </p>
-                    <div className="flex gap-2">
-                        <Button onClick={handleExportData} variant="outline" className="w-full" disabled={isExporting}>
-                            {isExporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Download className="mr-2 h-4 w-4" />}
-                            {isExporting ? 'Exporting...' : 'Export My Data'}
-                        </Button>
-                        <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isImporting}>
-                            {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
-                            {isImporting ? 'Importing...' : 'Import from Backup'}
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".json" className="hidden"/>
-                    </div>
-                </div>
-                <Separator/>
-                <div className="space-y-3">
-                    <Label className="font-semibold text-base flex items-center text-destructive">
-                        <Shield className="mr-2 h-4 w-4" /> Danger Zone
-                    </Label>
-                    <AlertDialog open={isFormatConfirmOpen} onOpenChange={setIsFormatConfirmOpen}>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full">
-                           <Eraser className="mr-2 h-4 w-4" />
-                           Format All Data
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="frosted-glass">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Format all account data?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete all your goals, skills, custom events, and other content. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleFormatData}>
-                            Yes, format my data
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete My Account
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="frosted-glass">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete your account and all associated data. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteAccount}>
-                            Yes, delete my account
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-        <DialogFooter className="px-6 pb-6 pt-4">
-           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-        </DialogFooter>
-        
-        <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => !open && setActionToConfirm(null)}>
-            <AlertDialogContent className="frosted-glass">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Please Confirm Your Identity</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        For your security, please verify your identity to confirm this action.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-4">
-                    {reauthStep === 'prompt' && (
-                        <div className="space-y-4">
-                            {isGoogleConnected && (
-                                <Button onClick={reauthenticateAndExecute} disabled={isReauthenticating} className="w-full">
-                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2"/>}
-                                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg>
-                                Continue with Google
-                                </Button>
-                            )}
-                            
-                            {isGoogleConnected && hasPhoneProvider && (
-                                 <div className="relative my-2">
-                                    <div className="absolute inset-0 flex items-center"> <span className="w-full border-t" /> </div>
-                                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
-                                </div>
-                            )}
+  const handleFormatData = async () => {
+    if (!user) return;
+    setIsFormatting(true);
+    try {
+        await formatUserData(user.uid);
+        toast({ title: 'Data Formatted', description: 'Your account data has been cleared. Reloading...' });
+        setTimeout(() => window.location.reload(), 2000);
+    } catch (error: any) {
+        toast({ title: 'Error', description: 'Could not format data.', variant: 'destructive'});
+    } finally {
+        setIsFormatting(false);
+    }
+  };
+  
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    try {
+        await anonymizeUserAccount(user.uid);
+        toast({ title: 'Account Deletion Initiated', description: 'Your account is scheduled for deletion in 30 days.'});
+        await auth.signOut();
+        window.location.href = '/';
+    } catch (error: any) {
+        toast({ title: 'Error', description: 'Could not initiate account deletion.', variant: 'destructive'});
+    } finally {
+        setIsDeleting(false);
+    }
+  };
 
-                            {hasPhoneProvider && (
-                                <Button onClick={() => setReauthStep('otp')} className="w-full" disabled={isReauthenticating}>
-                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                                Verify with Phone Number
-                                </Button>
-                            )}
-                            
-                             {!isGoogleConnected && !hasPhoneProvider && (
-                                <p className="text-sm text-destructive text-center">No verifiable sign-in method found. Please link a Google account or phone number to proceed.</p>
-                            )}
-                        </div>
-                    )}
-                    {reauthStep === 'otp' && (
-                        <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground text-center">An OTP will be sent to your registered phone number ({user?.phoneNumber}).</p>
-                            <Button onClick={handleSendReauthOtp} className="w-full" disabled={isReauthenticating}>
-                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                                Send Verification Code
-                            </Button>
-                            <div id="reauth-recaptcha-container" ref={reauthRecaptchaContainerRef} className="flex justify-center"></div>
-                        </div>
-                    )}
-                    {reauthStep === 'verifying' && (
-                        <div className="space-y-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="reauth-otp">Enter OTP</Label>
-                                <Input id="reauth-otp" value={reauthOtp} onChange={(e) => setReauthOtp(e.target.value)} placeholder="6-digit code" />
-                            </div>
-                            <Button onClick={handleVerifyReauthOtp} className="w-full" disabled={isReauthenticating}>
-                                {isReauthenticating && <LoadingSpinner size="sm" className="mr-2" />}
-                                Verify and Continue
-                            </Button>
-                        </div>
-                    )}
-                </div>
-                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => { setActionToConfirm(null); setReauthStep('prompt'); }}>Cancel</AlertDialogCancel>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="font-headline text-lg text-primary">Settings</DialogTitle>
+          <DialogDescription>Manage your application settings and integrations.</DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 min-h-0">
+          <Tabs defaultValue="account" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="account">Account</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
+              <TabsTrigger value="datetime">Date &amp; Time</TabsTrigger>
+            </TabsList>
+            <ScrollArea className="flex-1 mt-4">
+              <div className="pr-4">
+                <TabsContent value="account">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className="font-medium flex items-center"><KeyRound className="mr-2 h-4 w-4" /> Custom API Key</Label>
+                      <p className="text-sm text-muted-foreground">Optionally provide your own Google Gemini API key.</p>
+                      <div className="flex gap-2"><Input id="geminiApiKey" type="password" placeholder="Enter Gemini API key" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)} /><Button onClick={handleApiKeySave}>Save</Button></div>
+                    </div>
+                    <Separator/>
+                    <div className="space-y-3">
+                      <Label className="font-medium flex items-center"><Smartphone className="mr-2 h-4 w-4" /> Phone Number</Label>
+                      {hasPhoneProvider ? <p className="text-sm text-green-400 font-medium">Linked: {user.phoneNumber}</p> : <Button onClick={() => setIsLinkingPhone(true)} variant="outline" className="w-full">Link Phone Number</Button>}
+                      {isLinkingPhone && linkingPhoneState === 'input' && <div className="space-y-4"><div className="space-y-2 phone-input-container"><Label htmlFor="phone-link">Enter phone number</Label><PhoneInput id="phone-link" international defaultCountry="US" value={phoneForLinking} onChange={setPhoneForLinking}/></div><Button onClick={handleSendLinkOtp}>Send OTP</Button><div ref={recaptchaContainerRef} id="recaptcha-container-settings"></div></div>}
+                      {(isLinkingPhone && linkingPhoneState === 'otp-sent') && <div className="space-y-4"><Input value={otpForLinking} onChange={e => setOtpForLinking(e.target.value)} placeholder="6-digit OTP" /><Button onClick={handleVerifyLinkOtp}>Verify &amp; Link</Button></div>}
+                      {linkingPhoneState === 'success' && <p className="text-sm text-green-400">Phone linked successfully!</p>}
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="integrations">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><GoogleIcon /> Google</p>{isGoogleConnected ? <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={handleConnectGoogle} variant="outline" size="sm">Connect</Button>}</div>
+                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><MicrosoftIcon /> Microsoft</p>{isMicrosoftConnected ? <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={handleConnectMicrosoft} variant="outline" size="sm">Connect</Button>}</div>
+                    <div className="flex items-center justify-between h-10"><p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>{isNotionConnected ? <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button> : <Button onClick={handleConnectNotion} variant="outline" size="sm">Connect</Button>}</div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="datetime">
+                  <DateTimeSettings />
+                </TabsContent>
+              </div>
+            </ScrollArea>
+          </Tabs>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-    
