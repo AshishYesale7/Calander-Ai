@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser } from 'lucide-react';
+import { KeyRound, Globe, Unplug, CheckCircle, Smartphone, Trash2, Bell, Send, Upload, Download, Eraser, User, Shield, Info, HardDrive } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -42,6 +42,12 @@ import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 
 declare global {
@@ -515,7 +521,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
     return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg frosted-glass">
+      <DialogContent className="sm:max-w-lg frosted-glass flex flex-col h-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="font-headline text-lg text-primary flex items-center">
             <KeyRound className="mr-2 h-5 w-5" /> Settings
@@ -524,116 +530,102 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             Manage application settings, API keys, and integrations here.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto px-1">
-            <div className="space-y-3 px-2">
-                 <Label className="font-semibold text-base flex items-center text-primary">
-                    <Bell className="mr-2 h-4 w-4" /> Push Notifications
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                    Receive reminders for your upcoming events directly on your device.
-                </p>
-                {notificationPermission === 'granted' ? (
-                     <div className="flex items-center justify-between h-10">
-                        <p className="text-sm text-green-400 font-medium flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4" /> Notifications Enabled
-                        </p>
-                    </div>
-                ) : (
-                    <Button onClick={handleRequestNotificationPermission} variant="outline" className="w-full" disabled={notificationPermission === 'denied'}>
-                        {notificationPermission === 'denied' ? 'Permission Denied in Browser' : 'Enable Push Notifications'}
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 -mx-6 pr-2">
+          <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger className="px-6 font-semibold"><Bell className="mr-2 h-4 w-4"/>Notifications</AccordionTrigger>
+              <AccordionContent className="px-6 pt-2 space-y-4">
+                <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                        Receive reminders for your upcoming events directly on your device.
+                    </p>
+                    {notificationPermission === 'granted' ? (
+                        <div className="flex items-center justify-between h-10">
+                            <p className="text-sm text-green-400 font-medium flex items-center">
+                                <CheckCircle className="mr-2 h-4 w-4" /> Notifications Enabled
+                            </p>
+                        </div>
+                    ) : (
+                        <Button onClick={handleRequestNotificationPermission} variant="outline" className="w-full" disabled={notificationPermission === 'denied'}>
+                            {notificationPermission === 'denied' ? 'Permission Denied in Browser' : 'Enable Push Notifications'}
+                        </Button>
+                    )}
+                </div>
+                <Separator/>
+                <div className="space-y-3">
+                    <Label className="font-medium flex items-center">
+                        <Send className="mr-2 h-4 w-4" /> Test Push Notification
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                        Use this to test if you receive notifications when the app is in the background.
+                    </p>
+                    <Button onClick={handleSendTestNotification} variant={isSendingTest ? 'destructive' : 'outline'} className="w-full" disabled={notificationPermission !== 'granted'}>
+                        {isSendingTest ? <LoadingSpinner size="sm" className="mr-2"/> : <Send className="mr-2 h-4 w-4" />}
+                        {notificationPermission !== 'granted' 
+                            ? 'Enable Notifications First' 
+                            : isSendingTest 
+                                ? 'Stop Test'
+                                : 'Start Test (1 every 5s)'
+                        }
                     </Button>
-                )}
-            </div>
-
-            <Separator/>
-            
-            <div className="space-y-3 px-2">
-                <Label className="font-semibold text-base flex items-center text-primary">
-                    <Send className="mr-2 h-4 w-4" /> Test Push Notification
-                </Label>
-                 <p className="text-sm text-muted-foreground">
-                    Use this to test if you receive notifications when the app is in the background.
-                </p>
-                <Button onClick={handleSendTestNotification} variant={isSendingTest ? 'destructive' : 'outline'} className="w-full" disabled={notificationPermission !== 'granted'}>
-                    {isSendingTest ? <LoadingSpinner size="sm" className="mr-2"/> : <Send className="mr-2 h-4 w-4" />}
-                    {notificationPermission !== 'granted' 
-                        ? 'Enable Notifications First' 
-                        : isSendingTest 
-                            ? 'Stop Test'
-                            : 'Start Test (1 every 5s)'
-                    }
-                </Button>
-            </div>
-
-            <Separator/>
-
-            <div className="space-y-3 px-2">
-                 <Label className="font-semibold text-base flex items-center text-primary">
-                    <Globe className="mr-2 h-4 w-4" /> Integrations
-                </Label>
-                {/* Google Integration */}
-                <div className="flex items-center justify-between h-10">
-                    <p className="text-sm font-medium flex items-center">
-                        <GoogleIcon /> Google
-                    </p>
-                    {isGoogleConnected ? (
-                         <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
-                    ) : (
-                         <Button onClick={handleConnectGoogle} variant="outline" size="sm">Connect</Button>
-                    )}
                 </div>
-                {/* Microsoft Integration */}
-                <div className="flex items-center justify-between h-10">
-                    <p className="text-sm font-medium flex items-center">
-                        <MicrosoftIcon /> Microsoft
-                    </p>
-                    {isMicrosoftConnected ? (
-                         <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-2">
+              <AccordionTrigger className="px-6 font-semibold"><Globe className="mr-2 h-4 w-4"/>Integrations</AccordionTrigger>
+              <AccordionContent className="px-6 pt-2 space-y-3">
+                  <div className="flex items-center justify-between h-10">
+                      <p className="text-sm font-medium flex items-center">
+                          <GoogleIcon /> Google
+                      </p>
+                      {isGoogleConnected ? (
+                          <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                      ) : (
+                          <Button onClick={handleConnectGoogle} variant="outline" size="sm">Connect</Button>
+                      )}
+                  </div>
+                  <div className="flex items-center justify-between h-10">
+                      <p className="text-sm font-medium flex items-center">
+                          <MicrosoftIcon /> Microsoft
+                      </p>
+                      {isMicrosoftConnected ? (
+                          <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                      ) : (
+                          <Button onClick={handleConnectMicrosoft} variant="outline" size="sm">Connect</Button>
+                      )}
+                  </div>
+                  <div className="flex items-center justify-between h-10">
+                      <p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>
+                      {isNotionConnected ? (
+                          <Button onClick={handleDisconnectNotion} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
+                      ) : (
+                          <Button onClick={handleConnectNotion} variant="outline" size="sm">Connect</Button>
+                      )}
+                  </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3">
+              <AccordionTrigger className="px-6 font-semibold"><User className="mr-2 h-4 w-4"/>Account</AccordionTrigger>
+              <AccordionContent className="px-6 pt-2 space-y-4">
+                  <div className="space-y-3">
+                    <Label className="font-medium flex items-center"><Smartphone className="mr-2 h-4 w-4" /> Phone Number</Label>
+                    {user?.phoneNumber ? (
+                        <div className="flex items-center justify-between h-10">
+                            <p className="text-sm text-green-400 font-medium flex items-center">
+                                <CheckCircle className="mr-2 h-4 w-4" /> Linked: {user.phoneNumber}
+                            </p>
+                        </div>
                     ) : (
-                         <Button onClick={handleConnectMicrosoft} variant="outline" size="sm">Connect</Button>
-                    )}
-                </div>
-                {/* Notion Integration */}
-                <div className="flex items-center justify-between h-10">
-                    <p className="text-sm font-medium flex items-center"><NotionLogo className="h-5 w-5 mr-2" />Notion</p>
-                     {isNotionConnected ? (
-                         <Button onClick={handleDisconnectNotion} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
-                    ) : (
-                         <Button onClick={handleConnectNotion} variant="outline" size="sm">Connect</Button>
-                    )}
-                </div>
-            </div>
-
-            <Separator/>
-
-            <div className="space-y-3 px-2">
-                <Label className="font-semibold text-base flex items-center text-primary">
-                    <Smartphone className="mr-2 h-4 w-4" /> Phone Number
-                </Label>
-                {user?.phoneNumber ? (
-                    <div className="flex items-center justify-between h-10">
-                        <p className="text-sm text-green-400 font-medium flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4" /> Linked: {user.phoneNumber}
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                    {!isLinkingPhone ? (
-                        <Button onClick={() => setIsLinkingPhone(true)} variant="outline" className="w-full">Link Phone Number</Button>
-                    ) : (
-                        <>
+                      <>
+                        {!isLinkingPhone ? (
+                            <Button onClick={() => setIsLinkingPhone(true)} variant="outline" className="w-full">Link Phone Number</Button>
+                        ) : (
+                          <>
                             {linkingPhoneState === 'input' && (
                                 <div className="space-y-4">
                                     <div className="space-y-2 phone-input-container">
                                         <Label htmlFor="phone-link" className="text-xs">Enter your phone number</Label>
-                                        <PhoneInput
-                                            id="phone-link"
-                                            international
-                                            defaultCountry="US"
-                                            placeholder="Enter phone number"
-                                            value={phoneForLinking}
-                                            onChange={setPhoneForLinking}
-                                        />
+                                        <PhoneInput id="phone-link" international defaultCountry="US" placeholder="Enter phone number" value={phoneForLinking} onChange={setPhoneForLinking}/>
                                     </div>
                                     <Button onClick={handleSendLinkOtp} disabled={linkingPhoneState === 'loading'} className="w-full">
                                         {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
@@ -646,13 +638,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="otp-link" className="text-xs">Enter 6-digit OTP</Label>
-                                        <Input
-                                            id="otp-link"
-                                            type="text"
-                                            value={otpForLinking}
-                                            onChange={(e) => setOtpForLinking(e.target.value)}
-                                            placeholder="123456"
-                                        />
+                                        <Input id="otp-link" type="text" value={otpForLinking} onChange={(e) => setOtpForLinking(e.target.value)} placeholder="123456"/>
                                     </div>
                                     <Button onClick={handleVerifyLinkOtp} disabled={linkingPhoneState === 'loading'} className="w-full">
                                         {linkingPhoneState === 'loading' && <LoadingSpinner size="sm" className="mr-2"/>}
@@ -665,125 +651,105 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                                     <CheckCircle className="mr-2 h-4 w-4" /> Phone number linked successfully!
                                 </p>
                             )}
-                        </>
+                          </>
+                        )}
+                      </>
                     )}
-                    </>
-                )}
-            </div>
-            
-            <Separator />
-            
-            <div className="space-y-3 px-2">
-                 <Label className="font-semibold text-base flex items-center text-primary">
-                    <KeyRound className="mr-2 h-4 w-4" /> Custom API Key
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                    Optionally provide your own Google Gemini API key. Your key is saved securely to your account.
-                </p>
-                <div className="space-y-2">
-                    <Label htmlFor="geminiApiKey" className="text-sm font-medium">Your Gemini API Key</Label>
+                  </div>
+                  <Separator/>
+                  <div className="space-y-3">
+                      <Label className="font-medium flex items-center"><KeyRound className="mr-2 h-4 w-4" /> Custom API Key</Label>
+                      <p className="text-sm text-muted-foreground">
+                          Optionally provide your own Google Gemini API key. Your key is saved securely to your account.
+                      </p>
+                      <div className="space-y-2">
+                          <div className="flex gap-2">
+                              <Input id="geminiApiKey" type="password" placeholder="Enter your Gemini API key" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)}/>
+                              <Button onClick={handleApiKeySave} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                                  Save
+                              </Button>
+                          </div>
+                      </div>
+                  </div>
+              </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="item-4">
+              <AccordionTrigger className="px-6 font-semibold"><HardDrive className="mr-2 h-4 w-4"/>Data & Privacy</AccordionTrigger>
+              <AccordionContent className="px-6 pt-2 space-y-4">
+                 <div className="space-y-3">
+                    <Label className="font-medium flex items-center text-primary">
+                        <Upload className="mr-2 h-4 w-4" /> Data Management
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                        Export all your app data to a JSON file, or import a backup to restore your account.
+                    </p>
                     <div className="flex gap-2">
-                        <Input
-                            id="geminiApiKey"
-                            type="password"
-                            placeholder="Enter your Gemini API key"
-                            value={apiKeyInput}
-                            onChange={(e) => setApiKeyInput(e.target.value)}
-                        />
-                        <Button onClick={handleApiKeySave} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                            Save
+                        <Button onClick={handleExportData} variant="outline" className="w-full" disabled={isExporting}>
+                            {isExporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Download className="mr-2 h-4 w-4" />}
+                            {isExporting ? 'Exporting...' : 'Export My Data'}
                         </Button>
+                        <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isImporting}>
+                            {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
+                            {isImporting ? 'Importing...' : 'Import from Backup'}
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".json" className="hidden"/>
                     </div>
                 </div>
-            </div>
-
-            <Separator />
-
-             <div className="space-y-3 px-2">
-                <Label className="font-semibold text-base flex items-center text-primary">
-                    <Download className="mr-2 h-4 w-4" /> Data Management
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                    Export all your app data to a JSON file, or import a backup to restore your account.
-                </p>
-                <div className="flex gap-2">
-                    <Button onClick={handleExportData} variant="outline" className="w-full" disabled={isExporting}>
-                        {isExporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Download className="mr-2 h-4 w-4" />}
-                        {isExporting ? 'Exporting...' : 'Export My Data'}
-                    </Button>
-                    <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isImporting}>
-                        {isImporting ? <LoadingSpinner size="sm" className="mr-2"/> : <Upload className="mr-2 h-4 w-4" />}
-                        {isImporting ? 'Importing...' : 'Import from Backup'}
-                    </Button>
-                     <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        accept=".json"
-                        className="hidden"
-                    />
+                <Separator/>
+                <div className="space-y-3">
+                    <Label className="font-semibold text-base flex items-center text-destructive">
+                        <Shield className="mr-2 h-4 w-4" /> Danger Zone
+                    </Label>
+                    <AlertDialog open={isFormatConfirmOpen} onOpenChange={setIsFormatConfirmOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                           <Eraser className="mr-2 h-4 w-4" />
+                           Format All Data
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="frosted-glass">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Format all account data?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete all your goals, skills, custom events, and other content. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleFormatData}>
+                            Yes, format my data
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete My Account
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="frosted-glass">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete your account and all associated data. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteAccount}>
+                            Yes, delete my account
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3 px-2">
-                <Label className="font-semibold text-base flex items-center text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Danger Zone
-                </Label>
-                 <AlertDialog open={isFormatConfirmOpen} onOpenChange={setIsFormatConfirmOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                       <Eraser className="mr-2 h-4 w-4" />
-                       Format All Data
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="frosted-glass">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Format all account data?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete all your goals, skills, custom events, and other content. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive hover:bg-destructive/90"
-                        onClick={handleFormatData}
-                      >
-                        Yes, format my data
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete My Account
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="frosted-glass">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete your account and all associated data. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive hover:bg-destructive/90"
-                        onClick={handleDeleteAccount}
-                      >
-                        Yes, delete my account
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-            </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 pb-6 pt-4">
            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
         
