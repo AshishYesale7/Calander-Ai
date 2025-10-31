@@ -48,8 +48,10 @@
     transition: opacity 0.2s;
 }
 
-.group:hover .drag-handle,
-.edit-mode-active .drag-handle {
+.group:hover .drag-handle {
     opacity: 1;
 }
 
+.react-grid-item.react-draggable-dragging .drag-handle {
+    cursor: grabbing;
+}

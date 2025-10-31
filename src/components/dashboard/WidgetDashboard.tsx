@@ -45,7 +45,6 @@ interface WidgetDashboardProps {
   hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
-  onAccordionToggle: (isOpen: boolean, contentHeight: number) => void; // Added prop
 }
 
 export default function WidgetDashboard({ 
@@ -55,7 +54,7 @@ export default function WidgetDashboard({
     hiddenWidgets = new Set(),
     onToggleWidget,
     isLoading,
-}: Omit<WidgetDashboardProps, 'onAccordionToggle'> & { onAccordionToggle?: (isOpen: boolean, contentHeight: number) => void}) {
+}: WidgetDashboardProps) {
   const { user } = useAuth();
   
   const [currentBreakpoint, setCurrentBreakpoint] = useState('lg');
@@ -243,7 +242,7 @@ export default function WidgetDashboard({
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={ROW_HEIGHT}
             margin={MARGIN}
-            isDraggable={isEditMode}
+            isDraggable={true}
             isResizable={isEditMode}
             draggableHandle=".drag-handle"
             onLayoutChange={handleLayoutChange}
@@ -257,19 +256,16 @@ export default function WidgetDashboard({
         >
             {finalLayouts[currentBreakpoint]?.map(item => {
               if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
-              // Pass down the onAccordionToggle function only to the 'plan' widget
               const componentToRender = item.i === 'plan' 
                 ? React.cloneElement(components[item.i] as React.ReactElement, { onAccordionToggle: handleAccordionToggle }) 
                 : components[item.i];
               
               return (
                   <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
+                    <div className="drag-handle"></div>
                     {isEditMode && (
-                      <>
-                        <button className="remove-widget-button" onClick={() => onToggleWidget(item.i)}>-</button>
-                        <div className="drag-handle"></div>
-                      </>
-                    )}
+                      <button className="remove-widget-button" onClick={() => onToggleWidget(item.i)}>-</button>
+ )}
                     {isLoading ? <WidgetGhost /> : componentToRender}
                   </div>
               )
