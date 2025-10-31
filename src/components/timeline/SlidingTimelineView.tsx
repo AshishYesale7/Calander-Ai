@@ -4,8 +4,8 @@
 import type { TimelineEvent } from '@/types';
 import { useMemo, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Bot, Trash2, ChevronLeft, ChevronRight, Clock, ExternalLink as LinkIcon, Edit3, Info, History, Hash } from 'lucide-react';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isToday as dfnsIsToday, formatDistanceToNowStrict, isFuture, isPast, startOfDay } from 'date-fns';
+import { CalendarDays, Bot, Trash2, Clock, ExternalLink as LinkIcon, Edit3, Info, History, Hash } from 'lucide-react';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isToday as dfnsIsToday, formatDistanceToNowStrict, isFuture, isPast, startOfDay, addMonths, subMonths } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 
 const getEventDotColor = (type: TimelineEvent['type']): string => {
   switch (type) {

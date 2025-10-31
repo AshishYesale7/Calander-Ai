@@ -251,14 +251,14 @@ export default function DashboardPage({ isEditMode, setIsEditMode, hiddenWidgets
   const components = useMemo(() => ({
     'plan': <TodaysPlanWidget onAccordionToggle={() => {}} />,
     'streak': <DailyStreakWidget />,
-    'calendar': <CalendarWidget events={activeEvents} onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onAddEvent={() => handleOpenEditModal(undefined, true)} onDeleteEvent={handleDeleteEvent} onEditEvent={handleOpenEditModal} />,
+    'calendar': <CalendarWidget events={activeEvents} onDayClick={setSelectedDateForDayView} onSyncComplete={fetchAllEvents} onToggleTrash={() => setIsTrashPanelOpen(prev => !prev)} onAddEvent={() => handleOpenEditModal(undefined, true)} onDeleteEvent={handleDeleteEvent} onEditEvent={handleOpenEditModal} month={activeDisplayMonth} onMonthChange={setActiveDisplayMonth} />,
     'day-timetable': <DayTimetableViewWidget date={selectedDateForDayView} events={activeEvents} onClose={() => setSelectedDateForDayView(null)} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} onEventStatusChange={handleEventStatusUpdate} onMaximize={() => setIsPlannerMaximized(true)} />,
-    'timeline': <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} />,
+    'timeline': <SlidingTimelineWidget events={activeEvents} onEditEvent={handleOpenEditModal} onDeleteEvent={handleDeleteEvent} currentDisplayMonth={activeDisplayMonth} onNavigateMonth={(dir) => setActiveDisplayMonth(current => dir === 'prev' ? subMonths(current, 1) : addMonths(current, 1))} />,
     'emails': <ImportantEmailsWidget />,
     'next-month': <NextMonthHighlightsWidget events={activeEvents} />,
     'sync': <GoogleSyncWidget onSyncComplete={fetchAllEvents} />,
     'data': <DataManagementWidget events={activeEvents} onImportComplete={fetchAllEvents} />,
-  }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate]);
+  }), [activeEvents, fetchAllEvents, selectedDateForDayView, handleOpenEditModal, handleDeleteEvent, handleEventStatusUpdate, activeDisplayMonth]);
 
   return (
     <div className="h-full">

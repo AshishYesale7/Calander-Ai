@@ -14,6 +14,8 @@ import type { TimelineEvent } from '@/types';
 
 interface CalendarWidgetProps {
   events: TimelineEvent[];
+  month: Date;
+  onMonthChange: (month: Date) => void;
   onDayClick: (date: Date) => void;
   onToggleTrash: () => void;
   onSyncComplete: () => void;
@@ -24,6 +26,8 @@ interface CalendarWidgetProps {
 
 export default function CalendarWidget({ 
   events,
+  month,
+  onMonthChange,
   onDayClick, 
   onToggleTrash, 
   onSyncComplete, 
@@ -91,8 +95,8 @@ export default function CalendarWidget({
     <div className="relative h-full flex flex-col">
        <EventCalendarView 
          events={events} 
-         month={new Date()} 
-         onMonthChange={() => {}} 
+         month={month} 
+         onMonthChange={onMonthChange} 
          onDayClick={onDayClick} 
          onSync={handleSyncCalendarData} 
          isSyncing={isSyncing} 
