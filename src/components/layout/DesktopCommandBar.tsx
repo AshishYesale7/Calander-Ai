@@ -152,22 +152,29 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
       }
       
       const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
+      
+      // If the sidebar is closed and the bar was manually moved, don't reset its default position status.
+      // Only reset to default position if the sidebar *opens*, forcing a reposition.
       if (shouldShiftLeft) {
-          setIsAtDefaultPosition(false); // It's not at the default center anymore
-      } else if (!isAtDefaultPosition) {
-           // If chat is closed and we weren't at default, reset to default
+          setIsAtDefaultPosition(false);
+      } else if (!isAtDefaultPosition && !lastOpenPosition.current) {
+          // It was not at default, but now chat is closed, AND it wasn't manually moved.
+          // This case is tricky. We'll default to resetting it.
           setIsAtDefaultPosition(true);
       }
       
-      const closedX = shouldShiftLeft
-        ? 80 
-        : (window.innerWidth - size.closed.width) / 2;
+      const closedX = isAtDefaultPosition 
+        ? (window.innerWidth - size.closed.width) / 2
+        : (lastOpenPosition.current ? lastOpenPosition.current.x : 80);
       
       let closedY;
+      // Auto-hide only when at default position and scrolling down
       if (scrollDirection === 'down' && isAtDefaultPosition) {
         closedY = window.innerHeight; // Animate it off-screen
       } else {
-        closedY = window.innerHeight - size.closed.height - 24;
+        closedY = isAtDefaultPosition 
+            ? window.innerHeight - size.closed.height - 24
+            : (lastOpenPosition.current ? lastOpenPosition.current.y : window.innerHeight - size.closed.height - 24);
       }
 
       animationControls.start({
@@ -361,14 +368,11 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
       animate={animationControls}
       onDragStart={() => {
         setIsAtDefaultPosition(false);
+        lastOpenPosition.current = null; // Clear last known default position
         if (document.body) document.body.style.userSelect = 'none';
       }}
       onDragEnd={() => {
         if (document.body) document.body.style.userSelect = '';
-        if (containerRef.current) {
-          const { x, y } = containerRef.current.getBoundingClientRect();
-          lastOpenPosition.current = { x, y };
-        }
       }}
     >
       <motion.div 
