@@ -19,6 +19,46 @@ import { getGoogleGmailMessages } from '@/services/googleGmailService';
 import PlannerUpcomingView from './PlannerUpcomingView';
 import { format } from 'date-fns';
 
+const PlannerGoogleCalendarList = ({ events, isLoading, viewTheme, onDragStart, onDragEnd }: { events: RawCalendarEvent[], isLoading: boolean, viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, item: RawCalendarEvent) => void, onDragEnd: (e?: React.DragEvent) => void }) => {
+    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
+    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
+    const itemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
+    const textClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
+
+    return (
+        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
+             <div className="flex justify-between items-center mb-2 px-1">
+                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Calendar size={16} /> Google Calendar</h1>
+            </div>
+             <div className="space-y-1 text-xs overflow-y-auto flex-1">
+                {isLoading && events.length === 0 && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
+                {!isLoading && events.length === 0 && <div className="text-center p-4 text-xs text-gray-400">No upcoming events found.</div>}
+                {events.map(event => {
+                    const isAllDay = !event.startDateTime.includes('T');
+                    return (
+                        <div 
+                            key={event.id} 
+                            className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", itemClasses)}
+                            draggable
+                            onDragStart={(e) => onDragStart(e, event)}
+                            onDragEnd={onDragEnd}
+                        >
+                            <p className={cn("text-xs font-bold flex-1", textClasses)}>{event.summary}</p>
+                            <p className="text-[10px] text-gray-400 w-full truncate">
+                                {isAllDay 
+                                    ? format(new Date(event.startDateTime), 'MMM d') 
+                                    : `${format(new Date(event.startDateTime), 'MMM d, p')}`
+                                }
+                            </p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    )
+};
+
+
 const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd, dateQuery }: { viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, item: RawGmailMessage) => void, onDragEnd: (e?: React.DragEvent) => void, dateQuery?: 'today' }) => {
     const { user } = useAuth();
     const { apiKey } = useApiKey();
@@ -149,46 +189,6 @@ const PlannerGmailList = ({ viewTheme, onDragStart, onDragEnd, dateQuery }: { vi
     );
 };
 
-const PlannerGoogleCalendarList = ({ events, isLoading, viewTheme, onDragStart, onDragEnd }: { events: RawCalendarEvent[], isLoading: boolean, viewTheme: MaxViewTheme, onDragStart: (e: React.DragEvent<HTMLDivElement>, item: RawCalendarEvent) => void, onDragEnd: (e?: React.DragEvent) => void }) => {
-    const taskListClasses = viewTheme === 'dark' ? 'bg-gray-800/60 border-r border-gray-700/50' : 'bg-stone-100 border-r border-gray-200';
-    const headingClasses = viewTheme === 'dark' ? 'text-white' : 'text-gray-800';
-    const itemClasses = viewTheme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-stone-200';
-    const textClasses = viewTheme === 'dark' ? 'text-gray-200' : 'text-gray-700';
-
-    return (
-        <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
-             <div className="flex justify-between items-center mb-2 px-1">
-                <h1 className={cn("text-sm font-bold flex items-center gap-2", headingClasses)}><Calendar size={16} /> Google Calendar</h1>
-            </div>
-             <div className="space-y-1 text-xs overflow-y-auto flex-1">
-                {isLoading && events.length === 0 && <div className="text-center p-4"><LoadingSpinner size="sm" /></div>}
-                {!isLoading && events.length === 0 && <div className="text-center p-4 text-xs text-gray-400">No upcoming events found.</div>}
-                {events.map(event => {
-                    const isAllDay = !event.startDateTime.includes('T');
-                    return (
-                        <div 
-                            key={event.id} 
-                            className={cn("p-1.5 rounded-md flex flex-col items-start cursor-grab", itemClasses)}
-                            draggable
-                            onDragStart={(e) => onDragStart(e, event)}
-                            onDragEnd={onDragEnd}
-                        >
-                            <p className={cn("text-xs font-bold flex-1", textClasses)}>{event.summary}</p>
-                            <p className="text-[10px] text-gray-400 w-full truncate">
-                                {isAllDay 
-                                    ? format(new Date(event.startDateTime), 'MMM d') 
-                                    : `${format(new Date(event.startDateTime), 'MMM d, p')}`
-                                }
-                            </p>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    )
-};
-
-
 const PlannerTaskList = ({
   list,
   tasks,
@@ -289,6 +289,9 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     return <PlannerGoogleCalendarList events={googleEvents} isLoading={isGoogleEventsLoading} viewTheme={viewTheme} onDragStart={onDragStart} onDragEnd={onDragEnd} />;
   }
   
+  // Default to "All tasks" or a specific task list
+  const selectedTaskList = taskLists.find(list => list.id === activeView);
+
   return (
     <div className={cn("p-2 flex flex-col h-full", taskListClasses)}>
       <div className="flex justify-between items-center mb-2 px-1">
@@ -313,3 +316,4 @@ export default function PlannerSecondarySidebar(props: PlannerSecondarySidebarPr
     </div>
   );
 }
+
