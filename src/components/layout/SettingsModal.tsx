@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -14,12 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, User, Link2, Globe } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, Send, User, Link2, Globe, FileText } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
-import { GoogleAuthProvider, PhoneAuthProvider, OAuthProvider } from 'firebase/auth';
+import { GoogleAuthProvider, PhoneAuthProvider, OAuthProvider, reauthenticateWithPopup, signInWithPhoneNumber } from 'firebase/auth';
 import 'react-phone-number-input/style.css';
 import { getToken } from 'firebase/messaging';
 import { NotionLogo } from '../logo/NotionLogo';
@@ -38,101 +37,70 @@ const IntegrationRow = ({
   icon,
   name,
   description,
-  isConnected,
+  providerId,
   onConnect,
   onDisconnect,
 }: {
   icon: React.ReactNode;
   name: string;
   description: string;
-  isConnected: boolean | null;
+  providerId: 'google.com' | 'microsoft.com';
   onConnect: () => void;
   onDisconnect: () => void;
 }) => {
-  const [oneWay, setOneWay] = useState(true);
-  const [twoWay, setTwoWay] = useState(false);
-  const { user } = useAuth(); // Get current user
+  const { user } = useAuth();
+  const [isSyncEnabled, setIsSyncEnabled] = useState(true); // Placeholder state
 
-  useEffect(() => {
-    if (!isConnected) {
-      setOneWay(false);
-      setTwoWay(false);
-    } else {
-        // Default to one-way sync when connected
-        setOneWay(true);
-        setTwoWay(false);
-    }
-  }, [isConnected]);
-
-  const handleOneWayToggle = (checked: boolean) => {
-    setOneWay(checked);
-    if (checked) setTwoWay(false);
-  };
-
-  const handleTwoWayToggle = (checked: boolean) => {
-    setTwoWay(checked);
-    if (checked) setOneWay(false);
-  };
-  
-  // Determine which email to show based on provider
-  const connectedEmail = name === 'Google Calendar'
-    ? user?.providerData.find(p => p.providerId === GoogleAuthProvider.PROVIDER_ID)?.email
-    : user?.providerData.find(p => p.providerId === 'microsoft.com')?.email;
+  const connectedAccounts = user?.providerData.filter(p => p.providerId === providerId) || [];
 
   return (
     <div className="space-y-4 rounded-lg border p-4 transition-colors hover:bg-muted/50">
         <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-                <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card">{icon}</div>
-                <div>
-                    <h4 className="font-semibold">{name}</h4>
-                    <p className="text-xs text-muted-foreground">{description}</p>
-                </div>
+            <div>
+                <h4 className="font-semibold">{name}</h4>
+                <p className="text-xs text-muted-foreground">{description}</p>
             </div>
-            {isConnected === null && <LoadingSpinner size="sm" />}
+            <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card flex-shrink-0">{icon}</div>
         </div>
         
-        {/* Render connected accounts */}
-        {isConnected && connectedEmail && (
-             <div className="pl-14 space-y-3">
-                <div className="flex items-center justify-between p-2 bg-background/50 rounded-md">
-                    <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{connectedEmail}</span>
+        {connectedAccounts.length > 0 && (
+             <div className="pl-4 space-y-3">
+                {connectedAccounts.map(account => (
+                    <div key={account.uid} className="p-2 bg-background/50 rounded-md border space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">{account.email}</span>
+                            </div>
+                            <Button onClick={onDisconnect} variant="destructive" size="sm" className="h-7 text-xs">
+                                <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
+                            </Button>
+                        </div>
+                         <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                            <div className="flex items-center space-x-2">
+                                <Switch id={`oneway-${account.uid}`} checked={isSyncEnabled} onCheckedChange={(c) => setIsSyncEnabled(c)} aria-label="One-way sync"/>
+                                <Label htmlFor={`oneway-${account.uid}`} className="text-xs">One-way sync</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch id={`twoway-${account.uid}`} checked={!isSyncEnabled} onCheckedChange={(c) => setIsSyncEnabled(!c)} aria-label="Two-way sync"/>
+                                <Label htmlFor={`twoway-${account.uid}`} className="text-xs">Two-way sync</Label>
+                            </div>
+                        </div>
                     </div>
-                    <Button onClick={onDisconnect} variant="destructive" size="sm" className="h-7 text-xs">
-                        <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
-                    </Button>
-                </div>
+                ))}
              </div>
         )}
         
-        {/* "Add Account" button always visible unless it's coming soon */}
-        <div className="pl-14">
+        <div className="pl-4">
             <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
                 <Link2 className="mr-2 h-4 w-4"/>
-                {isConnected && connectedEmail ? 'Connect Another Account' : 'Connect Account'}
+                {connectedAccounts.length > 0 ? 'Connect Another Account' : 'Connect Account'}
             </Button>
         </div>
-
-        {isConnected && (
-            <div className="pl-14">
-                <Separator className="mb-4" />
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                        <Switch id={`oneway-${name}`} checked={oneWay} onCheckedChange={handleOneWayToggle} aria-label="One-way sync"/>
-                        <Label htmlFor={`oneway-${name}`} className="text-xs">One-way sync</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Switch id={`twoway-${name}`} checked={twoWay} onCheckedChange={handleTwoWayToggle} aria-label="Two-way sync"/>
-                        <Label htmlFor={`twoway-${name}`} className="text-xs">Two-way sync</Label>
-                    </div>
-                </div>
-            </div>
-        )}
     </div>
   );
 };
+
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -146,7 +114,6 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const [apiKeyInput, setApiKeyInput] = useState(currentApiKey || '');
   
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-  const [isNotionConnected, setIsNotionConnected] = useState<boolean | null>(null);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
   
   const [notificationPermission, setNotificationPermission] = useState('default');
@@ -155,13 +122,11 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   const checkStatuses = useCallback(async () => {
     if (!user) return;
     try {
-      const [googleRes, notionRes, microsoftRes] = await Promise.all([
+      const [googleRes, microsoftRes] = await Promise.all([
         fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
-        fetch('/api/auth/notion/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
         fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
       ]);
       setIsGoogleConnected((await googleRes.json()).isConnected);
-      setIsNotionConnected((await notionRes.json()).isConnected);
       setIsMicrosoftConnected((await microsoftRes.json()).isConnected);
     } catch (error) {
       toast({ title: 'Error', description: 'Could not verify integration statuses.', variant: 'destructive' });
@@ -183,7 +148,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
     toast({ title: 'API Key Saved' });
   };
   
-  const handleConnect = (provider: 'google' | 'microsoft' | 'notion') => {
+  const handleConnect = (provider: 'google' | 'microsoft') => {
     if (!user) return;
     const state = Buffer.from(JSON.stringify({ userId: user.uid, provider })).toString('base64');
     const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
@@ -294,7 +259,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       icon={<GoogleIcon />}
                       name="Google Calendar"
                       description="Gmail, G Suite"
-                      isConnected={isGoogleConnected}
+                      providerId='google.com'
                       onConnect={() => handleConnect('google')}
                       onDisconnect={() => handleDisconnect('google')}
                     />
@@ -302,17 +267,9 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                       icon={<MicrosoftIcon />}
                       name="Office 365 Calendar"
                       description="Office 365, Outlook.com, Live.com"
-                      isConnected={isMicrosoftConnected}
+                      providerId='microsoft.com'
                       onConnect={() => handleConnect('microsoft')}
                       onDisconnect={() => { /* Implement disconnect */ }}
-                    />
-                     <IntegrationRow
-                        icon={<NotionLogo className="h-6 w-6" />}
-                        name="Notion"
-                        description="Tasks, Databases, Pages"
-                        isConnected={isNotionConnected}
-                        onConnect={() => handleConnect('notion')}
-                        onDisconnect={() => { /* Implement disconnect */ }}
                     />
                   </div>
                 </TabsContent>
