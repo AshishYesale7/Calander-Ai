@@ -209,7 +209,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
       <Card 
         className="w-full h-full frosted-glass shadow-lg flex flex-col"
       >
-        <Accordion type="single" collapsible className="w-full" onValueChange={(value) => {
+        <Accordion type="single" collapsible className="w-full flex-1 flex flex-col min-h-0" onValueChange={(value) => {
           if(onAccordionToggle && contentRef.current) {
             onAccordionToggle(!!value, contentRef.current.scrollHeight);
           }
@@ -243,7 +243,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                     </Button>
                   </div>
                   <div className="flex-1 min-w-0 text-left px-2">
-                    <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center">
+                    <CardTitle className="font-headline text-lg md:text-xl text-primary flex items-center truncate">
                       <Calendar className="mr-2 h-5 w-5 text-accent shrink-0" />
                       <span className="truncate">{getDisplayDateTitle(displayDate)}</span>
                     </CardTitle>
@@ -287,7 +287,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                   </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="flex-1 flex flex-col min-h-0">
                 <div ref={contentRef} className="px-6 pb-6 overflow-y-auto">
                     {renderContent()}
                 </div>
