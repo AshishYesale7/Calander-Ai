@@ -14,5 +14,3 @@ export default function AppRoot(props: AppRootProps) {
   // Simply pass all props down to the DashboardPage
   return <DashboardPage {...props} />;
 }
-
-    

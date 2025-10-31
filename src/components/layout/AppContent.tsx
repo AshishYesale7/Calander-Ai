@@ -99,8 +99,23 @@ function ChatAndCallUI() {
   );
 }
 
+interface AppContentProps {
+  children: ReactNode;
+  onFinishOnboarding: () => void;
+  isEditMode: boolean;
+  setIsEditMode: (value: boolean) => void;
+  hiddenWidgets: Set<string>;
+  handleToggleWidget: (id: string) => void;
+}
 
-export default function AppContent({ children, onFinishOnboarding }: { children: ReactNode, onFinishOnboarding: () => void }) {
+export default function AppContent({ 
+  children, 
+  onFinishOnboarding,
+  isEditMode,
+  setIsEditMode,
+  hiddenWidgets,
+  handleToggleWidget,
+}: AppContentProps) {
   const { user, loading, isSubscribed, onboardingCompleted } = useAuth();
   
     const { toast } = useToast();
@@ -137,22 +152,7 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     
     const isPendingDeletion = user?.deletionStatus === 'PENDING_DELETION';
     const isChatPanelVisible = !!chattingWith;
-    
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(new Set());
 
-    const handleToggleWidget = useCallback((id: string) => {
-        setHiddenWidgets(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
-            } else {
-                newSet.add(id);
-            }
-            return newSet;
-        });
-    }, []);
-    
   useEffect(() => {
     if (!isMobile && chattingWith && sidebarState === 'expanded') {
         setSidebarOpen(false);
@@ -399,5 +399,3 @@ export default function AppContent({ children, onFinishOnboarding }: { children:
     </>
   );
 }
-
-    
