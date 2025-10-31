@@ -6,7 +6,8 @@
  * acting as a flexible, intelligent chatbot.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit, type GenerateRequest } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { 
   ConversationalAgentInputSchema,
@@ -16,40 +17,61 @@ import {
 } from '@/types';
 
 
-// The Genkit prompt definition
-const conversationalAgentPrompt = ai.definePrompt({
-  name: 'conversationalAgentPrompt',
-  input: { schema: z.object({ history: z.string(), prompt: z.string() }) },
-  output: { schema: z.string() },
-  prompt: `You are a helpful and friendly AI assistant named Calendar.ai.
+const conversationalAgentPromptTemplate = `You are a helpful and friendly AI assistant named Calendar.ai.
   
-  This is the conversation history:
-  {{{history}}}
-  
-  This is the user's new message:
-  "{{{prompt}}}"
-  
-  Provide a helpful and relevant response to the user's message.`,
-});
+This is the conversation history:
+{{{history}}}
+
+This is the user's new message:
+"{{{prompt}}}"
+
+Provide a helpful and relevant response to the user's message.`;
 
 // The main Genkit flow
-const conversationalAgentFlow = ai.defineFlow(
-  {
+const conversationalAgentFlow = genkit({
     name: 'conversationalAgentFlow',
     inputSchema: ConversationalAgentInputSchema,
     outputSchema: ConversationalAgentOutputSchema,
   },
   async (input) => {
-    // Format the history into a simple string for the prompt
-    const historyString = input.chatHistory.map(msg => `${'role' in msg ? msg.role : 'user'}: ${'content' in msg ? msg.content : ''}`).join('\n');
-    
-    // Call the prompt and get the AI's response
-    const llmResponse = await conversationalAgentPrompt({
-      history: historyString,
-      prompt: input.prompt,
+    // Dynamically configure the AI plugin with the user's key if provided
+    const dynamicAi = genkit({
+      plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
     });
     
-    return { response: llmResponse };
+    // Format the history into a simple string for the prompt
+    const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    
+    try {
+      // Call the prompt and get the AI's response
+      const llmResponse = await dynamicAi.generate({
+        prompt: {
+          text: conversationalAgentPromptTemplate,
+          input: {
+            history: historyString,
+            prompt: input.prompt,
+          }
+        },
+        model: 'googleai/gemini-2.0-flash',
+      });
+      
+      const responseText = llmResponse.text;
+      
+      return { response: responseText };
+
+    } catch (e: any) {
+        console.error("AI Generation Error:", e);
+        const errorMessage = e.message || '';
+        if (
+            errorMessage.includes('429') || // Too Many Requests
+            errorMessage.toLowerCase().includes('quota') ||
+            errorMessage.toLowerCase().includes('resource has been exhausted')
+        ) {
+            return { response: "My APi limit has exceeded , try gain later ." };
+        }
+        // For other errors, return a generic message
+        return { response: "I'm sorry, I encountered an error. Please try again." };
+    }
   }
 );
 
@@ -57,3 +79,5 @@ const conversationalAgentFlow = ai.defineFlow(
 export async function conversationalAgent(input: ConversationalAgentInput): Promise<ConversationalAgentOutput> {
   return conversationalAgentFlow(input);
 }
+
+    

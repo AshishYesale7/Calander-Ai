@@ -8,7 +8,8 @@
  * - SummarizeNewsOutput - The return type for the summarizeNews function.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 const SummarizeNewsPayloadSchema = z.object({
@@ -27,28 +28,35 @@ const SummarizeNewsOutputSchema = z.object({
 });
 export type SummarizeNewsOutput = z.infer<typeof SummarizeNewsOutputSchema>;
 
-const summarizeNewsPrompt = ai.definePrompt({
+const summarizeNewsPrompt = genkit({
     name: 'summarizeNewsPrompt',
-    input: { schema: SummarizeNewsPayloadSchema },
-    output: { schema: SummarizeNewsOutputSchema },
-    prompt: `You are an expert news analyst. Your task is to provide a concise, one-paragraph summary of the following news article based on its title and content. Focus on the most important takeaways for a student or professional in the tech field.
+    inputSchema: SummarizeNewsPayloadSchema,
+    outputSchema: SummarizeNewsOutputSchema,
+}, async (input) => {
+    return {
+        prompt: `You are an expert news analyst. Your task is to provide a concise, one-paragraph summary of the following news article based on its title and content. Focus on the most important takeaways for a student or professional in the tech field.
 
 Article Title:
-{{{title}}}
+${input.title}
 
 Article Content:
-{{{content}}}
+${input.content}
 
 Generate the summary.
 `,
+    };
 });
 
-const summarizeNewsFlow = ai.defineFlow({
+const summarizeNewsFlow = genkit({
     name: 'summarizeNewsFlow',
     inputSchema: SummarizeNewsInputSchema,
     outputSchema: SummarizeNewsOutputSchema,
 }, async (input) => {
-    const { output } = await summarizeNewsPrompt(input);
+    const dynamicAi = genkit({
+        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
+    });
+
+    const { output } = await dynamicAi.generate(summarizeNewsPrompt(input));
 
     if (!output) {
         throw new Error("The AI model did not return a valid summary.");
@@ -60,3 +68,5 @@ const summarizeNewsFlow = ai.defineFlow({
 export async function summarizeNews(input: SummarizeNewsInput): Promise<SummarizeNewsOutput> {
     return summarizeNewsFlow(input);
 }
+
+    

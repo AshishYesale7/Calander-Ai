@@ -8,7 +8,8 @@
  * - SummarizeEmailOutput - The return type for the summarizeEmail function.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 const SummarizeEmailPayloadSchema = z.object({
@@ -27,29 +28,36 @@ const SummarizeEmailOutputSchema = z.object({
 });
 export type SummarizeEmailOutput = z.infer<typeof SummarizeEmailOutputSchema>;
 
-const summarizeEmailPrompt = ai.definePrompt({
+const summarizeEmailPrompt = genkit({
     name: 'summarizeEmailPrompt',
-    input: { schema: SummarizeEmailPayloadSchema },
-    output: { schema: SummarizeEmailOutputSchema },
-    prompt: `You are an expert personal assistant. Your task is to provide a concise, one-paragraph summary of the following email. Focus on the most important takeaways, such as direct questions, action items, or deadlines.
+    inputSchema: SummarizeEmailPayloadSchema,
+    outputSchema: SummarizeEmailOutputSchema,
+}, async (input) => {
+    return {
+        prompt: `You are an expert personal assistant. Your task is to provide a concise, one-paragraph summary of the following email. Focus on the most important takeaways, such as direct questions, action items, or deadlines.
 
 Email Subject:
-{{{subject}}}
+${input.subject}
 
 Email Content Snippet:
-{{{snippet}}}
+${input.snippet}
 
 Generate the summary.
 `,
+    };
 });
 
-const summarizeEmailFlow = ai.defineFlow({
+const summarizeEmailFlow = genkit({
     name: 'summarizeEmailFlow',
     inputSchema: SummarizeEmailInputSchema,
     outputSchema: SummarizeEmailOutputSchema,
 }, async (input) => {
+    const dynamicAi = genkit({
+        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
+    });
+
     try {
-        const { output } = await summarizeEmailPrompt(input);
+        const { output } = await dynamicAi.generate(summarizeEmailPrompt(input));
 
         if (!output) {
             throw new Error("The AI model did not return a valid summary.");
@@ -67,3 +75,5 @@ const summarizeEmailFlow = ai.defineFlow({
 export async function summarizeEmail(input: SummarizeEmailInput): Promise<SummarizeEmailOutput> {
     return summarizeEmailFlow(input);
 }
+
+    

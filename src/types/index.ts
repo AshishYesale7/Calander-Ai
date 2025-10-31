@@ -409,6 +409,7 @@ export const ConversationalAgentInputSchema = z.object({
     content: z.string(),
   })).describe("The history of the conversation so far."),
   prompt: z.string().describe("The user's latest message."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type ConversationalAgentInput = z.infer<typeof ConversationalAgentInputSchema>;
 
@@ -459,3 +460,5 @@ export const CreateEventOutputSchema = z.object({
   }).optional().describe("Reminder settings for the event.")
 });
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
+
+    

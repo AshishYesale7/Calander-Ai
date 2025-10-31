@@ -8,7 +8,8 @@
  * - GenerateUpcomingInsightsOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { getTimelineEvents } from '@/services/timelineService';
 import { getCareerGoals } from '@/services/careerGoalsService';
@@ -44,27 +45,29 @@ const GenerateUpcomingInsightsOutputSchema = z.object({
 });
 export type GenerateUpcomingInsightsOutput = z.infer<typeof GenerateUpcomingInsightsOutputSchema>;
 
-const upcomingInsightsPrompt = ai.definePrompt({
+const upcomingInsightsPrompt = genkit({
     name: 'upcomingInsightsPrompt',
-    input: { schema: z.object({
+    inputSchema: z.object({
         currentDate: z.string(),
         upcomingEventsText: z.string(),
         upcomingTasksText: z.string(),
         careerGoalsText: z.string(),
-    }) },
-    output: { schema: GenerateUpcomingInsightsOutputSchema },
-    prompt: `You are an expert productivity coach AI. Your task is to analyze a user's upcoming schedule and goals to create a smart, prioritized "Week Ahead" summary.
+    }),
+    outputSchema: GenerateUpcomingInsightsOutputSchema,
+}, async (input) => {
+    return {
+        prompt: `You are an expert productivity coach AI. Your task is to analyze a user's upcoming schedule and goals to create a smart, prioritized "Week Ahead" summary.
 
-Current Date: {{{currentDate}}}
+Current Date: ${input.currentDate}
 
 **User's Career Goals:**
-{{{careerGoalsText}}}
+${input.careerGoalsText}
 
 **User's Upcoming Tasks (from Google Tasks):**
-{{{upcomingTasksText}}}
+${input.upcomingTasksText}
 
 **User's Upcoming Calendar Events:**
-{{{upcomingEventsText}}}
+${input.upcomingEventsText}
 
 **Instructions:**
 
@@ -81,14 +84,19 @@ Current Date: {{{currentDate}}}
     *   Create a simple list of all events with types 'exam' or 'application' that are due in the next 14 days.
 
 Your entire output must be a single, valid JSON object that adheres to the output schema.`,
+    };
 });
 
 
-const generateUpcomingInsightsFlow = ai.defineFlow({
+const generateUpcomingInsightsFlow = genkit({
     name: 'generateUpcomingInsightsFlow',
     inputSchema: GenerateUpcomingInsightsInputSchema,
     outputSchema: GenerateUpcomingInsightsOutputSchema,
 }, async (input) => {
+    const dynamicAi = genkit({
+        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
+    });
+
     const now = new Date();
     const twoWeeksFromNow = endOfDay(addDays(now, 14));
 
@@ -121,12 +129,12 @@ const generateUpcomingInsightsFlow = ai.defineFlow({
         
     try {
         // 4. Call the AI prompt
-        const { output } = await upcomingInsightsPrompt({
+        const { output } = await dynamicAi.generate(upcomingInsightsPrompt({
             currentDate: now.toISOString(),
             upcomingEventsText,
             upcomingTasksText,
             careerGoalsText,
-        });
+        }));
 
         if (!output) {
           throw new Error("The AI model did not return valid insights.");
@@ -145,3 +153,5 @@ const generateUpcomingInsightsFlow = ai.defineFlow({
 export async function generateUpcomingInsights(input: GenerateUpcomingInsightsInput): Promise<GenerateUpcomingInsightsOutput> {
   return generateUpcomingInsightsFlow(input);
 }
+
+    

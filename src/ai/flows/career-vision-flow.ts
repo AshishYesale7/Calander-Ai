@@ -9,7 +9,8 @@
  * - GenerateCareerVisionOutput - The return type for the generateCareerVision function.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { GenerateCareerVisionOutputSchema, type GenerateCareerVisionOutput } from '@/types';
 
@@ -24,14 +25,16 @@ const GenerateCareerVisionInputSchema = GenerateCareerVisionPayloadSchema.extend
 export type GenerateCareerVisionInput = z.infer<typeof GenerateCareerVisionInputSchema>;
 
 
-const careerVisionPrompt = ai.definePrompt({
+const careerVisionPrompt = genkit({
     name: 'careerVisionPrompt',
-    input: { schema: GenerateCareerVisionPayloadSchema },
-    output: { schema: GenerateCareerVisionOutputSchema },
-    prompt: `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
+    inputSchema: GenerateCareerVisionPayloadSchema,
+    outputSchema: GenerateCareerVisionOutputSchema,
+}, async (input) => {
+    return {
+        prompt: `You are an expert, empathetic, and encouraging career coach AI named 'Calendar.ai'. Your goal is to provide a comprehensive, actionable, and inspiring career plan based on a user's stated passions and aspirations. You must go beyond a simple statement and provide a multi-faceted guide.
 
 User's Aspirations:
-{{{aspirations}}}
+${input.aspirations}
 
 Based on this input, generate a complete career plan structured according to the following JSON schema. Be insightful, specific, and motivating in your response.
 
@@ -46,15 +49,20 @@ Based on this input, generate a complete career plan structured according to the
     -   Your 'description' **MUST** explain that the bar chart visualizes the estimated timeline for each roadmap step.
     -   **CRUCIAL**: For the 'data' field, you **MUST** generate an array of objects. Each object must have a 'name' (the title of the roadmap step) and a 'durationMonths' (the average duration of that step converted into a number of months). For example, if a step has a duration of "1-3 months", the value for 'durationMonths' must be 2. If it's "6 weeks", it must be 1.5. If it's "1 year", it must be 12. This field is not optional.
 `,
+    }
 });
 
-const generateCareerVisionFlow = ai.defineFlow({
+const generateCareerVisionFlow = genkit({
     name: 'generateCareerVisionFlow',
     inputSchema: GenerateCareerVisionInputSchema,
     outputSchema: GenerateCareerVisionOutputSchema,
 }, async (input) => {
+    const dynamicAi = genkit({
+        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
+    });
+
     try {
-        const { output } = await careerVisionPrompt({ aspirations: input.aspirations });
+        const { output } = await dynamicAi.generate(careerVisionPrompt({ aspirations: input.aspirations }));
         
         if (!output) {
           throw new Error("The AI model did not return a valid vision statement.");
@@ -72,3 +80,5 @@ const generateCareerVisionFlow = ai.defineFlow({
 export async function generateCareerVision(input: GenerateCareerVisionInput): Promise<GenerateCareerVisionOutput> {
     return generateCareerVisionFlow(input);
 }
+
+    

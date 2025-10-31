@@ -7,6 +7,8 @@
  *                      returns a structured object of their stats.
  */
 
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'zod';
 import { format, startOfDay } from 'date-fns';
 
@@ -15,7 +17,7 @@ const FetchCodingStatsInputSchema = z.object({
     codeforces: z.string().optional().describe("Codeforces username"),
     leetcode: z.string().optional().describe("LeetCode username"),
     codechef: z.string().optional().describe("Codechef username"),
-    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key. No longer used but kept for schema consistency."),
+    apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type FetchCodingStatsInput = z.infer<typeof FetchCodingStatsInputSchema>;
 
@@ -216,3 +218,5 @@ export async function fetchCodingStats(input: FetchCodingStatsInput): Promise<Al
 
   return result;
 }
+
+    

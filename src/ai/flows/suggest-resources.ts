@@ -8,7 +8,8 @@
  * - SuggestResourcesOutput - The return type for the suggestResources function.
  */
 
-import { ai } from '@/ai/genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { getCareerGoals } from '@/services/careerGoalsService';
 import { getSkills } from '@/services/skillsService';
@@ -39,24 +40,26 @@ const SuggestResourcesOutputSchema = z.object({
 });
 export type SuggestResourcesOutput = z.infer<typeof SuggestResourcesOutputSchema>;
 
-const suggestResourcesPrompt = ai.definePrompt({
+const suggestResourcesPrompt = genkit({
     name: 'suggestResourcesPrompt',
-    input: { schema: z.object({
+    inputSchema: z.object({
         skillsText: z.string(),
         goalsText: z.string(),
         eventsText: z.string(),
-    }) },
-    output: { schema: SuggestResourcesOutputSchema },
-    prompt: `You are an expert AI career coach for computer science students. Your task is to recommend highly relevant learning resources based on the user's skills and goals.
+    }),
+    outputSchema: SuggestResourcesOutputSchema,
+}, async (input) => {
+    return {
+        prompt: `You are an expert AI career coach for computer science students. Your task is to recommend highly relevant learning resources based on the user's skills and goals.
 
 User's Tracked Skills:
-{{{skillsText}}}
+${input.skillsText}
 
 User's Career Goals:
-{{{goalsText}}}
+${input.goalsText}
 
 User's Timeline Events (for context):
-{{{eventsText}}}
+${input.eventsText}
 
 Instructions:
 1.  Analyze the user's skills, goals, and timeline to understand their learning needs.
@@ -64,10 +67,11 @@ Instructions:
 3.  For each resource, provide a title, a direct URL, a concise one-sentence description explaining its relevance, and assign it to a category.
 4.  Ensure the URLs are valid and direct links to the resource, not search pages.
 5.  Format your output strictly according to the provided JSON schema.
-`
+`,
+    };
 });
 
-const suggestResourcesFlow = ai.defineFlow({
+const suggestResourcesFlow = genkit({
     name: 'suggestResourcesFlow',
     inputSchema: SuggestResourcesInputSchema,
     outputSchema: SuggestResourcesOutputSchema,
@@ -78,16 +82,20 @@ const suggestResourcesFlow = ai.defineFlow({
       getTimelineEvents(input.userId)
     ]);
 
+    const dynamicAi = genkit({
+        plugins: [googleAI({ apiKey: input.apiKey ?? undefined })],
+    });
+
     const goalsText = careerGoals.map(g => g.title).join(', ');
     const skillsText = skills.map(s => s.name).join(', ');
     const eventsText = timelineEvents.map(e => `${e.title} on ${format(e.date, 'PPP')}`).join('; ');
 
     try {
-        const { output } = await suggestResourcesPrompt({
+        const { output } = await dynamicAi.generate(suggestResourcesPrompt({
             goalsText: goalsText.length > 0 ? goalsText : 'No career goals specified.',
             skillsText: skillsText.length > 0 ? skillsText : 'No skills specified.',
             eventsText: eventsText.length > 0 ? eventsText : 'No upcoming events.',
-        });
+        }));
 
         if (!output) {
           return { suggestedResources: [] };
@@ -105,3 +113,5 @@ const suggestResourcesFlow = ai.defineFlow({
 export async function suggestResources(input: SuggestResourcesInput): Promise<SuggestResourcesOutput> {
   return suggestResourcesFlow(input);
 }
+
+    
