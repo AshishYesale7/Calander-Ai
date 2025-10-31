@@ -8,7 +8,7 @@ import { DayPicker } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import type { TimelineEvent } from "@/types"
-import { format, isSameDay } from "date-fns"
+import { format, isSameDay, getYear } from "date-fns"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   mode?: 'month' | 'year' | 'day';
@@ -16,6 +16,8 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
   onCaptionClick?: () => void;
   onMonthSelect?: (month: number) => void;
   onYearChange?: (direction: 'prev' | 'next') => void;
+  onPrevClick?: () => void;
+  onNextClick?: () => void;
 }
 
 const getEventColorStyle = (event: TimelineEvent) => {
@@ -34,8 +36,24 @@ function Calendar({
   onCaptionClick,
   onMonthSelect,
   onYearChange,
+  onPrevClick,
+  onNextClick,
   ...props
 }: CalendarProps) {
+
+  const getCaptionLabel = () => {
+    const selectedDay = props.selected as Date;
+    if (mode === 'day' && selectedDay) {
+        return format(selectedDay, 'PPP');
+    }
+    if (mode === 'year' && month) {
+        return format(month, 'yyyy');
+    }
+    if (month) {
+        return format(month, 'MMMM yyyy');
+    }
+    return 'Select Date';
+  }
   
   if (mode === 'year') {
     return (
@@ -81,17 +99,17 @@ function Calendar({
         <div className="w-full p-1">
              <div className="flex justify-center pt-1 relative items-center">
                 <button 
-                  onClick={() => onYearChange && onYearChange('prev')}
-                  className="invisible"
+                  onClick={onPrevClick}
+                  className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button onClick={onCaptionClick} className="text-sm md:text-base font-medium cursor-pointer hover:text-accent transition-colors">
-                  {format(selectedDay, 'MMM d, yyyy')}
+                <button onClick={() => onMonthSelect && onMonthSelect(selectedDay.getMonth())} className="text-sm md:text-base font-medium cursor-pointer hover:text-accent transition-colors">
+                  {getCaptionLabel()}
                 </button>
                 <button
-                  className="invisible"
-                  onClick={() => onYearChange && onYearChange('next')}
+                  className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1")}
+                  onClick={onNextClick}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -152,12 +170,13 @@ function Calendar({
       }}
       month={month}
       onMonthChange={onMonthChange}
+      onPrevClick={onPrevClick}
+      onNextClick={onNextClick}
       {...props}
-      // Add a custom caption label to handle clicks
       captionLayout="buttons"
       captionLabel={
         <button onClick={onCaptionClick} className={cn(classNames?.caption_label)}>
-          {month && format(month, 'MMMM yyyy')}
+          {getCaptionLabel()}
         </button>
       }
     />

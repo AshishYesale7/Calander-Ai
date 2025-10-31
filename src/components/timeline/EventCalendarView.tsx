@@ -5,7 +5,7 @@ import type { TimelineEvent } from '@/types';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Bot, Trash2, RefreshCw, PlusCircle, Calendar as CalendarIcon, List } from 'lucide-react';
-import { format, parseISO, startOfDay, isSameDay, getYear, setYear, setMonth } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, getYear, setYear, setMonth, addYears, subYears, addDays, subDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
 import type { DayContentRenderer } from "react-day-picker";
@@ -79,11 +79,20 @@ export default function EventCalendarView({
     setCalendarView('month');
   };
 
-  const handleYearNavigation = (direction: 'prev' | 'next') => {
-    const newYear = getYear(month) + (direction === 'prev' ? -1 : 1);
-    onMonthChange(setYear(month, newYear));
+  const handleNavigation = (direction: 'prev' | 'next') => {
+    if (calendarView === 'year') {
+        onMonthChange(direction === 'prev' ? subYears(month, 1) : addYears(month, 1));
+    } else if (calendarView === 'month') {
+        onMonthChange(direction === 'prev' ? subMonths(month, 1) : addMonths(month, 1));
+    } else if (calendarView === 'day') {
+        const newDay = direction === 'prev' ? subDays(selectedDay, 1) : addDays(selectedDay, 1);
+        setSelectedDay(newDay);
+        // Also update the main month view if the day crosses into a new month
+        if (newDay.getMonth() !== month.getMonth() || newDay.getFullYear() !== month.getFullYear()) {
+            onMonthChange(newDay);
+        }
+    }
   };
-
 
   const DayWithDotRenderer: DayContentRenderer = (dayProps) => {
     const isEventDay = uniqueEventDaysForDots.some(eventDay => isSameDay(dayProps.date, eventDay));
@@ -150,11 +159,13 @@ export default function EventCalendarView({
                         onDayClick={handleDayClickInternal}
                         month={month}
                         onMonthChange={onMonthChange}
-                        onYearChange={handleYearNavigation}
                         selected={selectedDay}
                         onSelect={handleDayClickInternal}
-                        onCaptionClick={() => setCalendarView(prev => prev === 'year' ? 'month' : 'year')}
                         onMonthSelect={handleMonthSelect}
+                        onYearChange={(dir) => handleNavigation(dir)}
+                        onPrevClick={() => handleNavigation('prev')}
+                        onNextClick={() => handleNavigation('next')}
+                        onCaptionClick={() => setCalendarView(prev => prev === 'year' ? 'month' : 'year')}
                         events={eventsForSelectedDay}
                         className="p-0 [&>div]:w-full"
                         classNames={{
