@@ -80,7 +80,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
                 id: doc.id,
                 title: data.title,
                 messages: data.messages || [],
-                createdAt: data.createdAt.toDate(),
+                createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
             });
         });
         setChatSessions(history);
