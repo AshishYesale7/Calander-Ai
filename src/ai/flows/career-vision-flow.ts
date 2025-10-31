@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { GenerateCareerVisionOutputSchema, type GenerateCareerVisionOutput } from '@/types';
 
 const GenerateCareerVisionPayloadSchema = z.object({
   aspirations: z.string().describe("A description of the user's passions, interests, and what they want to solve or achieve."),
@@ -21,38 +22,6 @@ const GenerateCareerVisionInputSchema = GenerateCareerVisionPayloadSchema.extend
   apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
 });
 export type GenerateCareerVisionInput = z.infer<typeof GenerateCareerVisionInputSchema>;
-
-
-const GenerateCareerVisionOutputSchema = z.object({
-  visionStatement: z.string().describe("A compelling, single-paragraph career vision statement based on the user's input."),
-  keyStrengths: z.array(z.string()).describe("A list of 3-5 key strengths identified from the user's input."),
-  developmentAreas: z.object({
-    technical: z.array(z.string()).describe("A list of 3-5 key technical skills to develop (e.g., programming languages, frameworks, tools)."),
-    soft: z.array(z.string()).describe("A list of 2-4 key soft skills to develop (e.g., communication, teamwork, leadership)."),
-    hard: z.array(z.string()).describe("A list of 2-3 key hard skills (non-technical but tangible skills) to develop (e.g., project management, data analysis, public speaking).")
-  }).describe("A breakdown of skills to develop, categorized into technical, soft, and hard skills."),
-  roadmap: z.array(z.object({
-    step: z.number().describe("The step number in the roadmap."),
-    title: z.string().describe("A concise title for this step."),
-    description: z.string().describe("A one-sentence description of what to do in this step."),
-    duration: z.string().describe("An estimated duration for this step (e.g., '1-3 months', '6 weeks').")
-  })).describe("A 3-5 step actionable roadmap to start working towards the vision."),
-  suggestedResources: z.array(z.object({
-    title: z.string().describe("The name of the resource."),
-    url: z.string().describe("A direct URL to the resource."),
-    description: z.string().describe("A brief, one-sentence explanation of why this resource is useful for the user's specific goals."),
-    category: z.enum(['book', 'course', 'tool', 'article', 'community', 'website', 'other']).describe("The category of the resource.")
-  })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools. Ensure the links are specific and deep where possible."),
-  diagramSuggestion: z.object({
-      type: z.enum(['Flowchart', 'Mind Map', 'Timeline', 'Bar Chart']).describe("The type of diagram suggested. You must select 'Bar Chart'."),
-      description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path."),
-      data: z.array(z.object({
-          name: z.string().describe("The name of the data point, corresponding to a roadmap step title."),
-          durationMonths: z.number().describe("The average estimated duration for the step, converted to months. E.g., '1-3 months' is 2, '6 weeks' is 1.5, '1 year' is 12."),
-      })).describe("An array of data objects formatted for a bar chart. Each object represents a step in the roadmap."),
-  }).describe("A suggestion for a diagram and its data to visualize the user's career plan.")
-});
-export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutputSchema>;
 
 
 const careerVisionPrompt = ai.definePrompt({

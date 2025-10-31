@@ -2,8 +2,6 @@
 'use server';
 
 import type { LucideIcon } from 'lucide-react';
-import type { GenerateCareerVisionOutput } from '@/ai/flows/career-vision-flow';
-import type { GenerateAvatarOutput } from '@/components/profile/CustomizeAvatarModal';
 import { z } from 'genkit';
 
 export interface SocialLinks {
@@ -206,6 +204,38 @@ export interface UserSubscription {
   razorpaySubscriptionId?: string;
 }
 
+export const GenerateCareerVisionOutputSchema = z.object({
+  visionStatement: z.string().describe("A compelling, single-paragraph career vision statement based on the user's input."),
+  keyStrengths: z.array(z.string()).describe("A list of 3-5 key strengths identified from the user's input."),
+  developmentAreas: z.object({
+    technical: z.array(z.string()).describe("A list of 3-5 key technical skills to develop (e.g., programming languages, frameworks, tools)."),
+    soft: z.array(z.string()).describe("A list of 2-4 key soft skills to develop (e.g., communication, teamwork, leadership)."),
+    hard: z.array(z.string()).describe("A list of 2-3 key hard skills (non-technical but tangible skills) to develop (e.g., project management, data analysis, public speaking).")
+  }).describe("A breakdown of skills to develop, categorized into technical, soft, and hard skills."),
+  roadmap: z.array(z.object({
+    step: z.number().describe("The step number in the roadmap."),
+    title: z.string().describe("A concise title for this step."),
+    description: z.string().describe("A one-sentence description of what to do in this step."),
+    duration: z.string().describe("An estimated duration for this step (e.g., '1-3 months', '6 weeks').")
+  })).describe("A 3-5 step actionable roadmap to start working towards the vision."),
+  suggestedResources: z.array(z.object({
+    title: z.string().describe("The name of the resource."),
+    url: z.string().describe("A direct URL to the resource."),
+    description: z.string().describe("A brief, one-sentence explanation of why this resource is useful for the user's specific goals."),
+    category: z.enum(['book', 'course', 'tool', 'article', 'community', 'website', 'other']).describe("The category of the resource.")
+  })).describe("A list of 2-4 highly relevant online resources, like courses, communities, or tools. Ensure the links are specific and deep where possible."),
+  diagramSuggestion: z.object({
+      type: z.enum(['Flowchart', 'Mind Map', 'Timeline', 'Bar Chart']).describe("The type of diagram suggested. You must select 'Bar Chart'."),
+      description: z.string().describe("A brief description of what the diagram should visualize to help the user understand their career path."),
+      data: z.array(z.object({
+          name: z.string().describe("The name of the data point, corresponding to a roadmap step title."),
+          durationMonths: z.number().describe("The average estimated duration for the step, converted to months. E.g., '1-3 months' is 2, '6 weeks' is 1.5, '1 year' is 12."),
+      })).describe("An array of data objects formatted for a bar chart. Each object represents a step in the roadmap."),
+  }).describe("A suggestion for a diagram and its data to visualize the user's career plan.")
+});
+export type GenerateCareerVisionOutput = z.infer<typeof GenerateCareerVisionOutputSchema>;
+
+
 export interface CareerVisionHistoryItem {
   id: string;
   prompt: string;
@@ -389,4 +419,48 @@ export const ConversationalAgentOutputSchema = z.object({
 });
 export type ConversationalAgentOutput = z.infer<typeof ConversationalAgentOutputSchema>;
 
+// Conversational Event Flow Types
+export const EventSchemaForConversation = z.object({
+  title: z.string().describe("The concise title for the event."),
+  date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
+  endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
+  notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
+  isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
+  location: z.string().optional().describe("The location of the event, if mentioned."),
+  reminder: z.object({
+    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
+  }).optional().describe("Reminder settings for the event.")
+});
+
+export const ConversationalEventInputSchema = z.object({
+  chatHistory: z.array(z.object({
+    role: z.enum(['user', 'model', 'tool']),
+    content: z.string(),
+  })).describe("The history of the conversation so far."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
+  timezone: z.string().optional().describe("The IANA timezone name for the user, e.g., 'America/New_York'."),
+});
+export type ConversationalEventInput = z.infer<typeof ConversationalEventInputSchema>;
+
+
+export const ConversationalEventOutputSchema = z.object({
+    response: z.string().optional().describe("The AI's response to the user. This is used for asking clarifying questions or confirming the event creation."),
+    event: EventSchemaForConversation.optional().describe("The structured calendar event object. This should only be provided when all necessary information has been gathered."),
+});
+export type ConversationalEventOutput = z.infer<typeof ConversationalEventOutputSchema>;
+
+export const CreateEventOutputSchema = z.object({
+  title: z.string().describe("The concise title for the event."),
+  date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
+  endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
+  notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
+  isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
+  location: z.string().optional().describe("The location of the event, if mentioned."),
+  reminder: z.object({
+    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
+  }).optional().describe("Reminder settings for the event.")
+});
+export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
     
+
+```

@@ -10,6 +10,8 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { CreateEventOutputSchema, type CreateEventOutput } from '@/types';
+
 
 // Input schema for the component call
 const CreateEventInputSchema = z.object({
@@ -19,19 +21,6 @@ const CreateEventInputSchema = z.object({
 });
 export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 
-// Output schema the AI must generate
-const CreateEventOutputSchema = z.object({
-  title: z.string().describe("The concise title for the event."),
-  date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
-  endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
-  notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
-  isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
-  location: z.string().optional().describe("The location of the event, if mentioned."),
-  reminder: z.object({
-    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
-  }).optional().describe("Reminder settings for the event.")
-});
-export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
 const createEventPrompt = ai.definePrompt({
     name: 'createEventPrompt',

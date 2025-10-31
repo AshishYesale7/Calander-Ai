@@ -6,42 +6,14 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { ChatMessage } from '@/types';
-import type { CreateEventOutput } from './create-event-flow';
-
-// We define the schema for the event object locally now, as it cannot be imported from a 'use server' file.
-const EventSchemaForConversation = z.object({
-  title: z.string().describe("The concise title for the event."),
-  date: z.string().datetime().describe("The start date and time of the event in ISO 8601 format."),
-  endDate: z.string().datetime().optional().describe("The end date and time of the event in ISO 8601 format. If not specified by the user, infer a reasonable duration (e.g., 1 hour for meetings)."),
-  notes: z.string().optional().describe("A brief summary or notes for the event, extracted from the user's prompt."),
-  isAllDay: z.boolean().default(false).describe("Set to true if the user specifies an all-day event or provides no specific time."),
-  location: z.string().optional().describe("The location of the event, if mentioned."),
-  reminder: z.object({
-    enabled: z.boolean().describe("Set to true if the user's prompt implies a reminder (e.g., 'remind me', 'don't forget'). Otherwise, false."),
-  }).optional().describe("Reminder settings for the event.")
-});
-
-
-// Input schema for the conversational flow
-const ConversationalEventInputSchema = z.object({
-  chatHistory: z.array(z.object({
-    role: z.enum(['user', 'model', 'tool']),
-    content: z.string(),
-  })).describe("The history of the conversation so far."),
-  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
-  timezone: z.string().optional().describe("The IANA timezone name for the user, e.g., 'America/New_York'."),
-});
-export type ConversationalEventInput = z.infer<typeof ConversationalEventInputSchema>;
-
-
-// Output schema for the conversational flow
-// The AI will either ask a clarifying question OR provide the final event data.
-const ConversationalEventOutputSchema = z.object({
-    response: z.string().optional().describe("The AI's response to the user. This is used for asking clarifying questions or confirming the event creation."),
-    event: EventSchemaForConversation.optional().describe("The structured calendar event object. This should only be provided when all necessary information has been gathered."),
-});
-export type ConversationalEventOutput = z.infer<typeof ConversationalEventOutputSchema>;
+import { 
+    EventSchemaForConversation,
+    ConversationalEventInputSchema,
+    type ConversationalEventInput,
+    ConversationalEventOutputSchema,
+    type ConversationalEventOutput,
+    type CreateEventOutput
+} from '@/types';
 
 const conversationalEventPrompt = ai.definePrompt({
     name: 'conversationalEventPrompt',
@@ -88,7 +60,7 @@ const createConversationalEventFlow = ai.defineFlow({
     inputSchema: ConversationalEventInputSchema,
     outputSchema: ConversationalEventOutputSchema,
 }, async (input) => {
-    const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    const historyString = input.chatHistory.map(msg => `${'role' in msg ? msg.role : 'user'}: ${'content' in msg ? msg.content : ''}`).join('\n');
     
     try {
         const { output } = await conversationalEventPrompt({

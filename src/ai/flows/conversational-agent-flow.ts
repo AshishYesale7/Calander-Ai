@@ -41,7 +41,7 @@ const conversationalAgentFlow = ai.defineFlow(
   },
   async (input) => {
     // Format the history into a simple string for the prompt
-    const historyString = input.chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    const historyString = input.chatHistory.map(msg => `${'role' in msg ? msg.role : 'user'}: ${'content' in msg ? msg.content : ''}`).join('\n');
     
     // Call the prompt and get the AI's response
     const llmResponse = await conversationalAgentPrompt({
@@ -57,3 +57,4 @@ const conversationalAgentFlow = ai.defineFlow(
 export async function conversationalAgent(input: ConversationalAgentInput): Promise<ConversationalAgentOutput> {
   return conversationalAgentFlow(input);
 }
+
