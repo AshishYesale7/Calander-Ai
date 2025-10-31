@@ -45,7 +45,12 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string, p
       const todayStart = Math.floor(startOfDay(new Date()).getTime() / 1000);
       const todayEnd = Math.floor(endOfDay(new Date()).getTime() / 1000);
       queryString = `in:inbox after:${todayStart} before:${todayEnd}`;
-  } else {
+  } else if (labelId) {
+    // If a labelId is provided (and not a date query), we will use that instead of a query string
+    // to filter by label.
+  }
+  else {
+      // Default query for "Important Emails" widget
       const twoWeeksAgo = Math.floor(subDays(new Date(), 14).getTime() / 1000);
       queryString = `(is:important OR is:starred) after:${twoWeeksAgo}`;
   }
@@ -58,16 +63,18 @@ export async function getGoogleGmailMessages(userId: string, labelId?: string, p
     pageToken?: string;
   } = {
     userId: 'me',
-    maxResults: 100, // Fetch up to 100 emails
+    maxResults: dateQuery === 'today' ? 20 : 10, // Fetch more for today's briefing
   };
   
   if (pageToken) {
     listOptions.pageToken = pageToken;
   }
   
-  if (labelId && !dateQuery) { // Do not use labelIds if it's a date query for simplicity
+  if (labelId && !dateQuery) {
     listOptions.labelIds = [labelId];
-  } else {
+  }
+  
+  if (queryString) {
     listOptions.q = queryString;
   }
   

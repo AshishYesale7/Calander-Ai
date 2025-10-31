@@ -1,3 +1,4 @@
+
 'use server';
 
 import { config } from 'dotenv';
@@ -21,4 +22,6 @@ import '@/ai/flows/generate-upcoming-insights-flow.ts';
 import '@/ai/flows/generate-greeting-flow.ts';
 import '@/ai/flows/webapp-qa-flow.ts';
 import '@/ai/flows/conversational-agent-flow.ts';
-import '@/ai/flows/text-to-speech-flow.ts'; // Import the new flow
+import '@/ai/flows/text-to-speech-flow.ts';
+import '@/ai/flows/generate-daily-briefing-flow.ts'; // Import the new flow
+

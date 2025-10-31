@@ -461,4 +461,8 @@ export const CreateEventOutputSchema = z.object({
 });
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
-    
+// New Daily Briefing Flow Types
+export const GenerateDailyBriefingOutputSchema = z.object({
+  briefing: z.string().describe("A concise, single-paragraph summary of the user's day, highlighting key events and emails."),
+});
+export type GenerateDailyBriefingOutput = z.infer<typeof GenerateDailyBriefingOutputSchema>;
