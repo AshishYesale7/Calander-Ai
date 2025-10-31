@@ -107,14 +107,14 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
     }
   };
   
-  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) {
-      return;
-    }
-    if (isRoutineSetupNeeded) {
-        e.preventDefault();
-        setIsRoutineModalOpen(true);
+  const handleAccordionValueChange = (value: string) => {
+    const isOpen = !!value;
+    if (onAccordionToggle) {
+        setTimeout(() => {
+            if (contentRef.current) {
+                onAccordionToggle(isOpen, contentRef.current.scrollHeight);
+            }
+        }, 0);
     }
   };
 
@@ -209,9 +209,9 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
       <Card 
         className="w-full h-full frosted-glass shadow-lg flex flex-col"
       >
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" onValueChange={handleAccordionValueChange}>
           <AccordionItem value="item-1" className="border-b-0">
-            <div className="p-4 md:p-6" onClickCapture={handleHeaderClick}>
+            <div className="p-4 md:p-6" onClickCapture={(e) => { if(isRoutineSetupNeeded){e.preventDefault(); setIsRoutineModalOpen(true);}}}>
               <AccordionTrigger className="w-full flex items-center justify-between gap-2 hover:no-underline p-0">
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
@@ -281,7 +281,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
               </AccordionTrigger>
             </div>
             <AccordionContent>
-                <div className="px-6 pb-6 pt-0">
+                <div ref={contentRef} className="px-6 pb-6 pt-0">
                     {renderContent()}
                 </div>
             </AccordionContent>

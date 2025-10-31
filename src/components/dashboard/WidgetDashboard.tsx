@@ -201,36 +201,28 @@ export default function WidgetDashboard({
   }, [finalLayouts, getLayoutWithDynamicMins]);
   
   const handleAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    setCurrentLayouts(prevLayouts => {
-      const newLayouts = { ...prevLayouts };
-      const bp = currentBreakpoint as keyof Layouts;
-      
-      if (!newLayouts[bp]) return prevLayouts;
+    const layouts = currentLayouts;
+    const currentLayoutForBreakpoint = layouts[currentBreakpoint as keyof Layouts];
+    if (!currentLayoutForBreakpoint) return;
 
-      newLayouts[bp] = newLayouts[bp]!.map(item => {
+    const newLayout = currentLayoutForBreakpoint.map(item => {
         if (item.i === 'plan') {
-          if (isOpen) {
-            // Calculate new height based on content
-            const newHeightInUnits = Math.ceil((contentHeight + MARGIN[1]) / (ROW_HEIGHT + MARGIN[1]));
-            return { ...item, h: Math.max(item.minH || 1, newHeightInUnits) };
-          } else {
-            // Revert to a smaller height, respecting minH
-            const defaultLg = getDefaultLayouts().lg;
-            const defaultItem = defaultLg?.find(i => i.i === 'plan');
-            return { ...item, h: defaultItem?.h || item.minH || 1 };
-          }
+            if (isOpen) {
+                const headerHeight = 80;
+                const requiredPixels = contentHeight + headerHeight;
+                const requiredRows = Math.ceil(requiredPixels / (ROW_HEIGHT + MARGIN[1]));
+                return { ...item, h: Math.max(2, requiredRows), minH: 2 };
+            } else {
+                return { ...item, h: 1, minH: 1 };
+            }
         }
         return item;
-      });
-      
-      // Save the new layout state immediately
-      if (user) {
-        saveCurrentLayout(newLayouts);
-      }
-      
-      return newLayouts;
     });
-  }, [currentBreakpoint, getDefaultLayouts, saveCurrentLayout, user]);
+
+    const newLayouts = { ...layouts, [currentBreakpoint]: newLayout };
+    setCurrentLayouts(newLayouts);
+    saveCurrentLayout(newLayouts);
+  }, [currentBreakpoint, currentLayouts, saveCurrentLayout]);
 
 
   if (!isLayoutLoaded) {

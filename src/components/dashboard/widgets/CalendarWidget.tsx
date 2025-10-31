@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useRef } from 'react';
 import EventCalendarView from '@/components/timeline/EventCalendarView';
@@ -18,9 +19,10 @@ interface CalendarWidgetProps {
   onDayClick: (date: Date) => void;
   onToggleTrash: () => void;
   onSyncComplete: () => void;
+  onAddEvent: () => void;
 }
 
-export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComplete }: CalendarWidgetProps) {
+export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComplete, onAddEvent }: CalendarWidgetProps) {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -65,7 +67,7 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
           date: newEvent.date.toISOString(),
           endDate: newEvent.endDate ? newEvent.endDate.toISOString() : null,
         };
-        await saveTimelineEvent(user.uid, payload, { syncToGoogle: true, timezone });
+        await saveTimelineEvent(user.uid, payload, { syncToGoogle: true, timezone, syncToMicrosoft: false });
       }
       onSyncComplete();
       toast({ title: "Sync Complete", description: `${result.insights.length} items synced.` });
@@ -94,7 +96,7 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
                 </TabsList>
               </div>
               <TabsContent value="calendar" className="mt-0 h-full flex-1">
-                  <EventCalendarView events={[]} month={new Date()} onMonthChange={() => {}} onDayClick={onDayClick} onSync={handleSyncCalendarData} isSyncing={isSyncing} onToggleTrash={onToggleTrash} />
+                  <EventCalendarView events={[]} month={new Date()} onMonthChange={() => {}} onDayClick={onDayClick} onSync={handleSyncCalendarData} isSyncing={isSyncing} onToggleTrash={onToggleTrash} onAddEvent={onAddEvent} />
               </TabsContent>
               <TabsContent value="list" className="mt-0 h-full flex-1">
                   <TimelineListView events={[]} onDeleteEvent={() => {}} onEditEvent={() => {}} />

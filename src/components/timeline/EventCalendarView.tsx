@@ -4,7 +4,7 @@
 import type { TimelineEvent } from '@/types';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Bot, Trash2, RefreshCw } from 'lucide-react';
+import { CalendarDays, Bot, Trash2, RefreshCw, PlusCircle } from 'lucide-react';
 import { format, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar";
@@ -19,6 +19,7 @@ interface EventCalendarViewProps {
   onSync: () => void;
   isSyncing: boolean;
   onToggleTrash: () => void;
+  onAddEvent: () => void;
 }
 
 export default function EventCalendarView({
@@ -29,6 +30,7 @@ export default function EventCalendarView({
   onSync,
   isSyncing,
   onToggleTrash,
+  onAddEvent,
 }: EventCalendarViewProps) {
   const processedEvents = useMemo(() => {
     return allEventsFromProps
@@ -70,6 +72,10 @@ export default function EventCalendarView({
               Event Calendar
             </CardTitle>
             <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={onAddEvent} className="h-8 w-8">
+                  <PlusCircle className="h-5 w-5" />
+                  <span className="sr-only">Add New Event</span>
+              </Button>
               <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
                   <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
                   <span className="sr-only">Sync with Google Calendar</span>
