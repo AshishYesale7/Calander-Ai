@@ -1,7 +1,8 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
-import { Paperclip, ChevronDown, Sparkles, X, Minus, Expand, Shrink, ArrowUp, Image as ImageIcon, Lightbulb, Telescope, BookOpen, MoreHorizontal, Globe, Wand2 } from 'lucide-react';
+import { Paperclip, ChevronDown, Sparkles, X, Minus, Expand, Shrink, ArrowUp, ImageIcon, Lightbulb, Telescope, BookOpen, MoreHorizontal, Globe, Wand2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Input } from '../ui/input';
@@ -15,6 +16,10 @@ import { conversationalAgent, type ConversationalAgentOutput } from '@/ai/flows/
 import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
+import { useAuth } from '@/context/AuthContext';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 import '@/app/styles/desktop-command-bar.css';
 
 export interface ChatSession {
@@ -56,18 +61,42 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
   const { isChatSidebarOpen, chattingWith, chatSidebarWidth } = useChat();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const [selectedAction, setSelectedAction] = useState('Auto');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAtDefaultPosition, setIsAtDefaultPosition] = useState(true);
 
+  // Effect to load chat history from Firestore
   useEffect(() => {
-    if (chatSessions.length === 0) {
-      const newId = shortid.generate();
-      setChatSessions([{ id: newId, title: 'New Chat', messages: [], createdAt: new Date() }]);
-      setActiveChatId(newId);
-    }
-  }, [chatSessions]);
+    if (!user) return;
+    const q = query(collection(db, `users/${user.uid}/chats`), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const history: ChatSession[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            history.push({
+                id: doc.id,
+                title: data.title,
+                messages: data.messages || [],
+                createdAt: data.createdAt.toDate(),
+            });
+        });
+        setChatSessions(history);
+        if (history.length > 0 && !activeChatId) {
+            setActiveChatId(history[0].id);
+        } else if (history.length === 0) {
+            handleNewChat(false); // Create initial chat without switching
+        }
+    }, (error) => {
+        console.error("Error fetching chat history: ", error);
+        toast({ title: "Error", description: "Could not load chat history.", variant: "destructive" });
+    });
+
+    return () => unsubscribe();
+  }, [user, activeChatId]);
+
 
   const activeChat = useMemo(() => {
     return chatSessions.find(session => session.id === activeChatId);
@@ -83,7 +112,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const animationControls = useAnimation();
   const isInitialized = useRef(false);
 
-  // This effect handles the opening, closing, and full-screen animations.
   useEffect(() => {
     if (!isInitialized.current && typeof window !== 'undefined') {
         const initialX = (window.innerWidth - size.closed.width) / 2;
@@ -122,7 +150,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
       } else {
-        // Corrected centering logic: The available width is window's width minus the chat UI's width.
         const availableWidth = window.innerWidth - chatSidebarWidth;
         targetX = (availableWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
@@ -150,7 +177,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
          }
       }
       
-      // Corrected centering logic for closed state as well
       const availableWidth = window.innerWidth - chatSidebarWidth;
       const closedX = (availableWidth - size.closed.width) / 2;
       
@@ -176,7 +202,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     }
   }, [isOpen, isFullScreen, size.open, size.closed, animationControls, scrollDirection, chatSidebarWidth]);
 
-  // This effect cycles through a predefined set of color pairs for the border glow.
   useEffect(() => {
     let currentIndex = 0;
     const colorPairs = [
@@ -198,7 +223,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     return () => clearInterval(colorInterval);
   }, []);
 
-  // Effect for keyboard shortcuts (Cmd/Ctrl + K and Escape)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
@@ -232,75 +256,73 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   }, [selectedModel]);
 
   const handleAIResponse = async (history: ChatMessage[], prompt: string) => {
+      if (!user) {
+        toast({ title: "Error", description: "You must be logged in to chat.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
-          const result: ConversationalAgentOutput = await conversationalAgent({
-              chatHistory: history,
+          const result = await conversationalAgent({
+              chatHistory: history.map(m => ({ role: m.role, content: m.content })),
               prompt: prompt,
           });
-          setChatSessions(prevSessions =>
-            prevSessions.map(session =>
-              session.id === activeChatId
-                ? { ...session, messages: [...session.messages, { role: 'model', content: result.response }] }
-                : session
-            )
-          );
+          const newMessages = [...history, { role: 'user', content: prompt }, { role: 'model', content: result.response }];
+          await setDoc(doc(db, `users/${user.uid}/chats`, activeChatId!), { messages: newMessages }, { merge: true });
       } catch (e) {
           console.error("AI Error:", e);
-          setChatSessions(prevSessions =>
-            prevSessions.map(session =>
-              session.id === activeChatId
-                ? { ...session, messages: [...session.messages, { role: 'model', content: "Sorry, I encountered an error." }] }
-                : session
-            )
-          );
+          const errorMessages = [...history, { role: 'user', content: prompt }, { role: 'model', content: "Sorry, I encountered an error." }];
+          await setDoc(doc(db, `users/${user.uid}/chats`, activeChatId!), { messages: errorMessages }, { merge: true });
       } finally {
           setIsLoading(false);
       }
   };
 
-  useEffect(() => {
-    if (!activeChat || isLoading) return;
-
-    const lastMessage = activeChat.messages[activeChat.messages.length - 1];
-    if (lastMessage && lastMessage.role === 'user') {
-      const history = activeChat.messages.slice(0, -1);
-      handleAIResponse(history, lastMessage.content);
-    }
-  }, [activeChat, isLoading]);
-  
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(async (switchActive: boolean = true) => {
+    if (!user) return;
     const newId = shortid.generate();
-    const newSession: ChatSession = { id: newId, title: 'New Chat', messages: [], createdAt: new Date() };
-    setChatSessions(prev => [...prev, newSession]);
-    setActiveChatId(newId);
-  };
-
-  const handleSend = () => {
+    const newSessionData = {
+        title: 'New Chat',
+        messages: [],
+        createdAt: serverTimestamp(),
+    };
+    await setDoc(doc(db, `users/${user.uid}/chats`, newId), newSessionData);
+    if (switchActive) {
+      setActiveChatId(newId);
+    }
+  }, [user]);
+  
+  const handleSend = async () => {
     const textToSend = input || search;
-    if ((!textToSend.trim() && !imagePreview) || isLoading || !activeChatId) return;
+    if ((!textToSend.trim() && !imagePreview) || isLoading || !activeChatId || !user || !activeChat) return;
 
     let content = textToSend;
     if (imagePreview) {
       content = `[Image Attached]\n${textToSend}`;
     }
 
-    const newUserMessage: ChatMessage = { role: 'user', content: content };
+    const newUserMessage: ChatMessage = { role: 'user', content };
     
-    setChatSessions(prevSessions =>
-      prevSessions.map(session => {
-        if (session.id === activeChatId) {
-          const newMessages = [...session.messages, newUserMessage];
-          const newTitle = session.messages.length === 0 ? textToSend.substring(0, 30) : session.title;
-          return { ...session, messages: newMessages, title: newTitle };
-        }
-        return session;
-      })
-    );
+    const currentMessages = activeChat.messages || [];
+    const newMessages = [...currentMessages, newUserMessage];
+    const newTitle = currentMessages.length === 0 ? textToSend.substring(0, 30) : activeChat.title;
+    
+    // Optimistic UI update
+    setChatSessions(prev => prev.map(s => s.id === activeChatId ? {...s, messages: newMessages, title: newTitle} : s));
 
     setInput('');
     setSearch('');
     setImagePreview(null);
+    setIsLoading(true);
+
+    try {
+        await handleAIResponse(currentMessages, content);
+    } catch(e) {
+        // Error is handled inside handleAIResponse, which will update the state
+        // Revert optimistic update is tricky with streams, but for now, we'll rely on the error message being added
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -347,7 +369,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
       animate={animationControls}
       onDragStart={() => {
         setIsAtDefaultPosition(false);
-        lastOpenPosition.current = null; // Clear last known default position
+        lastOpenPosition.current = null;
         if (document.body) document.body.style.userSelect = 'none';
       }}
       onDragEnd={() => {

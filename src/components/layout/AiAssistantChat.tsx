@@ -59,12 +59,14 @@ const LeftSidebar = ({
     chatSessions, 
     activeChatId, 
     onSelectChat,
+    onNewChat,
     activeView,
     setActiveView
 }: { 
     chatSessions: ChatSession[], 
     activeChatId: string, 
     onSelectChat: (id: string) => void,
+    onNewChat: () => void,
     activeView: 'chat' | 'files' | 'terminal' | 'search',
     setActiveView: (view: 'chat' | 'files' | 'terminal' | 'search') => void,
 }) => {
@@ -107,20 +109,25 @@ const LeftSidebar = ({
       ))}
 
       {isExpanded && activeView === 'chat' && (
-        <div className="flex-1 mt-2 overflow-y-auto px-2">
+        <div className="flex-1 mt-2 overflow-y-auto px-2 flex flex-col">
             <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
-            {chatSessions.map(session => (
-                <button 
-                    key={session.id}
-                    onClick={() => onSelectChat(session.id)}
-                    className={cn(
-                        "w-full text-left text-sm p-2 rounded-md truncate",
-                        session.id === activeChatId ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
-                    )}
-                >
-                    {session.title}
-                </button>
-            ))}
+            <div className="flex-1 overflow-y-auto">
+                {chatSessions.map(session => (
+                    <button 
+                        key={session.id}
+                        onClick={() => onSelectChat(session.id)}
+                        className={cn(
+                            "w-full text-left text-sm p-2 rounded-md truncate",
+                            session.id === activeChatId ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
+                        )}
+                    >
+                        {session.title}
+                    </button>
+                ))}
+            </div>
+            <Button variant="outline" className="mt-2 bg-gray-700/50 border-white/10 h-7 text-xs" onClick={onNewChat}>
+              <Plus className="mr-1 h-3 w-3" /> New Chat
+            </Button>
         </div>
       )}
     </div>
@@ -131,12 +138,10 @@ const ChatHeader = ({
     dragControls, 
     selectedModel, 
     setSelectedModel,
-    onNewChat,
 }: { 
     dragControls: any, 
     selectedModel: string, 
     setSelectedModel: (model: string) => void,
-    onNewChat: () => void,
 }) => {
     const aiModels = ['Gemini 2.5 Pro', 'Gemini 2.0 Flash', 'Gemini 2.0 Nano'];
     return (
@@ -175,9 +180,6 @@ const ChatHeader = ({
                 </DropdownMenu>
             </div>
              <div className="flex items-center gap-1">
-                <Button variant="outline" className="bg-gray-700/50 border-white/10 h-7 text-xs" onClick={onNewChat}>
-                  <Plus className="mr-1 h-3 w-3" /> New Chat
-                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400"><Settings size={16}/></Button>
             </div>
         </div>
@@ -199,7 +201,10 @@ const ChatBody = ({ chatHistory, isLoading }: { chatHistory: ChatMessage[], isLo
 
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+              viewport.scrollTop = viewport.scrollHeight;
+            }
         }
     }, [chatHistory, isLoading]);
 
@@ -289,7 +294,6 @@ export default function AiAssistantChat({
             dragControls={chatHeaderDragControls} 
             selectedModel={selectedModel} 
             setSelectedModel={setSelectedModel}
-            onNewChat={onNewChat}
         />
 
         <div className="flex-1 flex min-h-0">
@@ -297,6 +301,7 @@ export default function AiAssistantChat({
               chatSessions={chatSessions}
               activeChatId={activeChatId}
               onSelectChat={onSelectChat}
+              onNewChat={onNewChat}
               activeView={activeView}
               setActiveView={setActiveView}
             />
