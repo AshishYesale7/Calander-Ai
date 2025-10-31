@@ -56,7 +56,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
-  const { isChatSidebarOpen, chattingWith } = useChat();
+  const { isChatSidebarOpen, chattingWith, chatSidebarWidth } = useChat();
 
   const [selectedAction, setSelectedAction] = useState('Auto');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -123,7 +123,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
       } else {
-        targetX = (window.innerWidth - size.open.width) / 2;
+        targetX = (window.innerWidth - chatSidebarWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
       }
 
@@ -142,39 +142,20 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         transition: { type: 'spring', stiffness: 400, damping: 30 }
       });
     } else {
-      // If the bar is currently open and not in full-screen, save its position before closing.
       if (containerRef.current && !isFullScreen) {
          const { x, y } = containerRef.current.getBoundingClientRect();
-         // Only update if it's a significant move, not just the initial render.
          if (x !== 0 || y !== 0) {
            lastOpenPosition.current = { x, y };
          }
       }
       
-      const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
-      
-      // If the sidebar is closed and the bar was manually moved, don't reset its default position status.
-      // Only reset to default position if the sidebar *opens*, forcing a reposition.
-      if (shouldShiftLeft) {
-          setIsAtDefaultPosition(false);
-      } else if (!isAtDefaultPosition && !lastOpenPosition.current) {
-          // It was not at default, but now chat is closed, AND it wasn't manually moved.
-          // This case is tricky. We'll default to resetting it.
-          setIsAtDefaultPosition(true);
-      }
-      
-      const closedX = isAtDefaultPosition 
-        ? (window.innerWidth - size.closed.width) / 2
-        : (lastOpenPosition.current ? lastOpenPosition.current.x : 80);
+      const closedX = (window.innerWidth - chatSidebarWidth - size.closed.width) / 2;
       
       let closedY;
-      // Auto-hide only when at default position and scrolling down
-      if (scrollDirection === 'down' && isAtDefaultPosition) {
-        closedY = window.innerHeight; // Animate it off-screen
+      if (scrollDirection === 'down') {
+        closedY = window.innerHeight;
       } else {
-        closedY = isAtDefaultPosition 
-            ? window.innerHeight - size.closed.height - 24
-            : (lastOpenPosition.current ? lastOpenPosition.current.y : window.innerHeight - size.closed.height - 24);
+        closedY = window.innerHeight - size.closed.height - 24;
       }
 
       animationControls.start({
@@ -186,12 +167,11 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         transition: { type: 'spring', stiffness: 400, damping: 25 }
       });
 
-      // Clear the last position only when minimizing from fullscreen
       if (lastOpenPosition.current && isFullScreen) {
           lastOpenPosition.current = null;
       }
     }
-  }, [isOpen, isFullScreen, isChatSidebarOpen, chattingWith, size.open, size.closed, animationControls, scrollDirection, isAtDefaultPosition]);
+  }, [isOpen, isFullScreen, size.open, size.closed, animationControls, scrollDirection, chatSidebarWidth]);
 
   // This effect cycles through a predefined set of color pairs for the border glow.
   useEffect(() => {
