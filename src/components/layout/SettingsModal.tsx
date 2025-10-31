@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -10,17 +11,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText, Globe, UserX, UserCheck, PhoneAuthProvider, Brain } from 'lucide-react';
+import { KeyRound, Unplug, CheckCircle, Smartphone, Bell, User, Link2, FileText, Globe, UserX, UserCheck, PhoneAuthProvider, Brain } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { auth, messaging } from '@/lib/firebase';
 import { GoogleAuthProvider, reauthenticateWithPopup, signInWithPhoneNumber, type ConfirmationResult, RecaptchaVerifier, OAuthProvider } from 'firebase/auth';
-import { getToken } from 'firebase/messaging';
-import { saveUserFCMToken } from '@/services/userService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
 import DateTimeSettings from './DateTimeSettings';
@@ -29,6 +26,11 @@ import { cn } from '@/lib/utils';
 import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import { useApiKey } from '@/hooks/use-api-key';
+import { saveUserFCMToken } from '@/services/userService';
+import { getToken } from 'firebase/messaging';
 
 
 const IntegrationRow = ({
@@ -36,6 +38,7 @@ const IntegrationRow = ({
   name,
   description,
   isConnected,
+  isComingSoon,
   accounts,
   onConnect,
   onDisconnect,
@@ -44,6 +47,7 @@ const IntegrationRow = ({
   name: string;
   description: string;
   isConnected: boolean | null;
+  isComingSoon?: boolean;
   accounts: { email: string | null; uid: string }[];
   onConnect: () => void;
   onDisconnect: (email: string) => void;
@@ -59,42 +63,48 @@ const IntegrationRow = ({
             <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card flex-shrink-0">{icon}</div>
         </div>
         
-        {isConnected === null ? (
-          <div className="flex justify-center py-4"><LoadingSpinner size="sm"/></div>
+        {isComingSoon ? (
+            <Badge variant="outline">Coming Soon</Badge>
+        ) : isConnected === null ? (
+            <div className="flex justify-center py-4"><LoadingSpinner size="sm"/></div>
         ) : accounts.length > 0 ? (
-             <div className="space-y-3">
-                {accounts.map(account => (
-                    <div key={account.uid} className="p-3 bg-background/50 rounded-md border space-y-3">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <UserCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                <span className="text-sm font-medium truncate" title={account.email || 'Unknown Email'}>{account.email || 'Connected Account'}</span>
-                            </div>
-                            <Button onClick={() => onDisconnect(account.email!)} variant="destructive" size="sm" className="h-7 text-xs w-full sm:w-auto">
-                                <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
-                            </Button>
-                        </div>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
-                            <div className="flex items-center space-x-2">
-                                <Switch id={`oneway-${account.uid}`} defaultChecked />
-                                <Label htmlFor={`oneway-${account.uid}`} className="text-xs">One-way sync</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Switch id={`twoway-${account.uid}`} />
-                                <Label htmlFor={`twoway-${account.uid}`} className="text-xs">Two-way sync</Label>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-             </div>
+            <ScrollArea className="max-h-40 pr-3">
+              <div className="space-y-3">
+                  {accounts.map(account => (
+                      <div key={account.uid} className="p-3 bg-background/50 rounded-md border space-y-3">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                  <UserCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                  <span className="text-sm font-medium truncate" title={account.email || 'Unknown Email'}>{account.email || 'Connected Account'}</span>
+                              </div>
+                              <Button onClick={() => onDisconnect(account.email!)} variant="destructive" size="sm" className="h-7 text-xs w-full sm:w-auto">
+                                  <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
+                              </Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                              <div className="flex items-center space-x-2">
+                                  <Switch id={`oneway-${account.uid}`} defaultChecked />
+                                  <Label htmlFor={`oneway-${account.uid}`} className="text-xs">One-way sync</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                  <Switch id={`twoway-${account.uid}`} />
+                                  <Label htmlFor={`twoway-${account.uid}`} className="text-xs">Two-way sync</Label>
+                              </div>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+            </ScrollArea>
         ) : null}
         
-        <div>
-            <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
-                <Link2 className="mr-2 h-4 w-4"/>
-                {accounts.length > 0 ? 'Connect Another Account' : 'Connect Account'}
-            </Button>
-        </div>
+        {!isComingSoon && (
+            <div>
+                <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
+                    <Link2 className="mr-2 h-4 w-4"/>
+                    {accounts.length > 0 ? 'Connect Another Account' : 'Connect Account'}
+                </Button>
+            </div>
+        )}
     </div>
   );
 };
