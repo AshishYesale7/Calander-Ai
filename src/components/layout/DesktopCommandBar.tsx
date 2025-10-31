@@ -123,7 +123,9 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         targetX = lastOpenPosition.current.x;
         targetY = lastOpenPosition.current.y;
       } else {
-        targetX = (window.innerWidth - chatSidebarWidth - size.open.width) / 2;
+        // Corrected centering logic: The available width is window's width minus the chat UI's width.
+        const availableWidth = window.innerWidth - chatSidebarWidth;
+        targetX = (availableWidth - size.open.width) / 2;
         targetY = window.innerHeight - size.open.height - 24;
       }
 
@@ -149,7 +151,9 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
          }
       }
       
-      const closedX = (window.innerWidth - chatSidebarWidth - size.closed.width) / 2;
+      // Corrected centering logic for closed state as well
+      const availableWidth = window.innerWidth - chatSidebarWidth;
+      const closedX = (availableWidth - size.closed.width) / 2;
       
       let closedY;
       if (scrollDirection === 'down') {

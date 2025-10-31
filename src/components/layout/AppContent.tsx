@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import NotificationPermissionModal from '@/components/layout/NotificationPermissionModal';
 import { useStreakTracker } from '@/hooks/useStreakTracker';
-import { useChat } from '@/context/ChatContext';
+import { ChatContext, useChat } from '@/context/ChatContext';
 import ChatProviderWrapper, { GlobalCallUI } from '@/context/ChatProviderWrapper';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -157,10 +157,12 @@ export default function AppContent({
     const isChatPanelVisible = !!chattingWith;
 
   useEffect(() => {
-    if (!isMobile && chattingWith && sidebarState === 'expanded') {
-        setSidebarOpen(false);
+    // If the full chat is open, auto-collapse the main sidebar.
+    const fullChatOpen = isChatSidebarOpen && chattingWith;
+    if (!isMobile && fullChatOpen && sidebarState === 'expanded') {
+      setSidebarOpen(false);
     }
-  }, [chattingWith, isMobile, sidebarState, setSidebarOpen]);
+  }, [chattingWith, isChatSidebarOpen, isMobile, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
     if (loading) return;
@@ -313,105 +315,102 @@ export default function AppContent({
   return (
     <>
       <OfflineIndicator />
-      <ChatProviderWrapper>
-        {/* All floating call UI is now rendered at the top level here */}
-        <GlobalCallUI />
-
-        <div className={cn(
-            'relative z-0 flex h-screen w-full overflow-hidden',
-            isPendingDeletion && 'pointer-events-none blur-sm'
-        )}>
-          
-          <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
-            <SidebarNav {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
-          </div>
-          
-          <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            <Header 
-              {...modalProps} 
-              handleToggleFullScreen={() => {}} 
-              isFullScreen={false}
-              isEditMode={isEditMode}
-              setIsEditMode={setIsEditMode}
-              hiddenWidgets={hiddenWidgets}
-              handleToggleWidget={handleToggleWidget}
-            />
-            <div className="flex flex-1 min-h-0 min-w-0">
-                <main ref={mainScrollRef} className={cn(
-                    "flex-1 overflow-y-auto p-6 pb-24 md:pb-6 transition-[margin-left] duration-300",
-                    !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
-                    !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
-                )}>
-                  {React.cloneElement(children as React.ReactElement, { 
-                      isEditMode, 
-                      setIsEditMode,
-                      hiddenWidgets,
-                      handleToggleWidget
-                  })}
-                </main>
-                <ChatAndCallUI />
-            </div>
-          </div>
-          
-          {isMobile && isChatSidebarOpen && !isCallViewActive && (
-            <div className="fixed inset-0 z-50 bg-background flex flex-col">
-              {chattingWith ? (
-                <div className="flex flex-col h-full">
-                  <div className="fixed top-0 left-0 right-0 z-20">
-                    <ChatPanelHeader user={chattingWith} onClose={() => {}} />
-                  </div>
-                  <div className="flex flex-1 min-h-0 pt-14 pb-20">
-                      <div className={cn(
-                        "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
-                        isChatInputFocused ? "w-0" : "w-[25%]"
-                      )}>
-                          <MobileMiniChatSidebar />
-                      </div>
-                      <div className="flex-1 flex flex-col relative">
-                          <ChatPanelBody user={chattingWith} />
-                      </div>
-                  </div>
-                  <div className="fixed bottom-0 left-0 right-0 z-20">
-                      <ChatPanelFooter />
-                  </div>
-                </div>
-              ) : (
-                <MobileChatSidebar />
-              )}
-            </div>
-          )}
-
-          <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
-          
-          <CommandPalette 
-            isOpen={isCommandPaletteOpen} 
-            onOpenChange={setIsCommandPaletteOpen} 
-            search={search}
-            setSearch={setSearch}
+      <GlobalCallUI />
+        
+      <div className={cn(
+          'relative z-0 flex h-screen w-full overflow-hidden',
+          isPendingDeletion && 'pointer-events-none blur-sm'
+      )}>
+        
+        <div className={cn('contents', isCallViewActive && 'hidden md:contents')}>
+          <SidebarNav {...modalProps} handleToggleFullScreen={() => {}} isFullScreen={false} />
+        </div>
+        
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <Header 
             {...modalProps} 
             handleToggleFullScreen={() => {}} 
             isFullScreen={false}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
+            hiddenWidgets={hiddenWidgets}
+            handleToggleWidget={handleToggleWidget}
           />
-          
-          <AnimatePresence>
-            {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
-
-            {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
-                  <MobileBottomNav
-                      onCommandClick={() => setIsCommandPaletteOpen(true)}
-                      onChatClick={() => setIsChatSidebarOpen(true)}
-                      bottomNavRef={bottomNavRef}
-                  />
-              )}
-          </AnimatePresence>
-          
-          <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
-          <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
-          <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
-          <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
-          <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
+          <div className="flex flex-1 min-h-0 min-w-0">
+              <main ref={mainScrollRef} className={cn(
+                  "flex-1 overflow-y-auto p-6 pb-24 md:pb-6 transition-[margin-left] duration-300",
+                  !isMobile && sidebarState === 'expanded' && !isCallViewActive && "md:ml-64",
+                  !isMobile && sidebarState === 'collapsed' && !isCallViewActive && "md:ml-12"
+              )}>
+                {React.cloneElement(children as React.ReactElement, { 
+                    isEditMode, 
+                    setIsEditMode,
+                    hiddenWidgets,
+                    handleToggleWidget
+                })}
+              </main>
+              <ChatAndCallUI />
+          </div>
         </div>
-      </ChatProviderWrapper>
+        
+        {isMobile && isChatSidebarOpen && !isCallViewActive && (
+          <div className="fixed inset-0 z-50 bg-background flex flex-col">
+            {chattingWith ? (
+              <div className="flex flex-col h-full">
+                <div className="fixed top-0 left-0 right-0 z-20">
+                  <ChatPanelHeader user={chattingWith} onClose={() => {}} />
+                </div>
+                <div className="flex flex-1 min-h-0 pt-14 pb-20">
+                    <div className={cn(
+                      "h-full transition-all duration-300 overflow-hidden border-r border-border/30",
+                      isChatInputFocused ? "w-0" : "w-[25%]"
+                    )}>
+                        <MobileMiniChatSidebar />
+                    </div>
+                    <div className="flex-1 flex flex-col relative">
+                        <ChatPanelBody user={chattingWith} />
+                    </div>
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 z-20">
+                    <ChatPanelFooter />
+                </div>
+              </div>
+            ) : (
+              <MobileChatSidebar />
+            )}
+          </div>
+        )}
+
+        <TodaysPlanModal isOpen={isPlanModalOpen} onOpenChange={setIsPlanModalOpen} />
+        
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen} 
+          onOpenChange={setIsCommandPaletteOpen} 
+          search={search}
+          setSearch={setSearch}
+          {...modalProps} 
+          handleToggleFullScreen={() => {}} 
+          isFullScreen={false}
+        />
+        
+        <AnimatePresence>
+          {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
+
+          {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
+                <MobileBottomNav
+                    onCommandClick={() => setIsCommandPaletteOpen(true)}
+                    onChatClick={() => setIsChatSidebarOpen(true)}
+                    bottomNavRef={bottomNavRef}
+                />
+            )}
+        </AnimatePresence>
+        
+        <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
+        <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
+        <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
+        <TimezoneModal isOpen={isTimezoneModalOpen} onOpenChange={setIsTimezoneModalOpen} />
+        <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
+      </div>
     </>
   );
 }
