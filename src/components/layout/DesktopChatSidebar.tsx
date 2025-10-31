@@ -384,7 +384,7 @@ const ChatListView = () => {
                         <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={handleDeleteChat}>Clear History</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </>
+            </AlertDialog>
         </>
     );
 };
