@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -38,6 +37,7 @@ import { messaging } from '@/lib/firebase';
 import { saveUserFCMToken } from '@/services/userService';
 import { GlobalCallUI } from '@/context/ChatProviderWrapper';
 import { useVoiceActivation } from '@/hooks/useVoiceActivation';
+import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 
 function ChatAndCallUI() {
   const { 
@@ -145,6 +145,8 @@ export default function AppContent({
 
 
     const [isChatOrbOpen, setIsChatOrbOpen] = useState(false);
+    const [audioSrc, setAudioSrc] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     const {
       isListening,
@@ -156,12 +158,29 @@ export default function AppContent({
       onActivation: async () => {
         setIsChatOrbOpen(true);
         try {
-          const command = await listenForCommand();
-          if (command) {
-            setInitialChatMessage(command);
+          // Speak a greeting first
+          const { audioDataUri } = await textToSpeech({ text: "How can I help?" });
+          setAudioSrc(audioDataUri);
+
+          // Wait for audio to finish playing before listening for command
+          if (audioRef.current) {
+              audioRef.current.onended = async () => {
+                  try {
+                      const command = await listenForCommand();
+                      if (command) {
+                          setInitialChatMessage(command);
+                      }
+                  } catch (error) {
+                      console.error("Error listening for command:", error);
+                  }
+                  setAudioSrc(null); // Clear audio src after playing
+              };
           }
         } catch (error) {
-          console.error("Error listening for command:", error);
+            console.error("Error generating TTS for greeting:", error);
+            // If TTS fails, just listen for the command immediately
+            const command = await listenForCommand();
+            if (command) setInitialChatMessage(command);
         }
       },
       isEnabled: isVoiceActivationEnabled,
@@ -315,6 +334,13 @@ export default function AppContent({
     mainEl.addEventListener('scroll', handleScroll);
     return () => mainEl.removeEventListener('scroll', handleScroll);
   }, [isMobile]);
+
+  useEffect(() => {
+    if (audioSrc && audioRef.current) {
+        audioRef.current.src = audioSrc;
+        audioRef.current.play().catch(e => console.error("Audio playback error:", e));
+    }
+  }, [audioSrc]);
   
   if (loading) {
     return (
@@ -427,10 +453,10 @@ export default function AppContent({
         />
         
         <AnimatePresence>
-            <React.Fragment key="desktop-ui-wrapper-1">
+            <React.Fragment key="desktop-command-bar-wrapper">
                 {!isMobile && <DesktopCommandBar scrollDirection={scrollDirection} />}
             </React.Fragment>
-            <React.Fragment key="desktop-ui-wrapper-2">
+            <React.Fragment key="dashboard-chat-wrapper">
                 {!isMobile && (
                     <DashboardChat 
                         isOpen={isChatOrbOpen} 
@@ -460,6 +486,9 @@ export default function AppContent({
         />
         <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
         <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
+        
+        {/* Hidden Audio Player for TTS */}
+        <audio ref={audioRef} className="hidden" />
       </div>
     </>
   );
