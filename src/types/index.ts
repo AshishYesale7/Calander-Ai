@@ -1,6 +1,4 @@
 
-'use server';
-
 import type { LucideIcon } from 'lucide-react';
 import { z } from 'genkit';
 
@@ -407,7 +405,7 @@ export interface ActivityLog {
 // Conversational Agent Types
 export const ConversationalAgentInputSchema = z.object({
   chatHistory: z.array(z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'tool']),
     content: z.string(),
   })).describe("The history of the conversation so far."),
   prompt: z.string().describe("The user's latest message."),

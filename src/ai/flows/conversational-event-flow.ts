@@ -7,12 +7,10 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { 
-    EventSchemaForConversation,
     ConversationalEventInputSchema,
     type ConversationalEventInput,
     ConversationalEventOutputSchema,
     type ConversationalEventOutput,
-    type CreateEventOutput
 } from '@/types';
 
 const conversationalEventPrompt = ai.definePrompt({
