@@ -2,7 +2,7 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
@@ -27,7 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { calculateEventLayouts } from '../planner/planner-utils';
+import { calculateEventLayouts, type EventWithLayout } from '../planner/planner-utils';
 import MaximizedPlannerView from '../planner/MaximizedPlannerView';
 
 const HOUR_HEIGHT_PX = 60;
@@ -35,14 +35,6 @@ const MIN_EVENT_COLUMN_WIDTH_PX = 90;
 const minuteRulerHeightClass = 'h-8'; 
 
 type TimetableViewTheme = 'default' | 'professional' | 'wood';
-
-const getEventTooltip = (event: TimelineEvent): string => {
-    if (!(event.date instanceof Date) || isNaN(event.date.valueOf())) return event.title;
-    const timeString = event.isAllDay ? 'All Day' : `${format(event.date, 'h:mm a')}${event.endDate && event.endDate instanceof Date && !isNaN(event.endDate.valueOf()) ? ` - ${format(event.endDate, 'h:mm a')}` : ''}`;
-    const statusString = event.status ? `Status: ${event.status.replace(/-/g, ' ')}` : '';
-    const notesString = event.notes ? `Notes: ${event.notes}` : '';
-    return [event.title, timeString, statusString, notesString].filter(Boolean).join('\n');
-};
 
 const getEventColorStyle = (event: TimelineEvent) => {
     return { '--event-color': event.color || '#64748b' } as React.CSSProperties;
@@ -175,7 +167,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         </div>
       </CardHeader>
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border/30 bg-white timetable-allday-area" style={{ backgroundColor: viewTheme === 'professional' ? '#1c1c1c' : undefined }}>
+          <div className="p-2 border-b border-border/30 bg-black/30 backdrop-blur-sm timetable-allday-area">
             <div className="flex gap-2">
                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
@@ -321,5 +313,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
 
     
