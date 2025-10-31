@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText } from 'lucide-react';
+import { KeyRound, Unplug, Smartphone, CheckCircle, Bell, User, Link2, FileText, Globe, UserX, UserCheck } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { useAuth } from '@/context/AuthContext';
 import { Switch } from '../ui/switch';
@@ -34,22 +34,18 @@ const IntegrationRow = ({
   icon,
   name,
   description,
-  providerId,
+  accounts,
   onConnect,
   onDisconnect,
 }: {
   icon: React.ReactNode;
   name: string;
   description: string;
-  providerId: 'google.com' | 'microsoft.com';
+  accounts: { email: string, uid: string }[];
   onConnect: () => void;
   onDisconnect: (email: string) => void;
 }) => {
-  const { user } = useAuth();
-  const [isSyncEnabled, setIsSyncEnabled] = useState(true);
-
-  const connectedAccounts = user?.providerData.filter(p => p.providerId === providerId) || [];
-
+  
   return (
     <div className="space-y-4 rounded-lg border p-4 transition-colors hover:bg-muted/50">
         <div className="flex items-start justify-between">
@@ -60,26 +56,26 @@ const IntegrationRow = ({
             <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-card flex-shrink-0">{icon}</div>
         </div>
         
-        {connectedAccounts.length > 0 && (
-             <div className="pl-4 space-y-3">
-                {connectedAccounts.map(account => (
-                    <div key={account.uid} className="p-2 bg-background/50 rounded-md border space-y-3">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
+        {accounts.length > 0 && (
+             <div className="space-y-3">
+                {accounts.map(account => (
+                    <div key={account.uid} className="p-3 bg-background/50 rounded-md border space-y-3">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
-                                <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <span className="text-sm font-medium truncate">{account.email}</span>
+                                <UserCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                <span className="text-sm font-medium truncate" title={account.email}>{account.email}</span>
                             </div>
-                            <Button onClick={() => account.email && onDisconnect(account.email)} variant="destructive" size="sm" className="h-7 text-xs">
+                            <Button onClick={() => onDisconnect(account.email)} variant="destructive" size="sm" className="h-7 text-xs w-full sm:w-auto">
                                 <Unplug className="mr-1.5 h-3 w-3" /> Disconnect
                             </Button>
                         </div>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                             <div className="flex items-center space-x-2">
-                                <Switch id={`oneway-${account.uid}`} checked={isSyncEnabled} onCheckedChange={(c) => setIsSyncEnabled(c)} aria-label="One-way sync"/>
+                                <Switch id={`oneway-${account.uid}`} defaultChecked />
                                 <Label htmlFor={`oneway-${account.uid}`} className="text-xs">One-way sync</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Switch id={`twoway-${account.uid}`} checked={!isSyncEnabled} onCheckedChange={(c) => setIsSyncEnabled(!c)} aria-label="Two-way sync"/>
+                                <Switch id={`twoway-${account.uid}`} />
                                 <Label htmlFor={`twoway-${account.uid}`} className="text-xs">Two-way sync</Label>
                             </div>
                         </div>
@@ -88,10 +84,10 @@ const IntegrationRow = ({
              </div>
         )}
         
-        <div className="pl-4">
+        <div>
             <Button onClick={onConnect} variant="outline" size="sm" className="w-full">
                 <Link2 className="mr-2 h-4 w-4"/>
-                {connectedAccounts.length > 0 ? 'Connect Another Account' : 'Connect Account'}
+                {accounts.length > 0 ? 'Connect Another Account' : 'Connect Account'}
             </Button>
         </div>
     </div>
@@ -115,8 +111,8 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isTestingPush, setIsTestingPush] = useState(false);
-  const [isRestoringDefaults, setIsRestoringDefaults] = useState(false);
-
+  const testIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   const checkStatuses = useCallback(async () => {
     if (!user) return;
     try {
@@ -206,20 +202,22 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl frosted-glass flex flex-col h-auto max-h-[90vh]">
-        <DialogHeader>
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="font-headline text-lg text-primary">Settings</DialogTitle>
           <DialogDescription>Manage application settings and preferences.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <Tabs defaultValue="account" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
-              <TabsTrigger value="account">Account</TabsTrigger>
-              <TabsTrigger value="integrations">Integrations</TabsTrigger>
-              <TabsTrigger value="datetime">Date & Time</TabsTrigger>
-              <TabsTrigger value="danger" className="text-destructive">Danger Zone</TabsTrigger>
-            </TabsList>
+            <div className="px-6">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                <TabsTrigger value="datetime">Date & Time</TabsTrigger>
+                <TabsTrigger value="danger" className="text-destructive">Danger Zone</TabsTrigger>
+                </TabsList>
+            </div>
             <ScrollArea className="flex-1 mt-4">
-              <div className="p-1 pr-4">
+              <div className="px-6 pb-6">
                 <TabsContent value="account">
                   <div className="space-y-6">
                     <div className="space-y-3">
@@ -255,18 +253,18 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     <IntegrationRow
                       icon={<GoogleIcon />}
                       name="Google Calendar"
-                      description="Gmail, G Suite"
-                      providerId='google.com'
+                      description="Connect your Google accounts to sync calendars and tasks."
+                      accounts={user?.providerData.filter(p => p.providerId === 'google.com').map(p => ({ email: p.email!, uid: p.uid })) || []}
                       onConnect={() => handleConnect('google')}
-                      onDisconnect={(email) => handleDisconnect('google')}
+                      onDisconnect={() => handleDisconnect('google')}
                     />
                     <IntegrationRow
                       icon={<MicrosoftIcon />}
                       name="Office 365 Calendar"
-                      description="Office 365, Outlook.com, Live.com"
-                      providerId='microsoft.com'
+                      description="Connect your Microsoft accounts for calendar sync."
+                      accounts={user?.providerData.filter(p => p.providerId === 'microsoft.com').map(p => ({ email: p.email!, uid: p.uid })) || []}
                       onConnect={() => handleConnect('microsoft')}
-                      onDisconnect={() => { /* Implement disconnect */ }}
+                      onDisconnect={() => {}}
                     />
                   </div>
                 </TabsContent>
@@ -280,10 +278,12 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
             </ScrollArea>
           </Tabs>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
