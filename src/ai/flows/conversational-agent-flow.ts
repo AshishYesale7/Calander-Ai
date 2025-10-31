@@ -6,7 +6,7 @@
  * acting as a flexible, intelligent chatbot.
  */
 
-import { genkit, type GenerateRequest } from 'genkit';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { 
@@ -52,7 +52,7 @@ const conversationalAgentFlow = genkit({
             prompt: input.prompt,
           }
         },
-        model: 'googleai/gemini-2.0-flash',
+        model: 'gemini-1.5-flash-latest',
       });
       
       const responseText = llmResponse.text;
@@ -79,5 +79,3 @@ const conversationalAgentFlow = genkit({
 export async function conversationalAgent(input: ConversationalAgentInput): Promise<ConversationalAgentOutput> {
   return conversationalAgentFlow(input);
 }
-
-    
