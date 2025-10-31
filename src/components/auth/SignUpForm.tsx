@@ -1,6 +1,6 @@
 
 'use client';
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, linkWithCredential, EmailAuthProvider } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -104,7 +104,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading(providerName);
 
     try {
-        let provider;
+        let provider: GoogleAuthProvider | OAuthProvider;
         if (providerName === 'google') {
             provider = new GoogleAuthProvider();
             provider.addScope('profile');
@@ -138,11 +138,18 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         }
 
         if (!provider) throw new Error("Invalid provider");
-
-        const result = await signInWithPopup(auth, provider);
-        // The onAuthStateChanged listener handles profile creation.
-
-        toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
+        
+        // This is the new logic to handle account linking
+        if (auth.currentUser) {
+            // If there's already a user (e.g., from phone auth), link the new provider
+            await linkWithCredential(auth.currentUser, provider);
+            toast({ title: 'Account Linked!', description: `Successfully linked your ${providerName} account.` });
+        } else {
+             // Otherwise, this is a fresh sign-in/sign-up
+            await signInWithPopup(auth, provider);
+            toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
+        }
+        
         router.push('/dashboard');
 
     } catch (error: any) {
