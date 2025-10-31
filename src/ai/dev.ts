@@ -21,3 +21,4 @@ import '@/ai/flows/generate-workout-flow.ts';
 import '@/ai/flows/generate-upcoming-insights-flow.ts';
 import '@/ai/flows/generate-greeting-flow.ts';
 import '@/ai/flows/webapp-qa-flow.ts';
+import '@/ai/flows/conversational-agent-flow.ts'; // Import the new flow

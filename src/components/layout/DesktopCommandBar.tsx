@@ -1,4 +1,3 @@
-
 'use client';
 
 import { motion, useDragControls, AnimatePresence, useAnimation } from 'framer-motion';
@@ -12,13 +11,11 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '../ui/dropdown-menu';
 import type { ChatMessage } from '@/components/layout/AiAssistantChat';
-import { createConversationalEvent, type ConversationalEventOutput } from '@/ai/flows/conversational-event-flow';
+import { conversationalAgent, type ConversationalAgentOutput } from '@/ai/flows/conversational-agent-flow';
 import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
 import '@/app/styles/desktop-command-bar.css';
-import { useTimezone } from '@/hooks/use-timezone';
-import { createEventFromPrompt } from '@/ai/flows/create-event-flow';
 
 export interface ChatSession {
   id: string;
@@ -58,7 +55,6 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey } = useApiKey();
-  const { timezone } = useTimezone();
   const { isChatSidebarOpen, chattingWith, chatSidebarWidth } = useChat();
 
   const [selectedAction, setSelectedAction] = useState('Auto');
@@ -235,28 +231,22 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     return { modelName: selectedModel, modelVersion: '' };
   }, [selectedModel]);
 
-  const handleAIResponse = async (history: ChatMessage[]) => {
+  const handleAIResponse = async (history: ChatMessage[], prompt: string) => {
       setIsLoading(true);
       try {
-          const result: ConversationalEventOutput = await createConversationalEvent({
-              chatHistory: history.map(m => ({ role: m.role, content: m.content })),
-              apiKey,
-              timezone,
+          const result: ConversationalAgentOutput = await conversationalAgent({
+              chatHistory: history,
+              prompt: prompt,
           });
-          if (result.response) {
-            setChatSessions(prevSessions =>
-              prevSessions.map(session =>
-                session.id === activeChatId
-                  ? { ...session, messages: [...session.messages, { role: 'model', content: result.response! }] }
-                  : session
-              )
-            );
-          }
-          if (result.event) {
-              console.log("AI created an event:", result.event);
-              // Here you would handle the event creation, e.g., call onEventCreation(result.event)
-          }
+          setChatSessions(prevSessions =>
+            prevSessions.map(session =>
+              session.id === activeChatId
+                ? { ...session, messages: [...session.messages, { role: 'model', content: result.response }] }
+                : session
+            )
+          );
       } catch (e) {
+          console.error("AI Error:", e);
           setChatSessions(prevSessions =>
             prevSessions.map(session =>
               session.id === activeChatId
@@ -274,9 +264,10 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
 
     const lastMessage = activeChat.messages[activeChat.messages.length - 1];
     if (lastMessage && lastMessage.role === 'user') {
-      handleAIResponse(activeChat.messages);
+      const history = activeChat.messages.slice(0, -1);
+      handleAIResponse(history, lastMessage.content);
     }
-  }, [activeChat?.messages, activeChatId, isLoading, handleAIResponse]);
+  }, [activeChat, isLoading]);
   
   const handleNewChat = () => {
     const newId = shortid.generate();
