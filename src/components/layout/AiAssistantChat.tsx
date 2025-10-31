@@ -55,16 +55,16 @@ interface AiAssistantChatProps {
 }
 
 
-const LeftSidebar = ({ 
-    chatSessions, 
-    activeChatId, 
+const LeftSidebar = ({
+    chatSessions,
+    activeChatId,
     onSelectChat,
     onNewChat,
     activeView,
     setActiveView
-}: { 
-    chatSessions: ChatSession[], 
-    activeChatId: string, 
+}: {
+    chatSessions: ChatSession[],
+    activeChatId: string,
     onSelectChat: (id: string) => void,
     onNewChat: () => void,
     activeView: 'chat' | 'files' | 'terminal' | 'search',
@@ -78,7 +78,7 @@ const LeftSidebar = ({
     { id: 'search', icon: SearchIcon, label: 'Search' },
   ];
   return (
-    <div 
+    <div
         className={cn(
             "bg-black/20 flex flex-col items-center py-2 gap-2 border-r border-white/10 transition-[width] duration-300",
             isExpanded ? "w-48 items-stretch" : "w-12"
@@ -90,10 +90,11 @@ const LeftSidebar = ({
           key={item.id}
           variant="ghost"
           onClick={() => {
-            if (item.id === 'chat') setIsExpanded(prev => !prev);
-            else {
-                setActiveView(item.id as 'chat' | 'files' | 'terminal' | 'search');
-                setIsExpanded(false);
+            setActiveView(item.id as any);
+            if (item.id === 'chat') {
+              setIsExpanded(prev => !prev);
+            } else {
+              setIsExpanded(false);
             }
           }}
           className={cn(
@@ -113,7 +114,7 @@ const LeftSidebar = ({
             <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
             <div className="flex-1 overflow-y-auto">
                 {chatSessions.map(session => (
-                    <button 
+                    <button
                         key={session.id}
                         onClick={() => onSelectChat(session.id)}
                         className={cn(
@@ -134,19 +135,19 @@ const LeftSidebar = ({
   );
 };
 
-const ChatHeader = ({ 
-    dragControls, 
-    selectedModel, 
+const ChatHeader = ({
+    dragControls,
+    selectedModel,
     setSelectedModel,
-}: { 
-    dragControls: any, 
-    selectedModel: string, 
+}: {
+    dragControls: any,
+    selectedModel: string,
     setSelectedModel: (model: string) => void,
 }) => {
     const aiModels = ['Gemini 2.5 Pro', 'Gemini 2.0 Flash', 'Gemini 2.0 Nano'];
     return (
-        <div 
-          className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing" 
+        <div
+          className="flex-shrink-0 h-10 border-b border-white/10 flex items-center justify-between px-1.5 pr-2 cursor-grab active:cursor-grabbing"
           onPointerDown={(e) => dragControls.start(e)}
         >
             <div className="flex items-center gap-2">
@@ -260,10 +261,10 @@ const ChatBody = ({ chatHistory, isLoading }: { chatHistory: ChatMessage[], isLo
 };
 
 
-export default function AiAssistantChat({ 
-    onBack, 
-    dragControls, 
-    handleToggleFullScreen, 
+export default function AiAssistantChat({
+    onBack,
+    dragControls,
+    handleToggleFullScreen,
     isFullScreen,
     selectedModel,
     setSelectedModel,
@@ -290,14 +291,14 @@ export default function AiAssistantChat({
 
   return (
     <div className="flex flex-col h-full bg-[#1d2025] text-white rounded-xl overflow-hidden">
-        <ChatHeader 
-            dragControls={chatHeaderDragControls} 
-            selectedModel={selectedModel} 
+        <ChatHeader
+            dragControls={chatHeaderDragControls}
+            selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
         />
 
         <div className="flex-1 flex min-h-0">
-            <LeftSidebar 
+            <LeftSidebar
               chatSessions={chatSessions}
               activeChatId={activeChatId}
               onSelectChat={onSelectChat}

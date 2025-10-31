@@ -17,7 +17,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import shortid from 'shortid';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import '@/app/styles/desktop-command-bar.css';
@@ -28,6 +28,8 @@ export interface ChatSession {
   messages: ChatMessage[];
   createdAt: Date;
 }
+
+const CHAT_SESSIONS_CACHE_KEY = 'chat-sessions-cache';
 
 const actionItems = [
     { id: 'auto', label: 'Auto', icon: Sparkles },
@@ -68,9 +70,24 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAtDefaultPosition, setIsAtDefaultPosition] = useState(true);
 
-  // Effect to load chat history from Firestore
+  // Effect to load chat history from cache and then Firestore
   useEffect(() => {
     if (!user) return;
+    
+    // 1. Load from cache immediately
+    const cachedData = localStorage.getItem(`${CHAT_SESSIONS_CACHE_KEY}-${user.uid}`);
+    if (cachedData) {
+      const parsedSessions = JSON.parse(cachedData).map((s: any) => ({
+        ...s,
+        createdAt: new Date(s.createdAt) // Rehydrate Date object
+      }));
+      setChatSessions(parsedSessions);
+      if (parsedSessions.length > 0 && !activeChatId) {
+        setActiveChatId(parsedSessions[0].id);
+      }
+    }
+
+    // 2. Set up Firestore listener
     const q = query(collection(db, `users/${user.uid}/chats`), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const history: ChatSession[] = [];
@@ -80,10 +97,14 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
                 id: doc.id,
                 title: data.title,
                 messages: data.messages || [],
-                createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(),
             });
         });
         setChatSessions(history);
+        
+        // Cache the new data
+        localStorage.setItem(`${CHAT_SESSIONS_CACHE_KEY}-${user.uid}`, JSON.stringify(history.map(s => ({...s, createdAt: s.createdAt.toISOString()}))));
+
         if (history.length > 0 && !activeChatId) {
             setActiveChatId(history[0].id);
         } else if (history.length === 0) {
@@ -91,11 +112,11 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         }
     }, (error) => {
         console.error("Error fetching chat history: ", error);
-        toast({ title: "Error", description: "Could not load chat history.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not load chat history from cloud.", variant: "destructive" });
     });
 
     return () => unsubscribe();
-  }, [user, activeChatId]);
+  }, [user, activeChatId, toast]);
 
 
   const activeChat = useMemo(() => {
@@ -355,7 +376,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
     <motion.div
       ref={containerRef}
       drag={!isFullScreen}
-      dragListener={false} 
+      dragListener={false}
       dragControls={dragControls}
       dragMomentum={false}
       dragConstraints={{
@@ -376,7 +397,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         if (document.body) document.body.style.userSelect = '';
       }}
     >
-      <motion.div 
+      <motion.div
         className={cn("desktop-command-bar-glow flex flex-col h-full", (isOpen || isFullScreen) && 'open')}
         layout="position"
       >
@@ -387,14 +408,14 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
         <div className={cn("inner !p-0 flex flex-col h-full justify-between")}>
           <AnimatePresence>
           {isOpen ? (
-            <motion.div 
+            <motion.div
               key="chat-view"
               className="flex-1 flex flex-col min-h-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { delay: 0.1 } }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
             >
-              <AiAssistantChat 
+              <AiAssistantChat
                 onBack={handleClose}
                 dragControls={dragControls}
                 handleToggleFullScreen={handleToggleFullScreen}
@@ -408,7 +429,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
                 onNewChat={handleNewChat}
                 onSelectChat={setActiveChatId}
               />
-              <div 
+              <div
                   className="relative w-full flex items-center text-gray-400 p-3"
                   onPointerDown={(e) => e.stopPropagation()}
               >
@@ -524,7 +545,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
               </div>
             </motion.div>
           ) : (
-             <motion.div 
+             <motion.div
                 key="collapsed-bar"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
