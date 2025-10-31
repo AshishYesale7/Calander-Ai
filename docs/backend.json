@@ -1,0 +1,167 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user-specific information and preferences.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's profile picture."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the user account was created."
+        }
+      },
+      "required": ["displayName", "email", "createdAt"]
+    },
+    "ChatSession": {
+      "title": "Chat Session",
+      "description": "Represents a single conversational session with the AI assistant.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this chat session."
+        },
+        "title": {
+          "type": "string",
+          "description": "A short, auto-generated title for the session (e.g., the first user prompt)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the session was started."
+        },
+        "history": {
+          "type": "array",
+          "description": "An array of chat messages representing the conversation history.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["user", "model"],
+                "description": "The role of the message sender."
+              },
+              "content": {
+                "type": "string",
+                "description": "The text content of the message."
+              }
+            }
+          }
+        }
+      },
+      "required": ["userId", "title", "createdAt", "history"]
+    },
+    "FileItem": {
+      "title": "File Item",
+      "description": "Metadata for a file, initially for the mock file system, later for Google Drive.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the file or folder."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["folder", "file"],
+          "description": "The type of the item."
+        },
+        "parentId": {
+          "type": "string",
+          "description": "The ID of the parent folder ('root' for top-level items)."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this file."
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last modification."
+        },
+        "size": {
+          "type": "number",
+          "description": "Size of the file in bytes."
+        }
+      },
+      "required": ["name", "type", "parentId", "userId", "modifiedAt"]
+    },
+    "EventData": {
+      "title": "Event Data",
+      "description": "Represents a calendar event, reminder, or note created by the user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this event."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the event."
+        },
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date and time of the event."
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end date and time of the event."
+        },
+        "isAllDay": {
+          "type": "boolean",
+          "description": "Flag indicating if it's an all-day event."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or description for the event."
+        }
+      },
+      "required": ["userId", "title", "start"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores individual user profiles."
+    },
+    "/chats/{sessionId}": {
+      "schema": {
+        "$ref": "#/entities/ChatSession"
+      },
+      "description": "Stores individual chat sessions with the AI assistant."
+    },
+    "/files/{fileId}": {
+      "schema": {
+        "$ref": "#/entities/FileItem"
+      },
+      "description": "Stores metadata for user files and folders."
+    },
+    "/events/{eventId}": {
+      "schema": {
+        "$ref": "#/entities/EventData"
+      },
+      "description": "Stores calendar events, reminders, and notes."
+    }
+  }
+}
