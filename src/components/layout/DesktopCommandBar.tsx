@@ -152,6 +152,13 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
       }
       
       const shouldShiftLeft = isChatSidebarOpen || !!chattingWith;
+      if (shouldShiftLeft) {
+          setIsAtDefaultPosition(false); // It's not at the default center anymore
+      } else if (!isAtDefaultPosition) {
+           // If chat is closed and we weren't at default, reset to default
+          setIsAtDefaultPosition(true);
+      }
+      
       const closedX = shouldShiftLeft
         ? 80 
         : (window.innerWidth - size.closed.width) / 2;
