@@ -236,7 +236,7 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
                 <TabsTrigger value="danger" className="text-destructive">Danger Zone</TabsTrigger>
                 </TabsList>
             </div>
-            <ScrollArea className="flex-1 mt-4">
+            <div className="flex-1 mt-4 overflow-y-auto">
               <div className="px-6 pb-6">
                 <TabsContent value="account">
                   <div className="space-y-6">
@@ -297,7 +297,7 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
                   <DangerZoneSettings />
                 </TabsContent>
               </div>
-            </ScrollArea>
+            </div>
           </Tabs>
         </div>
         <DialogFooter className="p-6 pt-4 border-t">
