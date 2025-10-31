@@ -113,6 +113,22 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
     setCurrentDisplayDate(new Date());
   };
 
+  const handleCreateNewEvent = () => {
+    if (onEditEvent) {
+        const defaultEvent: TimelineEvent = {
+          id: `custom-${Date.now()}`,
+          title: '',
+          date: new Date(),
+          type: 'custom',
+          isDeletable: true,
+          priority: 'None',
+          status: 'pending',
+          reminder: { enabled: true, earlyReminder: '1_day', repeat: 'none' },
+        };
+        onEditEvent(defaultEvent, true);
+    }
+  };
+
   const onMouseDown = (index: number) => (e: React.MouseEvent) => {
     isResizing.current = index;
     startXRef.current = e.clientX;
@@ -388,6 +404,7 @@ export default function MaximizedPlannerView({ initialDate, allEvents, onMinimiz
           isSidebarOpen={isSidebarOpen}
           viewTheme={maximizedViewTheme}
           onToggleTheme={() => setMaximizedViewTheme(t => t === 'dark' ? 'light' : 'dark')}
+          onAddEvent={handleCreateNewEvent}
         />
         <div className="flex flex-1 min-h-0" ref={panelsContainerRef}>
               {(isSidebarOpen && panelWidths[0] > 0) && (
