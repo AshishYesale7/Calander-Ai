@@ -41,7 +41,7 @@ interface WidgetDashboardProps {
   components: { [key: string]: ReactNode };
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
-  hiddenWidgets: Set<string>;
+  hiddenWidgets?: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
 }
@@ -64,7 +64,7 @@ export default function WidgetDashboard({
     const role = user?.userType || 'student';
     return role === 'professional' ? responsiveProfessionalLayouts : responsiveStudentLayouts;
   }, [user?.userType]);
-  
+
   const [layouts, setLayouts] = useState<Layouts>(getDefaultLayouts());
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
@@ -76,34 +76,6 @@ export default function WidgetDashboard({
     return `dashboard-layouts-${user.uid}-${role}`;
   }, [user]);
   
-  useEffect(() => {
-    // This effect now uses a debounced approach for saving layouts.
-    return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
-      }
-    };
-  }, []);
-
-  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
-      if (!user || !isLayoutLoaded) return;
-      const layoutKey = getLayoutKey();
-      if (!layoutKey) return;
-      
-      const currentVersion = CODE_LAYOUT_VERSION; 
-      const dataToSave: VersionedLayouts = { 
-          version: currentVersion, 
-          layouts: layoutsToSave, 
-          hidden: Array.from(hiddenWidgets) 
-      };
-      try {
-          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
-          saveLayout(user.uid, user.userType || 'student', dataToSave);
-      } catch (error) {
-          console.warn("Could not save layout to local storage.", error);
-      }
-  }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
-
   useEffect(() => {
     const loadLayouts = async () => {
       if (!user || layoutInitialized.current) return;
@@ -156,6 +128,25 @@ export default function WidgetDashboard({
     if(user) loadLayouts();
   }, [user, getLayoutKey, getDefaultLayouts, onToggleWidget]);
 
+  const saveCurrentLayout = useCallback((layoutsToSave: Layouts) => {
+      if (!user || !isLayoutLoaded) return;
+      const layoutKey = getLayoutKey();
+      if (!layoutKey) return;
+      
+      const currentVersion = CODE_LAYOUT_VERSION; 
+      const dataToSave: VersionedLayouts = { 
+          version: currentVersion, 
+          layouts: layoutsToSave, 
+          hidden: Array.from(hiddenWidgets) 
+      };
+      try {
+          localStorage.setItem(layoutKey, JSON.stringify(dataToSave));
+          saveLayout(user.uid, user.userType || 'student', dataToSave);
+      } catch (error) {
+          console.warn("Could not save layout to local storage.", error);
+      }
+  }, [user, isLayoutLoaded, getLayoutKey, hiddenWidgets]);
+
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
     setLayouts(allLayouts);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -163,7 +154,7 @@ export default function WidgetDashboard({
         saveCurrentLayout(allLayouts);
     }, 500);
   };
-
+  
   const finalLayouts = useMemo(() => {
     const role = user?.userType || 'student';
     
@@ -234,7 +225,7 @@ export default function WidgetDashboard({
             }}
         >
             {finalLayouts[currentBreakpoint]?.map(item => {
-              if (hiddenWidgets.has(item.i) || (!components[item.i] && !isLoading)) return null;
+              if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
               return (
                   <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
                     {isEditMode && (
