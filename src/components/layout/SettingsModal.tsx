@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -40,6 +41,7 @@ import { NotionLogo } from '../logo/NotionLogo';
 import { saveUserFCMToken, anonymizeUserAccount } from '@/services/userService';
 import { exportUserData, importUserData, formatUserData } from '@/services/dataBackupService';
 import { saveAs } from 'file-saver';
+import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
 
 
 declare global {
@@ -572,7 +574,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 {/* Google Integration */}
                 <div className="flex items-center justify-between h-10">
                     <p className="text-sm font-medium flex items-center">
-                        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.3 1.63-4.5 1.63-5.42 0-9.82-4.4-9.82-9.82s4.4-9.82 9.82-9.82c3.1 0 5.14 1.25 6.32 2.39l2.44-2.44C20.44 1.89 17.13 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c6.92 0 12.04-4.82 12.04-12.04 0-.82-.07-1.62-.2-2.4z" fill="currentColor"/></svg> Google
+                        <GoogleIcon /> Google
                     </p>
                     {isGoogleConnected ? (
                          <Button onClick={handleDisconnectGoogle} variant="destructive" size="sm"><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
@@ -583,7 +585,7 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                 {/* Microsoft Integration */}
                 <div className="flex items-center justify-between h-10">
                     <p className="text-sm font-medium flex items-center">
-                        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5"><title>Microsoft</title><path d="M11.4 21.9H2.1V12.6h9.3V21.9zm0-18.6H2.1v9.3h9.3V3.3zm9.3 0v9.3h9.3V3.3h-9.3zm0 18.6v-9.3h9.3v9.3h-9.3z" fill="currentColor"/></svg> Microsoft
+                        <MicrosoftIcon /> Microsoft
                     </p>
                     {isMicrosoftConnected ? (
                          <Button variant="destructive" size="sm" disabled><Unplug className="mr-2 h-4 w-4" /> Disconnect</Button>
