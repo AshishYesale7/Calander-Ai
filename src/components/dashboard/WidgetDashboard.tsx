@@ -45,7 +45,6 @@ interface WidgetDashboardProps {
   hiddenWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
   isLoading: boolean;
-  onAccordionToggle: (isOpen: boolean, contentHeight: number) => void;
 }
 
 export default function WidgetDashboard({ 
@@ -55,7 +54,6 @@ export default function WidgetDashboard({
     hiddenWidgets = new Set(),
     onToggleWidget,
     isLoading,
-    onAccordionToggle,
 }: WidgetDashboardProps) {
   const { user } = useAuth();
   
@@ -72,6 +70,9 @@ export default function WidgetDashboard({
   const [isLayoutLoaded, setIsLayoutLoaded] = useState(false);
   const layoutInitialized = useRef(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // A ref to store the original height of the plan card before it's expanded
+  const originalPlanHeightRef = useRef<Record<string, number>>({});
 
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
@@ -201,6 +202,40 @@ export default function WidgetDashboard({
     return newLayouts;
   }, [finalLayouts, getLayoutWithDynamicMins]);
   
+  const onAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
+    const expandedHeightInGridUnits = 4;
+    
+    setCurrentLayouts(prevLayouts => {
+        const newLayouts = { ...prevLayouts };
+        const bpLayout = newLayouts[currentBreakpoint];
+        if (!bpLayout) return prevLayouts;
+
+        const planIndex = bpLayout.findIndex(item => item.i === 'plan');
+        if (planIndex === -1) return prevLayouts;
+
+        const planItem = { ...bpLayout[planIndex] };
+        
+        if (isOpen) {
+            // Store the original height before expanding
+            originalPlanHeightRef.current[currentBreakpoint] = planItem.h;
+            planItem.h = expandedHeightInGridUnits;
+        } else {
+            // Restore to original height, or default to 1 if not found
+            planItem.h = originalPlanHeightRef.current[currentBreakpoint] || 1;
+        }
+
+        const newBpLayout = [...bpLayout];
+        newBpLayout[planIndex] = planItem;
+        newLayouts[currentBreakpoint] = newBpLayout;
+        
+        // Trigger a re-save of the layout
+        saveCurrentLayout(newLayouts);
+        
+        return newLayouts;
+    });
+  }, [currentBreakpoint, saveCurrentLayout]);
+
+
   if (!isLayoutLoaded) {
       return <div className="h-full w-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
   }
@@ -233,6 +268,11 @@ export default function WidgetDashboard({
         >
             {finalLayouts[currentBreakpoint]?.map(item => {
               if (hiddenWidgets.has(item.i) || !components[item.i]) return null;
+              // Pass down the onAccordionToggle function only to the 'plan' widget
+              const componentToRender = item.i === 'plan' 
+                ? React.cloneElement(components[item.i] as React.ReactElement, { onAccordionToggle }) 
+                : components[item.i];
+              
               return (
                   <div key={item.i} className="group" onClick={(e) => isEditMode && e.stopPropagation()}>
                     {isEditMode && (
@@ -241,7 +281,7 @@ export default function WidgetDashboard({
                         <div className="drag-handle"></div>
                       </>
                     )}
-                    {isLoading ? <WidgetGhost /> : components[item.i]}
+                    {isLoading ? <WidgetGhost /> : componentToRender}
                   </div>
               )
             })}

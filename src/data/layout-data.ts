@@ -4,11 +4,11 @@
 import type { Layout, Layouts } from 'react-grid-layout';
 
 // NEW: Layout version. Increment this when you make breaking changes to default layouts.
-export const LAYOUT_VERSION = 4;
+export const LAYOUT_VERSION = 5;
 
 // --- Student Layouts ---
 const studentLayoutLg: Layout[] = [
-  { i: "plan", x: 0, y: 0, w: 12, h: 1, minH: 1, maxH: 4 },
+  { i: "plan", x: 0, y: 0, w: 12, h: 1, minW: 3, minH: 1, maxH: 4 },
   { i: "streak", x: 7, y: 1, w: 5, h: 2, minW: 3, minH: 2 },
   { i: "calendar", x: 0, y: 1, w: 6, h: 5, minW: 3, minH: 5 },
   { i: "day-timetable", x: 0, y: 6, w: 6, h: 5, minW: 3, minH: 3 },
@@ -20,7 +20,7 @@ const studentLayoutLg: Layout[] = [
 ];
 
 const studentLayoutMd: Layout[] = [
-  { i: "plan", x: 0, y: 0, w: 10, h: 2, minH: 1, maxH: 4 },
+  { i: "plan", x: 0, y: 0, w: 10, h: 1, minW: 3, minH: 1, maxH: 4 },
   { i: "streak", x: 6, y: 2, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "calendar", x: 0, y: 2, w: 5, h: 5, minW: 3, minH: 5 },
   { i: "day-timetable", x: 5, y: 5, w: 5, h: 4, minW: 3, minH: 3 },
@@ -32,7 +32,7 @@ const studentLayoutMd: Layout[] = [
 ];
 
 const studentLayoutSm: Layout[] = [
-  { i: "plan", x: 0, y: 0, w: 6, h: 1, minH: 1, maxH: 4 },
+  { i: "plan", x: 0, y: 0, w: 6, h: 1, minW: 3, minH: 1, maxH: 4 },
   { i: "streak", x: 0, y: 1, w: 6, h: 3, minW: 3, minH: 2 },
   { i: "calendar", x: 0, y: 4, w: 6, h: 5, minW: 3, minH: 5 },
   { i: "day-timetable", x: 0, y: 9, w: 6, h: 4, minW: 3, minH: 3 },
