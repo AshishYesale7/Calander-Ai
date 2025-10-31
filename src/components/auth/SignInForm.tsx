@@ -44,11 +44,11 @@ declare global {
   }
 }
 
-interface SignUpFormProps {
+interface SignInFormProps {
   avatarUrl: string;
 }
 
-export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
+export default function SignInForm({ avatarUrl }: SignInFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
@@ -90,11 +90,11 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     };
   }, []);
 
-  const handleProviderSignUp = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
+  const handleProviderSignIn = async (providerName: 'google' | 'microsoft' | 'yahoo' | 'apple') => {
      if (providerName === 'apple') {
         toast({
             title: 'Service Not Available',
-            description: 'Sign up with Apple is not available at this time. Please use another method.',
+            description: 'Sign in with Apple is not available at this time. Please use another method.',
             variant: 'default',
         });
         return;
@@ -138,9 +138,8 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         if (!provider) throw new Error("Invalid provider");
 
         const result = await signInWithPopup(auth, provider);
-        // The onAuthStateChanged listener handles profile creation.
 
-        toast({ title: 'Sign In Successful!', description: 'Welcome to Calendar.ai.' });
+        toast({ title: 'Sign In Successful!', description: 'Welcome back to Calendar.ai.' });
         router.push('/dashboard');
 
     } catch (error: any) {
@@ -159,15 +158,6 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
             variant: 'destructive',
             duration: 15000,
           });
-        } else if (error.code === 'auth/account-exists-with-different-credential') {
-            const email = error.customData.email;
-            toast({
-                title: 'Account Exists',
-                description: `An account with ${email} already exists. Please go to the login page to sign in.`,
-                variant: 'destructive',
-                duration: 8000,
-            });
-            router.push(`/auth/signin?email=${encodeURIComponent(email)}`);
         } else {
             toast({ title: 'Error', description: error.message || `Failed to sign in with ${providerName}.`, variant: 'destructive' });
         }
@@ -210,7 +200,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         setCountdown(30);
       }
     } catch (error: any) {
-      console.error("Phone sign-up error:", error);
+      console.error("Phone sign-in error:", error);
       toast({ title: 'Error', description: error.message || "Failed to send OTP.", variant: 'destructive' });
       setCountdown(0);
     } finally {
@@ -232,8 +222,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
     setLoading('otp');
     try {
       const userCredential = await confirmationResult.confirm(otp);
-      // The onAuthStateChanged listener handles profile creation.
-      toast({ title: "Sign In Successful!", description: "Welcome to Calendar.ai." });
+      toast({ title: "Sign In Successful!", description: "Welcome back to Calendar.ai." });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("OTP verification error:", error);
@@ -268,8 +257,8 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         />
       </div>
       <CardContent className="p-0">
-        <h1 className="text-2xl font-bold text-center text-primary mb-2">Create an Account</h1>
-        <p className="text-center text-muted-foreground mb-8">Join using your favorite provider.</p>
+        <h1 className="text-2xl font-bold text-center text-primary mb-2">Sign in to your account</h1>
+        <p className="text-center text-muted-foreground mb-8">Sign in using your favorite provider.</p>
 
         {step === 'phone' ? (
           <div className="space-y-4">
@@ -311,7 +300,7 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
                   )}
                 </div>
                 <Button type="button" className="w-full" onClick={handleVerifyOtp} disabled={!!loading}>
-                    {loading === 'otp' ? <LoadingSpinner size="sm" /> : "Verify & Sign Up"}
+                    {loading === 'otp' ? <LoadingSpinner size="sm" /> : "Verify & Sign In"}
                 </Button>
                 <Button variant="link" onClick={() => setStep('phone')}>Back</Button>
             </div>
@@ -329,24 +318,24 @@ export default function SignUpForm({ avatarUrl }: SignUpFormProps) {
         </div>
 
         <div className="space-y-4">
-            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('google')} disabled={!!loading}>
-                {loading === 'google' ? <LoadingSpinner size="sm" /> : <GoogleIcon />} Sign up with Google
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('google')} disabled={!!loading}>
+                {loading === 'google' ? <LoadingSpinner size="sm" /> : <GoogleIcon />} Sign in with Google
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('microsoft')} disabled={!!loading}>
-                {loading === 'microsoft' ? <LoadingSpinner size="sm" /> : <MicrosoftIcon />} Sign up with Microsoft
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('microsoft')} disabled={!!loading}>
+                {loading === 'microsoft' ? <LoadingSpinner size="sm" /> : <MicrosoftIcon />} Sign in with Microsoft
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('yahoo')} disabled={!!loading}>
-                {loading === 'yahoo' ? <LoadingSpinner size="sm" /> : <YahooIcon />} Sign up with Yahoo
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('yahoo')} disabled={!!loading}>
+                {loading === 'yahoo' ? <LoadingSpinner size="sm" /> : <YahooIcon />} Sign in with Yahoo
             </Button>
-            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignUp('apple')} disabled={!!loading}>
-                {loading === 'apple' ? <LoadingSpinner size="sm" /> : <AppleIcon />} Sign up with Apple
+            <Button variant="outline" type="button" className="w-full h-12" onClick={() => handleProviderSignIn('apple')} disabled={!!loading}>
+                {loading === 'apple' ? <LoadingSpinner size="sm" /> : <AppleIcon />} Sign in with Apple
             </Button>
         </div>
         
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link href="/auth/signin" className="font-medium text-primary hover:underline">
-            Sign in
+          Don't have an account?{' '}
+          <Link href="/auth/signup" className="font-medium text-primary hover:underline">
+            Sign up
           </Link>
         </p>
       </CardContent>
