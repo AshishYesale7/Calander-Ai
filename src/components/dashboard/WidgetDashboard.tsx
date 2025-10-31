@@ -71,9 +71,6 @@ export default function WidgetDashboard({
   const layoutInitialized = useRef(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // A ref to store the original height of the plan card before it's expanded
-  const originalPlanHeightRef = useRef<Record<string, number>>({});
-
   const getLayoutKey = useCallback(() => {
     if (!user) return null;
     const role = user.userType || 'student';
@@ -203,37 +200,8 @@ export default function WidgetDashboard({
   }, [finalLayouts, getLayoutWithDynamicMins]);
   
   const onAccordionToggle = useCallback((isOpen: boolean, contentHeight: number) => {
-    const expandedHeightInGridUnits = 4;
-    
-    setCurrentLayouts(prevLayouts => {
-        const newLayouts = { ...prevLayouts };
-        const bpLayout = newLayouts[currentBreakpoint];
-        if (!bpLayout) return prevLayouts;
-
-        const planIndex = bpLayout.findIndex(item => item.i === 'plan');
-        if (planIndex === -1) return prevLayouts;
-
-        const planItem = { ...bpLayout[planIndex] };
-        
-        if (isOpen) {
-            // Store the original height before expanding
-            originalPlanHeightRef.current[currentBreakpoint] = planItem.h;
-            planItem.h = expandedHeightInGridUnits;
-        } else {
-            // Restore to original height, or default to 1 if not found
-            planItem.h = originalPlanHeightRef.current[currentBreakpoint] || 1;
-        }
-
-        const newBpLayout = [...bpLayout];
-        newBpLayout[planIndex] = planItem;
-        newLayouts[currentBreakpoint] = newBpLayout;
-        
-        // Trigger a re-save of the layout
-        saveCurrentLayout(newLayouts);
-        
-        return newLayouts;
-    });
-  }, [currentBreakpoint, saveCurrentLayout]);
+    // This is now handled automatically by removing maxH, but we keep the prop for potential future use.
+  }, []);
 
 
   if (!isLayoutLoaded) {
