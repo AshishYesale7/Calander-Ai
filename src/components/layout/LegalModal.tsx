@@ -35,8 +35,8 @@ const LegalModalContent = ({ title, children }: { title: string, children: React
 export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl frosted-glass flex flex-col h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl frosted-glass flex flex-col h-[90vh] p-0">
+        <DialogHeader className="p-6 pb-4 border-b border-border/30">
           <DialogTitle className="font-headline text-xl text-primary">Legal Information</DialogTitle>
           <DialogDescription>
             Our policies regarding your use of our service.
@@ -44,15 +44,17 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
         </DialogHeader>
         <div className="flex-1 min-h-0">
             <Tabs defaultValue="terms" className="h-full flex flex-col">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
-                    <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
-                    <TabsTrigger value="privacy">Privacy Policy</TabsTrigger>
-                    <TabsTrigger value="refund">Cancellation & Refund</TabsTrigger>
-                    <TabsTrigger value="shipping">Shipping & Delivery</TabsTrigger>
-                </TabsList>
+                <div className="px-6">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+                        <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
+                        <TabsTrigger value="privacy">Privacy Policy</TabsTrigger>
+                        <TabsTrigger value="refund">Cancellation & Refund</TabsTrigger>
+                        <TabsTrigger value="shipping">Shipping & Delivery</TabsTrigger>
+                    </TabsList>
+                </div>
                 <ScrollArea className="flex-1 mt-4">
-                    <div className="p-4">
-                        <TabsContent value="terms">
+                    <div className="px-6 pb-6">
+                        <TabsContent value="terms" className="mt-0">
                             <LegalModalContent title="Terms and Conditions">
                                 <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
                                 <p>Please read these terms and conditions carefully before using Our Service.</p>
@@ -126,7 +128,7 @@ export default function LegalModal({ isOpen, onOpenChange }: LegalModalProps) {
                 </ScrollArea>
             </Tabs>
         </div>
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t border-border/30">
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
