@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Bot,
   ChevronDown,
   Settings,
   MessageSquare,
-  Terminal,
+  Zap, // Changed from Terminal
   Folder,
   Search as SearchIcon,
   X,
@@ -16,8 +16,6 @@ import {
   Expand,
   Shrink,
   Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
@@ -33,29 +31,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
+import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
+import type { ChatMessage } from '@/components/layout/AiAssistantChat'; // Adjusted import
 import FileSystemBody from './FileSystemBody';
-
-
-export interface ChatMessage {
-  role: 'user' | 'model';
-  content: string;
-}
-
-interface AiAssistantChatProps {
-  onBack: () => void;
-  dragControls: any;
-  handleToggleFullScreen: () => void;
-  isFullScreen: boolean;
-  selectedModel: string;
-  setSelectedModel: (model: string) => void;
-  chatHistory: ChatMessage[];
-  isLoading: boolean;
-  chatSessions: ChatSession[];
-  activeChatId: string;
-  onNewChat: () => void;
-  onSelectChat: (id: string) => void;
-}
-
+import AutomationTab from './tabs/AutomationTab'; // Import the new AutomationTab
 
 const LeftSidebar = ({
     chatSessions,
@@ -64,22 +43,20 @@ const LeftSidebar = ({
     onNewChat,
     activeView,
     setActiveView,
-    isExpanded,
-    onToggle,
 }: {
     chatSessions: ChatSession[],
     activeChatId: string,
     onSelectChat: (id: string) => void,
     onNewChat: () => void,
-    activeView: 'chat' | 'files' | 'terminal' | 'search',
-    setActiveView: (view: 'chat' | 'files' | 'terminal' | 'search') => void,
-    isExpanded: boolean,
-    onToggle: () => void,
+    activeView: 'chat' | 'files' | 'automation' | 'search',
+    setActiveView: (view: 'chat' | 'files' | 'automation' | 'search') => void,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const icons = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Folder, label: 'Files' },
-    { id: 'terminal', icon: Terminal, label: 'Terminal' },
+    { id: 'automation', icon: Zap, label: 'Automation' }, // Changed from terminal to automation
     { id: 'search', icon: SearchIcon, label: 'Search' },
   ];
   return (
@@ -98,13 +75,13 @@ const LeftSidebar = ({
             )}
              <Button
                 variant="ghost"
-                onClick={onToggle}
+                onClick={() => setIsExpanded(prev => !prev)}
                 className={cn(
                     "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
                     isExpanded ? "w-8 justify-center" : "w-8 justify-center",
                 )}
               >
-                {isExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
               </Button>
         </div>
 
@@ -289,10 +266,22 @@ export default function AiAssistantChat({
     activeChatId,
     onNewChat,
     onSelectChat
-}: AiAssistantChatProps) {
+}: {
+  onBack: () => void;
+  dragControls: any;
+  handleToggleFullScreen: () => void;
+  isFullScreen: boolean;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  chatHistory: ChatMessage[];
+  isLoading: boolean;
+  chatSessions: ChatSession[];
+  activeChatId: string;
+  onNewChat: () => void;
+  onSelectChat: (id: string) => void;
+}) {
 
-  const [activeView, setActiveView] = useState<'chat' | 'files' | 'terminal' | 'search'>('chat');
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [activeView, setActiveView] = useState<'chat' | 'files' | 'automation' | 'search'>('chat');
 
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
@@ -321,15 +310,14 @@ export default function AiAssistantChat({
               onNewChat={onNewChat}
               activeView={activeView}
               setActiveView={setActiveView}
-              isExpanded={isSidebarExpanded}
-              onToggle={() => setIsSidebarExpanded(prev => !prev)}
             />
             <div className="flex-1 flex flex-col relative">
                 {activeView === 'chat' && <ChatBody chatHistory={chatHistory} isLoading={isLoading} />}
                 {activeView === 'files' && <FileSystemBody />}
-                {(activeView === 'terminal' || activeView === 'search') && (
+                {activeView === 'automation' && <AutomationTab />}
+                {activeView === 'search' && (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                        <p>{activeView.charAt(0).toUpperCase() + activeView.slice(1)} view coming soon.</p>
+                        <p>Search view coming soon.</p>
                     </div>
                 )}
             </div>
@@ -337,3 +325,6 @@ export default function AiAssistantChat({
     </div>
   );
 }
+
+// Type for chat message moved to avoid re-export issue
+export type { ChatMessage };
