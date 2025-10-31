@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -37,10 +38,8 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
       console.warn("Speech recognition not supported in this browser.");
       return;
     }
-    if (isListening || !isEnabled) return;
+    if (recognitionRef.current || !isEnabled) return;
     
-    // Create a new recognition instance
-    cleanup(); // Clean up any previous instance
     recognitionRef.current = new SpeechRecognition();
     const recognition = recognitionRef.current;
     
@@ -52,8 +51,6 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
         const transcript = event.results[i][0].transcript.trim().toLowerCase();
         if (event.results[i].isFinal && transcript.includes(wakeWord.toLowerCase())) {
           onActivation();
-          // Optional: stop listening after activation to prevent re-triggering
-          // cleanup();
         }
       }
     };
@@ -67,14 +64,16 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
     };
     
     recognition.onend = () => {
-      // The service can sometimes stop on its own, so we restart it if it's supposed to be enabled.
       if (isEnabled && permissionStatus === 'granted') {
         setTimeout(() => {
             if (recognitionRef.current && isEnabled) {
                  try {
+                    // Check if it's not already running
                     recognitionRef.current.start();
-                 } catch (e) {
-                     // Could fail if already started, which is fine.
+                 } catch (e: any) {
+                     if (e.name !== 'InvalidStateError') {
+                        console.error("Could not restart recognition:", e);
+                     }
                  }
             }
         }, 500);
@@ -86,25 +85,25 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
     try {
       recognition.start();
       setIsListening(true);
-    } catch(e) {
-        console.error("Could not start recognition:", e);
+    } catch(e: any) {
+        if (e.name !== 'InvalidStateError') {
+            console.error("Could not start recognition:", e);
+        }
     }
 
-  }, [isListening, isEnabled, cleanup, wakeWord, onActivation, permissionStatus]);
+  }, [isEnabled, wakeWord, onActivation, permissionStatus, cleanup]);
   
   // Effect to manage the listening state based on the isEnabled prop
   useEffect(() => {
     if (isEnabled) {
       if (permissionStatus === 'granted') {
         startListening();
-      } else if (permissionStatus === 'denied') {
-        // Don't do anything if permission was already denied
-      } else { // 'prompt' state
-        // The user has to initiate the first permission request
       }
     } else {
       cleanup();
     }
+    
+    // Return cleanup function to be called when component unmounts or dependencies change
     return cleanup;
   }, [isEnabled, permissionStatus, startListening, cleanup]);
 
@@ -124,7 +123,7 @@ export const useVoiceActivation = ({ wakeWord, onActivation, isEnabled }: UseVoi
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop()); // We don't need the stream, just the permission
       setPermissionStatus('granted');
-      startListening();
+      // The useEffect will now automatically call startListening
     } catch (err) {
       setPermissionStatus('denied');
       toast({ title: "Permission Denied", description: "Microphone access is required for voice commands.", variant: "destructive" });
