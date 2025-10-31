@@ -416,15 +416,13 @@ export default function AppContent({
           isFullScreen={false}
         />
         
-        <AnimatePresence key="command-bar-presence">
-            {!isMobile && <DesktopCommandBar key="desktop-command-bar" scrollDirection={scrollDirection} />}
+        <AnimatePresence>
+          {/* We now render BOTH components on desktop, but pass scrollDirection only to the one that needs it */}
+          {!isMobile && <DesktopCommandBar key="desktop-command-bar" scrollDirection={scrollDirection} />}
+          {!isMobile && <DashboardChat key="dashboard-chat" />}
         </AnimatePresence>
         
-        <AnimatePresence key="dashboard-chat-presence">
-          {!isMobile && <DashboardChat key="dashboard-chat" scrollDirection={scrollDirection} />}
-        </AnimatePresence>
-        
-        <AnimatePresence key="mobile-nav-presence">
+        <AnimatePresence>
             {isMobile && isBottomNavVisible && !isChatInputFocused && !isCallViewActive && !isChatSidebarOpen && (
                 <MobileBottomNav
                     onCommandClick={() => setIsCommandPaletteOpen(true)}

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, useDragControls, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,7 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
   );
 };
 
-export default function DashboardChat({ scrollDirection }: { scrollDirection: 'up' | 'down' }) {
+export default function DashboardChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -106,11 +106,6 @@ export default function DashboardChat({ scrollDirection }: { scrollDirection: 'u
         setChatHistory([{ role: 'model', content: "Hello! How can I help you understand Calendar.ai?"}])
     }
   };
-  
-  const orbVariants = {
-    up: { y: 0, opacity: 1 },
-    down: { y: 120, opacity: 0 }
-  };
 
   return (
     <motion.div
@@ -119,11 +114,13 @@ export default function DashboardChat({ scrollDirection }: { scrollDirection: 'u
       dragListener={false}
       dragMomentum={false}
       dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
-      variants={orbVariants}
-      animate={scrollDirection}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className="fixed bottom-4 right-4 z-[200] flex flex-col items-end"
-      style={{ x: 'var(--x)', y: 'var(--y)' }} // Use CSS variables for positioning if needed
+      style={{ x: 'var(--x)', y: 'var(--y)' }}
+      onPointerDown={(e) => {
+          if (!isOpen) {
+            dragControls.start(e);
+          }
+      }}
     >
       <AnimatePresence>
         {isOpen && (
@@ -162,11 +159,8 @@ export default function DashboardChat({ scrollDirection }: { scrollDirection: 'u
           isOpen && "is-open"
         )}
         onPointerDown={(e) => {
-            // This stops the drag from being initiated when interacting with the bar content
             if (isOpen) {
               e.stopPropagation();
-            } else {
-              dragControls.start(e);
             }
         }}
       >
