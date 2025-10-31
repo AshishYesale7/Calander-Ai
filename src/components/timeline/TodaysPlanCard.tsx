@@ -211,12 +211,9 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
       >
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
-            <AccordionTrigger className="p-4 md:p-6 hover:no-underline" disabled={isRoutineSetupNeeded}>
-              <div 
-                className="w-full flex items-center justify-between gap-2"
-                onClickCapture={handleHeaderClick}
-              >
-                  <div className="flex items-center gap-2">
+            <div className="p-4 md:p-6" onClickCapture={handleHeaderClick}>
+              <AccordionTrigger className="w-full flex items-center justify-between gap-2 hover:no-underline p-0">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
                         variant="outline"
                         size="icon"
@@ -244,7 +241,7 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                         )}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-1 pl-2">
+                  <div className="flex items-center gap-1 pl-2 flex-shrink-0">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -281,8 +278,8 @@ export default function TodaysPlanCard({ onAccordionToggle }: TodaysPlanCardProp
                       <Edit className="h-5 w-5 text-muted-foreground" />
                     </Button>
                   </div>
-              </div>
-            </AccordionTrigger>
+              </AccordionTrigger>
+            </div>
             <AccordionContent>
                 <div className="px-6 pb-6 pt-0">
                     {renderContent()}
