@@ -125,7 +125,7 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
 
 
   const [size, setSize] = useState({
-      open: { width: 580, height: 480 },
+      open: { width: 720, height: 600 },
       closed: { width: 400, height: 56 }
   });
   
