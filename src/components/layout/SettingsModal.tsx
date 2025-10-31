@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -8,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -299,7 +301,9 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
           </Tabs>
         </div>
         <DialogFooter className="p-6 pt-4 border-t">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">Close</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
