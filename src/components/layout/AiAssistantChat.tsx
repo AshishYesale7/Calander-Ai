@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Bot,
@@ -85,12 +85,30 @@ const LeftSidebar = ({
   return (
     <div
         className={cn(
-            "bg-black/20 flex flex-col items-center py-2 gap-2 border-r border-white/10 transition-[width] duration-300",
-            isExpanded ? "w-48 items-stretch" : "w-12"
+            "bg-black/20 flex flex-col py-2 gap-2 border-r border-white/10 transition-[width] duration-300",
+            isExpanded ? "w-48 items-stretch" : "w-12 items-center"
         )}
         onPointerDown={(e) => e.stopPropagation()}
     >
-        <div className="flex-1 space-y-2">
+        <div className="flex-shrink-0 flex items-center justify-between px-2 h-8">
+            {isExpanded && (
+                <Button variant="outline" className="h-7 text-xs w-full bg-gray-700/50 border-white/10" onClick={onNewChat}>
+                    <Plus className="mr-1 h-3 w-3" /> New Chat
+                </Button>
+            )}
+             <Button
+                variant="ghost"
+                onClick={onToggle}
+                className={cn(
+                    "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
+                    isExpanded ? "w-8 justify-center" : "w-8 justify-center",
+                )}
+              >
+                {isExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </Button>
+        </div>
+
+        <div className="flex-1 space-y-2 mt-2">
             {icons.map((item) => (
                 <Button
                 key={item.id}
@@ -125,25 +143,8 @@ const LeftSidebar = ({
                             </button>
                         ))}
                     </div>
-                    <Button variant="outline" className="mt-2 bg-gray-700/50 border-white/10 h-7 text-xs w-full" onClick={onNewChat}>
-                        <Plus className="mr-1 h-3 w-3" /> New Chat
-                    </Button>
                 </div>
             )}
-        </div>
-        
-        <div className="mt-auto">
-             <Button
-                variant="ghost"
-                onClick={onToggle}
-                className={cn(
-                    "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
-                    isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
-                )}
-              >
-                {isExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-                {isExpanded && <span className="text-sm">Collapse</span>}
-              </Button>
         </div>
     </div>
   );
