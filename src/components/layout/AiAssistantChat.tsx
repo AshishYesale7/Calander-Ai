@@ -16,6 +16,8 @@ import {
   Expand,
   Shrink,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
@@ -61,7 +63,9 @@ const LeftSidebar = ({
     onSelectChat,
     onNewChat,
     activeView,
-    setActiveView
+    setActiveView,
+    isExpanded,
+    onToggle,
 }: {
     chatSessions: ChatSession[],
     activeChatId: string,
@@ -69,8 +73,9 @@ const LeftSidebar = ({
     onNewChat: () => void,
     activeView: 'chat' | 'files' | 'terminal' | 'search',
     setActiveView: (view: 'chat' | 'files' | 'terminal' | 'search') => void,
+    isExpanded: boolean,
+    onToggle: () => void,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const icons = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Folder, label: 'Files' },
@@ -85,52 +90,61 @@ const LeftSidebar = ({
         )}
         onPointerDown={(e) => e.stopPropagation()}
     >
-      {icons.map((item) => (
-        <Button
-          key={item.id}
-          variant="ghost"
-          onClick={() => {
-            setActiveView(item.id as any);
-            if (item.id === 'chat') {
-              setIsExpanded(prev => !prev);
-            } else {
-              setIsExpanded(false);
-            }
-          }}
-          className={cn(
-            "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
-            isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
-            activeView === item.id && 'bg-yellow-400/80 text-black'
-          )}
-          aria-label={item.label}
-        >
-          <item.icon className="h-4 w-4 shrink-0" />
-          {isExpanded && <span className="text-sm truncate">{item.label}</span>}
-        </Button>
-      ))}
+        <div className="flex-1 space-y-2">
+            {icons.map((item) => (
+                <Button
+                key={item.id}
+                variant="ghost"
+                onClick={() => setActiveView(item.id as any)}
+                className={cn(
+                    "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
+                    isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
+                    activeView === item.id && 'bg-yellow-400/80 text-black'
+                )}
+                aria-label={item.label}
+                >
+                <item.icon className="h-4 w-4 shrink-0" />
+                {isExpanded && <span className="text-sm truncate">{item.label}</span>}
+                </Button>
+            ))}
 
-      {isExpanded && activeView === 'chat' && (
-        <div className="flex-1 mt-2 overflow-y-auto px-2 flex flex-col">
-            <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
-            <div className="flex-1 overflow-y-auto">
-                {chatSessions.map(session => (
-                    <button
-                        key={session.id}
-                        onClick={() => onSelectChat(session.id)}
-                        className={cn(
-                            "w-full text-left text-sm p-2 rounded-md truncate",
-                            session.id === activeChatId ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
-                        )}
-                    >
-                        {session.title}
-                    </button>
-                ))}
-            </div>
-            <Button variant="outline" className="mt-2 bg-gray-700/50 border-white/10 h-7 text-xs" onClick={onNewChat}>
-              <Plus className="mr-1 h-3 w-3" /> New Chat
-            </Button>
+            {isExpanded && activeView === 'chat' && (
+                <div className="px-2 pt-2 border-t border-white/10 mt-2">
+                    <h4 className="text-xs font-semibold text-gray-500 mb-2 px-2">History</h4>
+                    <div className="max-h-48 overflow-y-auto">
+                        {chatSessions.map(session => (
+                            <button
+                                key={session.id}
+                                onClick={() => onSelectChat(session.id)}
+                                className={cn(
+                                    "w-full text-left text-sm p-2 rounded-md truncate",
+                                    session.id === activeChatId ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5"
+                                )}
+                            >
+                                {session.title}
+                            </button>
+                        ))}
+                    </div>
+                    <Button variant="outline" className="mt-2 bg-gray-700/50 border-white/10 h-7 text-xs w-full" onClick={onNewChat}>
+                        <Plus className="mr-1 h-3 w-3" /> New Chat
+                    </Button>
+                </div>
+            )}
         </div>
-      )}
+        
+        <div className="mt-auto">
+             <Button
+                variant="ghost"
+                onClick={onToggle}
+                className={cn(
+                    "h-8 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white flex",
+                    isExpanded ? "w-auto mx-2 justify-start gap-2 px-2" : "w-8 justify-center",
+                )}
+              >
+                {isExpanded ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                {isExpanded && <span className="text-sm">Collapse</span>}
+              </Button>
+        </div>
     </div>
   );
 };
@@ -277,6 +291,7 @@ export default function AiAssistantChat({
 }: AiAssistantChatProps) {
 
   const [activeView, setActiveView] = useState<'chat' | 'files' | 'terminal' | 'search'>('chat');
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
@@ -305,6 +320,8 @@ export default function AiAssistantChat({
               onNewChat={onNewChat}
               activeView={activeView}
               setActiveView={setActiveView}
+              isExpanded={isSidebarExpanded}
+              onToggle={() => setIsSidebarExpanded(prev => !prev)}
             />
             <div className="flex-1 flex flex-col relative">
                 {activeView === 'chat' && <ChatBody chatHistory={chatHistory} isLoading={isLoading} />}
