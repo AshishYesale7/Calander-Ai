@@ -466,3 +466,16 @@ export const GenerateDailyBriefingOutputSchema = z.object({
   briefing: z.string().describe("A concise, single-paragraph summary of the user's day, highlighting key events and emails."),
 });
 export type GenerateDailyBriefingOutput = z.infer<typeof GenerateDailyBriefingOutputSchema>;
+
+
+// New Summarizer Flow Types
+export const SummarizeTextInputSchema = z.object({
+  textToSummarize: z.string().describe("The block of text to be summarized."),
+  apiKey: z.string().optional().nullable().describe("Optional user-provided Gemini API key."),
+});
+export type SummarizeTextInput = z.infer<typeof SummarizeTextInputSchema>;
+
+export const SummarizeTextOutputSchema = z.object({
+  summary: z.string().describe("A concise, one-paragraph summary of the provided text, focusing on key points and takeaways."),
+});
+export type SummarizeTextOutput = z.infer<typeof SummarizeTextOutputSchema>;
