@@ -124,12 +124,12 @@ export default function EventCalendarView({
               <span className="sr-only">Add New Event</span>
           </Button>
           <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-8 w-8">
-                  <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              <Button variant="ghost" size="icon" onClick={onSync} disabled={isSyncing} className="h-9 w-9">
+                  <RefreshCw className={cn("h-5 w-5", isSyncing && "animate-spin")} />
                   <span className="sr-only">Sync with Google Calendar</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-8 w-8">
-                  <Trash2 className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={onToggleTrash} className="h-9 w-9">
+                  <Trash2 className="h-5 w-5" />
                   <span className="sr-only">Open Trash</span>
               </Button>
             </div>
