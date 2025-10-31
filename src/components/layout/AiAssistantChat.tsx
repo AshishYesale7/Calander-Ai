@@ -8,7 +8,7 @@ import {
   ChevronDown,
   Settings,
   MessageSquare,
-  Zap, // Changed from Terminal
+  Zap,
   Folder,
   Search as SearchIcon,
   X,
@@ -16,6 +16,7 @@ import {
   Expand,
   Shrink,
   Plus,
+  FileText, // Added new icon
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
@@ -32,9 +33,10 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
 import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
-import type { ChatMessage } from '@/components/layout/AiAssistantChat'; // Adjusted import
+import type { ChatMessage } from '@/components/layout/AiAssistantChat';
 import FileSystemBody from './FileSystemBody';
-import AutomationTab from './tabs/AutomationTab'; // Import the new AutomationTab
+import AutomationTab from './tabs/AutomationTab';
+import SummarizerTab from './tabs/SummarizerTab'; // Import the new SummarizerTab
 
 const LeftSidebar = ({
     chatSessions,
@@ -48,15 +50,16 @@ const LeftSidebar = ({
     activeChatId: string,
     onSelectChat: (id: string) => void,
     onNewChat: () => void,
-    activeView: 'chat' | 'files' | 'automation' | 'search',
-    setActiveView: (view: 'chat' | 'files' | 'automation' | 'search') => void,
+    activeView: 'chat' | 'files' | 'automation' | 'search' | 'summarizer',
+    setActiveView: (view: 'chat' | 'files' | 'automation' | 'search' | 'summarizer') => void,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const icons = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
+    { id: 'summarizer', icon: FileText, label: 'Summarizer' },
     { id: 'files', icon: Folder, label: 'Files' },
-    { id: 'automation', icon: Zap, label: 'Automation' }, // Changed from terminal to automation
+    { id: 'automation', icon: Zap, label: 'Automation' },
     { id: 'search', icon: SearchIcon, label: 'Search' },
   ];
   return (
@@ -281,7 +284,7 @@ export default function AiAssistantChat({
   onSelectChat: (id: string) => void;
 }) {
 
-  const [activeView, setActiveView] = useState<'chat' | 'files' | 'automation' | 'search'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'files' | 'automation' | 'search' | 'summarizer'>('chat');
 
   const chatHeaderDragControls = {
       start: (e: React.PointerEvent) => {
@@ -313,6 +316,7 @@ export default function AiAssistantChat({
             />
             <div className="flex-1 flex flex-col relative">
                 {activeView === 'chat' && <ChatBody chatHistory={chatHistory} isLoading={isLoading} />}
+                {activeView === 'summarizer' && <SummarizerTab />}
                 {activeView === 'files' && <FileSystemBody />}
                 {activeView === 'automation' && <AutomationTab />}
                 {activeView === 'search' && (
