@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -12,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Unplug, CheckCircle, Smartphone, Bell, User, Link2, FileText, Globe, UserX, UserCheck, PhoneAuthProvider, Brain } from 'lucide-react';
+import { KeyRound, Unplug, CheckCircle, Smartphone, Bell, User, Link2, FileText, Globe, UserX, UserCheck, PhoneAuthProvider, Brain, Mic } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -113,9 +112,11 @@ const IntegrationRow = ({
 interface SettingsModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  isVoiceActivationEnabled: boolean;
+  onToggleVoiceActivation: (enabled: boolean) => void;
 }
 
-export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationEnabled, onToggleVoiceActivation }: SettingsModalProps) {
   const { apiKey: currentApiKey, setApiKey } = useApiKey();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -244,14 +245,14 @@ export default function SettingsModal({ isOpen, onOpenChange }: SettingsModalPro
                     </div>
                     <Separator/>
                     <div className="space-y-3">
-                      <h3 className="font-medium flex items-center"><Smartphone className="mr-2 h-4 w-4" /> Phone Number</h3>
-                      {user?.phoneNumber ? (
-                        <div className="flex items-center justify-between h-10">
-                          <p className="text-sm text-green-400 font-medium flex items-center"><CheckCircle className="mr-2 h-4 w-4" />Linked: {user.phoneNumber}</p>
+                      <h3 className="font-medium flex items-center"><Mic className="mr-2 h-4 w-4" /> Voice Activation</h3>
+                      <div className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="voice-activation-switch">Enable "Hey Cafe"</Label>
+                            <p className="text-xs text-muted-foreground">Activate the AI by voice.</p>
                         </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Link your phone number for OTP-based sign-in and account recovery.</p>
-                      )}
+                        <Switch id="voice-activation-switch" checked={isVoiceActivationEnabled} onCheckedChange={onToggleVoiceActivation} />
+                      </div>
                     </div>
                     <Separator/>
                     <div className="space-y-3">

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -36,6 +35,7 @@ import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { saveUserFCMToken } from '@/services/userService';
 import { GlobalCallUI } from '@/context/ChatProviderWrapper';
+import { useVoiceActivation } from '@/hooks/useVoiceActivation';
 
 function ChatAndCallUI() {
   const { 
@@ -139,6 +139,30 @@ export default function AppContent({
     const lastScrollY = useRef(0);
 
     const [search, setSearch] = useState('');
+    const [isVoiceActivationEnabled, setIsVoiceActivationEnabled] = useState(false);
+
+    const {
+      isListening,
+      permissionStatus,
+      requestPermissionAndStart,
+    } = useVoiceActivation({
+      wakeWord: 'hey cafe',
+      onActivation: () => setIsCommandPaletteOpen(true),
+      isEnabled: isVoiceActivationEnabled,
+    });
+    
+    useEffect(() => {
+        const storedValue = localStorage.getItem('voice-activation-enabled');
+        setIsVoiceActivationEnabled(storedValue === 'true');
+    }, []);
+    
+    const handleToggleVoiceActivation = (enabled: boolean) => {
+        setIsVoiceActivationEnabled(enabled);
+        localStorage.setItem('voice-activation-enabled', String(enabled));
+        if (enabled && permissionStatus !== 'granted') {
+          requestPermissionAndStart();
+        }
+    };
     
     const { setOpen: setSidebarOpen, state: sidebarState } = useSidebar();
     
@@ -403,7 +427,12 @@ export default function AppContent({
         </AnimatePresence>
         
         <CustomizeThemeModal isOpen={isCustomizeModalOpen} onOpenChange={setIsCustomizeModalOpen} />
-        <SettingsModal isOpen={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen} />
+        <SettingsModal 
+            isOpen={isSettingsModalOpen} 
+            onOpenChange={setIsSettingsModalOpen} 
+            isVoiceActivationEnabled={isVoiceActivationEnabled}
+            onToggleVoiceActivation={handleToggleVoiceActivation}
+        />
         <LegalModal isOpen={isLegalModalOpen} onOpenChange={setIsLegalModalOpen} />
         <NotificationPermissionModal isOpen={isNotificationModalOpen} onOpenChange={setIsNotificationModalOpen} onConfirm={requestNotificationPermission} />
       </div>
