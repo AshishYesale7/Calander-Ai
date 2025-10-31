@@ -2,7 +2,7 @@
 'use client';
 
 import type { TimelineEvent } from '@/types';
-import { useMemo, type ReactNode, useRef, useEffect, useState, useCallback } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format, isPast, isSameDay, startOfDay as dfnsStartOfDay, isToday as dfnsIsToday } from 'date-fns';
@@ -135,7 +135,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
               <CardTitle className="font-headline text-xl text-primary">{format(initialDate, 'MMMM d, yyyy')}</CardTitle>
               <CardDescription>Hourly schedule. Scroll to see all hours and events.</CardDescription>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md p-1 rounded-full border border-border/30">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label="Theme settings">
@@ -175,7 +175,7 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
         </div>
       </CardHeader>
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border/30 timetable-allday-area" style={{ backgroundColor: viewTheme === 'professional' ? '#1c1c1c' : undefined }}>
+          <div className="p-2 border-b border-border/30 bg-white timetable-allday-area" style={{ backgroundColor: viewTheme === 'professional' ? '#1c1c1c' : undefined }}>
             <div className="flex gap-2">
                 <span className="text-xs font-semibold w-12 text-center">All-day</span>
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
@@ -321,3 +321,5 @@ export default function DayTimetableView({ date: initialDate, events: allEvents,
     </Card>
   );
 }
+
+    
