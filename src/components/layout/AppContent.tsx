@@ -143,13 +143,16 @@ export default function AppContent({
     const [search, setSearch] = useState('');
     const [isVoiceActivationEnabled, setIsVoiceActivationEnabled] = useState(false);
 
+    // NEW state for the orb
+    const [isChatOrbOpen, setIsChatOrbOpen] = useState(false);
+
     const {
       isListening,
       permissionStatus,
       requestPermissionAndStart,
     } = useVoiceActivation({
       wakeWord: 'hey cafe',
-      onActivation: () => setIsCommandPaletteOpen(true),
+      onActivation: () => setIsChatOrbOpen(true),
       isEnabled: isVoiceActivationEnabled,
     });
     
@@ -417,9 +420,12 @@ export default function AppContent({
         />
         
         <AnimatePresence>
-          {/* We now render BOTH components on desktop, but pass scrollDirection only to the one that needs it */}
-          {!isMobile && <DesktopCommandBar key="desktop-command-bar" scrollDirection={scrollDirection} />}
-          {!isMobile && <DashboardChat key="dashboard-chat" />}
+            {!isMobile && (
+              <React.Fragment key="desktop-ui-wrapper">
+                <DesktopCommandBar scrollDirection={scrollDirection} />
+                <DashboardChat isOpen={isChatOrbOpen} setIsOpen={setIsChatOrbOpen} />
+              </React.Fragment>
+            )}
         </AnimatePresence>
         
         <AnimatePresence>

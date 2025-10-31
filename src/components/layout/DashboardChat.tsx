@@ -39,8 +39,12 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
   );
 };
 
-export default function DashboardChat() {
-  const [isOpen, setIsOpen] = useState(false);
+interface DashboardChatProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function DashboardChat({ isOpen, setIsOpen }: DashboardChatProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +105,7 @@ export default function DashboardChat() {
   }, [isOpen]);
 
   const handleOrbClick = () => {
-    setIsOpen(prev => !prev);
+    setIsOpen(!isOpen);
     if (!isOpen && chatHistory.length === 0) {
         setChatHistory([{ role: 'model', content: "Hello! How can I help you understand Calendar.ai?"}])
     }
@@ -111,16 +115,9 @@ export default function DashboardChat() {
     <motion.div
       drag
       dragControls={dragControls}
-      dragListener={false}
+      dragListener={!isOpen}
       dragMomentum={false}
-      dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
       className="fixed bottom-4 right-4 z-[200] flex flex-col items-end"
-      style={{ x: 'var(--x)', y: 'var(--y)' }}
-      onPointerDown={(e) => {
-          if (!isOpen) {
-            dragControls.start(e);
-          }
-      }}
     >
       <AnimatePresence>
         {isOpen && (
