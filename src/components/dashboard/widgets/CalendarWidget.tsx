@@ -13,6 +13,7 @@ import { useTimezone } from '@/hooks/use-timezone';
 import type { TimelineEvent } from '@/types';
 
 interface CalendarWidgetProps {
+  events: TimelineEvent[];
   onDayClick: (date: Date) => void;
   onToggleTrash: () => void;
   onSyncComplete: () => void;
@@ -21,7 +22,15 @@ interface CalendarWidgetProps {
   onEditEvent: (event: TimelineEvent) => void;
 }
 
-export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComplete, onAddEvent, onDeleteEvent, onEditEvent }: CalendarWidgetProps) {
+export default function CalendarWidget({ 
+  events,
+  onDayClick, 
+  onToggleTrash, 
+  onSyncComplete, 
+  onAddEvent, 
+  onDeleteEvent, 
+  onEditEvent 
+}: CalendarWidgetProps) {
   const { user } = useAuth();
   const { apiKey } = useApiKey();
   const { toast } = useToast();
@@ -81,7 +90,7 @@ export default function CalendarWidget({ onDayClick, onToggleTrash, onSyncComple
   return (
     <div className="relative h-full flex flex-col">
        <EventCalendarView 
-         events={[]} 
+         events={events} 
          month={new Date()} 
          onMonthChange={() => {}} 
          onDayClick={onDayClick} 

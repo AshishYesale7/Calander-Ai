@@ -130,7 +130,7 @@ export default function EventCalendarView({
                         onSelect={(day) => handleDayClickInternal(day)}
                         month={month}
                         onMonthChange={onMonthChange}
-                        className="rounded-md p-0 [&_button]:text-base [&>div]:w-full"
+                        className="p-0 [&>div]:w-full"
                         classNames={{
                           head_cell: "w-full md:w-9 text-muted-foreground rounded-md text-xs font-normal",
                           cell: "h-9 w-9 md:h-10 md:w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
