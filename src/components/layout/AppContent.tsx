@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -34,6 +35,7 @@ import MobileBottomNav from './MobileBottomNav';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '@/lib/firebase';
 import { saveUserFCMToken } from '@/services/userService';
+import { GlobalCallUI } from '@/context/ChatProviderWrapper';
 
 function ChatAndCallUI() {
   const { 
