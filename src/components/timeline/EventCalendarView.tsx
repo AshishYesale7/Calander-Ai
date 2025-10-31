@@ -22,8 +22,8 @@ interface EventCalendarViewProps {
   isSyncing: boolean;
   onToggleTrash: () => void;
   onAddEvent: () => void;
-  onDeleteEvent?: (eventId: string) => void;
-  onEditEvent?: (event: TimelineEvent) => void;
+  onDeleteEvent: (eventId: string) => void;
+  onEditEvent: (event: TimelineEvent) => void;
 }
 
 export default function EventCalendarView({
@@ -31,8 +31,8 @@ export default function EventCalendarView({
   month,
   onMonthChange,
   onDayClick,
-  onSync,
   isSyncing,
+  onSync,
   onToggleTrash,
   onAddEvent,
   onDeleteEvent,
@@ -123,21 +123,27 @@ export default function EventCalendarView({
               </TabsList>
             </div>
             <div className="mt-4 flex-1">
-              <TabsContent value="calendar" className="h-full flex-1 -m-4">
-                  <Calendar
-                      mode="single"
-                      onSelect={(day) => handleDayClickInternal(day)}
-                      month={month}
-                      onMonthChange={onMonthChange}
-                      className="rounded-md w-full p-0 [&_button]:text-base"
-                      classNames={{
-                        day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
-                      }}
-                      components={{ DayContent: DayWithDotRenderer }}
-                      showOutsideDays={true}
-                  />
+              <TabsContent value="calendar" className="h-full flex-1">
+                  <div className="flex justify-center">
+                    <Calendar
+                        mode="single"
+                        onSelect={(day) => handleDayClickInternal(day)}
+                        month={month}
+                        onMonthChange={onMonthChange}
+                        className="rounded-md w-full p-0 [&_button]:text-base max-w-sm"
+                        classNames={{
+                          head_cell: "w-full md:w-9 text-muted-foreground rounded-md text-xs font-normal",
+                          cell: "w-full md:w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                          day: "h-9 w-9 md:h-9 md:w-9 p-0 font-normal aria-selected:opacity-100",
+                          caption_label: "text-sm md:text-base font-medium",
+                          day_today: "bg-accent text-accent-foreground ring-2 ring-accent/70",
+                        }}
+                        components={{ DayContent: DayWithDotRenderer }}
+                        showOutsideDays={true}
+                    />
+                  </div>
               </TabsContent>
-              <TabsContent value="list" className="h-full flex-1">
+              <TabsContent value="list" className="mt-0 h-full flex-1">
                   <TimelineListView events={processedEvents} onDeleteEvent={onDeleteEvent} onEditEvent={onEditEvent} />
               </TabsContent>
             </div>
