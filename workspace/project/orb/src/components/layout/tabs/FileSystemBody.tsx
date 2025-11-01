@@ -40,12 +40,13 @@ const FileSystemBody = () => {
             const data = await response.json();
             if (data.success) {
                 setFiles(data.files || []);
+                setIsGoogleConnected(true); // Explicitly confirm connection on successful fetch
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-            // If fetching fails, assume connection is bad and show connection buttons
+            toast({ title: 'Connection Error', description: 'Could not fetch files. Please try reconnecting your account.', variant: 'destructive' });
+            // *** FIX: If fetching files fails, we are not connected ***
             setIsGoogleConnected(false);
         } finally {
             setIsLoading(false);
@@ -63,15 +64,17 @@ const FileSystemBody = () => {
           fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
           fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
         ]);
+        
         const googleData = await googleRes.json();
         const microsoftData = await microsoftRes.json();
         
-        setIsGoogleConnected(googleData.isConnected);
         setIsMicrosoftConnected(microsoftData.isConnected);
 
         if (googleData.isConnected) {
+            // Attempt to fetch files to validate the connection
             await fetchFiles();
         } else {
+            setIsGoogleConnected(false);
             setIsLoading(false);
         }
       } catch (error) {
