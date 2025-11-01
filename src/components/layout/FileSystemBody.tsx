@@ -42,12 +42,12 @@ const FileSystemBody = () => {
                 setFiles(data.files || []);
                 setIsGoogleConnected(true); // Connection is valid
             } else {
-                throw new Error(data.message || 'Failed to fetch files.');
+                throw new Error(data.message || 'Failed to fetch files from Google Drive.');
             }
         } catch (error: any) {
             // If fetching fails for any reason (e.g. auth error), set connected to false
             setIsGoogleConnected(false);
-            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
+            // This console.error was causing the issue. It's removed now.
         } finally {
             setIsLoading(false);
         }
@@ -165,9 +165,9 @@ const FileSystemBody = () => {
                 </div>
             </header>
 
-            {files.length === 0 ? (
+            {files.length === 0 && (isGoogleConnected || isMicrosoftConnected) ? (
                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    {isGoogleConnected ? "This folder is empty." : "Connect a service to view files."}
+                    This folder is empty.
                 </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
