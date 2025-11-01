@@ -2,7 +2,7 @@
 // Provides access to Gmail, Calendar, Tasks, and other webapp data
 
 import { getTimelineEvents } from './timelineService';
-import { getUserGoals } from './careerGoalsService';
+import { getCareerGoals } from './careerGoalsService';
 import { getUserSkills } from './skillsService';
 import { getUserResources } from './resourcesService';
 import { getGoogleCalendarEvents } from './googleCalendarService';
@@ -333,7 +333,7 @@ class WebappContextService {
 
   private async getGoalsData(userId: string) {
     try {
-      const goals = await getUserGoals(userId);
+      const goals = await getCareerGoals(userId);
       
       const goalList: Goal[] = goals.map((goal: any) => ({
         id: goal.id,
