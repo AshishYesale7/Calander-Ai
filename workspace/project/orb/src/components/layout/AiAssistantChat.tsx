@@ -35,7 +35,7 @@ import type { ChatSession } from './DesktopCommandBar';
 import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
 import AutomationTab from './tabs/AutomationTab';
 import SummarizerTab from './tabs/SummarizerTab';
-import FileSystemBody from './tabs/FileSystemBody'; // Correctly import the new component
+import FileSystemBody from './tabs/FileSystemBody';
 
 export interface ChatMessage {
     role: 'user' | 'model';
