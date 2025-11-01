@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome AI Test - Calendar.ai</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .warning { border-color: #ff9800; background: #fff3e0; }
+        .code {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .loading { opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <h1>🤖 Chrome AI Test for Calendar.ai</h1>
+    <p>This page tests Chrome AI integration for the Google Chrome AI Hackathon 2025.</p>
+
+    <div id="browser-check" class="status-card">
+        <h2>Browser Check</h2>
+        <div id="browser-info">Checking browser...</div>
+    </div>
+
+    <div id="api-status" class="status-card">
+        <h2>Chrome AI API Status</h2>
+        <div id="api-info">Checking APIs...</div>
+    </div>
+
+    <div id="gemini-status" class="status-card">
+        <h2>Gemini Nano Status</h2>
+        <div id="gemini-info">Checking Gemini Nano...</div>
+    </div>
+
+    <div id="test-section" class="status-card">
+        <h2>API Tests</h2>
+        <button onclick="runLanguageModelTest()" id="test-lm">Test Language Model</button>
+        <button onclick="runSummarizerTest()" id="test-sum">Test Summarizer</button>
+        <button onclick="runWriterTest()" id="test-writer">Test Writer</button>
+        <button onclick="runRewriterTest()" id="test-rewriter">Test Rewriter</button>
+        <button onclick="runTranslatorTest()" id="test-translator">Test Translator</button>
+        <button onclick="runProofreaderTest()" id="test-proofreader">Test Proofreader</button>
+        <div id="test-results"></div>
+    </div>
+
+    <div id="setup-instructions" class="status-card warning" style="display: none;">
+        <h2>⚠️ Setup Required</h2>
+        <p>Chrome AI APIs are not available. Follow these steps:</p>
+        <ol>
+            <li><strong>Install Chrome Canary:</strong> <a href="https://www.google.com/chrome/canary/" target="_blank">Download here</a></li>
+            <li><strong>Enable Chrome AI flags:</strong> Go to <code>chrome://flags/</code> and enable:
+                <ul>
+                    <li>chrome://flags/#optimization-guide-on-device-model</li>
+                    <li>chrome://flags/#prompt-api-for-gemini-nano</li>
+                    <li>chrome://flags/#summarization-api-for-gemini-nano</li>
+                    <li>chrome://flags/#writer-api-for-gemini-nano</li>
+                    <li>chrome://flags/#rewriter-api-for-gemini-nano</li>
+                    <li>chrome://flags/#translation-api</li>
+                </ul>
+            </li>
+            <li><strong>Restart Chrome</strong> after enabling flags</li>
+            <li><strong>Download Gemini Nano:</strong> Go to <code>chrome://components/</code> and update "Optimization Guide On Device Model"</li>
+            <li><strong>Refresh this page</strong> to test again</li>
+        </ol>
+    </div>
+
+    <script>
+        // Check browser compatibility
+        function checkBrowser() {
+            const browserInfo = document.getElementById('browser-info');
+            const userAgent = navigator.userAgent;
+            
+            const isChrome = userAgent.includes('Chrome');
+            const isCanary = userAgent.includes('Canary');
+            const isDev = userAgent.includes('Dev');
+            const isBeta = userAgent.includes('Beta');
+            
+            let status = '';
+            let className = '';
+            
+            if (isCanary) {
+                status = '✅ Chrome Canary detected - Perfect for Chrome AI!';
+                className = 'success';
+            } else if (isDev) {
+                status = '✅ Chrome Dev detected - Good for Chrome AI!';
+                className = 'success';
+            } else if (isBeta) {
+                status = '⚠️ Chrome Beta detected - May work for Chrome AI';
+                className = 'warning';
+            } else if (isChrome) {
+                status = '❌ Chrome Stable detected - Need Chrome Canary/Dev for Chrome AI';
+                className = 'error';
+            } else {
+                status = '❌ Non-Chrome browser detected - Chrome Canary required';
+                className = 'error';
+            }
+            
+            browserInfo.innerHTML = status;
+            document.getElementById('browser-check').className = `status-card ${className}`;
+        }
+
+        // Check Chrome AI API availability
+        async function checkAPIs() {
+            const apiInfo = document.getElementById('api-info');
+            
+            if (!window.ai) {
+                apiInfo.innerHTML = '❌ Chrome AI APIs not available';
+                document.getElementById('api-status').className = 'status-card error';
+                document.getElementById('setup-instructions').style.display = 'block';
+                return false;
+            }
+            
+            const apis = {
+                'Language Model': !!window.ai.languageModel,
+                'Summarizer': !!window.ai.summarizer,
+                'Writer': !!window.ai.writer,
+                'Rewriter': !!window.ai.rewriter,
+                'Translator': !!window.ai.translator,
+                'Proofreader': !!window.ai.proofreader
+            };
+            
+            const availableCount = Object.values(apis).filter(Boolean).length;
+            let html = `✅ Chrome AI APIs detected: ${availableCount}/6 available<br><br>`;
+            
+            for (const [name, available] of Object.entries(apis)) {
+                html += `${available ? '✅' : '❌'} ${name}<br>`;
+            }
+            
+            apiInfo.innerHTML = html;
+            document.getElementById('api-status').className = `status-card ${availableCount > 0 ? 'success' : 'error'}`;
+            
+            return availableCount > 0;
+        }
+
+        // Check Gemini Nano status
+        async function checkGeminiNano() {
+            const geminiInfo = document.getElementById('gemini-info');
+            
+            if (!window.ai?.languageModel) {
+                geminiInfo.innerHTML = '❌ Language Model API not available';
+                document.getElementById('gemini-status').className = 'status-card error';
+                return;
+            }
+            
+            try {
+                const capabilities = await window.ai.languageModel.capabilities();
+                let status = '';
+                let className = '';
+                
+                switch (capabilities.available) {
+                    case 'readily':
+                        status = '✅ Gemini Nano is ready and loaded!';
+                        className = 'success';
+                        break;
+                    case 'after-download':
+                        status = '⏳ Gemini Nano is downloading... Please wait and refresh.';
+                        className = 'warning';
+                        break;
+                    case 'no':
+                        status = '❌ Gemini Nano not available. Go to chrome://components/ and update "Optimization Guide On Device Model"';
+                        className = 'error';
+                        break;
+                    default:
+                        status = `⚠️ Unknown status: ${capabilities.available}`;
+                        className = 'warning';
+                }
+                
+                geminiInfo.innerHTML = status + `<br><br>Capabilities: <div class="code">${JSON.stringify(capabilities, null, 2)}</div>`;
+                document.getElementById('gemini-status').className = `status-card ${className}`;
+                
+            } catch (error) {
+                geminiInfo.innerHTML = `❌ Error checking Gemini Nano: ${error.message}`;
+                document.getElementById('gemini-status').className = 'status-card error';
+            }
+        }
+
+        // Test functions
+        async function runLanguageModelTest() {
+            const button = document.getElementById('test-lm');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.languageModel) {
+                    throw new Error('Language Model API not available');
+                }
+                
+                const capabilities = await window.ai.languageModel.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Gemini Nano not ready');
+                }
+                
+                const session = await window.ai.languageModel.create({
+                    systemPrompt: 'You are Orb, the AI assistant for Calendar.ai.',
+                    temperature: 0.7
+                });
+                
+                const response = await session.prompt('Hello! Introduce yourself as the enhanced Calendar.ai Orb powered by Chrome AI.');
+                session.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Language Model Test Passed</h3>
+                    <div class="code">${response}</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Language Model Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Language Model';
+            }
+        }
+
+        async function runSummarizerTest() {
+            const button = document.getElementById('test-sum');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.summarizer) {
+                    throw new Error('Summarizer API not available');
+                }
+                
+                const capabilities = await window.ai.summarizer.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Summarizer not ready');
+                }
+                
+                const summarizer = await window.ai.summarizer.create({
+                    type: 'key-points',
+                    format: 'markdown',
+                    length: 'medium'
+                });
+                
+                const longText = 'Calendar.ai is a comprehensive productivity web application that helps users manage their time, goals, and tasks effectively. The application integrates with Google services including Gmail, Google Calendar, and Google Tasks to provide a unified dashboard experience. With the new Chrome AI integration, Orb has been enhanced with advanced capabilities including voice activation, real-time text processing, and contextual understanding of user data.';
+                
+                const summary = await summarizer.summarize(longText);
+                summarizer.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Summarizer Test Passed</h3>
+                    <div class="code">${summary}</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Summarizer Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Summarizer';
+            }
+        }
+
+        async function runWriterTest() {
+            const button = document.getElementById('test-writer');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.writer) {
+                    throw new Error('Writer API not available');
+                }
+                
+                const capabilities = await window.ai.writer.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Writer not ready');
+                }
+                
+                const writer = await window.ai.writer.create({
+                    tone: 'professional',
+                    format: 'plain-text',
+                    length: 'short'
+                });
+                
+                const content = await writer.write('Write a brief welcome message for Calendar.ai users about the new Chrome AI integration.');
+                writer.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Writer Test Passed</h3>
+                    <div class="code">${content}</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Writer Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Writer';
+            }
+        }
+
+        async function runRewriterTest() {
+            const button = document.getElementById('test-rewriter');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.rewriter) {
+                    throw new Error('Rewriter API not available');
+                }
+                
+                const capabilities = await window.ai.rewriter.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Rewriter not ready');
+                }
+                
+                const rewriter = await window.ai.rewriter.create({
+                    tone: 'more-formal',
+                    length: 'shorter'
+                });
+                
+                const originalText = "Hey! The AI stuff is working great and it's really cool!";
+                const rewritten = await rewriter.rewrite(originalText);
+                rewriter.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Rewriter Test Passed</h3>
+                    <div class="code">Original: "${originalText}"<br>Rewritten: "${rewritten}"</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Rewriter Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Rewriter';
+            }
+        }
+
+        async function runTranslatorTest() {
+            const button = document.getElementById('test-translator');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.translator) {
+                    throw new Error('Translator API not available');
+                }
+                
+                const capabilities = await window.ai.translator.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Translator not ready');
+                }
+                
+                const translator = await window.ai.translator.create({
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es'
+                });
+                
+                const englishText = "Hello! I am Orb, your AI assistant.";
+                const spanishText = await translator.translate(englishText);
+                translator.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Translator Test Passed</h3>
+                    <div class="code">English: "${englishText}"<br>Spanish: "${spanishText}"</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Translator Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Translator';
+            }
+        }
+
+        async function runProofreaderTest() {
+            const button = document.getElementById('test-proofreader');
+            const results = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            try {
+                if (!window.ai?.proofreader) {
+                    throw new Error('Proofreader API not available');
+                }
+                
+                const capabilities = await window.ai.proofreader.capabilities();
+                if (capabilities.available !== 'readily') {
+                    throw new Error('Proofreader not ready');
+                }
+                
+                const proofreader = await window.ai.proofreader.create();
+                
+                const textWithErrors = "Teh Calendar.ai orb has been enhansed with Chrome AI capabilites.";
+                const corrected = await proofreader.proofread(textWithErrors);
+                proofreader.destroy();
+                
+                results.innerHTML = `<div class="status-card success">
+                    <h3>✅ Proofreader Test Passed</h3>
+                    <div class="code">Original: "${textWithErrors}"<br>Corrected: "${corrected}"</div>
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="status-card error">
+                    <h3>❌ Proofreader Test Failed</h3>
+                    <div class="code">${error.message}</div>
+                </div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test Proofreader';
+            }
+        }
+
+        // Initialize checks on page load
+        window.addEventListener('load', async () => {
+            checkBrowser();
+            const apisAvailable = await checkAPIs();
+            if (apisAvailable) {
+                await checkGeminiNano();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -78,7 +78,7 @@ export interface TimelineEvent {
 
 export interface AppNotification {
   id: string;
-  type: 'new_follower' | 'event_reminder' | 'system_alert';
+  type: 'new_follower' | 'follower' | 'event_reminder' | 'reminder' | 'event' | 'calendar_event' | 'task' | 'task_due' | 'deadline' | 'call' | 'achievement' | 'goal_completed' | 'streak' | 'meeting' | 'appointment' | 'system_alert';
   message: string;
   link?: string; // e.g., to a user profile or event
   imageUrl?: string | null; // URL of the user/event image

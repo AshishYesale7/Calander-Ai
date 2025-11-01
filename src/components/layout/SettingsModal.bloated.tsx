@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -32,6 +33,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { saveUserFCMToken } from '@/services/userService';
 import { getToken } from 'firebase/messaging';
 import BrowserNotificationTesting from './BrowserNotificationTesting';
+
 
 const IntegrationRow = ({
   icon,
@@ -108,6 +110,7 @@ const IntegrationRow = ({
     </div>
   );
 };
+
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -196,6 +199,8 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
     }
   };
 
+
+
   const handleTestPush = async () => {
     if (!user) return;
     setIsTestingPush(true);
@@ -264,9 +269,150 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
                         </div>
                         {notificationPermission === 'granted' && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush && <LoadingSpinner size="sm" className="mr-2"/>} Test Push Notification</Button>}
                     </div>
-                    
-                    {/* Browser Notification Testing Component */}
-                    <BrowserNotificationTesting />
+                    <Separator/>
+                    <div className="space-y-4">
+                        <h3 className="font-medium flex items-center"><Brain className="mr-2 h-4 w-4" /> Browser Notifications</h3>
+                        <p className="text-sm text-muted-foreground">Test your Firebase → Browser notification system with real scenarios like follows, reminders, and calls.</p>
+                        
+                        {/* Status Display */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Firebase Listener</div>
+                            <div className={`text-sm font-medium ${isListening ? 'text-green-600' : 'text-red-600'}`}>
+                              {isListening ? '✅ Active' : '❌ Inactive'}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Browser Support</div>
+                            <div className={`text-sm font-medium ${browserNotificationStatus.isSupported ? 'text-green-600' : 'text-red-600'}`}>
+                              {browserNotificationStatus.isSupported ? '✅ Supported' : '❌ Not Supported'}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Tests Sent</div>
+                            <div className="text-sm font-medium text-blue-600">{testCount}</div>
+                          </div>
+                        </div>
+
+                        {/* Browser Permission */}
+                        {browserNotificationStatus.isSupported && !browserNotificationStatus.isGranted && (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm text-yellow-800 mb-2">Browser notifications need permission to work</p>
+                            <Button onClick={requestBrowserPermission} size="sm" variant="outline">
+                              Enable Browser Notifications
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Test Instructions */}
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-900 mb-1">💡 How to Test</h4>
+                          <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                            <li>Switch to another tab to make this tab inactive</li>
+                            <li>Click any test button below</li>
+                            <li>Browser notification should appear outside the browser</li>
+                            <li>Click the notification to return to this tab</li>
+                          </ol>
+                        </div>
+
+                        {/* Test Buttons */}
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Button 
+                              onClick={() => handleTestBrowserNotification()} 
+                              variant="outline" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              {isTestingBrowser && <LoadingSpinner size="sm" className="mr-2"/>}
+                              🎲 Random Test
+                            </Button>
+                            <Button 
+                              onClick={handleDirectBrowserTest} 
+                              variant="outline" 
+                              size="sm"
+                            >
+                              ⚡ Direct Test
+                            </Button>
+                          </div>
+
+                          {/* Specific Test Types */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('new_follower')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              👥 Follow
+                            </Button>
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('reminder')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              ⏰ Reminder
+                            </Button>
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('call')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              📞 Call
+                            </Button>
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('achievement')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              🏆 Achievement
+                            </Button>
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('event')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              📅 Event
+                            </Button>
+                            <Button 
+                              onClick={() => handleTestBrowserNotification('deadline')} 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={isTestingBrowser}
+                            >
+                              🚨 Deadline
+                            </Button>
+                          </div>
+
+                          {/* Auto Testing */}
+                          <div className="pt-2 border-t">
+                            <Button 
+                              onClick={startAutoTesting} 
+                              variant={isAutoTesting ? "destructive" : "secondary"}
+                              size="sm"
+                              className="w-full"
+                            >
+                              {isAutoTesting ? (
+                                <>
+                                  <LoadingSpinner size="sm" className="mr-2"/>
+                                  Stop Auto Testing
+                                </>
+                              ) : (
+                                '🚀 Start Auto Testing (10s intervals)'
+                              )}
+                            </Button>
+                            {isAutoTesting && (
+                              <p className="text-xs text-muted-foreground mt-1 text-center">
+                                Sending notifications every 10 seconds. Switch tabs to see them!
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="integrations">
