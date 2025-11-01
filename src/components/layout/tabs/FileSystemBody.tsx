@@ -42,11 +42,12 @@ const FileSystemBody = () => {
                 setFiles(data.files || []);
                 setIsGoogleConnected(true); 
             } else {
-                throw new Error(data.message || 'Failed to fetch files from Google Drive.');
+                throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
+            // If fetching fails for any reason (e.g. auth error), set connected to false
             setIsGoogleConnected(false);
-            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
+            // This console.error was causing the issue. It's removed now.
         } finally {
             setIsLoading(false);
         }
@@ -70,6 +71,7 @@ const FileSystemBody = () => {
         setIsMicrosoftConnected(microsoftData.isConnected);
 
         if (googleData.isConnected) {
+            // Attempt to fetch files to validate the connection
             await fetchFiles();
         } else {
             setIsGoogleConnected(false);
@@ -82,20 +84,19 @@ const FileSystemBody = () => {
       }
     }, [user, fetchFiles]);
     
-    // Initial check and sets up listener for post-auth refresh
     useEffect(() => {
         checkConnections();
         
-        const handleAuthRefresh = (event: Event) => {
-            const customEvent = event as CustomEvent;
-            if (customEvent.detail.provider === 'google' || customEvent.detail.provider === 'microsoft') {
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data === 'auth-success-google' || event.data === 'auth-success-microsoft') {
                 checkConnections();
             }
         };
 
-        window.addEventListener('cloud-auth-success', handleAuthRefresh);
+        window.addEventListener('message', handleAuthMessage);
         return () => {
-            window.removeEventListener('cloud-auth-success', handleAuthRefresh);
+            window.removeEventListener('message', handleAuthMessage);
         };
     }, [user, checkConnections]);
 
@@ -118,24 +119,13 @@ const FileSystemBody = () => {
         const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
         
         const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
-
-        const handleAuthMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data === `auth-success-${provider}`) {
-                authWindow?.close();
-                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
-                checkConnections(); // Directly re-check connections after auth
-                window.removeEventListener('message', handleAuthMessage);
-            }
-        };
-        window.addEventListener('message', handleAuthMessage);
     };
 
     if (isLoading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
                 <LoadingSpinner />
-                <p className="mt-2 text-sm animate-pulse">Connecting...</p>
+                <p className="mt-2 text-sm animate-pulse">Connecting to cloud services...</p>
             </div>
         );
     }
