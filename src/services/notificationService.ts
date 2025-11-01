@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { sendWebPushNotification } from '@/ai/flows/send-notification-flow';
 import { logUserActivity } from './activityLogService';
+import { showCalendarNotification, showAIEnhancedNotification } from './browserNotificationService';
 
 const getNotificationsCollection = (userId: string) => {
   if (!db) {
@@ -41,6 +42,28 @@ const fromFirestore = (docData: any): AppNotification => {
     createdAt: (data.createdAt as Timestamp).toDate(),
     imageUrl: data.imageUrl,
   };
+};
+
+// Helper function to map notification types to browser notification categories
+const mapNotificationTypeToCategory = (type: string): 'reminder' | 'event' | 'task' | 'deadline' | 'follow' | 'achievement' => {
+  const typeMap: Record<string, 'reminder' | 'event' | 'task' | 'deadline' | 'follow' | 'achievement'> = {
+    'reminder': 'reminder',
+    'event': 'event',
+    'task': 'task',
+    'deadline': 'deadline',
+    'new_follower': 'follow',
+    'follower': 'follow',
+    'achievement': 'achievement',
+    'goal_completed': 'achievement',
+    'streak': 'achievement',
+    'calendar_event': 'event',
+    'task_due': 'task',
+    'task_reminder': 'reminder',
+    'meeting': 'event',
+    'appointment': 'event'
+  };
+  
+  return typeMap[type] || 'reminder';
 };
 
 export const createNotification = async (
@@ -73,7 +96,7 @@ export const createNotification = async (
         title: message,
     });
 
-    // 3. Trigger the web push notification.
+    // 3. Trigger the web push notification (FCM).
     await sendWebPushNotification({
         userId: userId,
         title: type === 'new_follower' ? 'New Follower!' : 'New Reminder',
@@ -81,6 +104,23 @@ export const createNotification = async (
         url: link || '/',
         icon: imageUrl || undefined,
     });
+
+    // 4. Trigger browser notification (Web Notifications API) - client-side only
+    if (typeof window !== 'undefined') {
+      try {
+        const notificationType = mapNotificationTypeToCategory(type);
+        
+        // Use Chrome AI enhanced notification if available, otherwise regular notification
+        if (window.ai?.rewriter) {
+          await showAIEnhancedNotification(message, notificationType, link || '/');
+        } else {
+          await showCalendarNotification(notificationType, message, link || '/', imageUrl);
+        }
+      } catch (browserNotificationError) {
+        console.log("Browser notification failed (this is normal on server-side):", browserNotificationError);
+        // This is expected to fail on server-side, so we don't throw
+      }
+    }
     
   } catch (error) {
     console.error("Failed to create and send notification:", error);

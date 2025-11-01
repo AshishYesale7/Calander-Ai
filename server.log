@@ -1,0 +1,56 @@
+
+> nextn@0.1.0 dev
+> next dev --turbopack -p 9002
+
+   ▲ Next.js 15.3.5 (Turbopack)
+   - Local:        http://localhost:9002
+   - Network:      http://10.2.24.140:9002
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Compiled middleware in 349ms
+ ✓ Ready in 1411ms
+ ○ Compiling / ...
+ ✓ Compiled / in 22.5s
+Missing Google OAuth credentials in environment variables.
+Server-side Firebase credentials not found in environment variables. Falling back to Application Default Credentials. For local development, ensure GOOGLE_APPLICATION_CREDENTIALS is set. For Heroku, set FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL.
+ ✓ Compiled middleware in 1ms
+ ○ Compiling /api/test-chrome-ai-service ...
+ ✓ Compiled /api/test-chrome-ai-service in 588ms
+ GET /api/test-chrome-ai-service 200 in 729ms
+ ✓ Compiled in 349ms
+ ✓ Compiled in 16ms
+ ✓ Compiled in 907ms
+ ✓ Compiled middleware in 1ms
+ ✓ Compiled / in 58ms
+Missing Google OAuth credentials in environment variables.
+[TypeError: Cannot assign to read only property 'Component' of object '#<Object>']
+ ⨯ unhandledRejection: [TypeError: Cannot assign to read only property 'Component' of object '#<Object>']
+ ⨯ unhandledRejection:  [TypeError: Cannot assign to read only property 'Component' of object '#<Object>']
+ ⨯ ReferenceError: window is not defined
+    at new BrowserNotificationService (src/services/browserNotificationService.ts:36:41)
+    at BrowserNotificationService.getInstance (src/services/browserNotificationService.ts:44:44)
+    at [project]/src/services/browserNotificationService.ts [app-ssr] (ecmascript) (src/services/browserNotificationService.ts:337:69)
+    at [project]/src/services/clientNotificationTrigger.ts [app-ssr] (ecmascript) (src/services/clientNotificationTrigger.ts:3:0)
+    at [project]/src/services/firebaseNotificationListener.ts [app-ssr] (ecmascript) (src/services/firebaseNotificationListener.ts:5:0)
+    at [project]/src/hooks/useFirebaseNotifications.ts [app-ssr] (ecmascript) (src/hooks/useFirebaseNotifications.ts:4:0)
+    at [project]/src/components/notifications/FirebaseNotificationProvider.tsx [app-ssr] (ecmascript) (src/components/notifications/FirebaseNotificationProvider.tsx:4:0)
+    at [project]/src/components/notifications/NotificationWrapper.tsx [app-ssr] (ecmascript) (src/components/notifications/NotificationWrapper.tsx:5:0)
+    at [project]/src/app/layout.tsx [app-ssr] (ecmascript) (src/app/layout.tsx:22:0)
+  34 |
+  35 |   constructor() {
+> 36 |     this.isSupported = 'Notification' in window;
+     |                                         ^
+  37 |     if (this.isSupported) {
+  38 |       this.permission = Notification.permission;
+  39 |     } {
+  digest: '3096120222'
+}
+ GET / 500 in 2654ms
+Shutting down all Genkit servers...
+Shutting down all Genkit servers...
+[?25h
