@@ -33,9 +33,9 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
 import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
-import FileSystemBody from './tabs/FileSystemBody';
 import AutomationTab from './tabs/AutomationTab';
-import SummarizerTab from './tabs/SummarizerTab'; 
+import SummarizerTab from './tabs/SummarizerTab';
+import FileSystemBody from './tabs/FileSystemBody'; // Correctly import the new component
 
 export interface ChatMessage {
     role: 'user' | 'model';
