@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { Credentials } from 'google-auth-library';
@@ -37,7 +36,7 @@ export async function getMicrosoftAuthUrl(request: NextRequest, state?: string |
         'AccessReview.ReadWrite.All', 'Analytics.Read', 'AppCertTrustConfiguration.ReadWrite.All',
         'Calendars.ReadWrite', 'Calendars.ReadWrite.Shared', 
         'Contacts.ReadWrite.Shared',
-        'Files.ReadWrite.All',
+        'Files.ReadWrite.All', // Broad permission for file access
         'Mail.Read', 'Mail.Read.Shared', 'Mail.ReadBasic', 'Mail.ReadBasic.Shared', 
         'Mail.ReadWrite', 'Mail.ReadWrite.Shared', 'Mail.Send', 'Mail.Send.Shared',
         'Notes.ReadWrite.All',
