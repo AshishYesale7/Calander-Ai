@@ -47,7 +47,6 @@ const FileSystemBody = () => {
         } catch (error: any) {
             // If fetching fails for any reason (e.g. auth error), set connected to false
             setIsGoogleConnected(false);
-            // This console.error was causing the issue. It's removed now.
         } finally {
             setIsLoading(false);
         }
@@ -121,7 +120,12 @@ const FileSystemBody = () => {
     };
 
     if (isLoading) {
-        return <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>;
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
+                <LoadingSpinner />
+                <p className="mt-2 text-sm animate-pulse">Connecting to cloud services...</p>
+            </div>
+        );
     }
     
     if (!isGoogleConnected && !isMicrosoftConnected) {
@@ -165,9 +169,9 @@ const FileSystemBody = () => {
                 </div>
             </header>
 
-            {files.length === 0 && (isGoogleConnected || isMicrosoftConnected) ? (
+            {files.length === 0 ? (
                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    This folder is empty.
+                    {isGoogleConnected ? "This folder is empty." : "Connect a service to view files."}
                 </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
