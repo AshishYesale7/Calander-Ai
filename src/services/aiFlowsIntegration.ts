@@ -1,3 +1,4 @@
+
 // AI Flows Integration Service
 // Bridges Chrome AI APIs with existing Genkit flows for seamless operation
 
@@ -35,7 +36,7 @@ export interface AIFlowResponse {
 
 class AIFlowsIntegrationService {
   private readonly CHROME_AI_TIMEOUT = 10000; // 10 seconds
-  private readonly GENKIT_TIMEOUT = 15000; // 15 seconds
+  private readonly GENKIT_TIMEOUT = 30000; // Increased from 15000 to 30000
 
   async processRequest(request: AIFlowRequest): Promise<AIFlowResponse> {
     const startTime = Date.now();
