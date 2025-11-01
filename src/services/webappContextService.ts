@@ -7,7 +7,7 @@ import { getUserSkills } from './skillsService';
 import { getUserResources } from './resourcesService';
 import { getGoogleCalendarEvents } from './googleCalendarService';
 import { getGoogleTasks } from './googleTasksService';
-import { getImportantEmails } from './googleGmailService';
+import { getGoogleGmailMessages } from './googleGmailService';
 
 export interface WebappContext {
   user: {
@@ -228,9 +228,9 @@ class WebappContextService {
       const calendarEvents: CalendarEvent[] = events.map(event => ({
         id: event.id,
         title: event.title,
-        description: event.description,
-        startTime: event.startTime,
-        endTime: event.endTime,
+        description: event.notes,
+        startTime: event.date.toISOString(),
+        endTime: event.endDate ? event.endDate.toISOString() : event.date.toISOString(),
         location: event.location,
         isAllDay: event.isAllDay || false,
         source: 'local' as const
@@ -259,7 +259,7 @@ class WebappContextService {
 
   private async getGoogleCalendarData(userId: string) {
     try {
-      const events = await getGoogleCalendarEvents();
+      const events = await getGoogleCalendarEvents(userId);
       return events.map((event: any) => ({
         id: event.id,
         title: event.summary || 'Untitled Event',
@@ -279,7 +279,7 @@ class WebappContextService {
 
   private async getGoogleTasksData(userId: string) {
     try {
-      const tasks = await getGoogleTasks();
+      const tasks = await getGoogleTasks(userId);
       const now = new Date();
 
       const taskList: Task[] = tasks.map((task: any) => ({
@@ -307,7 +307,7 @@ class WebappContextService {
 
   private async getEmailData(userId: string) {
     try {
-      const emails = await getImportantEmails();
+      const { emails } = await getGoogleGmailMessages(userId);
       
       const emailSummaries: EmailSummary[] = emails.map((email: any) => ({
         id: email.id,
@@ -498,3 +498,5 @@ class WebappContextService {
 
 export const webappContextService = new WebappContextService();
 export default webappContextService;
+
+    
