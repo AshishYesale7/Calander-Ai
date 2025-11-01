@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Folder, File as FileIcon, Upload, FolderPlus, MoreVertical, ChevronRight, RefreshCw } from 'lucide-react';
-import { Button } from '../ui/button';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Folder, File as FileIcon, MoreVertical, ChevronRight, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { GoogleIcon, MicrosoftIcon } from '@/components/auth/SignInForm';
 
 type FileType = {
     name: string;
@@ -17,14 +18,45 @@ type FileType = {
 
 const FileSystemBody = () => {
     const [pathHistory, setPathHistory] = useState([{ id: 'root', name: 'My Drive' }]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [files, setFiles] = useState<FileType[]>([]);
     const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
+    const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
     const { user } = useAuth();
     const { toast } = useToast();
 
+    const checkConnections = useCallback(async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const [googleRes, microsoftRes] = await Promise.all([
+          fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+          fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+        ]);
+        const googleData = await googleRes.json();
+        const microsoftData = await microsoftRes.json();
+        setIsGoogleConnected(googleData.isConnected);
+        setIsMicrosoftConnected(microsoftData.isConnected);
+
+        if (googleData.isConnected) {
+            await fetchFiles();
+        } else {
+            setIsLoading(false);
+        }
+      } catch (error) {
+        setIsLoading(false);
+        toast({ title: 'Error', description: 'Could not check cloud storage connections.', variant: 'destructive'});
+      }
+    }, [user, toast]);
+    
     const fetchFiles = useCallback(async (folderId: string = 'root') => {
-        if (!user || !isGoogleConnected) return;
+        if (!user) {
+             setIsLoading(false);
+             return;
+        }
         setIsLoading(true);
         try {
             const response = await fetch('/api/google/drive/list', {
@@ -34,7 +66,7 @@ const FileSystemBody = () => {
             });
             const data = await response.json();
             if (data.success) {
-                setFiles(data.files);
+                setFiles(data.files || []);
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
@@ -43,32 +75,18 @@ const FileSystemBody = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [user, isGoogleConnected, toast]);
+    }, [user, toast]);
 
     useEffect(() => {
-        if (user) {
-            fetch('/api/auth/google/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid }),
-            })
-            .then(res => res.json())
-            .then(data => setIsGoogleConnected(data.isConnected));
-        }
-    }, [user]);
+        checkConnections();
+    }, [user, checkConnections]);
 
-    useEffect(() => {
-        if (isGoogleConnected) {
-            fetchFiles();
-        }
-    }, [isGoogleConnected, fetchFiles]);
 
     const handleItemClick = (item: FileType) => {
         if (item.type === 'folder') {
             setPathHistory(prev => [...prev, { id: item.id, name: item.name }]);
             fetchFiles(item.id);
         }
-        // Handle file click (e.g., open preview) later
     };
 
     const handleBreadcrumbClick = (pathId: string, index: number) => {
@@ -76,24 +94,43 @@ const FileSystemBody = () => {
         fetchFiles(pathId);
     }
 
-    const handleConnectGoogle = () => {
+    const handleConnect = (provider: 'google' | 'microsoft') => {
         if (!user) return;
-        const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: 'google-drive' })).toString('base64');
-        const authUrl = `/api/auth/google/redirect?state=${encodeURIComponent(state)}`;
-        window.open(authUrl, '_blank', 'width=500,height=600');
+        const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: `${provider}-drive` })).toString('base64');
+        const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
+        
+        const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
+
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data === `auth-success-${provider}`) {
+                authWindow?.close();
+                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
+                checkConnections();
+                window.removeEventListener('message', handleAuthMessage);
+            }
+        };
+        window.addEventListener('message', handleAuthMessage);
     };
 
-    if (isGoogleConnected === null) {
+    if (isLoading) {
         return <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>;
     }
     
-    if (!isGoogleConnected) {
+    if (!isGoogleConnected && !isMicrosoftConnected) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
                 <Folder className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-lg">Connect Google Drive</h3>
-                <p className="text-sm text-muted-foreground mt-1">See and manage your Google Drive files directly here.</p>
-                <Button onClick={handleConnectGoogle} className="mt-4">Connect to Google Drive</Button>
+                <h3 className="font-semibold text-lg">Connect Cloud Storage</h3>
+                <p className="text-sm text-muted-foreground mt-1">Access your files from Google Drive or OneDrive.</p>
+                <div className="mt-6 space-y-3 w-full max-w-xs">
+                   <Button onClick={() => handleConnect('google')} className="w-full">
+                       <GoogleIcon /> Connect to Google Drive
+                   </Button>
+                   <Button onClick={() => handleConnect('microsoft')} variant="outline" className="w-full">
+                       <MicrosoftIcon /> Connect to OneDrive
+                   </Button>
+                </div>
             </div>
         );
     }
@@ -101,16 +138,16 @@ const FileSystemBody = () => {
     return (
         <div className="flex-1 flex flex-col h-full bg-black/30 p-4">
             <header className="flex-shrink-0 flex justify-between items-center mb-4">
-                <nav className="flex items-center text-sm text-gray-400">
+                <nav className="flex items-center text-sm text-gray-400 overflow-x-auto">
                     {pathHistory.map((p, index) => (
-                        <div key={p.id} className="flex items-center">
+                        <div key={p.id} className="flex items-center flex-shrink-0">
                             <button 
                                 onClick={() => handleBreadcrumbClick(p.id, index)} 
-                                className="hover:text-white"
+                                className="hover:text-white truncate"
                             >
                                 {p.name}
                             </button>
-                            {index < pathHistory.length - 1 && <ChevronRight className="h-4 w-4 mx-1" />}
+                            {index < pathHistory.length - 1 && <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />}
                         </div>
                     ))}
                 </nav>
@@ -121,9 +158,7 @@ const FileSystemBody = () => {
                 </div>
             </header>
 
-            {isLoading ? (
-                <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>
-            ) : files.length === 0 ? (
+            {files.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">This folder is empty.</div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
