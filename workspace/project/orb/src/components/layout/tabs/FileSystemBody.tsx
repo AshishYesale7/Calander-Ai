@@ -40,18 +40,19 @@ const FileSystemBody = () => {
             const data = await response.json();
             if (data.success) {
                 setFiles(data.files || []);
-                setIsGoogleConnected(true); // Explicitly confirm connection on successful fetch
+                setIsGoogleConnected(true);
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
-            toast({ title: 'Connection Error', description: 'Could not fetch files. Please try reconnecting your account.', variant: 'destructive' });
-            // *** FIX: If fetching files fails, we are not connected ***
+            // This is the important change: if fetching files fails,
+            // it means we are not truly connected. Set status to false
+            // to show the connection buttons again.
             setIsGoogleConnected(false);
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast]);
+    }, [user]);
 
     const checkConnections = useCallback(async () => {
       if (!user) {
@@ -81,9 +82,9 @@ const FileSystemBody = () => {
         setIsLoading(false);
         setIsGoogleConnected(false);
         setIsMicrosoftConnected(false);
-        toast({ title: 'Error', description: 'Could not check cloud storage connections.', variant: 'destructive'});
+        // We don't show a toast here as it's a normal state if not connected
       }
-    }, [user, toast, fetchFiles]);
+    }, [user, fetchFiles]);
     
     useEffect(() => {
         checkConnections();
@@ -167,7 +168,9 @@ const FileSystemBody = () => {
             </header>
 
             {files.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">This folder is empty.</div>
+                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                    {/* The "This folder is empty" text has been removed from here */}
+                </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
                     {files.map(item => (
