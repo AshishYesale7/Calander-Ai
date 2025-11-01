@@ -4,8 +4,7 @@
 import { google } from 'googleapis';
 import type { Credentials } from 'google-auth-library';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { deleteField } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import type { NextRequest } from 'next/server';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -57,12 +56,13 @@ export async function getGoogleAuthUrl(request: NextRequest, state?: string | nu
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/tasks',
-        'https://www.googleapis.com/auth/contacts.readonly' // Added new scope for contacts
+        'https://www.googleapis.com/auth/contacts.readonly',
+        'https://www.googleapis.com/auth/drive.readonly' // Add Drive scope
     ];
 
     return oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        prompt: 'select_account',
+        prompt: 'consent', // Force consent screen to get refresh_token
         scope: scopes,
         state: state ?? undefined,
     });
