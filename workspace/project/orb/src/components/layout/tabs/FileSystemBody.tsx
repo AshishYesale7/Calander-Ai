@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -39,14 +40,12 @@ const FileSystemBody = () => {
             const data = await response.json();
             if (data.success) {
                 setFiles(data.files || []);
-                setIsGoogleConnected(true); // Connection is valid
+                setIsGoogleConnected(true); 
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
-            // If fetching fails for any reason (e.g. auth error), set connected to false
             setIsGoogleConnected(false);
-            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +69,6 @@ const FileSystemBody = () => {
         setIsMicrosoftConnected(microsoftData.isConnected);
 
         if (googleData.isConnected) {
-            // Attempt to fetch files to validate the connection
             await fetchFiles();
         } else {
             setIsGoogleConnected(false);
@@ -85,6 +83,18 @@ const FileSystemBody = () => {
     
     useEffect(() => {
         checkConnections();
+        
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data === 'auth-success-google' || event.data === 'auth-success-microsoft') {
+                checkConnections();
+            }
+        };
+
+        window.addEventListener('message', handleAuthMessage);
+        return () => {
+            window.removeEventListener('message', handleAuthMessage);
+        };
     }, [user, checkConnections]);
 
 
@@ -106,21 +116,15 @@ const FileSystemBody = () => {
         const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
         
         const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
-
-        const handleAuthMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data === `auth-success-${provider}`) {
-                authWindow?.close();
-                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
-                checkConnections();
-                window.removeEventListener('message', handleAuthMessage);
-            }
-        };
-        window.addEventListener('message', handleAuthMessage);
     };
 
     if (isLoading) {
-        return <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>;
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
+                <LoadingSpinner />
+                <p className="mt-2 text-sm animate-pulse">Connecting to cloud services...</p>
+            </div>
+        );
     }
     
     if (!isGoogleConnected && !isMicrosoftConnected) {
@@ -166,7 +170,7 @@ const FileSystemBody = () => {
 
             {files.length === 0 ? (
                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    {isGoogleConnected ? "This folder is empty." : "Connect a service to view files."}
+                    {isGoogleConnected ? "This folder is empty. Try refreshing." : "Connect a service to view files."}
                 </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
