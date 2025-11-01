@@ -1,3 +1,4 @@
+
 // Chrome AI Service for Google Chrome AI Hackathon 2025
 // Implements all Chrome AI APIs for the Dashboard Orb
 
@@ -274,7 +275,9 @@ Enhanced prompt:`;
 Corrected text:`;
         return await this.languageModel.prompt(correctionPrompt);
       }
-      throw new Error('Auto-correct not available');
+      // If no models are available, return the original text instead of throwing an error.
+      console.warn('Auto-correct not available, returning original text.');
+      return text;
     }
 
     return await this.proofreadText(text);
