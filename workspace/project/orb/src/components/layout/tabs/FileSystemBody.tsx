@@ -40,15 +40,15 @@ const FileSystemBody = () => {
             const data = await response.json();
             if (data.success) {
                 setFiles(data.files || []);
-                setIsGoogleConnected(true);
+                setIsGoogleConnected(true); // Connection is valid
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
-            // This is the important change: if fetching files fails,
-            // it means we are not truly connected. Set status to false
-            // to show the connection buttons again.
+            // If fetching fails for any reason (e.g. auth error), set connected to false
             setIsGoogleConnected(false);
+            // We don't show a toast here to avoid bothering the user if they're just not connected.
+            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
         } finally {
             setIsLoading(false);
         }
@@ -82,7 +82,6 @@ const FileSystemBody = () => {
         setIsLoading(false);
         setIsGoogleConnected(false);
         setIsMicrosoftConnected(false);
-        // We don't show a toast here as it's a normal state if not connected
       }
     }, [user, fetchFiles]);
     
@@ -168,8 +167,8 @@ const FileSystemBody = () => {
             </header>
 
             {files.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    {/* The "This folder is empty" text has been removed from here */}
+                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                    {isGoogleConnected ? "This folder is empty." : "Connect a service to view files."}
                 </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
