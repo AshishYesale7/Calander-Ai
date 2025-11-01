@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { Credentials } from 'google-auth-library';
@@ -10,21 +11,11 @@ const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;
 const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export async function getRedirectURI(request?: NextRequest): Promise<string> {
-    // 1. Prioritize the explicitly set environment variable for production consistency.
-    if (NEXT_PUBLIC_BASE_URL) {
-        return `${NEXT_PUBLIC_BASE_URL}/api/auth/microsoft/callback`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (request ? new URL(request.url).origin : '');
+    if (!baseUrl) {
+      throw new Error("Could not determine redirect URI. Please set NEXT_PUBLIC_BASE_URL in your .env file.");
     }
-
-    // 2. Derive from the request. This is for local/preview/dynamic environments.
-    if (request) {
-        const host = request.headers.get('host')!;
-        const protocol = request.headers.get('x-forwarded-proto') ?? new URL(request.url).protocol.replace(':', '');
-        
-        return `${protocol}://${host}/api/auth/microsoft/callback`;
-    }
-    
-    // 3. If no request and no env var, we cannot proceed.
-    throw new Error("Could not determine redirect URI. Please set NEXT_PUBLIC_BASE_URL in your .env file or ensure the function is called within a Next.js request context.");
+    return `${baseUrl}/api/auth/microsoft/callback`;
 }
 
 

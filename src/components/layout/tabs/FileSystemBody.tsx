@@ -1,12 +1,13 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Folder, File as FileIcon, Upload, FolderPlus, MoreVertical, ChevronRight, RefreshCw } from 'lucide-react';
-import { Button } from '../ui/button';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleIcon, MicrosoftIcon } from '../auth/SignInForm';
+import { GoogleIcon, MicrosoftIcon } from '@/components/auth/SignInForm';
 
 type FileType = {
     name: string;
@@ -20,7 +21,7 @@ const FileSystemBody = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [files, setFiles] = useState<FileType[]>([]);
     const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-    const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null); // New state for Microsoft
+    const [isMicrosoftConnected, setIsMicrosoftConnected] = useState<boolean | null>(null);
     const { user } = useAuth();
     const { toast } = useToast();
 
@@ -37,9 +38,8 @@ const FileSystemBody = () => {
         setIsGoogleConnected(googleData.isConnected);
         setIsMicrosoftConnected(microsoftData.isConnected);
 
-        // If at least one is connected, fetch files (defaulting to google for now)
         if (googleData.isConnected) {
-            fetchFiles();
+            await fetchFiles();
         } else {
             setIsLoading(false);
         }
@@ -49,7 +49,6 @@ const FileSystemBody = () => {
       }
     }, [user, toast]);
     
-    // Add checkConnections to fetchFiles's dependency array
     const fetchFiles = useCallback(async (folderId: string = 'root') => {
         if (!user || !isGoogleConnected) {
              if (isGoogleConnected === false) setIsLoading(false);
@@ -66,6 +65,7 @@ const FileSystemBody = () => {
             if (data.success) {
                 setFiles(data.files);
             } else {
+                // Throwing an error here will be caught and displayed as a toast.
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
@@ -76,17 +76,9 @@ const FileSystemBody = () => {
     }, [user, isGoogleConnected, toast]);
 
     useEffect(() => {
-        checkConnections();
-        
-        const handleAuthSuccess = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data === 'auth-success-google' || event.data === 'auth-success-microsoft') {
-                checkConnections(); // Re-check connections after auth success
-            }
-        };
-
-        window.addEventListener('message', handleAuthSuccess);
-        return () => window.removeEventListener('message', handleAuthSuccess);
+        if (user) {
+            checkConnections();
+        }
     }, [user, checkConnections]);
 
 
@@ -95,7 +87,6 @@ const FileSystemBody = () => {
             setPathHistory(prev => [...prev, { id: item.id, name: item.name }]);
             fetchFiles(item.id);
         }
-        // Handle file click (e.g., open preview) later
     };
 
     const handleBreadcrumbClick = (pathId: string, index: number) => {
@@ -107,7 +98,19 @@ const FileSystemBody = () => {
         if (!user) return;
         const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: `${provider}-drive` })).toString('base64');
         const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
-        window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
+        
+        const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
+
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data === `auth-success-${provider}`) {
+                authWindow?.close();
+                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
+                checkConnections(); // Re-check connections which will trigger fetchFiles
+                window.removeEventListener('message', handleAuthMessage);
+            }
+        };
+        window.addEventListener('message', handleAuthMessage);
     };
 
     if (isLoading) {
