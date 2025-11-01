@@ -57,7 +57,7 @@ export async function getGoogleAuthUrl(request: NextRequest, state?: string | nu
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/tasks',
         'https://www.googleapis.com/auth/contacts.readonly',
-        'https://www.googleapis.com/auth/drive.readonly' // Add Drive scope
+        'https://www.googleapis.com/auth/drive' // Full access scope for all file operations
     ];
 
     return oauth2Client.generateAuthUrl({
