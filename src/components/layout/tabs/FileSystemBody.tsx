@@ -50,8 +50,8 @@ const FileSystemBody = () => {
     }, [user, toast]);
     
     const fetchFiles = useCallback(async (folderId: string = 'root') => {
-        if (!user || !isGoogleConnected) {
-             if (isGoogleConnected === false) setIsLoading(false);
+        if (!user) {
+             setIsLoading(false);
              return;
         }
         setIsLoading(true);
@@ -73,7 +73,7 @@ const FileSystemBody = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [user, isGoogleConnected, toast]);
+    }, [user, toast]);
 
     useEffect(() => {
         if (user) {
