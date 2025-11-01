@@ -1,3 +1,4 @@
+
 'use server';
 
 import { google } from 'googleapis';
@@ -29,8 +30,8 @@ export async function listGoogleDriveFiles(userId: string, folderId: string = 'r
         });
 
         const files = response.data.files?.map(file => ({
-            id: file.id,
-            name: file.name,
+            id: file.id ?? '',
+            name: file.name ?? 'Untitled',
             type: file.mimeType === 'application/vnd.google-apps.folder' ? 'folder' : 'file',
             size: file.size ? formatBytes(Number(file.size)) : undefined,
         }));
