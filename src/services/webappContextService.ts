@@ -1,9 +1,10 @@
+
 // Webapp Context Service for AI Orb
 // Provides access to Gmail, Calendar, Tasks, and other webapp data
 
 import { getTimelineEvents } from './timelineService';
 import { getCareerGoals } from './careerGoalsService';
-import { getUserSkills } from './skillsService';
+import { getSkills } from './skillsService';
 import { getBookmarkedResources } from './resourcesService';
 import { getGoogleCalendarEvents } from './googleCalendarService';
 import { getGoogleTasks } from './googleTasksService';
@@ -363,7 +364,7 @@ class WebappContextService {
 
   private async getSkillsData(userId: string) {
     try {
-      const skills = await getUserSkills(userId);
+      const skills = await getSkills(userId);
       
       const skillList: Skill[] = skills.map((skill: any) => ({
         id: skill.id,
