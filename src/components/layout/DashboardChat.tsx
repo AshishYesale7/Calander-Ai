@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
@@ -19,6 +20,7 @@ import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { orbPositioningService, type TextSelectionInfo } from '@/services/orbPositioningService';
 import ChromeAIActionsCard from './ChromeAIActionsCard';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -153,6 +155,7 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
   
   const { apiKey } = useApiKey();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -393,7 +396,12 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
         setShowChromeAICard(false);
         orbPositioningService.clearSelection();
       } else {
-        throw new Error(result.error || 'Chrome AI operation failed');
+        // Instead of throwing an error, show a toast.
+        toast({
+          title: `Chrome AI: ${operation.charAt(0).toUpperCase() + operation.slice(1)} Failed`,
+          description: result.error || 'The feature may not be available in your browser.',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       console.error(`Chrome AI ${operation} error:`, error);
@@ -427,7 +435,7 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
       });
 
       if (result.success && result.response) {
-        setChatHistory(prev => [...prev, { role: 'model', content: result.response }]);
+        setChatHistory(prev => [...prev, { role: 'model', content: result.response! }]);
 
         // Speak briefing if voice mode is active
         if (isVoiceMode && !isSpeaking) {
