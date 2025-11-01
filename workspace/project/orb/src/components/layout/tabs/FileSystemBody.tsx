@@ -45,6 +45,8 @@ const FileSystemBody = () => {
             }
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            // If fetching fails, assume connection is bad and show connection buttons
+            setIsGoogleConnected(false);
         } finally {
             setIsLoading(false);
         }
@@ -63,6 +65,7 @@ const FileSystemBody = () => {
         ]);
         const googleData = await googleRes.json();
         const microsoftData = await microsoftRes.json();
+        
         setIsGoogleConnected(googleData.isConnected);
         setIsMicrosoftConnected(microsoftData.isConnected);
 
@@ -73,6 +76,8 @@ const FileSystemBody = () => {
         }
       } catch (error) {
         setIsLoading(false);
+        setIsGoogleConnected(false);
+        setIsMicrosoftConnected(false);
         toast({ title: 'Error', description: 'Could not check cloud storage connections.', variant: 'destructive'});
       }
     }, [user, toast, fetchFiles]);
