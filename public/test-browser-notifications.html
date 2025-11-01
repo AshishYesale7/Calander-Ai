@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Notifications Test - Calendar.ai</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #4f46e5;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        .status-label {
+            font-weight: 500;
+        }
+        
+        .status-value {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-granted {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-denied {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        
+        .status-default {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 8px;
+            transition: all 0.2s;
+        }
+        
+        .button:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+        
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-secondary {
+            background: #6b7280;
+        }
+        
+        .button-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .button-success {
+            background: #059669;
+        }
+        
+        .button-success:hover {
+            background: #047857;
+        }
+        
+        .button-warning {
+            background: #d97706;
+        }
+        
+        .button-warning:hover {
+            background: #b45309;
+        }
+        
+        .button-danger {
+            background: #dc2626;
+        }
+        
+        .button-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        
+        .chrome-ai-status {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .instructions {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .instructions h4 {
+            color: #1e40af;
+            margin-top: 0;
+        }
+        
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Browser Notifications Test</h1>
+        <p style="text-align: center; color: #6b7280;">
+            Test Calendar.ai's browser notification system with Chrome AI enhancement
+        </p>
+
+        <!-- Status Card -->
+        <div class="status-card">
+            <h3>System Status</h3>
+            <div class="status-item">
+                <span class="status-label">Browser Support:</span>
+                <span id="support-status" class="status-value">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Permission:</span>
+                <span id="permission-status" class="status-value">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Chrome AI:</span>
+                <span id="chrome-ai-status" class="status-value">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Tab Active:</span>
+                <span id="tab-status" class="status-value">Active</span>
+            </div>
+        </div>
+
+        <!-- Chrome AI Status -->
+        <div class="chrome-ai-status">
+            <h4>🤖 Chrome AI Integration</h4>
+            <p id="chrome-ai-details">Checking Chrome AI availability...</p>
+        </div>
+
+        <!-- Permission Section -->
+        <div class="test-section">
+            <h3>📋 Permission Management</h3>
+            <button id="request-permission" class="button">Request Permission</button>
+            <button id="check-permission" class="button button-secondary">Check Permission</button>
+        </div>
+
+        <!-- Test Notifications -->
+        <div class="test-section">
+            <h3>🧪 Test Notifications</h3>
+            <button id="test-basic" class="button button-success">Basic Notification</button>
+            <button id="test-reminder" class="button button-warning">Reminder</button>
+            <button id="test-event" class="button button-warning">Event</button>
+            <button id="test-achievement" class="button button-success">Achievement</button>
+            <button id="test-ai-enhanced" class="button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                AI Enhanced
+            </button>
+        </div>
+
+        <!-- Batch Testing -->
+        <div class="test-section">
+            <h3>📦 Batch Testing</h3>
+            <button id="test-batch" class="button button-danger">Send 3 Notifications</button>
+            <button id="clear-log" class="button button-secondary">Clear Log</button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <h4>📖 How to Test</h4>
+            <ol>
+                <li><strong>Enable Permissions:</strong> Click "Request Permission" and allow notifications</li>
+                <li><strong>Test Basic:</strong> Click any test button to trigger a notification</li>
+                <li><strong>Chrome AI:</strong> Use Chrome Canary with AI flags for enhanced notifications</li>
+                <li><strong>Tab Inactive:</strong> Switch to another tab to see notifications appear</li>
+                <li><strong>Check Console:</strong> Open DevTools to see detailed logs</li>
+            </ol>
+        </div>
+
+        <!-- Log -->
+        <div id="log" class="log">
+            <div>🚀 Browser Notifications Test Ready</div>
+            <div>📝 Logs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // Logging function
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '📝';
+            logElement.innerHTML += `<div>[${timestamp}] ${emoji} ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[Browser Notifications] ${message}`);
+        }
+
+        // Check browser support
+        function checkSupport() {
+            const isSupported = 'Notification' in window;
+            const statusElement = document.getElementById('support-status');
+            
+            if (isSupported) {
+                statusElement.textContent = 'Supported';
+                statusElement.className = 'status-value status-granted';
+                log('Browser notifications are supported', 'success');
+            } else {
+                statusElement.textContent = 'Not Supported';
+                statusElement.className = 'status-value status-denied';
+                log('Browser notifications are not supported', 'error');
+            }
+            
+            return isSupported;
+        }
+
+        // Check permission status
+        function checkPermission() {
+            if (!('Notification' in window)) return 'denied';
+            
+            const permission = Notification.permission;
+            const statusElement = document.getElementById('permission-status');
+            
+            switch (permission) {
+                case 'granted':
+                    statusElement.textContent = 'Granted';
+                    statusElement.className = 'status-value status-granted';
+                    log('Notification permission granted', 'success');
+                    break;
+                case 'denied':
+                    statusElement.textContent = 'Denied';
+                    statusElement.className = 'status-value status-denied';
+                    log('Notification permission denied', 'error');
+                    break;
+                case 'default':
+                    statusElement.textContent = 'Not Requested';
+                    statusElement.className = 'status-value status-default';
+                    log('Notification permission not yet requested', 'warning');
+                    break;
+            }
+            
+            return permission;
+        }
+
+        // Check Chrome AI availability
+        function checkChromeAI() {
+            const statusElement = document.getElementById('chrome-ai-status');
+            const detailsElement = document.getElementById('chrome-ai-details');
+            
+            if (window.ai) {
+                statusElement.textContent = 'Available';
+                statusElement.className = 'status-value status-granted';
+                
+                const features = [];
+                if (window.ai.languageModel) features.push('Language Model');
+                if (window.ai.summarizer) features.push('Summarizer');
+                if (window.ai.writer) features.push('Writer');
+                if (window.ai.rewriter) features.push('Rewriter');
+                if (window.ai.translator) features.push('Translator');
+                
+                detailsElement.textContent = `Chrome AI is available with: ${features.join(', ')}`;
+                log(`Chrome AI available with features: ${features.join(', ')}`, 'success');
+            } else {
+                statusElement.textContent = 'Not Available';
+                statusElement.className = 'status-value status-denied';
+                detailsElement.textContent = 'Chrome AI is not available. Use Chrome Canary with --enable-features=Experimental,AILanguageModelAPI,AILanguageModelAPIForTesting flags.';
+                log('Chrome AI not available', 'warning');
+            }
+        }
+
+        // Track tab visibility
+        function trackTabVisibility() {
+            const statusElement = document.getElementById('tab-status');
+            
+            function updateTabStatus() {
+                const isActive = !document.hidden;
+                statusElement.textContent = isActive ? 'Active' : 'Inactive';
+                statusElement.className = `status-value ${isActive ? 'status-granted' : 'status-warning'}`;
+            }
+            
+            document.addEventListener('visibilitychange', updateTabStatus);
+            window.addEventListener('focus', updateTabStatus);
+            window.addEventListener('blur', updateTabStatus);
+            
+            updateTabStatus();
+        }
+
+        // Request permission
+        async function requestPermission() {
+            if (!('Notification' in window)) {
+                log('Notifications not supported', 'error');
+                return false;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                log(`Permission request result: ${permission}`, permission === 'granted' ? 'success' : 'warning');
+                checkPermission();
+                return permission === 'granted';
+            } catch (error) {
+                log(`Permission request failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Show notification
+        async function showNotification(title, body, options = {}) {
+            if (Notification.permission !== 'granted') {
+                log('Permission not granted, requesting...', 'warning');
+                const granted = await requestPermission();
+                if (!granted) {
+                    log('Cannot show notification - permission denied', 'error');
+                    return null;
+                }
+            }
+
+            try {
+                const notification = new Notification(title, {
+                    body,
+                    icon: '/logos/calendar-ai-logo-192.png',
+                    badge: '/logos/calendar-ai-logo-72.png',
+                    tag: `calendar-ai-${Date.now()}`,
+                    requireInteraction: false,
+                    vibrate: [200, 100, 200],
+                    ...options
+                });
+
+                notification.onclick = () => {
+                    log('Notification clicked', 'success');
+                    window.focus();
+                    notification.close();
+                };
+
+                notification.onclose = () => {
+                    log('Notification closed', 'info');
+                };
+
+                notification.onerror = (error) => {
+                    log(`Notification error: ${error}`, 'error');
+                };
+
+                // Auto-close after 5 seconds
+                setTimeout(() => {
+                    notification.close();
+                }, 5000);
+
+                log(`Notification shown: ${title}`, 'success');
+                return notification;
+            } catch (error) {
+                log(`Failed to show notification: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // AI-enhanced notification
+        async function showAIEnhancedNotification(originalMessage) {
+            let enhancedMessage = originalMessage;
+            
+            if (window.ai?.rewriter) {
+                try {
+                    log('Enhancing message with Chrome AI...', 'info');
+                    const rewriter = await window.ai.rewriter.create({
+                        tone: 'more-casual',
+                        length: 'shorter'
+                    });
+                    enhancedMessage = await rewriter.rewrite(originalMessage);
+                    rewriter.destroy();
+                    log(`Message enhanced: "${originalMessage}" → "${enhancedMessage}"`, 'success');
+                } catch (error) {
+                    log(`AI enhancement failed: ${error.message}`, 'warning');
+                }
+            } else {
+                log('Chrome AI not available, using original message', 'warning');
+            }
+
+            return showNotification('🤖 AI Enhanced Notification', enhancedMessage, {
+                tag: 'ai-enhanced',
+                requireInteraction: true
+            });
+        }
+
+        // Test functions
+        const tests = {
+            basic: () => showNotification('📱 Basic Test', 'This is a basic browser notification test!'),
+            reminder: () => showNotification('⏰ Reminder', 'Don\'t forget your important meeting in 15 minutes!', { requireInteraction: true }),
+            event: () => showNotification('📅 Event Starting', 'Your "Team Standup" meeting is starting now!', { vibrate: [300, 100, 300] }),
+            achievement: () => showNotification('🏆 Achievement Unlocked', 'Congratulations! You\'ve completed 7 days in a row!', { requireInteraction: true }),
+            aiEnhanced: () => showAIEnhancedNotification('You have an important deadline approaching soon and should prepare accordingly.'),
+            batch: async () => {
+                log('Starting batch notification test...', 'info');
+                const notifications = [
+                    { title: '📧 New Email', body: 'You have 3 new emails from your team' },
+                    { title: '📋 Task Due', body: 'Complete project proposal by 5 PM today' },
+                    { title: '🎉 Celebration', body: 'It\'s your work anniversary! 2 years strong!' }
+                ];
+
+                for (let i = 0; i < notifications.length; i++) {
+                    const notif = notifications[i];
+                    await showNotification(notif.title, notif.body);
+                    if (i < notifications.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+                }
+                log('Batch notification test completed', 'success');
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Initializing browser notification test...', 'info');
+            
+            // Check system status
+            checkSupport();
+            checkPermission();
+            checkChromeAI();
+            trackTabVisibility();
+
+            // Bind event listeners
+            document.getElementById('request-permission').onclick = requestPermission;
+            document.getElementById('check-permission').onclick = checkPermission;
+            document.getElementById('test-basic').onclick = tests.basic;
+            document.getElementById('test-reminder').onclick = tests.reminder;
+            document.getElementById('test-event').onclick = tests.event;
+            document.getElementById('test-achievement').onclick = tests.achievement;
+            document.getElementById('test-ai-enhanced').onclick = tests.aiEnhanced;
+            document.getElementById('test-batch').onclick = tests.batch;
+            document.getElementById('clear-log').onclick = () => {
+                document.getElementById('log').innerHTML = '<div>🧹 Log cleared</div>';
+            };
+
+            log('Browser notification test initialized successfully', 'success');
+        });
+    </script>
+</body>
+</html>

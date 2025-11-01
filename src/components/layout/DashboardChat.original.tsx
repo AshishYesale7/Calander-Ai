@@ -1,3 +1,4 @@
+
 'use client';
 
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
@@ -17,8 +18,6 @@ import { aiFlowsIntegrationService } from '@/services/aiFlowsIntegration';
 import type { OrbAIRequest, TextSelection } from '@/types/chrome-ai';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { orbPositioningService, type TextSelectionInfo } from '@/services/orbPositioningService';
-import ChromeAIActionsCard from './ChromeAIActionsCard';
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -95,7 +94,7 @@ const ChromeAIActionButton = ({
   </Tooltip>
 );
 
-// Text Selection Popup Component (Original)
+// Text Selection Popup Component
 const TextSelectionPopup = ({ 
   selection, 
   onAction 
@@ -146,18 +145,12 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
   const [webappContext, setWebappContext] = useState<any>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   
-  // New state for enhanced text selection and Chrome AI card
-  const [currentTextSelection, setCurrentTextSelection] = useState<TextSelectionInfo | null>(null);
-  const [showChromeAICard, setShowChromeAICard] = useState(false);
-  const [processingAction, setProcessingAction] = useState<string | null>(null);
-  
   const { apiKey } = useApiKey();
   const { user } = useAuth();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
-  const orbContainerRef = useRef<HTMLDivElement>(null);
 
   // Enhanced voice activation with Chrome AI integration
   const {
@@ -176,38 +169,6 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
     enableContinuousListening: true,
     onCommandReceived: handleVoiceCommand
   });
-
-  // Initialize orb positioning service
-  useEffect(() => {
-    orbPositioningService.initialize();
-    
-    if (orbContainerRef.current) {
-      orbPositioningService.setOrbElement(orbContainerRef.current);
-    }
-
-    const unsubscribe = orbPositioningService.onSelectionChange((selection) => {
-      setCurrentTextSelection(selection);
-      
-      if (selection && selection.text.length > 10) { // Only show for meaningful selections
-        setShowChromeAICard(true);
-        // Auto-open orb when text is selected
-        if (!isOpen) {
-          setIsOpen(true);
-        }
-      } else {
-        setShowChromeAICard(false);
-        // Reset orb position when no selection
-        if (!selection) {
-          orbPositioningService.resetOrbPosition();
-        }
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      orbPositioningService.cleanup();
-    };
-  }, [isOpen, setIsOpen]);
 
   // Voice activation handlers
   async function handleVoiceActivation() {
@@ -277,11 +238,9 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
     }
   };
 
-  // Enhanced Chrome AI action handlers
+  // Chrome AI action handlers using integrated service
   const handleChromeAIAction = async (operation: string, text: string) => {
     setIsProcessingAI(true);
-    setProcessingAction(operation);
-    
     try {
       let result;
 
@@ -305,44 +264,6 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
         case 'proofread':
           result = await aiFlowsIntegrationService.proofreadContent(text);
           break;
-        case 'explain':
-          result = await aiFlowsIntegrationService.processRequest({
-            type: 'webapp-qa',
-            prompt: `Please explain this text in simple terms: "${text}"`,
-            userId: user?.uid || '',
-            apiKey,
-            options: { useChrome: isChromeAIEnabled, fallbackToGenkit: true }
-          });
-          break;
-        case 'enhance':
-          result = await aiFlowsIntegrationService.rewriteContent(text, {
-            tone: 'engaging',
-            length: 'expanded'
-          });
-          break;
-        case 'question':
-          const question = prompt('What would you like to ask about this text?');
-          if (question) {
-            result = await aiFlowsIntegrationService.processRequest({
-              type: 'webapp-qa',
-              prompt: `Based on this text: "${text}"\n\nQuestion: ${question}`,
-              userId: user?.uid || '',
-              apiKey,
-              options: { useChrome: isChromeAIEnabled, fallbackToGenkit: true }
-            });
-          } else {
-            return;
-          }
-          break;
-        case 'ideas':
-          result = await aiFlowsIntegrationService.processRequest({
-            type: 'webapp-qa',
-            prompt: `Generate creative ideas and insights related to this text: "${text}"`,
-            userId: user?.uid || '',
-            apiKey,
-            options: { useChrome: isChromeAIEnabled, fallbackToGenkit: true }
-          });
-          break;
         default:
           // Fallback to direct Chrome AI service
           const request: OrbAIRequest = {
@@ -364,34 +285,19 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
         // Add to chat history
         setChatHistory(prev => [
           ...prev,
-          { role: 'user', content: `${operation.charAt(0).toUpperCase() + operation.slice(1)}: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"` },
+          { role: 'user', content: `${operation.charAt(0).toUpperCase() + operation.slice(1)}: "${text}"` },
           { role: 'model', content: result.response }
         ]);
 
         // Replace selected text if applicable
-        if (currentTextSelection && ['rewrite', 'proofread', 'translate', 'enhance'].includes(operation)) {
-          try {
-            // Try to replace the selected text in the document
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              range.deleteContents();
-              range.insertNode(document.createTextNode(result.response));
-              selection.removeAllRanges();
-            }
-          } catch (error) {
-            console.warn('Could not replace selected text:', error);
-          }
+        if (selectedText && ['rewrite', 'proofread', 'translate'].includes(operation)) {
+          textSelectionHandler.replaceSelectedText(result.response);
         }
 
         // Speak result if voice mode is active
         if (isVoiceMode && !isSpeaking) {
           await speak(`Here's the ${operation} result: ${result.response}`);
         }
-
-        // Close Chrome AI card after successful action
-        setShowChromeAICard(false);
-        orbPositioningService.clearSelection();
       } else {
         throw new Error(result.error || 'Chrome AI operation failed');
       }
@@ -403,7 +309,7 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
       ]);
     } finally {
       setIsProcessingAI(false);
-      setProcessingAction(null);
+      setSelectedText(null);
     }
   };
 
@@ -473,7 +379,7 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
     loadWebappContext();
   }, [user]);
 
-  // Text selection handler (original)
+  // Text selection handler
   useEffect(() => {
     const unsubscribe = textSelectionHandler.onSelectionChange((selection) => {
       setSelectedText(selection);
@@ -490,6 +396,7 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
         handleAIResponse(chatHistory, initialMessage);
     }
   }, [initialMessage]);
+
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -525,14 +432,8 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
     }
   };
 
-  const handleCloseChromeAICard = () => {
-    setShowChromeAICard(false);
-    orbPositioningService.clearSelection();
-  };
-
   return (
     <motion.div
-      ref={orbContainerRef}
       drag
       dragControls={dragControls}
       dragListener={!isOpen}
@@ -686,26 +587,12 @@ export default function DashboardChat({ isOpen, setIsOpen, initialMessage }: Das
         </div>
       </motion.div>
 
-      {/* Original Text Selection Popup */}
+      {/* Text Selection Popup */}
       <AnimatePresence>
         {selectedText && (
           <TextSelectionPopup
             selection={selectedText}
             onAction={handleChromeAIAction}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Enhanced Chrome AI Actions Card */}
-      <AnimatePresence>
-        {showChromeAICard && currentTextSelection && (
-          <ChromeAIActionsCard
-            selectedText={currentTextSelection.text}
-            position={currentTextSelection.position}
-            onAction={handleChromeAIAction}
-            onClose={handleCloseChromeAICard}
-            isProcessing={isProcessingAI}
-            processingAction={processingAction || undefined}
           />
         )}
       </AnimatePresence>

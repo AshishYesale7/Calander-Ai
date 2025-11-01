@@ -19,6 +19,7 @@ import type { ReactNode} from 'react';
 import { useEffect } from 'react';
 import { ApiKeyProvider } from '@/context/ApiKeyContext';
 import { TimezoneProvider } from '@/context/TimezoneContext';
+import { NotificationWrapper } from '@/components/notifications/NotificationWrapper';
 
 function BackgroundManager() {
   const { backgroundVideo, backgroundImage, backgroundColor } = useTheme();
@@ -238,10 +239,12 @@ export default function RootLayout({
           <ThemeProvider>
             <ApiKeyProvider>
               <TimezoneProvider>
-                <AppThemeApplicator>
-                  {children}
-                  <Toaster />
-                </AppThemeApplicator>
+                <NotificationWrapper>
+                  <AppThemeApplicator>
+                    {children}
+                    <Toaster />
+                  </AppThemeApplicator>
+                </NotificationWrapper>
               </TimezoneProvider>
             </ApiKeyProvider>
           </ThemeProvider>
