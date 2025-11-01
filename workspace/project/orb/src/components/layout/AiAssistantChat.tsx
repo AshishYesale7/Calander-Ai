@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
 import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
-import FileSystemBody from './FileSystemBody';
+import FileSystemBody from './tabs/FileSystemBody';
 import AutomationTab from './tabs/AutomationTab';
 import SummarizerTab from './tabs/SummarizerTab'; 
 
@@ -333,8 +333,3 @@ export default function AiAssistantChat({
     </div>
   );
 }
-
-// Type for chat message moved to avoid re-export issue
-export type { ChatMessage };
-
-    
