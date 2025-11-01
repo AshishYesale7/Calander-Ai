@@ -42,12 +42,11 @@ const FileSystemBody = () => {
                 setFiles(data.files || []);
                 setIsGoogleConnected(true); 
             } else {
-                // If there's an error (e.g. auth), we'll throw to be caught below
                 throw new Error(data.message || 'Failed to fetch files from Google Drive.');
             }
         } catch (error: any) {
-            // This is the key change: if fetchFiles fails, we force the connection status to false.
             setIsGoogleConnected(false);
+            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
         } finally {
             setIsLoading(false);
         }
@@ -98,7 +97,7 @@ const FileSystemBody = () => {
         return () => {
             window.removeEventListener('cloud-auth-success', handleAuthRefresh);
         };
-    }, [checkConnections]);
+    }, [user, checkConnections]);
 
 
     const handleItemClick = (item: FileType) => {
@@ -117,7 +116,19 @@ const FileSystemBody = () => {
         if (!user) return;
         const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: `${provider}-drive` })).toString('base64');
         const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
-        window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
+        
+        const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
+
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data === `auth-success-${provider}`) {
+                authWindow?.close();
+                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
+                checkConnections(); // Directly re-check connections after auth
+                window.removeEventListener('message', handleAuthMessage);
+            }
+        };
+        window.addEventListener('message', handleAuthMessage);
     };
 
     if (isLoading) {
@@ -172,7 +183,7 @@ const FileSystemBody = () => {
 
             {files.length === 0 ? (
                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    This folder is empty.
+                    {isGoogleConnected ? "Try refreshing, or connect a different account." : "Connect a service to view files."}
                 </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">

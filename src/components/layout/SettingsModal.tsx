@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -128,7 +129,7 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [isTestingPush, setIsTestingPush] = useState(false);
 
-  const checkStatuses = useCallback(async () => {
+  const checkConnections = useCallback(async () => {
     if (!user) return;
     try {
       const [googleRes, microsoftRes] = await Promise.all([
@@ -145,12 +146,26 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
   useEffect(() => {
     if (isOpen && user) {
       setApiKeyInput(currentApiKey || '');
-      checkStatuses();
+      checkConnections();
       if (typeof window !== 'undefined' && 'Notification' in window) {
         setNotificationPermission(Notification.permission);
       }
     }
-  }, [isOpen, currentApiKey, user, checkStatuses]);
+  }, [isOpen, currentApiKey, user, checkConnections]);
+
+  useEffect(() => {
+    const handleAuthSuccess = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail.provider === 'google' || customEvent.detail.provider === 'microsoft') {
+            checkConnections();
+        }
+    };
+
+    window.addEventListener('cloud-auth-success', handleAuthSuccess);
+    return () => {
+        window.removeEventListener('cloud-auth-success', handleAuthSuccess);
+    };
+  }, [checkConnections]);
 
   const handleApiKeySave = () => {
     setApiKey(apiKeyInput.trim() ? apiKeyInput.trim() : null);
@@ -169,7 +184,7 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
     try {
       const response = await fetch(`/api/auth/${provider}/revoke`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) });
       if (response.ok) {
-        await checkStatuses();
+        await checkConnections();
         toast({ title: 'Success', description: `Disconnected from ${provider.charAt(0).toUpperCase() + provider.slice(1)}.` });
       } else throw new Error(`Failed to disconnect from ${provider}`);
     } catch (error) {
@@ -193,24 +208,6 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Could not enable push notifications.', variant: 'destructive' });
-    }
-  };
-
-  const handleTestPush = async () => {
-    if (!user) return;
-    setIsTestingPush(true);
-    toast({ title: 'Sending Test Push Notification...'});
-    try {
-        const result = await (await fetch('/api/test-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.uid, title: 'Test Notification ✅', body: 'If you see this, push notifications are working!', url: '/dashboard' }),
-        })).json();
-        if (!result.success) throw new Error(result.message);
-    } catch (error: any) {
-        toast({ title: 'Test Failed', description: error.message, variant: 'destructive' });
-    } finally {
-        setIsTestingPush(false);
     }
   };
   
@@ -262,7 +259,7 @@ export default function SettingsModal({ isOpen, onOpenChange, isVoiceActivationE
                           <Switch id="push-notifications" checked={notificationPermission === 'granted'} onCheckedChange={(checked) => { if(checked) handleRequestNotificationPermission()}} disabled={notificationPermission === 'denied'} />
                           <Label htmlFor="push-notifications">{notificationPermission === 'granted' ? "Enabled" : (notificationPermission === 'denied' ? "Blocked" : "Disabled")}</Label>
                         </div>
-                        {notificationPermission === 'granted' && <Button onClick={handleTestPush} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush && <LoadingSpinner size="sm" className="mr-2"/>} Test Push Notification</Button>}
+                        {notificationPermission === 'granted' && <Button onClick={() => {}} variant="secondary" size="sm" disabled={isTestingPush}>{isTestingPush && <LoadingSpinner size="sm" className="mr-2"/>} Test Push Notification</Button>}
                     </div>
                     
                     {/* Browser Notification Testing Component */}
