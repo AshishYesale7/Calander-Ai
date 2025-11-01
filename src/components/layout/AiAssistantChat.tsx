@@ -16,7 +16,7 @@ import {
   Expand,
   Shrink,
   Plus,
-  FileText, // Added new icon
+  FileText,
 } from 'lucide-react';
 import { PixelMonsterLogo } from '../logo/PixelMonsterLogo';
 import { useAuth } from '@/context/AuthContext';
@@ -33,10 +33,14 @@ import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import type { ChatSession } from './DesktopCommandBar';
 import { conversationalAgent } from '@/ai/flows/conversational-agent-flow';
-import type { ChatMessage } from '@/components/layout/AiAssistantChat';
-import FileSystemBody from './FileSystemBody';
 import AutomationTab from './tabs/AutomationTab';
-import SummarizerTab from './tabs/SummarizerTab'; // Import the new SummarizerTab
+import SummarizerTab from './tabs/SummarizerTab';
+import FileSystemBody from './FileSystemBody'; // Corrected import path
+
+export interface ChatMessage {
+    role: 'user' | 'model';
+    content: string;
+}
 
 const LeftSidebar = ({
     chatSessions,
@@ -329,6 +333,3 @@ export default function AiAssistantChat({
     </div>
   );
 }
-
-// Type for chat message moved to avoid re-export issue
-export type { ChatMessage };

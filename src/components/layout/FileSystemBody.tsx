@@ -25,33 +25,6 @@ const FileSystemBody = () => {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const checkConnections = useCallback(async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const [googleRes, microsoftRes] = await Promise.all([
-          fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
-          fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
-        ]);
-        const googleData = await googleRes.json();
-        const microsoftData = await microsoftRes.json();
-        setIsGoogleConnected(googleData.isConnected);
-        setIsMicrosoftConnected(microsoftData.isConnected);
-
-        if (googleData.isConnected) {
-            await fetchFiles();
-        } else {
-            setIsLoading(false);
-        }
-      } catch (error) {
-        setIsLoading(false);
-        toast({ title: 'Error', description: 'Could not check cloud storage connections.', variant: 'destructive'});
-      }
-    }, [user, toast]);
-    
     const fetchFiles = useCallback(async (folderId: string = 'root') => {
         if (!user) {
              setIsLoading(false);
@@ -67,16 +40,50 @@ const FileSystemBody = () => {
             const data = await response.json();
             if (data.success) {
                 setFiles(data.files || []);
+                setIsGoogleConnected(true); // Connection is valid
             } else {
                 throw new Error(data.message || 'Failed to fetch files.');
             }
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            // If fetching fails for any reason (e.g. auth error), set connected to false
+            setIsGoogleConnected(false);
+            console.error("Failed to fetch files, likely needs re-authentication:", error.message);
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast]);
+    }, [user]);
 
+    const checkConnections = useCallback(async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const [googleRes, microsoftRes] = await Promise.all([
+          fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+          fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+        ]);
+        
+        const googleData = await googleRes.json();
+        const microsoftData = await microsoftRes.json();
+        
+        setIsMicrosoftConnected(microsoftData.isConnected);
+
+        if (googleData.isConnected) {
+            // Attempt to fetch files to validate the connection
+            await fetchFiles();
+        } else {
+            setIsGoogleConnected(false);
+            setIsLoading(false);
+        }
+      } catch (error) {
+        setIsLoading(false);
+        setIsGoogleConnected(false);
+        setIsMicrosoftConnected(false);
+      }
+    }, [user, fetchFiles]);
+    
     useEffect(() => {
         checkConnections();
     }, [user, checkConnections]);
@@ -121,13 +128,13 @@ const FileSystemBody = () => {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
                 <Folder className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-lg">Connect Cloud Storage</h3>
+                <h3 className="font-semibold text-lg text-white">Connect Cloud Storage</h3>
                 <p className="text-sm text-muted-foreground mt-1">Access your files from Google Drive or OneDrive.</p>
                 <div className="mt-6 space-y-3 w-full max-w-xs">
                    <Button onClick={() => handleConnect('google')} className="w-full">
                        <GoogleIcon /> Connect to Google Drive
                    </Button>
-                   <Button onClick={() => handleConnect('microsoft')} variant="outline" className="w-full">
+                   <Button onClick={() => handleConnect('microsoft')} variant="outline" className="w-full bg-transparent text-white border-white/20 hover:bg-white/10">
                        <MicrosoftIcon /> Connect to OneDrive
                    </Button>
                 </div>
@@ -159,7 +166,9 @@ const FileSystemBody = () => {
             </header>
 
             {files.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">This folder is empty.</div>
+                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                    {isGoogleConnected ? "This folder is empty." : "Connect a service to view files."}
+                </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
                     {files.map(item => (
