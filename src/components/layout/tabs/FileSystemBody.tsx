@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Folder, File as FileIcon, Upload, FolderPlus, MoreVertical, ChevronRight, RefreshCw } from 'lucide-react';
+import { Folder, File as FileIcon, MoreVertical, ChevronRight, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
@@ -25,30 +25,6 @@ const FileSystemBody = () => {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const checkConnections = useCallback(async () => {
-      if (!user) return;
-      setIsLoading(true);
-      try {
-        const [googleRes, microsoftRes] = await Promise.all([
-          fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
-          fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
-        ]);
-        const googleData = await googleRes.json();
-        const microsoftData = await microsoftRes.json();
-        setIsGoogleConnected(googleData.isConnected);
-        setIsMicrosoftConnected(microsoftData.isConnected);
-
-        if (googleData.isConnected) {
-            await fetchFiles();
-        } else {
-            setIsLoading(false);
-        }
-      } catch (error) {
-        setIsLoading(false);
-        toast({ title: 'Error', description: 'Could not check cloud storage connections.', variant: 'destructive'});
-      }
-    }, [user, toast]);
-    
     const fetchFiles = useCallback(async (folderId: string = 'root') => {
         if (!user) {
              setIsLoading(false);
@@ -63,23 +39,66 @@ const FileSystemBody = () => {
             });
             const data = await response.json();
             if (data.success) {
-                setFiles(data.files);
+                setFiles(data.files || []);
+                setIsGoogleConnected(true); 
             } else {
-                // Throwing an error here will be caught and displayed as a toast.
-                throw new Error(data.message || 'Failed to fetch files.');
+                // If there's an error (e.g. auth), we'll throw to be caught below
+                throw new Error(data.message || 'Failed to fetch files from Google Drive.');
             }
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            // This is the key change: if fetchFiles fails, we force the connection status to false.
+            setIsGoogleConnected(false);
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast]);
+    }, [user]);
 
-    useEffect(() => {
-        if (user) {
-            checkConnections();
+    const checkConnections = useCallback(async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const [googleRes, microsoftRes] = await Promise.all([
+          fetch('/api/auth/google/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+          fetch('/api/auth/microsoft/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.uid }) }),
+        ]);
+        
+        const googleData = await googleRes.json();
+        const microsoftData = await microsoftRes.json();
+        
+        setIsMicrosoftConnected(microsoftData.isConnected);
+
+        if (googleData.isConnected) {
+            await fetchFiles();
+        } else {
+            setIsGoogleConnected(false);
+            setIsLoading(false);
         }
-    }, [user, checkConnections]);
+      } catch (error) {
+        setIsLoading(false);
+        setIsGoogleConnected(false);
+        setIsMicrosoftConnected(false);
+      }
+    }, [user, fetchFiles]);
+    
+    // Initial check and sets up listener for post-auth refresh
+    useEffect(() => {
+        checkConnections();
+        
+        const handleAuthRefresh = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            if (customEvent.detail.provider === 'google' || customEvent.detail.provider === 'microsoft') {
+                checkConnections();
+            }
+        };
+
+        window.addEventListener('cloud-auth-success', handleAuthRefresh);
+        return () => {
+            window.removeEventListener('cloud-auth-success', handleAuthRefresh);
+        };
+    }, [checkConnections]);
 
 
     const handleItemClick = (item: FileType) => {
@@ -98,36 +117,29 @@ const FileSystemBody = () => {
         if (!user) return;
         const state = Buffer.from(JSON.stringify({ userId: user.uid, provider: `${provider}-drive` })).toString('base64');
         const authUrl = `/api/auth/${provider}/redirect?state=${encodeURIComponent(state)}`;
-        
-        const authWindow = window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
-
-        const handleAuthMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data === `auth-success-${provider}`) {
-                authWindow?.close();
-                toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected`, description: 'Fetching your files...' });
-                checkConnections(); // Re-check connections which will trigger fetchFiles
-                window.removeEventListener('message', handleAuthMessage);
-            }
-        };
-        window.addEventListener('message', handleAuthMessage);
+        window.open(authUrl, '_blank', 'width=500,height=600,noopener,noreferrer');
     };
 
     if (isLoading) {
-        return <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>;
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
+                <LoadingSpinner />
+                <p className="mt-2 text-sm animate-pulse">Connecting...</p>
+            </div>
+        );
     }
     
     if (!isGoogleConnected && !isMicrosoftConnected) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
                 <Folder className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-lg">Connect Cloud Storage</h3>
+                <h3 className="font-semibold text-lg text-white">Connect Cloud Storage</h3>
                 <p className="text-sm text-muted-foreground mt-1">Access your files from Google Drive or OneDrive.</p>
                 <div className="mt-6 space-y-3 w-full max-w-xs">
                    <Button onClick={() => handleConnect('google')} className="w-full">
                        <GoogleIcon /> Connect to Google Drive
                    </Button>
-                   <Button onClick={() => handleConnect('microsoft')} variant="outline" className="w-full">
+                   <Button onClick={() => handleConnect('microsoft')} variant="outline" className="w-full bg-transparent text-white border-white/20 hover:bg-white/10">
                        <MicrosoftIcon /> Connect to OneDrive
                    </Button>
                 </div>
@@ -138,16 +150,16 @@ const FileSystemBody = () => {
     return (
         <div className="flex-1 flex flex-col h-full bg-black/30 p-4">
             <header className="flex-shrink-0 flex justify-between items-center mb-4">
-                <nav className="flex items-center text-sm text-gray-400">
+                <nav className="flex items-center text-sm text-gray-400 overflow-x-auto">
                     {pathHistory.map((p, index) => (
-                        <div key={p.id} className="flex items-center">
+                        <div key={p.id} className="flex items-center flex-shrink-0">
                             <button 
                                 onClick={() => handleBreadcrumbClick(p.id, index)} 
-                                className="hover:text-white"
+                                className="hover:text-white truncate"
                             >
                                 {p.name}
                             </button>
-                            {index < pathHistory.length - 1 && <ChevronRight className="h-4 w-4 mx-1" />}
+                            {index < pathHistory.length - 1 && <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />}
                         </div>
                     ))}
                 </nav>
@@ -159,7 +171,9 @@ const FileSystemBody = () => {
             </header>
 
             {files.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">This folder is empty.</div>
+                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                    This folder is empty.
+                </div>
             ) : (
                 <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto pr-2">
                     {files.map(item => (

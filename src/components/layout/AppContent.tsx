@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -342,6 +343,21 @@ export default function AppContent({
     }
   }, [audioSrc]);
   
+  useEffect(() => {
+    const handleAuthSuccess = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data === 'auth-success-google' || event.data === 'auth-success-microsoft') {
+            // Dispatch a custom event that specific components can listen for.
+            window.dispatchEvent(new CustomEvent('cloud-auth-success', { detail: { provider: event.data.split('-')[2] } }));
+        }
+    };
+    window.addEventListener('message', handleAuthSuccess);
+    return () => {
+        window.removeEventListener('message', handleAuthSuccess);
+    };
+}, []);
+
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
