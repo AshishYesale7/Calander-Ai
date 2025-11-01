@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -33,7 +34,8 @@ class BrowserNotificationService {
   private permission: NotificationPermission = 'default';
 
   constructor() {
-    this.isSupported = 'Notification' in window;
+    // Defer check to client-side only
+    this.isSupported = typeof window !== 'undefined' && 'Notification' in window;
     if (this.isSupported) {
       this.permission = Notification.permission;
     }
