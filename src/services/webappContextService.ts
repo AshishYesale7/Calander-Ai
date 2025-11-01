@@ -4,7 +4,7 @@
 import { getTimelineEvents } from './timelineService';
 import { getCareerGoals } from './careerGoalsService';
 import { getUserSkills } from './skillsService';
-import { getUserResources } from './resourcesService';
+import { getBookmarkedResources } from './resourcesService';
 import { getGoogleCalendarEvents } from './googleCalendarService';
 import { getGoogleTasks } from './googleTasksService';
 import { getGoogleGmailMessages } from './googleGmailService';
@@ -389,7 +389,7 @@ class WebappContextService {
 
   private async getResourcesData(userId: string) {
     try {
-      const resources = await getUserResources(userId);
+      const resources = await getBookmarkedResources(userId);
       
       const resourceList: Resource[] = resources.map((resource: any) => ({
         id: resource.id,
