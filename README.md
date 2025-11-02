@@ -1,7 +1,99 @@
 
 [![wakatime](https://wakatime.com/badge/github/AshishYesale7/Calander-Ai.svg)](https://wakatime.com/badge/github/AshishYesale7/Calander-Ai)
+ 
 
-[![wakatime](https://wakatime.com/badge/github/AshishYesale7/Calendar.ai.svg)](https://wakatime.com/badge/github/AshishYesale7/Calendar.ai)
+
+
+###  **Inspiration**
+
+Managing time and communication has become harder as people juggle multiple calendars, emails, chats, and meetings. We noticed how much time goes into reading, summarizing, and following up manually — all just to stay organized.
+The idea for **Calendar.ai** came from wanting an assistant that could understand this context and take care of the repetitive work — summarizing, extracting action items, and creating follow-ups — so people can focus on meaningful tasks instead of admin.
+
+---
+
+###  **What it does**
+
+**Calendar.ai** brings calendar, email, and collaboration together into one workspace powered by Chrome’s built-in AI.
+It automatically:
+
+* Summarizes meetings, emails, and attachments.
+* Extracts key action items, owners, and deadlines.
+* Suggests follow-up drafts and calendar events.
+* Transcribes short voice/video calls and saves searchable notes.
+* Uses semantic search to surface relevant past context.
+* Provides a conversational assistant for queries like “What are my pending tasks from yesterday?”
+
+It’s designed to reduce friction between communication, context, and action.
+
+---
+
+###  **How we built it**
+
+We built **Calendar.ai** as a modern web app using:
+
+* **Chrome Built-in AI APIs:** Prompt, Writer, Summarizer, Rewriter, Proofreader, and Translator.
+* **Frontend:** React + TypeScript + Chrome Extension Manifest V3.
+* **Backend (for integrations):** Node.js + Firebase (for authentication, storage, and sync).
+* **Data pipeline:** Built-in APIs handle summarization, rewriting, and translation directly on-device when possible; cloud fallback is used for authenticated integrations like Gmail and Drive.
+* **UI/UX:** Minimal, workspace-style dashboard with chat, calendar, and document previews.
+  
+<img width="1318" height="364" alt="94947" src="https://github.com/user-attachments/assets/29b90108-2865-41b5-a615-0ef678cc643e" />
+
+ 
+
+We focused on a hybrid AI model — client-side for privacy and responsiveness, cloud for collaboration and real-time sync.
+
+---
+
+###  **Challenges we ran into**
+
+Some of the main challenges were:
+
+* **Latency & performance:** Managing inference speed for local AI tasks without blocking the UI.
+* **Model size limitations:** Keeping the app lightweight while still supporting multimodal input.
+* **Sync complexity:** Maintaining real-time updates between local and cloud data (e.g., events and attachments).
+* **Tooling maturity:** Some APIs are still early-stage, so documentation and debugging were limited.
+* **Integration boundaries:** Managing Gmail, Drive, and Calendar APIs alongside Chrome’s AI stack cleanly.
+* **User privacy:** Designing clear consent flows and preview-before-send logic.
+
+---
+
+###  **Accomplishments that we're proud of**
+
+* Built a functioning **AI-driven meeting assistant** that creates structured actions directly from emails and meetings.
+* Achieved **real-time summarization** and **follow-up generation** in-browser using built-in APIs.
+* Created a clean, modern UI that blends chat, calendar, and task management naturally.
+* Maintained **privacy-first architecture** with local inference and explicit user approval for cloud actions.
+* Delivered a strong proof of concept ready for real user testing and future extension publishing.
+
+---
+
+###  **What we learned**
+
+* Chrome’s built-in AI stack offers more flexibility than we expected — especially the ability to run tasks locally without cloud dependence.
+* Balancing performance and accuracy on the client side requires design trade-offs.
+* User trust and transparency are essential for AI adoption — showing “how” and “why” AI acts matters.
+* Client-side AI opens new UX possibilities: instant feedback, offline productivity, and better privacy.
+
+---
+
+###  **What’s next for Calendar.ai**
+
+
+
+Hoping to extend your web application to extension’s reach to even more users, including those on mobile devices (Android/iOS , desktop, Extension(This "Extension" will live in the user's browser and use Chrome's built-in AI APIs to intelligently capture context from whatever the user is doing on the web and feed it into their Calendar.ai.) )? Implement a hybrid AI strategy with either Firebase AI Logic or the Gemini Developer API.
+
+Next, we plan to:
+
+
+* Add **multi-calendar synchronization** (Google, Outlook, Apple).
+* Integrate **file attachments and Gmail automation** for deeper workflow coverage.
+* Expand to **team and “Clan” collaboration** features with shared AI timelines.
+* Support **1-on-1 voice and video calls with live summaries**.
+* Launch as a **Chrome Extension + PWA** for both desktop and mobile.
+* Continue optimizing for **speed, privacy, and hybrid (local/cloud) AI execution.**
+
+
 
 # Calendar.ai: Your AI-Powered Career Calendar
 
@@ -166,3 +258,154 @@ For comprehensive information about this repository, please refer to these detai
 - **[Technical Architecture](./TECHNICAL_ARCHITECTURE.md)** - Detailed technical specifications and architecture diagrams
 
 These documents provide in-depth coverage of the project's architecture, features, development guidelines, and deployment strategies.
+
+ 
+---
+
+## ✅ **Feature List: Encryption, Architecture & AI System**
+
+### 🔐 **Encryption & Security**
+
+* [x] AES-256-GCM encryption for all sensitive data
+* [x] Field-level encryption for PII, tokens, and API keys
+* [x] bcrypt password hashing (12 rounds)
+* [x] Secure token generation with integrity verification
+* [x] Key rotation and versioning support
+* [x] Environment variable isolation for secrets
+* [x] Token encryption before database storage
+* [x] Automatic token refresh and expiry handling
+* [x] Secure state parameter generation for OAuth2
+* [x] User consent verification and revocation logic
+
+---
+
+### 🧱 **Database Architecture (Hybrid Model)**
+
+* [x] Current: Firestore (NoSQL)
+* [x] Added: PostgreSQL for structured & relational data
+* [x] Redis for caching, session storage, and rate limiting
+* [ ] Future: Elasticsearch for intelligent search
+* [x] Migration path defined from Firestore → PostgreSQL
+* [x] Analytics-ready schema with referential integrity
+* [x] Cost optimization (40–60% savings projected)
+
+---
+
+### 🤖 **AI Provider & Model System**
+
+* [x] Multi-LLM Provider System (6 supported: OpenAI, Anthropic, DeepSeek, Grok, Mistral, Perplexity)
+* [x] Dual API Key support (User-managed or Pro-managed keys)
+* [x] Smart Routing (auto-select provider based on subscription tier)
+* [x] Token & usage tracking per provider
+* [x] Global provider switching (webapp-wide)
+* [x] Fallback mechanism for provider downtime
+
+---
+
+### 💳 **Subscription & Monetization**
+
+* [x] Free Plan: Basic Gemini access (50K tokens/month)
+* [x] Pro Plan ($20/mo): All providers with managed keys (5M tokens/month)
+* [x] Enterprise Plan ($100/mo): Unlimited usage
+* [x] Real-time usage analytics and cost tracking
+* [x] Billing integration (Stripe/RevenueCat ready)
+
+---
+
+### 🔗 **MCP (Model Context Protocol) Integration**
+
+* [x] OAuth2 Authentication: Google Calendar, Gmail, Notion, Slack, GitHub
+* [x] API Key Authentication: Linear, others
+* [x] Encrypted token storage (AES-256-GCM)
+* [x] AI tool execution for connected services
+* [x] Automatic connection status tracking
+
+**Connected Services Examples:**
+
+* “Create a calendar event” → Google Calendar
+* “Search my emails” → Gmail
+* “Create a Notion page” → Notion
+* “Send Slack message” → Slack
+* “Create GitHub issue” → GitHub
+
+---
+
+### 💬 **Advanced Chat Interface**
+
+* [x] Multi-model response comparison
+* [x] File integration (Local, Google Drive, OneDrive)
+* [x] Persistent chat sessions with Firebase
+* [x] Speed, cost, and token metrics per conversation
+* [x] Rich markdown and code highlighting
+
+---
+
+### ⚙️ **Global Configuration & Performance**
+
+* [x] User-level preference persistence
+* [x] Fallback when APIs fail
+* [x] Hybrid database migration plan
+* [x] Redis-based caching for response optimization
+* [ ] DataDog/New Relic integration for performance tracking
+
+---
+
+### 💰 **Expected Benefits**
+
+* [x] 40–60% lower scaling cost
+* [x] 10× faster query performance
+* [x] Enterprise-grade encryption (AES-256-GCM)
+* [x] Dual API key flexibility
+* [x] Scalability to 100K+ users
+
+---
+
+## 📋 **Checklist: Missing & Pending Features**
+
+| Area                     | Missing Feature                      | Priority  | Status |
+| ------------------------ | ------------------------------------ | --------- | ------ |
+| 🎤 Voice Integration     | Voice commands ("Hey Orb" trigger)   | 🔥 High   | ☐      |
+|                          | Text-to-speech (TTS)                 | 🔥 High   | ☐      |
+|                          | Voice-activated AI operations        | 🔥 High   | ☐      |
+| 🔔 Notifications         | Integration with AI chat system      | 🔥 High   | ☐      |
+|                          | AI-enhanced contextual notifications | 🟡 Medium | ☐      |
+| 📱 Mobile & PWA          | Mobile-optimized responsive layout   | 🔥 High   | ☐      |
+|                          | Touch gestures for upload/workflows  | 🟡 Medium | ☐      |
+|                          | PWA manifest & service worker        | 🔥 High   | ☐      |
+|                          | Offline capabilities                 | 🔥 High   | ☐      |
+| 🔍 Search & Discovery    | Global AI-powered search             | 🔥 High   | ☐      |
+|                          | Search across chats/files/workflows  | 🔥 High   | ☐      |
+|                          | Smart suggestions & filters          | 🟡 Medium | ☐      |
+| 👥 Collaboration         | Share chat/workflows                 | 🔥 High   | ☐      |
+|                          | Real-time team collaboration         | 🔥 High   | ☐      |
+|                          | Team workspace setup                 | 🟡 Medium | ☐      |
+| 📊 Analytics Dashboard   | AI provider usage insights           | 🔥 High   | ☐      |
+|                          | Cost & performance metrics           | 🔥 High   | ☐      |
+|                          | Productivity and user analytics      | 🟡 Medium | ☐      |
+| 🔐 Security Enhancements | Two-factor authentication            | 🔥 High   | ☐      |
+|                          | Audit logs & access tracking         | 🔥 High   | ☐      |
+|                          | Data retention & deletion policies   | 🟡 Medium | ☐      |
+|                          | Role-based permissions               | 🔥 High   | ☐      |
+| 🌍 Internationalization  | Multi-language support               | 🟡 Medium | ☐      |
+|                          | RTL & localized responses            | 🟢 Low    | ☐      |
+| ♿ Accessibility          | Screen reader (ARIA) support         | 🟡 Medium | ☐      |
+|                          | Keyboard navigation                  | 🟡 Medium | ☐      |
+|                          | High-contrast theme                  | 🟢 Low    | ☐      |
+|                          | Voice navigation for accessibility   | 🟢 Low    | ☐      |
+| 🔌 Plugin System         | Third-party plugin architecture      | 🔥 High   | ☐      |
+|                          | Custom AI model integration          | 🔥 High   | ☐      |
+|                          | Developer API for extensions         | 🔥 High   | ☐      |
+
+---
+
+### 🧩 **Most Critical Missing Features to Complete the AI Workspace**
+
+1. **Voice Integration Layer** — natural interaction with voice wake word, TTS, and speech recognition.
+2. **AI Notification Engine** — connect the event/notification system to the chat intelligence layer.
+3. **PWA + Mobile Optimization** — offline-ready, mobile-first interface.
+4. **Advanced Search & Analytics** — unify data discovery and performance insights.
+5. **Team Collaboration System** — shared workflows, co-editing, permissions, audit logs.
+6. **Plugin/Extension Architecture** — empower third-party developers and internal automation.
+
+---
+ 
