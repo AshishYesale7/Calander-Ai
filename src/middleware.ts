@@ -8,6 +8,16 @@ const AUTH_PAGES = ['/auth/signin', '/auth/signup'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Development bypass - skip all auth checks if enabled
+  const devBypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+  if (devBypassAuth) {
+    // In development mode, redirect auth pages to dashboard
+    if (AUTH_PAGES.includes(pathname)) {
+      return NextResponse.redirect(new URL(PROTECTED_ROOT, request.url));
+    }
+    return NextResponse.next();
+  }
+  
   // This is not for security, but for UX. It hints that a user session might exist.
   // The true security check happens client-side in the main app layout.
   // We check for a generic Firebase cookie that indicates some persistence state.

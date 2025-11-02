@@ -18,6 +18,7 @@ import LandingPageChat from '@/components/landing/LandingPageChat';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import ScrollingFeatureShowcase from '@/components/landing/ScrollingFeatureShowcase';
+import AiAssistantChat from '@/components/layout/AiAssistantChat';
 
 
 // Define a structure for currency data
@@ -182,6 +183,7 @@ export default function LandingPage() {
     const ctaButtonRef = useRef<HTMLAnchorElement>(null);
     const [currency, setCurrency] = useState<Currency>(SUPPORTED_CURRENCIES[0]);
     const [isCurrencyLoading, setIsCurrencyLoading] = useState(true);
+    const [showTestChat, setShowTestChat] = useState(false);
 
     useEffect(() => {
         setIsCurrencyLoading(true);
@@ -353,6 +355,45 @@ export default function LandingPage() {
                     </footer>
                 </div>
             </main>
+            
+            {/* Floating Test Button for AiAssistantChat */}
+            <Button
+                onClick={() => setShowTestChat(true)}
+                className="fixed bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg"
+                size="icon"
+            >
+                <Bot className="h-6 w-6" />
+            </Button>
+            
+            {/* Test AiAssistantChat Modal */}
+            {showTestChat && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-gray-900 rounded-lg w-full max-w-4xl h-[80vh] relative">
+                        <Button
+                            onClick={() => setShowTestChat(false)}
+                            className="absolute top-4 right-4 z-10"
+                            variant="ghost"
+                            size="icon"
+                        >
+                            <ArrowRight className="h-4 w-4 rotate-45" />
+                        </Button>
+                        <AiAssistantChat
+                            onBack={() => setShowTestChat(false)}
+                            dragControls={null}
+                            handleToggleFullScreen={() => {}}
+                            isFullScreen={false}
+                            selectedModel="Gemini 2.0 Flash"
+                            setSelectedModel={() => {}}
+                            chatHistory={[]}
+                            isLoading={false}
+                            chatSessions={[]}
+                            activeChatId=""
+                            onNewChat={() => {}}
+                            onSelectChat={() => {}}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

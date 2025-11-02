@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Input } from '../ui/input';
 import AiAssistantChat from './AiAssistantChat';
+import { EnhancedAiAssistantChat } from '../ai-chat/EnhancedAiAssistantChat';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
@@ -48,6 +49,7 @@ const moreActionItems = [
 export default function DesktopCommandBar({ scrollDirection }: { scrollDirection: 'up' | 'down' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [useEnhancedChat, setUseEnhancedChat] = useState(true); // Toggle for testing
   const [search, setSearch] = useState('');
   const [selectedModel, setSelectedModel] = useState('Gemini 2.0 Flash');
   const [selectedMcpServer, setSelectedMcpServer] = useState('Calendar ai');
@@ -415,20 +417,27 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
               animate={{ opacity: 1, transition: { delay: 0.1 } }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
             >
-              <AiAssistantChat
-                onBack={handleClose}
-                dragControls={dragControls}
-                handleToggleFullScreen={handleToggleFullScreen}
-                isFullScreen={isFullScreen}
-                selectedModel={selectedModel}
-                setSelectedModel={setSelectedModel}
-                chatHistory={activeChat?.messages || []}
-                isLoading={isLoading}
-                chatSessions={chatSessions}
-                activeChatId={activeChatId || ''}
-                onNewChat={handleNewChat}
-                onSelectChat={setActiveChatId}
-              />
+              {useEnhancedChat ? (
+                <EnhancedAiAssistantChat
+                  isOpen={isOpen}
+                  onClose={handleClose}
+                />
+              ) : (
+                <AiAssistantChat
+                  onBack={handleClose}
+                  dragControls={dragControls}
+                  handleToggleFullScreen={handleToggleFullScreen}
+                  isFullScreen={isFullScreen}
+                  selectedModel={selectedModel}
+                  setSelectedModel={setSelectedModel}
+                  chatHistory={activeChat?.messages || []}
+                  isLoading={isLoading}
+                  chatSessions={chatSessions}
+                  activeChatId={activeChatId || ''}
+                  onNewChat={handleNewChat}
+                  onSelectChat={setActiveChatId}
+                />
+              )}
               <div
                   className="relative w-full flex items-center text-gray-400 p-3"
                   onPointerDown={(e) => e.stopPropagation()}
@@ -526,7 +535,17 @@ export default function DesktopCommandBar({ scrollDirection }: { scrollDirection
               </div>
 
                <div className="text-[10px] text-gray-500 px-3 py-0.5 border-t border-white/10 flex justify-between items-center">
-                  <span>{modelName} ({modelVersion})</span>
+                  <div className="flex items-center gap-2">
+                    <span>{modelName} ({modelVersion})</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-5 px-2 text-[10px] text-gray-500 hover:text-white hover:bg-white/10"
+                      onClick={() => setUseEnhancedChat(!useEnhancedChat)}
+                    >
+                      {useEnhancedChat ? 'Enhanced' : 'Classic'}
+                    </Button>
+                  </div>
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                           <Button variant="link" size="sm" className="h-auto p-0 text-xs text-gray-500 hover:text-white">

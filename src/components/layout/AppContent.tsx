@@ -224,6 +224,12 @@ export default function AppContent({
   useEffect(() => {
     if (loading) return;
 
+    // Development bypass - skip authentication checks if enabled
+    const devBypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+    if (devBypassAuth) {
+      return; // Skip all auth redirects in development mode
+    }
+
     if (!user) {
       router.push('/auth/signin');
     } else if (onboardingCompleted && !isSubscribed && pathname !== '/subscription' && pathname !== '/leaderboard' && !pathname.startsWith('/profile')) {

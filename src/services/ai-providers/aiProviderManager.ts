@@ -8,7 +8,7 @@ import { deepseekService } from './deepseekService';
 import { grokService } from './grokService';
 import { mistralService } from './mistralService';
 import { perplexityService } from './perplexityService';
-import { genkitService } from '../aiFlowsIntegration';
+import { aiFlowsIntegrationService } from '../aiFlowsIntegration';
 import { subscriptionManager } from '../subscriptionManager';
 
 class AIProviderManager {
@@ -27,7 +27,7 @@ class AIProviderManager {
     this.providers.set('grok', grokService);
     this.providers.set('mistral', mistralService);
     this.providers.set('perplexity', perplexityService);
-    this.providers.set('google', genkitService); // Fallback to existing Genkit
+    this.providers.set('google', aiFlowsIntegrationService); // Fallback to existing Genkit
   }
 
   async loadUserSettings(userId: string): Promise<UserAISettings> {

@@ -180,6 +180,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Development bypass - provide mock user if enabled
+    const devBypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+    if (devBypassAuth) {
+      const mockUser: AppUser = {
+        uid: 'dev-user-123',
+        email: 'dev@example.com',
+        displayName: 'Development User',
+        photoURL: null,
+        emailVerified: true,
+        isAnonymous: false,
+        metadata: {
+          creationTime: new Date().toISOString(),
+          lastSignInTime: new Date().toISOString(),
+        },
+        providerData: [],
+        refreshToken: 'mock-refresh-token',
+        tenantId: null,
+        delete: async () => {},
+        getIdToken: async () => 'mock-id-token',
+        getIdTokenResult: async () => ({
+          token: 'mock-id-token',
+          authTime: new Date().toISOString(),
+          issuedAtTime: new Date().toISOString(),
+          expirationTime: new Date(Date.now() + 3600000).toISOString(),
+          signInProvider: 'mock',
+          signInSecondFactor: null,
+          claims: {},
+        }),
+        reload: async () => {},
+        toJSON: () => ({}),
+        // UserProfile properties
+        userType: 'professional',
+        onboardingCompleted: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        preferences: {
+          theme: 'dark',
+          notifications: true,
+          language: 'en',
+        },
+        deletionStatus: null,
+      };
+      
+      setUser(mockUser);
+      setSubscription({
+        userId: 'dev-user-123',
+        planId: 'pro',
+        status: 'active',
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        autoRenew: true,
+      });
+      setOnboardingCompleted(true);
+      setAuthLoading(false);
+      setDataLoading(false);
+      return;
+    }
+    
     if (!auth) {
       setAuthLoading(false);
       return;
